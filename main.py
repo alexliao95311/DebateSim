@@ -17,9 +17,7 @@ client = OpenAI(
     api_key=API_KEY
 )
 
-# If you truly have access to "deepseek/deepseek-chat" on OpenRouter,
-# you can keep this. Otherwise, change to a model you have, e.g.:
-# "openai/gpt-3.5-turbo" or "anthropic/claude-instant:free"
+# Model name that you have access to via OpenRouter (example: "deepseek/deepseek-chat")
 MODEL_NAME = "deepseek/deepseek-chat"
 
 ###############################################################################
@@ -185,30 +183,63 @@ def run_debate_ai_and_user(debate_transcript, topic):
     """
     AI as one debater, user as the other, AI as judge.
     Up to 6 back-and-forth rounds or until 'DONE'.
-    Let's say AI is Pro, user is Con.
+    
+    Now the user chooses which side they want (Pro or Con), 
+    and the AI automatically takes the opposite side.
     """
+    print("\nDo you want to argue for the PRO side or the CON side?")
+    user_side = input("Type 'pro' or 'con': ").strip().lower()
+
+    if user_side == "pro":
+        user_label = "User Debater (Pro)"
+        ai_label = "AI Debater (Con)"
+        ai_side = "CON"
+    else:
+        user_label = "User Debater (Con)"
+        ai_label = "AI Debater (Pro)"
+        ai_side = "PRO"
+    
     round_count = 0
     while round_count < 6:
         round_count += 1
         print(f"\n=== Round {round_count} ===")
 
-        # AI Debater (Pro)
-        pro_request = (
-            f"Present your argument (round {round_count}) for the PRO side of: '{topic}'."
-        )
-        pro_statement = ai_debater("AI Debater (Pro)", pro_request)
-        debate_transcript += f"\n[AI Debater (Pro), Round {round_count}]: {pro_statement}"
-        print(f"\nAI Debater (Pro) says:\n{pro_statement}\n")
+        # If the user is Pro, the AI is Con, or vice versa
+        if user_side == "pro":
+            # User goes first (Pro)
+            statement = user_input_statement(user_label)
+            if statement.strip().lower() == "done":
+                break
+            debate_transcript += f"\n[{user_label}, Round {round_count}]: {statement}"
 
-        end_input = input("Press ENTER to continue or 'DONE' to end debate now: ").strip().lower()
+            # AI responds (Con)
+            con_request = (
+                f"Present your argument (round {round_count}) for the {ai_side} side of: '{topic}'. "
+                "Respond to the user's last statement."
+            )
+            con_statement = ai_debater(ai_label, con_request)
+            debate_transcript += f"\n[{ai_label}, Round {round_count}]: {con_statement}"
+            print(f"\n{ai_label} says:\n{con_statement}\n")
+        
+        else:
+            # If user is Con, AI goes first (Pro)
+            pro_request = (
+                f"Present your argument (round {round_count}) for the {ai_side} side of: '{topic}'."
+            )
+            pro_statement = ai_debater(ai_label, pro_request)
+            debate_transcript += f"\n[{ai_label}, Round {round_count}]: {pro_statement}"
+            print(f"\n{ai_label} says:\n{pro_statement}\n")
+
+            # User responds (Con)
+            statement = user_input_statement(user_label)
+            if statement.strip().lower() == "done":
+                break
+            debate_transcript += f"\n[{user_label}, Round {round_count}]: {statement}"
+
+        # Another prompt to see if we continue
+        end_input = input("Press ENTER to proceed to next round or 'DONE' to end debate: ").strip().lower()
         if end_input == "done":
             break
-
-        # User Debater (Con)
-        statement = user_input_statement("User Debater (Con)")
-        if statement.strip().lower() == "done":
-            break
-        debate_transcript += f"\n[User Debater (Con), Round {round_count}]: {statement}"
 
     # AI Judge
     judge_feedback = ai_judge(debate_transcript)
@@ -228,7 +259,7 @@ def main():
     print("1) AI vs. AI, AI judges")
     print("2) AI vs. AI, user judges")
     print("3) User vs. User, AI judges")
-    print("4) AI vs. User, AI judges\n")
+    print("4) AI vs. User, AI judges (Now user can pick Pro or Con)\n")
 
     mode = input("Enter the number corresponding to the mode you want to use: ").strip()
     topic = input("\nEnter the debate topic or resolution: ").strip()
@@ -249,7 +280,7 @@ def main():
         run_debate_users(debate_transcript, topic)
 
     elif mode == "4":
-        print("\nMode 4: AI vs. User, AI judges (AI is Pro, user is Con)")
+        print("\nMode 4: AI vs. User, AI judges.")
         run_debate_ai_and_user(debate_transcript, topic)
 
     else:
