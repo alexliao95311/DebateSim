@@ -7,3 +7,6 @@ my-venv/
 # You can add other ignore patterns as needed
 *.pyc
 __pycache__/
+
+# Ignore .gradio
+.gradio/
