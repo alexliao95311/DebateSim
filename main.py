@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -37,6 +38,7 @@ def generate_ai_response(prompt):
     )
     
     try:
+        print("\nCalling AI for response...")
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -56,8 +58,10 @@ def generate_ai_response(prompt):
         )
         # Extract the response text
         if completion.choices and len(completion.choices) > 0:
+            print("AI response received!")
             return completion.choices[0].message.content
         else:
+            print("Warning: No content returned by the AI")
             return "No content returned by the AI."
     except Exception as e:
         print("Error calling OpenRouter API:", e)
@@ -142,13 +146,64 @@ def run_debate_ai_vs_ai(debate_transcript, topic, user_as_judge=False):
         # user gives final feedback
         user_judge_comment = input("\nAs the user judge, please provide your feedback and decision: ")
         debate_transcript += f"\n[User Judge]: {user_judge_comment}"
+        # Save the debate log with user judge mode
+        save_debate_log(debate_transcript, topic, "AI vs AI (user judge)")
     else:
         # AI judge
         judge_feedback = ai_judge(debate_transcript)
         debate_transcript += f"\n\n[AI Judge]: {judge_feedback}"
+        # Save the debate log with AI judge mode
+        save_debate_log(debate_transcript, topic, "AI vs AI (AI judge)")
 
     print("\n--- Final Debate Transcript ---")
     print(debate_transcript)
+
+def save_debate_log(debate_transcript, topic, mode):
+    """Saves the debate transcript and metadata in markdown format"""
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    markdown_content = f"""# Debate Transcript
+
+**Timestamp:** {timestamp}  
+**Topic:** {topic}  
+**Mode:** {mode}
+
+## Transcript
+
+{debate_transcript}"""
+    
+    filename = f"logs/debate_{timestamp}.md"
+    with open(filename, 'w') as f:
+        f.write(markdown_content)
+    print(f"\nDebate log saved to: {filename}")
+
+def download_logs():
+    """Downloads and combines all debate logs into a single markdown file"""
+    log_dir = "logs"
+    if not os.path.exists(log_dir):
+        print("No logs found")
+        return
+    
+    logs = []
+    for filename in os.listdir(log_dir):
+        if filename.endswith(".md"):
+            with open(os.path.join(log_dir, filename), 'r') as f:
+                logs.append(f.read())
+    
+    if not logs:
+        print("No logs found")
+        return
+    
+    # Save combined logs to a single file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    combined_filename = f"combined_logs_{timestamp}.md"
+    
+    with open(combined_filename, 'w') as f:
+        f.write("\n\n---\n\n".join(logs))  # Separate logs with horizontal rules
+    print(f"Logs downloaded to: {combined_filename}")
 
 def run_debate_users(debate_transcript, topic):
     """
@@ -178,6 +233,9 @@ def run_debate_users(debate_transcript, topic):
 
     print("\n--- Final Debate Transcript ---")
     print(debate_transcript)
+    
+    # Save the debate log
+    save_debate_log(debate_transcript, topic, "User vs User")
 
 def run_debate_ai_and_user(debate_transcript, topic):
     """
@@ -247,6 +305,9 @@ def run_debate_ai_and_user(debate_transcript, topic):
 
     print("\n--- Final Debate Transcript ---")
     print(debate_transcript)
+    
+    # Save the debate log
+    save_debate_log(debate_transcript, topic, "AI vs User")
 
 
 ###############################################################################

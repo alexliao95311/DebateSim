@@ -5,6 +5,7 @@
 2. add UI and stuff
 - gradio is completely broken (#4)
 - many UI fixes needed
+- let people download chat log
 
 
 test git
