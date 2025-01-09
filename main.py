@@ -1,10 +1,10 @@
 import os
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +42,7 @@ class SaveTranscriptRequest(BaseModel):
     transcript: str
     topic: str
     mode: str
+    judge_feedback: str  # Add feedback as part of the request model
 
 # Helper function to generate AI response
 def generate_ai_response(prompt: str):
@@ -87,7 +88,13 @@ async def save_transcript(request: SaveTranscriptRequest):
     try:
         with open(filename, "w") as f:
             f.write(
-                f"# Debate Transcript\n\n**Timestamp:** {timestamp}\n**Topic:** {request.topic}\n**Mode:** {request.mode}\n\n{request.transcript}"
+                f"# Debate Transcript\n\n"
+                f"**Timestamp:** {timestamp}\n"
+                f"**Topic:** {request.topic}\n"
+                f"**Mode:** {request.mode}\n\n"
+                f"{request.transcript}\n\n"
+                f"# Judge Feedback\n\n"
+                f"{request.judge_feedback}"
             )
         return {"message": f"Transcript saved to {filename}"}
     except Exception as e:

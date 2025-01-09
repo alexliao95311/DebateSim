@@ -14,3 +14,4 @@
 - have ppl upload a doc (i.e. congress bill) and have AI debate whether or not we should support it
 - enable AI models to search internet
 test git
+- let users configure how long they want responses to be 
