@@ -92,9 +92,10 @@ async def save_transcript(request: SaveTranscriptRequest):
                 f"**Timestamp:** {timestamp}\n"
                 f"**Topic:** {request.topic}\n"
                 f"**Mode:** {request.mode}\n\n"
-                f"{request.transcript}\n\n"
-                f"# Judge Feedback\n\n"
-                f"{request.judge_feedback}"
+                f"## Debate Transcript\n\n"
+                f"{request.transcript}\n\n"  # Add the full debate transcript
+                f"## Judge Feedback\n\n"
+                f"{request.judge_feedback}"  # Include the judge feedback
             )
         return {"message": f"Transcript saved to {filename}"}
     except Exception as e:
