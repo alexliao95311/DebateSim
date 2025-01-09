@@ -1,16 +1,14 @@
 import axios from "axios";
 
-const API_URL = "http://127.0.0.1:8000"; // Backend URL
+// Adjust the URL if using a custom port or domain
+const API_URL = "http://127.0.0.1:8000";
 
-export const getAIResponse = async (debater, prompt) => {
+export const generateAIResponse = async (debater, prompt) => {
   try {
-    const response = await axios.post(`${API_URL}/generate-response`, {
-      debater,
-      prompt,
-    });
-    return response.data;
+    const response = await axios.post(`${API_URL}/generate-response`, { debater, prompt });
+    return response.data.response;
   } catch (error) {
-    console.error("Error fetching AI response:", error);
+    console.error("Error generating AI response:", error);
     throw error;
   }
 };
@@ -18,7 +16,7 @@ export const getAIResponse = async (debater, prompt) => {
 export const getAIJudgeFeedback = async (transcript) => {
   try {
     const response = await axios.post(`${API_URL}/judge-debate`, { transcript });
-    return response.data;
+    return response.data.feedback;
   } catch (error) {
     console.error("Error fetching AI judge feedback:", error);
     throw error;
@@ -32,7 +30,7 @@ export const saveTranscript = async (transcript, topic, mode) => {
       topic,
       mode,
     });
-    return response.data;
+    return response.data.message;
   } catch (error) {
     console.error("Error saving transcript:", error);
     throw error;
