@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { getAIJudgeFeedback, saveTranscript } from "../api";
+import "./Debate.css";
 
 function Judge({ transcript, topic, mode }) {
   const [feedback, setFeedback] = useState("");
-  const [saving, setSaving] = useState(false); // For save button state
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,7 +38,8 @@ function Judge({ transcript, topic, mode }) {
     <div>
       <h2>AI Judge Feedback</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <pre>{feedback}</pre>
+      <ReactMarkdown className="markdown-renderer">{feedback}</ReactMarkdown>
+
       <button onClick={handleSaveTranscript} disabled={saving}>
         {saving ? "Saving..." : "Save Transcript"}
       </button>

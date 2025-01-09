@@ -24,16 +24,16 @@ export const getAIJudgeFeedback = async (transcript) => {
 };
 
 export const saveTranscript = async (transcript, topic, mode, judgeFeedback) => {
-    try {
-      const response = await axios.post(`${API_URL}/save-transcript`, {
-        transcript,
-        topic,
-        mode,
-        judge_feedback: judgeFeedback, // Include judge feedback in the request
-      });
-      return response.data.message;
-    } catch (error) {
-      console.error("Error saving transcript:", error);
-      throw error;
-    }
-  };
+  try {
+    const response = await axios.post(`${API_URL}/save-transcript`, {
+      transcript,
+      topic,
+      mode,
+      judge_feedback: judgeFeedback, // Include judge feedback in the request
+    });
+    return response.data.message;
+  } catch (error) {
+    console.error("Error saving transcript:", error);
+    throw error;
+  }
+};
