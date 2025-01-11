@@ -73,7 +73,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
 
       {/* Control buttons */}
       <button onClick={handleNextRound} disabled={loading}>
-        {loading ? "Loading..." : "Next Round"}
+        {loading ? "Loading..." : round === 1 ? "Start Round" : "Next Round"}
       </button>
       <button onClick={endDebate} disabled={loading}>
         End Debate

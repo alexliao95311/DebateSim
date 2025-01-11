@@ -14,16 +14,18 @@ function Home({ setMode, setTopic }) {
   };
 
   return (
-    <div>
+    <div style={{ backgroundColor: "#fff", padding: "2rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
       <h1>Welcome to Debate Simulator</h1>
-      <h2>Select a Mode:</h2>
-      <button onClick={() => setSelectedMode("ai-vs-ai")}>AI vs AI</button>
-      <button onClick={() => setSelectedMode("ai-vs-user")}>AI vs User</button>
-      <button onClick={() => setSelectedMode("user-vs-user")}>User vs User</button>
-      <h2>Enter Debate Topic:</h2>
+      <h2>Select a Mode</h2>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        <button onClick={() => setSelectedMode("ai-vs-ai")}>AI vs AI</button>
+        <button onClick={() => setSelectedMode("ai-vs-user")}>AI vs User</button>
+        <button onClick={() => setSelectedMode("user-vs-user")}>User vs User</button>
+      </div>
+      <h2>Enter Debate Topic</h2>
       <input
         type="text"
-        placeholder="Enter topic"
+        placeholder="What's the debate topic?"
         value={debateTopic}
         onChange={(e) => setDebateTopic(e.target.value)}
       />

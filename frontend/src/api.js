@@ -6,7 +6,7 @@ const API_URL = "http://127.0.0.1:8000";
 export const generateAIResponse = async (debater, prompt) => {
   try {
     const response = await axios.post(`${API_URL}/generate-response`, { debater, prompt });
-    return response.data.response;
+    return response.data.response; // Ensure this matches the structure of your API response
   } catch (error) {
     console.error("Error generating AI response:", error);
     throw error;

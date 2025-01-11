@@ -7,6 +7,8 @@
 - many UI fixes needed
 - let people download chat 
 
+- npm: configure run script
+
 # Important
 - fix mode 4 in gradio
 
@@ -15,3 +17,7 @@
 - enable AI models to search internet
 test git
 - let users configure how long they want responses to be 
+
+# Run commands
+uvicorn main:app --reload
+npm run dev 

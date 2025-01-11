@@ -35,11 +35,10 @@ function Judge({ transcript, topic, mode }) {
   };
 
   return (
-    <div>
+    <div style={{ backgroundColor: "#fff", padding: "2rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
       <h2>AI Judge Feedback</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
       <ReactMarkdown className="markdown-renderer">{feedback}</ReactMarkdown>
-
       <button onClick={handleSaveTranscript} disabled={saving}>
         {saving ? "Saving..." : "Save Transcript"}
       </button>
