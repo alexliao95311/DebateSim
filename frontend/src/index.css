@@ -103,6 +103,19 @@ input[type="text"] {
   font-size: 1rem;
 }
 
+textarea {
+  background-color: #e0e0e0; /* Slightly darker shade of grey */
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  resize: vertical; /* Allow vertical resizing */
+}
+
 .markdown-renderer {
   white-space: pre-wrap;
   word-wrap: break-word;
