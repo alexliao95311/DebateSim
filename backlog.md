@@ -21,3 +21,6 @@ test git
 # Run commands
 uvicorn main:app --reload
 npm run dev 
+
+
+lolz
