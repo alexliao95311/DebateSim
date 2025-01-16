@@ -35,10 +35,30 @@ function Judge({ transcript, topic, mode }) {
   };
 
   return (
-    <div style={{ backgroundColor: "#fff", padding: "2rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
-      <h2>AI Judge Feedback</h2>
+    <div className="judge-container">
+      <div className="debate-sections">
+        {/* Left column: Debate Transcript */}
+        <div className="transcript-section">
+          <h2>Debate Transcript</h2>
+          <div className="scrollable-content">
+            <ReactMarkdown>{transcript}</ReactMarkdown>
+          </div>
+        </div>
+
+        {/* Right column: Judge Feedback */}
+        <div className="feedback-section">
+          <h2>AI Judge Feedback</h2>
+          <div className="scrollable-content">
+            {!feedback ? (
+              <div className="loading-feedback">Analyzing debate...</div>
+            ) : (
+              <ReactMarkdown>{feedback}</ReactMarkdown>
+            )}
+          </div>
+        </div>
+      </div>
+
       {error && <p className="error-text">{error}</p>}
-      <ReactMarkdown className="markdown-renderer">{feedback}</ReactMarkdown>
       <button onClick={handleSaveTranscript} disabled={saving}>
         {saving ? "Saving..." : "Save Transcript"}
       </button>
