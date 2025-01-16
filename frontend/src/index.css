@@ -68,7 +68,7 @@ h2, h3 {
 
 /* Button styling */
 button {
-  background-color: var(--primary-color);
+  background-color: #666; /* Darker gray */
   color: #fff;
   border-radius: 6px;
   border: none;
@@ -83,7 +83,7 @@ button {
 }
 
 button:hover {
-  background-color: var(--secondary-color);
+  background-color: #555; /* Even darker on hover */
   transform: scale(1.02);
 }
 
@@ -141,6 +141,6 @@ textarea {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #666;
   }
 }
