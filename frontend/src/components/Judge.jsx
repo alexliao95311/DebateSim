@@ -34,6 +34,28 @@ function Judge({ transcript, topic, mode }) {
     }
   };
 
+  const handleDownload = () => {
+    // Create content for the markdown file
+    const content = `# Debate Transcript\n\n` +
+      `**Topic:** ${topic}\n` +
+      `**Mode:** ${mode}\n\n` +
+      `## Debate Transcript\n\n` +
+      `${transcript}\n\n` +
+      `## Judge Feedback\n\n` +
+      `${feedback}`;
+
+    // Create blob and download link
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `debate_${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   return (
     <div className="judge-container">
       <div className="debate-sections">
@@ -59,9 +81,14 @@ function Judge({ transcript, topic, mode }) {
       </div>
 
       {error && <p className="error-text">{error}</p>}
-      <button onClick={handleSaveTranscript} disabled={saving}>
-        {saving ? "Saving..." : "Save Transcript"}
-      </button>
+      <div className="button-group">
+        <button onClick={handleSaveTranscript} disabled={saving}>
+          {saving ? "Saving..." : "Save to Server"}
+        </button>
+        <button onClick={handleDownload}>
+          Download as Markdown
+        </button>
+      </div>
     </div>
   );
 }

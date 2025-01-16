@@ -74,3 +74,13 @@ p {
   color: #ff4444;
   margin: 1rem 0;
 }
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.button-group button {
+  flex: 1;
+}
