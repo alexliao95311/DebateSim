@@ -30,6 +30,8 @@ DebateSim is an innovative website designed to simulate debate scenarios using a
 3. create a .env file in root, append `OPENROUTER_API_KEY=`
 4. To run, navigate to root and run `python -m uvicorn main:app --reload`
 5. Then navigate to frontend and run `npm run dev`
+6. Navigate to api.js and update the link
+
 # Example
 1.	Start DebateSim
 2.	Select a mode: AI as both debaters and judge
