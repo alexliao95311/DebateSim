@@ -24,6 +24,12 @@ DebateSim is an innovative website designed to simulate debate scenarios using a
 - View arguments, counterarguments, and judge decisions.
 - Pause, rewind, or modify debates dynamically.
 
+# Setup
+1. `pip install -r requirements.txt`
+2. navigate to frontend folder, `npm install`
+3. create a .env file in root, append `OPENROUTER_API_KEY=`
+4. To run, navigate to root and run `uvicorn main:app --reload`
+5. Then navigate to frontend and run `npm run dev`
 # Example
 1.	Start DebateSim
 2.	Select a mode: AI as both debaters and judge

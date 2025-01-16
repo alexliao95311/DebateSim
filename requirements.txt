@@ -1,3 +1,5 @@
 openai
 gradio
 python-dotenv
+aiohttp
+cachetools
