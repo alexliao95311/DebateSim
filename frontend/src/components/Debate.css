@@ -85,7 +85,6 @@ p {
   flex: 1;
 }
 
-/* For the PDF container styling */
 .pdf-container {
   font-family: "Calibri", sans-serif;
   font-size: 14px;
@@ -95,7 +94,7 @@ p {
   margin: 0 auto;
 }
 
-/* Prevent cutting headings or paragraphs in half if possible */
+/* Prevent headings/paragraphs from splitting between pages if possible */
 .pdf-container h1,
 .pdf-container h2,
 .pdf-container h3,
@@ -104,7 +103,7 @@ p {
   page-break-inside: avoid;
 }
 
-/* If you want to force a page-break at .page-break */
+/* Force a page break on .page-break elements if you want to chunk sections */
 @media print {
   .page-break {
     page-break-before: always;

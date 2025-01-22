@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import html2pdf from "html2pdf.js"; 
+import html2pdf from "html2pdf.js";
 import { getAIJudgeFeedback, saveTranscript } from "../api";
 import "./Debate.css";
 
@@ -8,10 +8,9 @@ function Judge({ transcript, topic, mode }) {
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  // Capture a timestamp once when the component mounts
   const [timestamp] = useState(() => new Date().toLocaleString());
 
-  // This ref will point to our hidden PDF container
+  // Hidden PDF container ref
   const pdfContentRef = useRef(null);
 
   useEffect(() => {
@@ -41,22 +40,48 @@ function Judge({ transcript, topic, mode }) {
 
   const handleDownloadPDF = async () => {
     setError("");
-    try {
-      // The hidden container we want to convert
-      const element = pdfContentRef.current;
 
-      // Set your html2pdf options
+    try {
+      const element = pdfContentRef.current;
       const options = {
-        margin: 0.5, // in inches
+        margin: 0.5, // inches
         filename: `debate_${Date.now()}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2 },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-        // The 'pagebreak' object helps avoid cutting text inside blocks
-        pagebreak: { mode: ["avoid-all", "css"] },
+        jsPDF: {
+          unit: "in",
+          format: "letter",
+          orientation: "portrait"
+        },
+        pagebreak: { mode: ["avoid-all", "css"] }
       };
 
-      await html2pdf().from(element).set(options).save();
+      // Use the chaining API to insert page numbers
+      await html2pdf()
+        .from(element)
+        .set(options)
+        .toPdf()
+        .get("pdf")
+        .then((pdfObj) => {
+          const totalPages = pdfObj.internal.getNumberOfPages();
+
+          for (let i = 1; i <= totalPages; i++) {
+            pdfObj.setPage(i);
+            pdfObj.setFontSize(10);
+            pdfObj.setTextColor(150);
+
+            const pageWidth = pdfObj.internal.pageSize.getWidth();
+            const pageHeight = pdfObj.internal.pageSize.getHeight();
+
+            // Position the page number at bottom-right.
+            pdfObj.text(
+              `Page ${i} of ${totalPages}`,
+              pageWidth - 60, // Adjust X position as needed
+              pageHeight - 10 // Adjust Y position as needed
+            );
+          }
+        })
+        .save();
     } catch (err) {
       setError("Failed to generate PDF. Please try again.");
       console.error("PDF generation error:", err);
@@ -65,7 +90,7 @@ function Judge({ transcript, topic, mode }) {
 
   return (
     <div className="judge-container">
-      {/* ===== Visible UI: transcript & feedback side-by-side ===== */}
+      {/* ===== Visible: Transcript & Feedback sections ===== */}
       <div id="debate-content" className="debate-sections">
         <div className="transcript-section">
           <h2>Debate Transcript</h2>
@@ -86,16 +111,14 @@ function Judge({ transcript, topic, mode }) {
         </div>
       </div>
 
-      {/* ===== Hidden PDF container (rendered, but display: none) ===== */}
+      {/* ===== Hidden PDF Container ===== */}
       <div style={{ display: "none" }}>
         <div ref={pdfContentRef} className="pdf-container">
-          {/* Timestamp at the top */}
-          <p style={{ fontStyle: "italic", color: "#555", marginBottom: "0.5em" }}>
+          <p style={{ fontStyle: "italic", color: "#555" }}>
             Generated on: {timestamp}
           </p>
           <h1 style={{ textAlign: "center", marginTop: 0 }}>Debate Transcript</h1>
           <hr />
-
           <h2>Topic: {topic}</h2>
           <h3>Mode: {mode}</h3>
 
@@ -111,6 +134,7 @@ function Judge({ transcript, topic, mode }) {
         </div>
       </div>
 
+      {/* ===== Error & Buttons ===== */}
       {error && <p className="error-text">{error}</p>}
       <div className="button-group">
         <button onClick={handleSaveTranscript} disabled={saving}>
