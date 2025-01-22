@@ -84,3 +84,29 @@ p {
 .button-group button {
   flex: 1;
 }
+
+/* For the PDF container styling */
+.pdf-container {
+  font-family: "Calibri", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #000;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Prevent cutting headings or paragraphs in half if possible */
+.pdf-container h1,
+.pdf-container h2,
+.pdf-container h3,
+.pdf-container h4,
+.pdf-container p {
+  page-break-inside: avoid;
+}
+
+/* If you want to force a page-break at .page-break */
+@media print {
+  .page-break {
+    page-break-before: always;
+  }
+}
