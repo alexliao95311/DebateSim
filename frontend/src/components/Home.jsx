@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "./Home.css";
 
 function Home({ setMode, setTopic }) {
   const [selectedMode, setSelectedMode] = useState("");
@@ -14,7 +15,7 @@ function Home({ setMode, setTopic }) {
   };
 
   return (
-    <div style={{ backgroundColor: "#fff", padding: "2rem", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+    <div className="home-container">
       <h1>Welcome to Debate Simulator</h1>
       <h2>Select a Mode</h2>
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>

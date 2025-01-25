@@ -1,0 +1,50 @@
+/* Ensures the background fills the entire browser window horizontally */
+.home-container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 8rem 2rem 2rem 2rem; /* Added top padding of 8rem */
+  background: url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Add some styling to headings for better visual hierarchy */
+.home-container h1 {
+  font-size: 3.2em;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #333;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.home-container h2 {
+  font-size: 1.8em;
+  margin: 1.5rem 0;
+  text-align: center;
+  color: #444;
+}
+
+/* Center the mode selection buttons */
+.home-container > div {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Style input/textarea to have margins and allow resizing */
+.home-container input[type="text"],
+.home-container textarea {
+  margin: 1rem 0;
+  padding: 0.8rem;
+  width: 80%;
+  max-width: 600px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  resize: vertical; /* or "both" if you want horizontal resizing too */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+}
