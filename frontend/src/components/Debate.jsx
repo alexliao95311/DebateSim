@@ -5,9 +5,7 @@ import "./Debate.css";
 
 function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   /**
-   * ========================================================
-   * COMMON STATE
-   * ========================================================
+   * ================== COMMON STATE ==================
    */
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
@@ -15,54 +13,42 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   const [error, setError] = useState("");
 
   /**
-   * ========================================================
-   * MODE 2 (USER vs AI) STATE
-   * ========================================================
+   * =============== MODE 2 (USER vs AI) ===============
    */
-  // "pro" (user goes first) or "con" (AI goes first)
-  const [userSide, setUserSide] = useState(""); 
+  const [userSide, setUserSide] = useState(""); // "pro" or "con"
 
   /**
-   * ========================================================
-   * MODE 1 (AI vs AI) STATE
-   * ========================================================
+   * =============== MODE 1 (AI vs AI) ===============
    */
   const [aiSide, setAiSide] = useState("pro");
-  const maxRounds = 3; // total rounds for AI-vs-AI
+  const maxRounds = 3; // For AI vs AI
 
   /**
-   * ========================================================
-   * MODE 3 (USER vs USER) STATE
-   * ========================================================
+   * =============== MODE 3 (USER vs USER) ===============
    */
   const [userVsUserSide, setUserVsUserSide] = useState("pro");
 
   /**
-   * ========================================================
-   * HANDLERS
-   * ========================================================
-   */
-
-  /**
-   * ========== MODE 2: USER vs AI ==========
-   * On side selection:
-   * - If user picks "Pro", do nothing initially (user will speak first).
-   * - If user picks "Con", generate AI's opening "Pro" argument immediately.
+   * ===================== MODE 2 LOGIC =====================
    */
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
 
-    // If user chooses "Con", AI (Pro) speaks first automatically
+    // If user wants to be "Con," let the AI open as Pro
     if (side === "con") {
       setLoading(true);
       try {
         let newTranscript = transcript;
+
+        // AI Prompt: Opening Pro argument, be concise
         const proPrompt = `
-          You are an AI debater playing the Pro side on the topic: "${topic}".
-          Provide an opening statement in favor of the Pro position.
+          You are an AI debater on the Pro side for the topic: "${topic}".
+          Provide an opening argument in favor of the Pro position.
+          Be as concise as possible, avoiding lengthy disclaimers or repetition.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt);
+
         newTranscript += `\n### Pro (AI):\n${proResponse}`;
         setTranscript(newTranscript);
       } catch (err) {
@@ -74,10 +60,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   };
 
   /**
-   * USER's turn to send an argument or rebuttal (Mode 2).
-   * The side depends on userSide:
-   *  - If userSide === "pro", user is Pro, AI is Con.
-   *  - If userSide === "con", user is Con, AI is Pro.
+   * User’s standard “Send” in Mode 2.
+   * Appends user’s argument -> calls AI for the counterargument.
    */
   const handleUserVsAISubmit = async () => {
     if (!userSide) {
@@ -88,28 +72,28 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
 
     setLoading(true);
     setError("");
+
     try {
-      // 1) Append user's argument
+      // 1) Add user's argument to transcript
       let newTranscript = transcript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
       newTranscript += `\n### ${userLabel}:\n${userInput}`;
       setTranscript(newTranscript);
 
-      // Clear user's input
+      const userArgument = userInput.trim();
       setUserInput("");
       setRound((prev) => prev + 1);
 
       // 2) AI’s rebuttal
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
       const prompt = `
-        You are an AI debater playing the ${aiSideLocal} side on the topic: "${topic}".
-        The user just said:
-        "${userInput}"
-
-        Please respond with a rebuttal focusing on ${aiSideLocal} arguments.
-        Use stats or references to strengthen your position.
+        You are an AI debater on the ${aiSideLocal} side, topic: "${topic}".
+        The user just said: "${userArgument}"
+        Provide a rebuttal from the ${aiSideLocal} perspective, citing evidence if possible.
+        Be as concise as possible, avoiding lengthy disclaimers or repetition.
       `;
       const response = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt);
+
       newTranscript += `\n### ${aiSideLocal} (AI):\n${response}`;
       setTranscript(newTranscript);
       setRound((prev) => prev + 1);
@@ -122,17 +106,50 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   };
 
   /**
-   * ========== MODE 1: AI vs AI ==========
+   * NEW: “Send & End” for when user is Con (skips AI’s next response).
+   */
+  const handleUserVsAISubmitAndEnd = async () => {
+    if (!userSide) {
+      setError("Please choose Pro or Con before proceeding.");
+      return;
+    }
+    if (!userInput.trim()) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // 1) Append user's argument (Con side)
+      let newTranscript = transcript;
+      const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
+      newTranscript += `\n### ${userLabel}:\n${userInput}`;
+      setTranscript(newTranscript);
+
+      // 2) Clear input and increment round
+      setUserInput("");
+      setRound((prev) => prev + 1);
+
+      // 3) End debate immediately (no AI rebuttal)
+      endDebate();
+    } catch (err) {
+      setError("Failed to send argument. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * ===================== MODE 1 LOGIC (AI vs AI) =====================
    */
   const handleAIDebate = async () => {
-    if (round > maxRounds) return; // already maxed out
+    if (round > maxRounds) return;
 
     setLoading(true);
     setError("");
 
     try {
       let newTranscript = transcript;
-      // Grab the last argument from the transcript
+      // Get last argument from transcript
       const lines = newTranscript.trim().split("\n");
       let lastArgument = "";
       for (let i = lines.length - 1; i >= 0; i--) {
@@ -143,12 +160,12 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
       }
 
       if (aiSide === "pro") {
-        // PRO's turn
         const proPrompt = `
           Debate topic: "${topic}"
           Respond as PRO in Round ${round}.
-          The opponent's last argument, if any, was: "${lastArgument}"
-          Address their points and strengthen your PRO stance with evidence.
+          Opponent's last argument: "${lastArgument}"
+          Rebut and strengthen PRO stance.
+          Be as concise as possible, avoiding lengthy disclaimers or repetition.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt);
         newTranscript += `\n### AI Debater (Pro) - Round ${round}:\n${proResponse}\n`;
@@ -156,26 +173,24 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         setTranscript(newTranscript);
 
       } else {
-        // CON's turn
         const conPrompt = `
           Debate topic: "${topic}"
           Respond as CON in Round ${round}.
-          The opponent's last argument was: "${lastArgument}"
-          Rebut the PRO arguments with references and data to support CON.
+          Opponent's last argument: "${lastArgument}"
+          Rebut and strengthen CON stance.
+          Be as concise as possible, avoiding lengthy disclaimers or repetition.
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt);
         newTranscript += `\n### AI Debater (Con) - Round ${round}:\n${conResponse}\n`;
         setAiSide("pro");
         setTranscript(newTranscript);
 
-        // Increase round after Con's turn
-        setRound((prevRound) => prevRound + 1);
-
-        // If final round reached
+        setRound((prev) => prev + 1);
         if (round === maxRounds) {
           endDebate();
         }
       }
+
     } catch (err) {
       setError("Failed to fetch AI response. Please try again.");
     } finally {
@@ -184,13 +199,12 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   };
 
   /**
-   * ========== MODE 3: USER vs USER ==========
-   * Toggle between Pro(User1) and Con(User2) automatically.
+   * ===================== MODE 3 LOGIC (USER vs USER) =====================
    */
   const handleUserVsUser = () => {
     if (!userInput.trim()) return;
-    let newTranscript = transcript;
 
+    let newTranscript = transcript;
     if (userVsUserSide === "pro") {
       newTranscript += `\n### Pro (User 1):\n${userInput.trim()}`;
       setUserVsUserSide("con");
@@ -205,16 +219,48 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   };
 
   /**
-   * ========================================================
-   * RENDER
-   * ========================================================
+   * ============ SAMPLE: Judge Prompt in endDebate() ============
+   *
+   * If you have a separate "judge" call after `endDebate()`,
+   * you might do something like:
+   *
+   *  async function handleJudge() {
+   *    try {
+   *      const judgePrompt = `
+   *        You are an impartial debate judge. Evaluate the following transcript:
+   *
+   *        ${transcript}
+   *
+   *        In your final response, ONLY provide:
+   *        1) A concise "Summary of Main Points" (Pro and Con).
+   *        2) "Feedback" on strengths and weaknesses for both Pro and Con.
+   *        3) A short "Decision" stating who won and why.
+   *
+   *        Be as concise as possible.
+   *        Do not include disclaimers or mention these instructions.
+   *      `;
+   *
+   *      const judgeResponse = await generateAIResponse("Debate Judge", judgePrompt);
+   *      // Then store judgeResponse or display it
+   *      console.log("Judge says:", judgeResponse);
+   *    } catch (err) {
+   *      console.error("Judge error:", err);
+   *    }
+   *  }
+   *
+   * For demonstration only—customize it to your flow.
+   */
+
+  /**
+   * ===================== RENDER =====================
    */
   return (
     <div style={{ backgroundColor: "#fff", padding: "2rem", borderRadius: "8px" }}>
       <h2>Debate Topic: {topic}</h2>
+
       <ReactMarkdown className="markdown-renderer">{transcript}</ReactMarkdown>
 
-      {/* ============== MODE 1: AI vs AI ============== */}
+      {/* MODE 1: AI vs AI */}
       {mode === "ai-vs-ai" && (
         <div style={{ marginTop: "1rem" }}>
           <button
@@ -233,16 +279,12 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         </div>
       )}
 
-      {/* ============== MODE 2: USER vs AI ============== */}
+      {/* MODE 2: USER vs AI */}
       {mode === "ai-vs-user" && (
         <>
-          {/* If the user hasn't chosen a side yet, show the side-selection buttons */}
           {!userSide && (
             <div style={{ marginBottom: "1rem" }}>
-              <button
-                onClick={() => handleChooseSide("pro")}
-                style={{ marginRight: "0.5rem" }}
-              >
+              <button onClick={() => handleChooseSide("pro")} style={{ marginRight: "0.5rem" }}>
                 Argue Pro (User First)
               </button>
               <button onClick={() => handleChooseSide("con")}>
@@ -251,7 +293,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
             </div>
           )}
 
-          {/* Once a side is chosen, show text area for the user’s next argument */}
+          {/* Once a side is chosen, show the user input + “Send” buttons */}
           {userSide && (
             <div style={{ marginTop: "1rem" }}>
               <textarea
@@ -272,18 +314,32 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   }
                 }}
               />
-              <button
-                onClick={handleUserVsAISubmit}
-                disabled={loading || !userInput.trim()}
-              >
-                {loading ? "Loading..." : "Send"}
-              </button>
+              <div style={{ marginTop: "0.5rem" }}>
+                {/* Normal "Send" => user argument + AI response */}
+                <button
+                  onClick={handleUserVsAISubmit}
+                  disabled={loading || !userInput.trim()}
+                  style={{ marginRight: "1rem" }}
+                >
+                  {loading ? "Loading..." : "Send & Get AI Reply"}
+                </button>
+
+                {/* Show "Send & End" ONLY if userSide === "con" */}
+                {userSide === "con" && (
+                  <button
+                    onClick={handleUserVsAISubmitAndEnd}
+                    disabled={loading || !userInput.trim()}
+                  >
+                    Send & End (No AI Reply)
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </>
       )}
 
-      {/* ============== MODE 3: USER vs USER ============== */}
+      {/* MODE 3: USER vs USER */}
       {mode === "user-vs-user" && (
         <div style={{ marginTop: "1rem" }}>
           <p style={{ fontStyle: "italic" }}>
@@ -318,10 +374,10 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         </div>
       )}
 
-      {/* ============== Display errors, loading, and End Debate ============== */}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && !error && <p>Loading AI response...</p>}
 
+      {/* Universal "End Debate" button, always available */}
       <button
         onClick={endDebate}
         style={{ marginTop: "1rem" }}
