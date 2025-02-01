@@ -76,10 +76,10 @@ h2, h3 {
 
 /* Button styling */
 button {
-  background-color: #666; /* Darker gray */
+  background-color: #3469a6; /* Lighter blue */
   color: #fff;
-  border-radius: 6px;
   border: none;
+  border-radius: 6px;
   padding: 0.8rem 1.2rem;
   font-size: 1em;
   font-weight: 600;
@@ -91,7 +91,7 @@ button {
 }
 
 button:hover {
-  background-color: #555; /* Even darker on hover */
+  background-color: #3a7cd1; /* Slightly darker on hover */
   transform: scale(1.02);
 }
 

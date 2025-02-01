@@ -88,6 +88,10 @@ function Judge({ transcript, topic, mode }) {
     }
   };
 
+  const handleBackToHome = () => {
+    window.location.href = "/";
+  };
+
   return (
     <div className="judge-container">
       {/* ===== Visible: Transcript & Feedback sections ===== */}
@@ -141,6 +145,7 @@ function Judge({ transcript, topic, mode }) {
           {saving ? "Saving..." : "Save to Server"}
         </button>
         <button onClick={handleDownloadPDF}>Download as PDF</button>
+        <button onClick={handleBackToHome}>Back to Home</button>
       </div>
     </div>
   );
