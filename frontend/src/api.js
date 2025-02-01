@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Adjust the URL if using a custom port or domain
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://20.3.246.40:5000";
 
 export const generateAIResponse = async (debater, prompt) => {
   try {

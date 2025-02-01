@@ -30,11 +30,15 @@ client = OpenAI(
 
 # FastAPI application
 app = FastAPI()
+@app.get("/")
+async def root():
+    return {"message": "FastAPI backend is running!"}
+
 
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Adjust if running frontend elsewhere
+    allow_origins=["http://20.3.246.40"],  # Adjust if running frontend elsewhere
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
