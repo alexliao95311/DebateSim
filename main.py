@@ -146,7 +146,7 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
             {"role": "user", "content": user_message}
         ]
         # Use the new debater model (GPT‑4‑o‑mini) for debater responses
-        model_to_use = "openai/gpt-4o-mini"
+        model_to_use = "mistralai/mistral-7b-instruct:free"
 
     # Retry mechanism (up to 3 attempts)
     for attempt in range(3):
