@@ -21,7 +21,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
    * =============== MODE 1 (AI vs AI) ===============
    */
   const [aiSide, setAiSide] = useState("pro");
-  const maxRounds = 3; // For AI vs AI
+  const maxRounds = 5; // For AI vs AI
 
   /**
    * =============== MODE 3 (USER vs USER) ===============

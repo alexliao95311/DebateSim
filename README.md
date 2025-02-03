@@ -38,14 +38,14 @@ DebateSim is an innovative website designed to simulate debate scenarios using a
 3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
 4. Move to frontend directory: `cd frontend`
 5. Build frontend: `npm run build`
-6. Configure new page: `sudo rm -rf /var/www/html/*`
-7. Configure new page cont.: `sudo cp -a dist/* /var/www/html/`
+6. Run frontend: `npx serve -s dist -l 3000 --no-clipboard --single`
 
 To run indefinitely: 
 - Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
-- Frontend (pre-set script): in home directory, `~/update_frontend.sh`
+- Frontend: `nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 & disown`
 
-*Check processes: `sudo netstat -tulnp | grep <port>`
+*Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
+*To kill processes: `kill -9 <PID>` 
 
 
 

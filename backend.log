@@ -1,15 +1,2 @@
 nohup: ignoring input
-INFO:     Will watch for changes in these directories: ['/home/azureuser/DebateSim']
-INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
-INFO:     Started reloader process [5304] using StatReload
-INFO:     Started server process [5306]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     24.130.140.119:62780 - "OPTIONS /generate-response HTTP/1.1" 200 OK
-INFO:main:AI response generated in 2.16 seconds
-INFO:main:Total time for generate-response: 2.16 seconds
-INFO:     24.130.140.119:62780 - "POST /generate-response HTTP/1.1" 200 OK
-INFO:     24.130.140.119:62780 - "OPTIONS /judge-debate HTTP/1.1" 200 OK
-INFO:main:AI response generated in 7.14 seconds
-INFO:main:Total time for judge-debate: 7.14 seconds
-INFO:     24.130.140.119:62780 - "POST /judge-debate HTTP/1.1" 200 OK
+nohup: failed to run command 'uvicorn': No such file or directory

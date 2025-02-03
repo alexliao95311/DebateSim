@@ -38,7 +38,7 @@ async def root():
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://20.3.246.40"],  # Adjust if running frontend elsewhere
+    allow_origins=["http://20.3.246.40:3000"],  # Adjust if running frontend elsewhere
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -111,9 +111,9 @@ async def generate_ai_response(prompt: str, role: str = "debater"):
             debater_side = prompt
             opponent_argument = ""
         system_message = (
-            "You are a debater engaged in a live debate. Your response should adhere to the following guidelines:\n"
-            "1. Present your own arguments clearly.\n"
-            "2. If there are opposing arguments, refute them directly.\n"
+            "You are a debater engaged in a live debate. Argue for the given side and topic. If the topic is a statement, the pro agrees with the statement and the con disagrees, no matter the statement. If the topic is worded as a question, the pro argues yes and the con argues no. Your response should adhere to the following guidelines:\n"
+            "1. Start your response directly answering the prompt with your side. Present your own arguments clearly.\n"
+            "2. If there are opposing arguments, refute them directly. If not, do not mention that there are no arguments presented and just present your own arguments.\n"
             "3. Address your opponent directly using second person (you).\n"
             "4. Make your response short and well-organized, limiting it to 300 words.\n"
         )
