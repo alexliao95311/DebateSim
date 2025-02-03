@@ -1,47 +1,53 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import { generateAIResponse } from "../api";
 import "./Debate.css";
 
 function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
-  /**
-   * ================== COMMON STATE ==================
-   */
+  // Common State
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /**
-   * =============== MODE 2 (USER vs AI) ===============
-   */
-  const [userSide, setUserSide] = useState(""); // "pro" or "con"
+  // Mode-specific States
+  const [userSide, setUserSide] = useState(""); // "pro" or "con" for user vs AI
+  const [aiSide, setAiSide] = useState("pro"); // for AI vs AI
+  const maxRounds = 5;
+  const [userVsUserSide, setUserVsUserSide] = useState("pro"); // for user vs user
 
-  /**
-   * =============== MODE 1 (AI vs AI) ===============
-   */
-  const [aiSide, setAiSide] = useState("pro");
-  const maxRounds = 5; // For AI vs AI
+  // New state to hold speech block headers for sidebar navigation.
+  // Each entry: { id: "speech-#", title: "Pro (AI)" }
+  const [speechList, setSpeechList] = useState([]);
 
-  /**
-   * =============== MODE 3 (USER vs USER) ===============
-   */
-  const [userVsUserSide, setUserVsUserSide] = useState("pro");
+  // Helper: Append a divider if needed.
+  const appendDivider = (currentTranscript) =>
+    currentTranscript.trim() !== ""
+      ? currentTranscript + `<hr class="divider" />`
+      : currentTranscript;
 
-  /**
-   * ===================== MODE 2 LOGIC =====================
-   */
+  // Helper: Generate a new speech block and update the speechList.
+  const addSpeechBlock = (title, content) => {
+    const newId = `speech-${speechList.length + 1}`;
+    // Update speechList state using a functional update.
+    setSpeechList((prevList) => [...prevList, { id: newId, title }]);
+    return `<div id="${newId}" class="speech-block"><h3>${title}:</h3><p>${content}</p></div>`;
+  };
 
-  /**
-   * Once user picks "Pro" or "Con":
-   *  - If "Pro": user speaks first.
-   *  - If "Con": AI (Pro) does an opening statement before user goes.
-   */
+  // Helper: Scroll to a speech block by its ID.
+  const scrollToSpeech = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // MODE 2: User vs AI Logic
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
-
-    // If user wants to be "Con," let the AI open as Pro
+    // If user chooses "Con", let the AI open as Pro.
     if (side === "con") {
       setLoading(true);
       try {
@@ -51,8 +57,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
           Provide an opening argument in favor of the Pro position.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt);
-
-        newTranscript += `\n### Pro (AI):\n${proResponse}`;
+        newTranscript = appendDivider(newTranscript);
+        newTranscript += addSpeechBlock("Pro (AI)", proResponse);
         setTranscript(newTranscript);
       } catch (err) {
         setError("Failed to fetch AI's initial Pro argument. Please try again.");
@@ -62,10 +68,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     }
   };
 
-  /**
-   * User’s standard “Send” in Mode 2.
-   * Appends user’s argument -> calls AI for the counterargument.
-   */
   const handleUserVsAISubmit = async () => {
     if (!userSide) {
       setError("Please choose Pro or Con before proceeding.");
@@ -77,16 +79,16 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     setError("");
 
     try {
-      // 1) Add user's argument to transcript
+      // Append the user's argument.
       let newTranscript = transcript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      newTranscript += `\n### ${userLabel}:\n${userInput}`;
+      newTranscript = appendDivider(newTranscript);
+      newTranscript += addSpeechBlock(userLabel, userInput);
       setTranscript(newTranscript);
-
       setUserInput("");
       setRound((prev) => prev + 1);
 
-      // 2) AI’s rebuttal
+      // Append the AI’s rebuttal.
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
       const prompt = `
         You are an AI debater on the ${aiSideLocal} side, topic: "${topic}".
@@ -94,11 +96,10 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         Provide a rebuttal from the ${aiSideLocal} perspective, citing evidence if possible.
       `;
       const response = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt);
-
-      newTranscript += `\n### ${aiSideLocal} (AI):\n${response}`;
+      newTranscript = appendDivider(newTranscript);
+      newTranscript += addSpeechBlock(`${aiSideLocal} (AI)`, response);
       setTranscript(newTranscript);
       setRound((prev) => prev + 1);
-
     } catch (err) {
       setError("Failed to fetch AI response. Please try again.");
     } finally {
@@ -106,9 +107,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     }
   };
 
-  /**
-   * NEW: “Send & End” for when user is Con (skips AI’s next response).
-   */
   const handleUserVsAISubmitAndEnd = async () => {
     if (!userSide) {
       setError("Please choose Pro or Con before proceeding.");
@@ -120,19 +118,14 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     setError("");
 
     try {
-      // 1) Append user's argument (Con side)
       let newTranscript = transcript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      newTranscript += `\n### ${userLabel}:\n${userInput}`;
+      newTranscript = appendDivider(newTranscript);
+      newTranscript += addSpeechBlock(userLabel, userInput);
       setTranscript(newTranscript);
-
-      // 2) Clear input and increment round
       setUserInput("");
       setRound((prev) => prev + 1);
-
-      // 3) End debate immediately (no AI rebuttal)
       endDebate();
-
     } catch (err) {
       setError("Failed to send argument. Please try again.");
     } finally {
@@ -140,9 +133,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     }
   };
 
-  /**
-   * ===================== MODE 1 LOGIC (AI vs AI) =====================
-   */
+  // MODE 1: AI vs AI Logic
   const handleAIDebate = async () => {
     if (round > maxRounds) return;
 
@@ -151,7 +142,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
 
     try {
       let newTranscript = transcript;
-      // Get last argument from transcript
+      // Retrieve last argument from transcript (for context).
       const lines = newTranscript.trim().split("\n");
       let lastArgument = "";
       for (let i = lines.length - 1; i >= 0; i--) {
@@ -169,10 +160,10 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
           Rebut and strengthen PRO stance.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt);
-        newTranscript += `\n### AI Debater (Pro) - Round ${round}:\n${proResponse}\n`;
+        newTranscript = appendDivider(newTranscript);
+        newTranscript += addSpeechBlock(`AI Debater (Pro) - Round ${round}`, proResponse);
         setAiSide("con");
         setTranscript(newTranscript);
-
       } else {
         const conPrompt = `
           Debate topic: "${topic}"
@@ -181,16 +172,15 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
           Rebut and strengthen CON stance.
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt);
-        newTranscript += `\n### AI Debater (Con) - Round ${round}:\n${conResponse}\n`;
+        newTranscript = appendDivider(newTranscript);
+        newTranscript += addSpeechBlock(`AI Debater (Con) - Round ${round}`, conResponse);
         setAiSide("pro");
         setTranscript(newTranscript);
-
         setRound((prev) => prev + 1);
         if (round === maxRounds) {
           endDebate();
         }
       }
-
     } catch (err) {
       setError("Failed to fetch AI response. Please try again.");
     } finally {
@@ -198,160 +188,166 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     }
   };
 
-  /**
-   * ===================== MODE 3 LOGIC (USER vs USER) =====================
-   */
+  // MODE 3: User vs User Logic
   const handleUserVsUser = () => {
     if (!userInput.trim()) return;
 
     let newTranscript = transcript;
+    newTranscript = appendDivider(newTranscript);
     if (userVsUserSide === "pro") {
-      newTranscript += `\n### Pro (User 1):\n${userInput.trim()}`;
+      newTranscript += addSpeechBlock("Pro (User 1)", userInput.trim());
       setUserVsUserSide("con");
     } else {
-      newTranscript += `\n### Con (User 2):\n${userInput.trim()}`;
+      newTranscript += addSpeechBlock("Con (User 2)", userInput.trim());
       setUserVsUserSide("pro");
     }
-
     setTranscript(newTranscript);
     setUserInput("");
     setError("");
   };
 
-  /**
-   * ===================== RENDER =====================
-   */
   return (
     <div className="debate-container">
-      <div className="debate-content">
-        <h2>Debate Topic: {topic}</h2>
-        <ReactMarkdown className="markdown-renderer">{transcript}</ReactMarkdown>
+      <div className="debate-wrapper">
+        {/* Sidebar Navigation */}
+        <div className="sidebar">
+          <h3>Speeches</h3>
+          <ul>
+            {speechList.map((item) => (
+              <li key={item.id} onClick={() => scrollToSpeech(item.id)}>
+                {item.title}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-        {/* MODE 1: AI vs AI */}
-        {mode === "ai-vs-ai" && (
-          <div style={{ marginTop: "1rem" }}>
-            <button
-              onClick={handleAIDebate}
-              disabled={loading || round > maxRounds}
-            >
-              {loading
-                ? "Loading..."
-                : round > maxRounds
-                ? "Debate Finished"
-                : aiSide === "pro"
-                ? `Generate Pro Round ${round}`
-                : `Generate Con Round ${round}`
-              }
-            </button>
-          </div>
-        )}
+        {/* Main Debate Content */}
+        <div className="debate-content">
+          <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
+          <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
+            {transcript}
+          </ReactMarkdown>
 
-        {/* MODE 2: USER vs AI */}
-        {mode === "ai-vs-user" && (
-          <>
-            {!userSide && (
-              <div style={{ marginBottom: "1rem" }}>
-                <button onClick={() => handleChooseSide("pro")} style={{ marginRight: "0.5rem" }}>
-                  Argue Pro (User First)
-                </button>
-                <button onClick={() => handleChooseSide("con")}>
-                  Argue Con (AI First)
-                </button>
-              </div>
-            )}
+          {/* MODE 1: AI vs AI */}
+          {mode === "ai-vs-ai" && (
+            <div style={{ marginTop: "1rem" }}>
+              <button
+                onClick={handleAIDebate}
+                disabled={loading || round > maxRounds}
+              >
+                {loading
+                  ? "Loading..."
+                  : round > maxRounds
+                  ? "Debate Finished"
+                  : aiSide === "pro"
+                  ? `Generate Pro Round ${round}`
+                  : `Generate Con Round ${round}`}
+              </button>
+            </div>
+          )}
 
-            {/* Once a side is chosen, show the user input + “Send” buttons */}
-            {userSide && (
-              <div style={{ marginTop: "1rem" }}>
-                <textarea
-                  placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  rows={4}
-                  style={{ width: "100%", resize: "vertical" }}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      !e.shiftKey &&
-                      !loading &&
-                      userInput.trim().length > 0
-                    ) {
-                      e.preventDefault();
-                      handleUserVsAISubmit();
-                    }
-                  }}
-                />
-                <div style={{ marginTop: "0.5rem" }}>
-                  {/* Normal "Send" => user argument + AI response */}
+          {/* MODE 2: USER vs AI */}
+          {mode === "ai-vs-user" && (
+            <>
+              {!userSide && (
+                <div style={{ marginBottom: "1rem" }}>
                   <button
-                    onClick={handleUserVsAISubmit}
-                    disabled={loading || !userInput.trim()}
-                    style={{ marginRight: "1rem" }}
+                    onClick={() => handleChooseSide("pro")}
+                    style={{ marginRight: "0.5rem" }}
                   >
-                    {loading ? "Loading..." : "Send & Get AI Reply"}
+                    Argue Pro (User First)
                   </button>
-
-                  {/* Show "Send & End" ONLY if userSide === "con" */}
-                  {userSide === "con" && (
-                    <button
-                      onClick={handleUserVsAISubmitAndEnd}
-                      disabled={loading || !userInput.trim()}
-                    >
-                      Send & End (No AI Reply)
-                    </button>
-                  )}
+                  <button onClick={() => handleChooseSide("con")}>
+                    Argue Con (AI First)
+                  </button>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
 
-        {/* MODE 3: USER vs USER */}
-        {mode === "user-vs-user" && (
-          <div style={{ marginTop: "1rem" }}>
-            <p style={{ fontStyle: "italic" }}>
-              {userVsUserSide === "pro"
-                ? "It's Pro's turn (User 1)."
-                : "It's Con's turn (User 2)."}
-            </p>
-            <textarea
-              placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              rows={4}
-              style={{ width: "100%", resize: "vertical" }}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !loading &&
-                  userInput.trim().length > 0
-                ) {
-                  e.preventDefault();
-                  handleUserVsUser();
-                }
-              }}
-            />
-            <button
-              onClick={handleUserVsUser}
-              disabled={loading || !userInput.trim()}
-            >
-              Send ({userVsUserSide === "pro" ? "Pro" : "Con"})
-            </button>
-          </div>
-        )}
+              {userSide && (
+                <div style={{ marginTop: "1rem" }}>
+                  <textarea
+                    placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    rows={4}
+                    style={{ width: "100%", resize: "vertical" }}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        !loading &&
+                        userInput.trim().length > 0
+                      ) {
+                        e.preventDefault();
+                        handleUserVsAISubmit();
+                      }
+                    }}
+                  />
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <button
+                      onClick={handleUserVsAISubmit}
+                      disabled={loading || !userInput.trim()}
+                      style={{ marginRight: "1rem" }}
+                    >
+                      {loading ? "Loading..." : "Send & Get AI Reply"}
+                    </button>
+                    {userSide === "con" && (
+                      <button
+                        onClick={handleUserVsAISubmitAndEnd}
+                        disabled={loading || !userInput.trim()}
+                      >
+                        Send & End (No AI Reply)
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {loading && !error && <p>Loading AI response...</p>}
+          {/* MODE 3: USER vs USER */}
+          {mode === "user-vs-user" && (
+            <div style={{ marginTop: "1rem" }}>
+              <p style={{ fontStyle: "italic" }}>
+                {userVsUserSide === "pro"
+                  ? "It's Pro's turn (User 1)."
+                  : "It's Con's turn (User 2)."}
+              </p>
+              <textarea
+                placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                rows={4}
+                style={{ width: "100%", resize: "vertical" }}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    !loading &&
+                    userInput.trim().length > 0
+                  ) {
+                    e.preventDefault();
+                    handleUserVsUser();
+                  }
+                }}
+              />
+              <button
+                onClick={handleUserVsUser}
+                disabled={loading || !userInput.trim()}
+              >
+                Send ({userVsUserSide === "pro" ? "Pro" : "Con"})
+              </button>
+            </div>
+          )}
 
-        {/* Universal "End Debate" button, always available */}
-        <button
-          onClick={endDebate}
-          style={{ marginTop: "1rem" }}
-          disabled={loading}
-        >
-          End Debate
-        </button>
+          {error && <p style={{ color: "red" }}>{error}</p>}
+          {loading && !error && <p>Loading AI response...</p>}
+
+          {/* Universal End Debate Button */}
+          <button onClick={endDebate} style={{ marginTop: "1rem" }} disabled={loading}>
+            End Debate
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,15 +1,126 @@
+/* Overall markdown renderer style */
 .markdown-renderer {
   white-space: pre-wrap;
   word-wrap: break-word;
   background: rgba(255, 255, 255, 0.55);
-  padding: 1.5rem 3rem; /* Increased horizontal padding */
-  margin: 1rem 2rem; /* Increased horizontal margins */
+  padding: 1.5rem 3rem;
+  margin: 1rem 2rem;
   border-radius: 8px;
   font-family: "Arial", sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
 
+/* Header for Debate Topic */
+.debate-topic-header {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #222;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Thicker divider line */
+.divider {
+  border: none;
+  border-top: 3px solid #555;
+  margin: 1.5rem 0;
+}
+
+/* Speech block container (debate box) */
+.speech-block {
+  background-color: #dde5ed;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border: 1px solid #aac0e0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Header within each speech block */
+.speech-block h3 {
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  color: #222;
+}
+
+/* Paragraphs in each speech block */
+.speech-block p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+
+/* Sidebar Navigation */
+.sidebar {
+  position: fixed;
+  top: 8rem;
+  left: 2rem;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  cursor: pointer;
+  margin: 0.5rem 0;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.sidebar li:hover {
+  color: #007bff;
+}
+
+/* Container for the sidebar and debate content */
+.debate-wrapper {
+  display: flex;
+  width: 100%;
+  padding-left: 220px; /* Leave room for the sidebar */
+  box-sizing: border-box;
+}
+
+/* Debate container styling – keep the background image */
+.debate-container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 8rem 2rem 2rem 2rem;
+  background: url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Debate content styling */
+.debate-content {
+  background: rgba(255, 255, 255, 0.45);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 80%;
+  max-width: 1200px;
+}
+
+/* Input field styling */
 input {
   display: block;
   margin: 10px 0;
@@ -19,6 +130,7 @@ input {
   box-sizing: border-box;
 }
 
+/* Button styling */
 button {
   margin-right: 10px;
   padding: 10px 20px;
@@ -36,6 +148,7 @@ p {
   margin: 10px 0;
 }
 
+/* Judge container styling */
 .judge-container {
   width: 100vw;
   min-height: 100vh;
@@ -47,20 +160,7 @@ p {
   align-items: center;
 }
 
-/* Container for debate sections with uniform 0.45 opacity */
-.debate-sections {
-  background: rgba(255, 255, 255, 0.45);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 1200px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-/* Transcript and Feedback sections with uniform 0.45 opacity */
+/* Other sections (transcript, feedback, scrollable content, etc.) remain unchanged */
 .transcript-section,
 .feedback-section {
   background: rgba(255, 255, 255, 0.45);
@@ -69,11 +169,10 @@ p {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Ensure scrollable content also uses 0.45 opacity */
 .scrollable-content {
   max-height: 60vh;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 1.5rem;
   border: 1px solid rgba(238, 238, 238, 0.45);
   border-radius: 4px;
   background: rgba(252, 252, 252, 0.45);
@@ -96,6 +195,7 @@ p {
   margin: 1rem 0;
 }
 
+/* Button group styling */
 .button-group {
   display: flex;
   gap: 1rem;
@@ -106,6 +206,7 @@ p {
   flex: 1;
 }
 
+/* PDF container styling */
 .pdf-container {
   font-family: "Calibri", sans-serif;
   font-size: 14px;
@@ -115,7 +216,6 @@ p {
   margin: 0 auto;
 }
 
-/* Prevent headings/paragraphs from splitting between pages if possible */
 .pdf-container h1,
 .pdf-container h2,
 .pdf-container h3,
@@ -124,42 +224,8 @@ p {
   page-break-inside: avoid;
 }
 
-/* Force a page break on .page-break elements if you want to chunk sections */
 @media print {
   .page-break {
     page-break-before: always;
   }
-}
-
-/* Base container styling matching home page */
-.debate-container {
-  width: 100vw;
-  min-height: 100vh;
-  margin: 0;
-  padding: 8rem 2rem 2rem 2rem;
-  background: url("/images/background4.png") center center/cover no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Content area with background */
-.debate-content {
-  background: rgba(255, 255, 255, 0.45);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 80%;
-  max-width: 1200px;
-}
-
-.input-section {
-  background: rgba(255, 255, 255, 0.45); /* Reduced opacity */
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  width: 80%;
-  max-width: 800px;
-  margin-top: 2rem;
 }

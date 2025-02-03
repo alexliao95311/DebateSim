@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import html2pdf from "html2pdf.js";
 import { getAIJudgeFeedback, saveTranscript } from "../api";
-import "./Debate.css";
+import "./Judge.css";
 
 function Judge({ transcript, topic, mode }) {
   const [feedback, setFeedback] = useState("");
@@ -40,7 +41,6 @@ function Judge({ transcript, topic, mode }) {
 
   const handleDownloadPDF = async () => {
     setError("");
-
     try {
       const element = pdfContentRef.current;
       const options = {
@@ -56,7 +56,6 @@ function Judge({ transcript, topic, mode }) {
         pagebreak: { mode: ["avoid-all", "css"] }
       };
 
-      // Use the chaining API to insert page numbers
       await html2pdf()
         .from(element)
         .set(options)
@@ -64,20 +63,16 @@ function Judge({ transcript, topic, mode }) {
         .get("pdf")
         .then((pdfObj) => {
           const totalPages = pdfObj.internal.getNumberOfPages();
-
           for (let i = 1; i <= totalPages; i++) {
             pdfObj.setPage(i);
             pdfObj.setFontSize(10);
             pdfObj.setTextColor(150);
-
             const pageWidth = pdfObj.internal.pageSize.getWidth();
             const pageHeight = pdfObj.internal.pageSize.getHeight();
-
-            // Position the page number at bottom-right.
             pdfObj.text(
               `Page ${i} of ${totalPages}`,
-              pageWidth - 60, // Adjust X position as needed
-              pageHeight - 10 // Adjust Y position as needed
+              pageWidth - 60,
+              pageHeight - 10
             );
           }
         })
@@ -99,7 +94,10 @@ function Judge({ transcript, topic, mode }) {
         <div className="transcript-section">
           <h2>Debate Transcript</h2>
           <div className="scrollable-content">
-            <ReactMarkdown>{transcript}</ReactMarkdown>
+            {/* Updated: Use rehypeRaw so raw HTML (speech blocks) is rendered */}
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+              {transcript}
+            </ReactMarkdown>
           </div>
         </div>
 
@@ -109,7 +107,9 @@ function Judge({ transcript, topic, mode }) {
             {!feedback ? (
               <div className="loading-feedback">Analyzing debate...</div>
             ) : (
-              <ReactMarkdown>{feedback}</ReactMarkdown>
+              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                {feedback}
+              </ReactMarkdown>
             )}
           </div>
         </div>
@@ -125,16 +125,12 @@ function Judge({ transcript, topic, mode }) {
           <hr />
           <h2>Topic: {topic}</h2>
           <h3>Mode: {mode}</h3>
-
           <div className="page-break" />
-
           <h2>Debate Content</h2>
-          <ReactMarkdown>{transcript}</ReactMarkdown>
-
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{transcript}</ReactMarkdown>
           <div className="page-break" />
-
           <h2>Judge Feedback</h2>
-          <ReactMarkdown>{feedback}</ReactMarkdown>
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{feedback}</ReactMarkdown>
         </div>
       </div>
 
