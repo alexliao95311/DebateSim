@@ -229,3 +229,9 @@ p {
     page-break-before: always;
   }
 }
+.round-status {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #444;
+  margin-bottom: 1rem;
+}

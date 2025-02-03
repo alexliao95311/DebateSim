@@ -161,7 +161,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt);
         newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock(`AI Debater (Pro) - Round ${round}`, proResponse);
+        newTranscript += addSpeechBlock(`AI Debater (Pro) - Round ${round}/${maxRounds}`, proResponse);
         setAiSide("con");
         setTranscript(newTranscript);
       } else {
@@ -173,7 +173,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt);
         newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock(`AI Debater (Con) - Round ${round}`, conResponse);
+        newTranscript += addSpeechBlock(`AI Debater (Con) - Round ${round} of${maxRounds}`, conResponse);
         setAiSide("pro");
         setTranscript(newTranscript);
         setRound((prev) => prev + 1);
@@ -240,8 +240,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   : round > maxRounds
                   ? "Debate Finished"
                   : aiSide === "pro"
-                  ? `Generate Pro Round ${round}`
-                  : `Generate Con Round ${round}`}
+                  ? `Generate Pro Round ${round}/${maxRounds}`
+                  : `Generate Con Round ${round}/${maxRounds}`}
               </button>
             </div>
           )}
