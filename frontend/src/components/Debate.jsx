@@ -173,7 +173,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt);
         newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock(`AI Debater (Con) - Round ${round} of${maxRounds}`, conResponse);
+        newTranscript += addSpeechBlock(`AI Debater (Con) - Round ${round}/${maxRounds}`, conResponse);
         setAiSide("pro");
         setTranscript(newTranscript);
         setRound((prev) => prev + 1);
