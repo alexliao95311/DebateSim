@@ -35,35 +35,35 @@ app = FastAPI()
 async def root():
     return {"message": "FastAPI backend is running!"}
 
-# Enable CORS for frontend communication (new change)
+# Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
-    #allow_origins=["http://http://20.3.246.40:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Models
+# Models – now with an extra field for model selection
 class GenerateResponseRequest(BaseModel):
     debater: str  # e.g., "Pro" or "Con"
-    prompt: str   # For debater mode, expected to be: "debate topic. opponent's argument" 
-                 # (if no opponent argument exists, just send the debate topic)
+    prompt: str   # Expected format: "debate topic. opponent's argument"
+    model: str = "mistralai/mistral-small-24b-instruct-2501"  # Chosen debater model
 
 class JudgeRequest(BaseModel):
     transcript: str
+    model: str = "mistralai/mistral-small-24b-instruct-2501"  # Chosen judge model
 
 class SaveTranscriptRequest(BaseModel):
     transcript: str
     topic: str
     mode: str
-    judge_feedback: str  # Add feedback as part of the request model
+    judge_feedback: str  # Judge feedback included
 
 # Connection pooling
 connector = aiohttp.TCPConnector(limit=20)
 
-# Cache for AI responses (using prompt, role, and (if applicable) debater_side in the cache key)
+# Cache for AI responses (key now includes model_override)
 cache = TTLCache(maxsize=100, ttl=300)  # Cache up to 100 items for 5 minutes
 
 # Global session variable
@@ -79,12 +79,9 @@ async def shutdown_event():
     await session.close()
 
 # Helper function to generate AI response with role-specific instructions.
-# In debater mode, we expect:
-#    - prompt: a string containing "debate topic. opponent's argument" (if provided)
-#    - debater_side: the side (e.g., "Pro" or "Con") from the request model.
-# In judge mode, we simply use the transcript.
-async def generate_ai_response(prompt: str, role: str = "debater", debater_side: str = None):
-    cache_key = hashkey(prompt, role, debater_side)
+# Added parameter model_override to allow using the chosen model.
+async def generate_ai_response(prompt: str, role: str = "debater", debater_side: str = None, model_override: str = None):
+    cache_key = hashkey(prompt, role, debater_side, model_override)
     if cache_key in cache:
         logger.info("Cache hit for prompt")
         return cache[cache_key]
@@ -92,7 +89,6 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
     start_time = time.time()
 
     if role == "judge":
-        # --- Judge mode (old, working version) ---
         system_message = (
             "You are an impartial AI judge. Your task is to carefully evaluate the following debate transcript. "
             "Provide a detailed analysis that includes:\n"
@@ -106,20 +102,17 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message}
         ]
-        # Use the mistralai model (as in your old judge page)
         model_to_use = "mistralai/mistral-small-24b-instruct-2501"
+        if model_override:
+            model_to_use = model_override
     else:
-        # --- Debater mode (new instructions) ---
-        # Expect prompt to be in the format "debate topic. opponent's argument"
-        # If no period is found, the entire prompt is treated as the debate topic.
         try:
             assigned_topic, opponent_argument = prompt.split('.', 1)
         except ValueError:
             assigned_topic = prompt
             opponent_argument = ""
-        # Use the debater side provided (e.g., "Pro" or "Con")
         if not debater_side:
-            debater_side = assigned_topic.strip()  # fallback (should not normally occur)
+            debater_side = assigned_topic.strip()
         full_prompt_message = (
             f"Stance: {debater_side.strip()}\n"
             f"Debate Topic: {assigned_topic.strip()}\n"
@@ -139,16 +132,15 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
             "6. **Under no circumstances should you contradict your assigned stance, even if the argument is difficult to defend.**\n"
             "7. **Your argument should be structured, persuasive, and no longer than 300 words.**\n"
         )
-        # In debater mode, the user message is the full structured prompt.
         user_message = full_prompt_message
         messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message}
         ]
-        # Use the new debater model (GPT‑4‑o‑mini) for debater responses
         model_to_use = "mistralai/mistral-7b-instruct:free"
+        if model_override:
+            model_to_use = model_override
 
-    # Retry mechanism (up to 3 attempts)
     for attempt in range(3):
         try:
             async with session.post(
@@ -174,32 +166,34 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
         except aiohttp.ClientError as e:
             logger.error(f"⚠️ [ERROR] Attempt {attempt + 1} failed: {str(e)}")
             if attempt == 2:
-                raise HTTPException(status_code=500, detail="Error generating AI response after multiple attempts")
+                raise HTTPException(status_code=response.status, detail="Error generating AI response after multiple attempts")
             await asyncio.sleep(1)
 
     raise HTTPException(status_code=500, detail="Failed to generate AI response.")
 
-# --------------------
 # API Endpoints
-# --------------------
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
     start_time = time.time()
-    # In this endpoint, we expect:
-    #   - request.debater: the side ("Pro" or "Con")
-    #   - request.prompt: a string in the format "debate topic. opponent's argument" (if an opponent argument exists)
-    # We combine them by passing the prompt as-is (the debater_side is passed separately)
     full_prompt = f"{request.prompt}"
-    response_text = await generate_ai_response(full_prompt, role="debater", debater_side=request.debater)
+    response_text = await generate_ai_response(
+        full_prompt, 
+        role="debater", 
+        debater_side=request.debater, 
+        model_override=request.model
+    )
     logger.info(f"Total time for generate-response: {time.time() - start_time:.2f} seconds")
     return {"response": response_text}
 
 @app.post("/judge-debate")
 async def judge_debate(request: JudgeRequest):
     start_time = time.time()
-    # For judging, we simply pass the transcript.
-    feedback = await generate_ai_response(request.transcript, role="judge")
+    feedback = await generate_ai_response(
+        request.transcript, 
+        role="judge", 
+        model_override=request.model
+    )
     logger.info(f"Total time for judge-debate: {time.time() - start_time:.2f} seconds")
     return {"feedback": feedback}
 
@@ -207,10 +201,8 @@ async def judge_debate(request: JudgeRequest):
 async def save_transcript(request: SaveTranscriptRequest, background_tasks: BackgroundTasks):
     if not os.path.exists("logs"):
         os.makedirs("logs")
-
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"logs/debate_{timestamp}.md"
-
     def background_save_transcript():
         try:
             with open(filename, "w") as f:
@@ -228,6 +220,5 @@ async def save_transcript(request: SaveTranscriptRequest, background_tasks: Back
         except Exception as e:
             logger.error(f"Exception in background_save_transcript: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error saving transcript: {str(e)}")
-
     background_tasks.add_task(background_save_transcript)
     return {"message": "Processing request in the background"}
