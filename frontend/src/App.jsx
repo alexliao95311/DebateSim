@@ -9,6 +9,9 @@ function App() {
   const [transcript, setTranscript] = useState(""); // Full transcript
   const [showJudge, setShowJudge] = useState(false); // Toggle judging view
 
+  // Lift judgeModel state so it’s available to both Debate and Judge
+  const [judgeModel, setJudgeModel] = useState("mistralai/mistral-small-24b-instruct-2501");
+
   const handleEndDebate = () => setShowJudge(true); // End debate and show judging
 
   return (
@@ -21,10 +24,17 @@ function App() {
           topic={topic}
           transcript={transcript}
           setTranscript={setTranscript}
+          judgeModel={judgeModel}
+          setJudgeModel={setJudgeModel}
           endDebate={handleEndDebate}
         />
       ) : (
-        <Judge transcript={transcript} topic={topic} mode={mode} />
+        <Judge 
+          transcript={transcript} 
+          topic={topic} 
+          mode={mode} 
+          judgeModel={judgeModel}
+        />
       )}
     </div>
   );

@@ -1,13 +1,4 @@
 import React, { useState } from "react";
-/**
- * If you're on react-markdown v8 or later, you can just do:
- *   import ReactMarkdown from 'react-markdown'
- *   import rehypeRaw from 'rehype-raw'
- * and pass rehypePlugins={[rehypeRaw]} 
- * 
- * If you're on older versions (~v5 or v6), you might need "allowDangerousHtml={true}"
- * or "allowDangerousHtml" on the component. Adjust as needed.
- */
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 
@@ -27,7 +18,7 @@ function sanitizeUserInput(str) {
   return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
+function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel, setJudgeModel }) {
   // Common state
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
@@ -40,13 +31,12 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   // Max rounds for AI vs AI
   const maxRounds = 5;
 
-  // Model selection
+  // Model selection for AI sides (judgeModel is now passed in via props)
   const [proModel, setProModel] = useState(modelOptions[4]);
   const [conModel, setConModel] = useState(modelOptions[4]);
   const [singleAIModel, setSingleAIModel] = useState(modelOptions[4]);
-  const [judgeModel, setJudgeModel] = useState(modelOptions[4]);
 
-  // Mode-specific
+  // Mode-specific states
   const [aiSide, setAiSide] = useState("pro"); // Mode 1
   const [userSide, setUserSide] = useState(""); // Mode 2
   const [userVsUserSide, setUserVsUserSide] = useState("pro"); // Mode 3
@@ -58,10 +48,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
       : currentTranscript;
 
   /**
-   * Create a speech block as raw HTML. 
+   * Create a speech block as raw HTML.
    * - If title includes "(User", we sanitize < and > from the content.
-   * - We add **extra blank lines** before and after the block so 
-   *   Markdown treats it as a separate raw HTML block.
+   * - We add extra blank lines before and after so Markdown treats it as a separate block.
    */
   const addSpeechBlock = (title, content, modelName) => {
     const newId = `speech-${speechList.length + 1}`;
@@ -71,12 +60,11 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     const isUserSpeech = title.toLowerCase().includes("(user");
     const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
 
-    // Model info only for AI
+    // Model info only for AI speeches
     const maybeModel = (!isUserSpeech && modelName)
       ? `<p class="model-info">Model: ${modelName}</p>`
       : "";
 
-    // 2 blank lines before => often needed so Markdown sees it as a top-level block
     return `
     
     
@@ -85,8 +73,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
   ${maybeModel}
   ${safeContent}
 </div>
-
-
+    
+    
 `;
   };
 
@@ -205,7 +193,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
       setUserInput("");
       setRound((prev) => prev + 1);
 
-      // 2) AI Rebuttal
+      // 2) AI rebuttal
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
       const prompt = `
         You are an AI debater on the ${aiSideLocal} side, topic: "${topic}".
@@ -275,7 +263,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
     setError("");
   };
 
-  // ======================= RENDER =======================
   return (
     <div className="debate-container">
       <div className="debate-wrapper">
@@ -302,7 +289,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   Pro Model:
                   <select value={proModel} onChange={(e) => setProModel(e.target.value)}>
                     {modelOptions.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -310,7 +299,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   Con Model:
                   <select value={conModel} onChange={(e) => setConModel(e.target.value)}>
                     {modelOptions.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -318,7 +309,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   Judge Model:
                   <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                     {modelOptions.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -329,12 +322,11 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
               <>
                 <label>
                   AI Model:
-                  <select
-                    value={singleAIModel}
-                    onChange={(e) => setSingleAIModel(e.target.value)}
-                  >
+                  <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
                     {modelOptions.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -342,7 +334,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   Judge Model:
                   <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                     {modelOptions.map((m) => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -354,7 +348,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                 Judge Model:
                 <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                   {modelOptions.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -362,25 +358,15 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
           </div>
           {/* ============ END MODEL SELECTION ============ */}
 
-          {/* DEBATE TRANSCRIPT
-             rehypeRaw so AI can produce HTML, but user input is sanitized. */}
-          <ReactMarkdown
-            // If you're on react-markdown v5 or 6, you might also need:
-            // allowDangerousHtml
-            // skipHtml={false}
-            rehypePlugins={[rehypeRaw]}
-            className="markdown-renderer"
-          >
+          {/* Debate Transcript */}
+          <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
             {transcript}
           </ReactMarkdown>
 
           {/* MODE 1: AI vs AI */}
           {mode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
-              <button
-                onClick={handleAIDebate}
-                disabled={loading || round > maxRounds}
-              >
+              <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
                 {loading
                   ? "Loading..."
                   : round > maxRounds
@@ -397,10 +383,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
             <>
               {!userSide && (
                 <div style={{ marginBottom: "1rem" }}>
-                  <button
-                    onClick={() => handleChooseSide("pro")}
-                    style={{ marginRight: "0.5rem" }}
-                  >
+                  <button onClick={() => handleChooseSide("pro")} style={{ marginRight: "0.5rem" }}>
                     Argue Pro (User First)
                   </button>
                   <button onClick={() => handleChooseSide("con")}>
@@ -437,10 +420,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                       {loading ? "Loading..." : "Send & Get AI Reply"}
                     </button>
                     {userSide === "con" && (
-                      <button
-                        onClick={handleUserVsAISubmitAndEnd}
-                        disabled={loading || !userInput.trim()}
-                      >
+                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()}>
                         Send & End (No AI Reply)
                       </button>
                     )}
@@ -476,10 +456,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate }) {
                   }
                 }}
               />
-              <button
-                onClick={handleUserVsUser}
-                disabled={loading || !userInput.trim()}
-              >
+              <button onClick={handleUserVsUser} disabled={loading || !userInput.trim()}>
                 Send ({userVsUserSide === "pro" ? "Pro" : "Con"})
               </button>
             </div>

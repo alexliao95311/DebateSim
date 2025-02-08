@@ -5,7 +5,7 @@ import html2pdf from "html2pdf.js";
 import { getAIJudgeFeedback, saveTranscript } from "../api";
 import "./Judge.css";
 
-function Judge({ transcript, topic, mode }) {
+function Judge({ transcript, topic, mode, judgeModel }) {
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -69,11 +69,7 @@ function Judge({ transcript, topic, mode }) {
             pdfObj.setTextColor(150);
             const pageWidth = pdfObj.internal.pageSize.getWidth();
             const pageHeight = pdfObj.internal.pageSize.getHeight();
-            pdfObj.text(
-              `Page ${i} of ${totalPages}`,
-              pageWidth - 60,
-              pageHeight - 10
-            );
+            pdfObj.text(`Page ${i} of ${totalPages}`, pageWidth - 60, pageHeight - 10);
           }
         })
         .save();
@@ -94,7 +90,6 @@ function Judge({ transcript, topic, mode }) {
         <div className="transcript-section">
           <h2>Debate Transcript</h2>
           <div className="scrollable-content">
-            {/* Updated: Use rehypeRaw so raw HTML (speech blocks) is rendered */}
             <ReactMarkdown rehypePlugins={[rehypeRaw]}>
               {transcript}
             </ReactMarkdown>
@@ -107,9 +102,13 @@ function Judge({ transcript, topic, mode }) {
             {!feedback ? (
               <div className="loading-feedback">Analyzing debate...</div>
             ) : (
-              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                {feedback}
-              </ReactMarkdown>
+              <div className="speech-block">
+                <h3>AI Judge:</h3>
+                <p className="model-info">Model: {judgeModel}</p>
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                  {feedback}
+                </ReactMarkdown>
+              </div>
             )}
           </div>
         </div>
@@ -130,7 +129,11 @@ function Judge({ transcript, topic, mode }) {
           <ReactMarkdown rehypePlugins={[rehypeRaw]}>{transcript}</ReactMarkdown>
           <div className="page-break" />
           <h2>Judge Feedback</h2>
-          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{feedback}</ReactMarkdown>
+          <div className="speech-block">
+            <h3>AI Judge:</h3>
+            <p className="model-info">Model: {judgeModel}</p>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>{feedback}</ReactMarkdown>
+          </div>
         </div>
       </div>
 
