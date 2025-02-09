@@ -1,23 +1,67 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import Login from "./components/Login";
 import Home from "./components/Home";
 import Debate from "./components/Debate";
 import Judge from "./components/Judge";
 
 function App() {
-  const [mode, setMode] = useState(""); // Debate mode
-  const [topic, setTopic] = useState(""); // Debate topic
-  const [transcript, setTranscript] = useState(""); // Full transcript
-  const [showJudge, setShowJudge] = useState(false); // Toggle judging view
+  const [mode, setMode] = useState("");
+  const [topic, setTopic] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const [showJudge, setShowJudge] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [judgeModel, setJudgeModel] = useState(
+    "mistralai/mistral-small-24b-instruct-2501"
+  );
 
-  // Lift judgeModel state so it’s available to both Debate and Judge
-  const [judgeModel, setJudgeModel] = useState("mistralai/mistral-small-24b-instruct-2501");
+  const auth = getAuth();
 
-  const handleEndDebate = () => setShowJudge(true); // End debate and show judging
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  const handleEndDebate = () => setShowJudge(true);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setMode("");
+      setTopic("");
+      setTranscript("");
+      setShowJudge(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={setUser} />;
+  }
 
   return (
     <div>
       {!mode ? (
-        <Home setMode={setMode} setTopic={setTopic} />
+        <Home 
+          user={user} 
+          setMode={setMode} 
+          setTopic={setTopic} 
+          onLogout={handleLogout} 
+        />
       ) : !showJudge ? (
         <Debate
           mode={mode}
