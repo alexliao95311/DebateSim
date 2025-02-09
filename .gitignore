@@ -11,3 +11,6 @@ __pycache__/
 
 # Ignore .gradio
 .gradio/
+
+#ignore firebase files
+/frontend/src/firebase/firebaseConfig.js
