@@ -58,13 +58,6 @@ function Home({ setMode, setTopic, user, onLogout }) {
         <div className="header-content">
           <h1>DebateSim</h1>
           <div className="user-section">
-            {user?.photoURL && (
-              <img 
-                src={user.photoURL} 
-                alt="Profile" 
-                className="profile-image"
-              />
-            )}
             <span className="username">{user?.displayName}</span>
             <button className="logout-button" onClick={handleLogout}>
               Logout

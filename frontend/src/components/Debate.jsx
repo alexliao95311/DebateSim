@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 
 import { generateAIResponse } from "../api";
+import { saveTranscriptToUser } from "../firebase/saveTranscript"; // NEW: import our transcript saving helper
 import "./Debate.css";
 
 const modelOptions = [
@@ -85,6 +86,22 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
     }
   };
 
+  // NEW: A wrapper function that saves the transcript before ending the debate.
+  const handleEndDebate = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      //await saveTranscriptToUser(transcript);
+      //console.log("Transcript saved successfully! (not - Debate.jsx)");
+    } catch (err) {
+      console.error("Error saving transcript:", err);
+      setError("Failed to save transcript.");
+    } finally {
+      setLoading(false);
+      endDebate(); // Call the original endDebate prop (e.g., to clear state or redirect)
+    }
+  };
+
   // =================== MODE 1: AI vs AI ===================
   const handleAIDebate = async () => {
     if (round > maxRounds) return;
@@ -135,7 +152,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
         setRound((prev) => prev + 1);
 
         if (round === maxRounds) {
-          endDebate();
+          // Instead of directly calling endDebate, call our wrapper to save transcript first.
+          await handleEndDebate();
+          return; // Exit early if debate ended.
         }
       }
 
@@ -235,7 +254,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
       setUserInput("");
       setRound((prev) => prev + 1);
 
-      endDebate();
+      // Save transcript then end debate.
+      await handleEndDebate();
     } catch (err) {
       setError("Failed to send final user argument.");
     } finally {
@@ -465,7 +485,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && <p>Loading AI response...</p>}
 
-          <button onClick={endDebate} style={{ marginTop: "1rem" }} disabled={loading}>
+          {/* Use our new handler to save the transcript before ending the debate */}
+          <button onClick={handleEndDebate} style={{ marginTop: "1rem" }} disabled={loading}>
             End Debate
           </button>
         </div>

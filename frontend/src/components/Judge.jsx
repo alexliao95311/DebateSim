@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import html2pdf from "html2pdf.js";
-import { getAIJudgeFeedback, saveTranscript } from "../api";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { auth } from "../firebase/firebaseConfig"; // adjust the path as needed
+import { getAIJudgeFeedback } from "../api";
 import "./Judge.css";
 
 function Judge({ transcript, topic, mode, judgeModel }) {
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [timestamp] = useState(() => new Date().toLocaleString());
 
@@ -26,13 +29,56 @@ function Judge({ transcript, topic, mode, judgeModel }) {
     fetchFeedback();
   }, [transcript]);
 
+  // Automatically save after feedback is rendered by waiting briefly.
+  useEffect(() => {
+    if (feedback && !saved && !saving) {
+      // Delay the save to ensure that feedback is rendered in the UI.
+      const timer = setTimeout(() => {
+        handleSaveTranscript();
+      }, 100); // 100ms delay
+      return () => clearTimeout(timer);
+    }
+  }, [feedback, saved, saving]);
+
   const handleSaveTranscript = async () => {
+    // If feedback is not available or already saved, exit.
+    if (!feedback || saved) return;
+
     setSaving(true);
     setError("");
     try {
-      const message = await saveTranscript(transcript, topic, mode, feedback);
-      alert(message);
+      // Combine debate transcript with judge feedback.
+      const combinedTranscript =
+        transcript +
+        "\n<hr class='divider' />\n" +
+        `<div class="judge-feedback">
+          <h3>AI Judge Feedback:</h3>
+          <p class="model-info">Model: ${judgeModel}</p>
+          ${feedback}
+        </div>`;
+
+      // Ensure the user is logged in.
+      const user = auth.currentUser;
+      if (!user) {
+        setError("User is not logged in!");
+        setSaving(false);
+        return;
+      }
+      
+      // Save the combined transcript to the user's transcripts subcollection.
+      const db = getFirestore();
+      const transcriptsRef = collection(db, "users", user.uid, "transcripts");
+      
+      await addDoc(transcriptsRef, {
+        transcript: combinedTranscript,
+        topic: topic,
+        mode: mode,
+        createdAt: new Date().toISOString()
+      });
+      console.log("Transcript saved automatically!");
+      setSaved(true);
     } catch (err) {
+      console.error("Error saving transcript:", err);
       setError("Failed to save transcript. Please try again.");
     } finally {
       setSaving(false);
@@ -48,11 +94,7 @@ function Judge({ transcript, topic, mode, judgeModel }) {
         filename: `debate_${Date.now()}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2 },
-        jsPDF: {
-          unit: "in",
-          format: "letter",
-          orientation: "portrait"
-        },
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
         pagebreak: { mode: ["avoid-all", "css"] }
       };
 
@@ -120,19 +162,25 @@ function Judge({ transcript, topic, mode, judgeModel }) {
           <p style={{ fontStyle: "italic", color: "#555" }}>
             Generated on: {timestamp}
           </p>
-          <h1 style={{ textAlign: "center", marginTop: 0 }}>Debate Transcript</h1>
+          <h1 style={{ textAlign: "center", marginTop: 0 }}>
+            Debate Transcript
+          </h1>
           <hr />
           <h2>Topic: {topic}</h2>
           <h3>Mode: {mode}</h3>
           <div className="page-break" />
           <h2>Debate Content</h2>
-          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{transcript}</ReactMarkdown>
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+            {transcript}
+          </ReactMarkdown>
           <div className="page-break" />
           <h2>Judge Feedback</h2>
           <div className="speech-block">
             <h3>AI Judge:</h3>
             <p className="model-info">Model: {judgeModel}</p>
-            <ReactMarkdown rehypePlugins={[rehypeRaw]}>{feedback}</ReactMarkdown>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+              {feedback}
+            </ReactMarkdown>
           </div>
         </div>
       </div>
@@ -140,9 +188,6 @@ function Judge({ transcript, topic, mode, judgeModel }) {
       {/* ===== Error & Buttons ===== */}
       {error && <p className="error-text">{error}</p>}
       <div className="button-group">
-        <button onClick={handleSaveTranscript} disabled={saving}>
-          {saving ? "Saving..." : "Save to Server"}
-        </button>
         <button onClick={handleDownloadPDF}>Download as PDF</button>
         <button onClick={handleBackToHome}>Back to Home</button>
       </div>
