@@ -337,3 +337,65 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Footer Styles */
+.home-footer {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
+  padding: 1rem;
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  border-top: 1px solid #ccc;
+  z-index: 1000;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4a90e2;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.github-link:hover {
+  text-decoration: underline;
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Sidebar Close Button */
+.sidebar-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+}
+
+/* Modal Close Button */
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333;
+}
