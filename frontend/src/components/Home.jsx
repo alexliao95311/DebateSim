@@ -1,53 +1,73 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getAuth, signOut } from "firebase/auth";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { auth } from "../firebase/firebaseConfig";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import "./Home.css";
 
 function Home({ setMode, setTopic, user, onLogout }) {
   const [selectedMode, setSelectedMode] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
+  // We'll now fetch history from Firestore rather than localStorage.
   const [history, setHistory] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [selectedTranscript, setSelectedTranscript] = useState(null);
   const inputRef = useRef(null);
 
-  // Load saved topics from localStorage when the component mounts.
+  // Fetch saved transcripts from Firestore when the component mounts.
+  useEffect(() => {
+    async function fetchHistory() {
+      if (!user) return;
+      try {
+        const db = getFirestore();
+        const transcriptsRef = collection(db, "users", user.uid, "transcripts");
+        const snapshot = await getDocs(transcriptsRef);
+        const fetchedHistory = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setHistory(fetchedHistory);
+        console.log("Fetched debate history from Firestore:", fetchedHistory);
+      } catch (err) {
+        console.error("Error fetching debate history:", err);
+      }
+    }
+    fetchHistory();
+  }, [user]);
+
+  // Optional: Also load suggestions from localStorage if desired.
   useEffect(() => {
     try {
-      const storedHistory = JSON.parse(localStorage.getItem("debateHistory"));
-      if (storedHistory && Array.isArray(storedHistory)) {
-        setHistory(storedHistory);
-        console.log("Loaded debateHistory:", storedHistory);
+      const storedSuggestions = JSON.parse(localStorage.getItem("debateHistory"));
+      if (storedSuggestions && Array.isArray(storedSuggestions)) {
+        // For suggestions, we assume an array of topics.
+        // You might merge these with the Firestore history if needed.
+        console.log("Loaded debate suggestions from localStorage:", storedSuggestions);
       } else {
-        console.log("No debateHistory found in localStorage.");
+        console.log("No debate suggestions found in localStorage.");
       }
     } catch (err) {
-      console.error("Error loading debateHistory from localStorage:", err);
+      console.error("Error loading debate suggestions from localStorage:", err);
     }
   }, []);
-
-  // Save topics to localStorage whenever history changes.
-  useEffect(() => {
-    localStorage.setItem("debateHistory", JSON.stringify(history));
-    console.log("Updated debateHistory in localStorage:", history);
-  }, [history]);
 
   const handleStart = () => {
     if (!selectedMode || !debateTopic) {
       alert("Please select a mode and enter a topic.");
       return;
     }
-    // Save topic to history if not already there.
-    if (!history.includes(debateTopic)) {
-      setHistory((prevHistory) => [...prevHistory, debateTopic]);
-    }
+    // Optionally, update localStorage history as a fallback.
+    // (If you want to track suggestions locally in addition to Firestore history.)
     setMode(selectedMode);
     setTopic(debateTopic);
   };
 
   const handleLogout = () => {
-    const auth = getAuth();
-    signOut(auth)
+    signOut(getAuth())
       .then(() => {
-        onLogout(); // Inform parent component that user has logged out.
+        onLogout();
       })
       .catch((err) => console.error("Logout error:", err));
   };
@@ -56,6 +76,13 @@ function Home({ setMode, setTopic, user, onLogout }) {
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
+          {/* History toggle button in the top left */}
+          <button
+            className="history-toggle"
+            onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+          >
+            History
+          </button>
           <h1>DebateSim</h1>
           <div className="user-section">
             <span className="username">{user?.displayName}</span>
@@ -67,9 +94,7 @@ function Home({ setMode, setTopic, user, onLogout }) {
       </header>
 
       <div className="home-content">
-        {/* Big welcome text */}
         <h1 className="welcome-message">Welcome, {user?.displayName}</h1>
-
         <h2>Select a Mode</h2>
         <div className="mode-buttons">
           <button
@@ -91,7 +116,7 @@ function Home({ setMode, setTopic, user, onLogout }) {
             User vs User
           </button>
         </div>
-        
+
         <h2>Enter Debate Topic</h2>
         <div className="input-container">
           <input
@@ -110,15 +135,15 @@ function Home({ setMode, setTopic, user, onLogout }) {
           )}
           {showSuggestions && history.length > 0 && (
             <ul className="suggestions-list">
-              {history.map((topic, index) => (
+              {history.map((item) => (
                 <li
-                  key={index}
+                  key={item.id}
                   onMouseDown={() => {
-                    setDebateTopic(topic);
+                    setDebateTopic(item.topic);
                     setShowSuggestions(false);
                   }}
                 >
-                  {topic}
+                  {item.topic}
                 </li>
               ))}
             </ul>
@@ -126,6 +151,47 @@ function Home({ setMode, setTopic, user, onLogout }) {
         </div>
       </div>
       <button onClick={handleStart}>Start Debate</button>
+
+      {/* History Sidebar */}
+      {showHistorySidebar && (
+        <div className="history-sidebar">
+          <h2>Debate History</h2>
+          <ul>
+            {history.length > 0 ? (
+              history.map((item) => (
+                <li
+                  key={item.id}
+                  onClick={() => {
+                    setSelectedTranscript(item);
+                    setShowHistorySidebar(false);
+                  }}
+                >
+                  {item.topic}{" "}
+                  {item.createdAt && `- ${new Date(item.createdAt).toLocaleDateString()}`}
+                </li>
+              ))
+            ) : (
+              <li>No history available</li>
+            )}
+          </ul>
+          <button onClick={() => setShowHistorySidebar(false)}>Close</button>
+        </div>
+      )}
+
+      {/* History Modal: Display saved transcript when an item is selected */}
+      {selectedTranscript && (
+        <div className="history-modal">
+          <div className="modal-content">
+            <h2>{selectedTranscript.topic}</h2>
+            <div className="transcript-viewer">
+              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                {selectedTranscript.transcript}
+              </ReactMarkdown>
+            </div>
+            <button onClick={() => setSelectedTranscript(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
