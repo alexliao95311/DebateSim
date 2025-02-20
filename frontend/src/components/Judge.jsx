@@ -44,6 +44,15 @@ function Judge({ transcript, topic, mode, judgeModel }) {
     // If feedback is not available or already saved, exit.
     if (!feedback || saved) return;
 
+    // Get the current user.
+    const currentUser = auth.currentUser;
+    // Skip saving if no user or if guest.
+    if (!currentUser || (currentUser.isGuest || currentUser.uid === "guest")) {
+      console.log("Guest user or no user detected; skipping save.");
+      setSaved(true);
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
@@ -57,17 +66,8 @@ function Judge({ transcript, topic, mode, judgeModel }) {
           ${feedback}
         </div>`;
 
-      // Ensure the user is logged in.
-      const user = auth.currentUser;
-      if (!user) {
-        setError("User is not logged in!");
-        setSaving(false);
-        return;
-      }
-      
-      // Save the combined transcript to the user's transcripts subcollection.
       const db = getFirestore();
-      const transcriptsRef = collection(db, "users", user.uid, "transcripts");
+      const transcriptsRef = collection(db, "users", currentUser.uid, "transcripts");
       
       await addDoc(transcriptsRef, {
         transcript: combinedTranscript,
@@ -122,7 +122,14 @@ function Judge({ transcript, topic, mode, judgeModel }) {
   };
 
   const handleBackToHome = () => {
-    window.location.href = "/";
+    const currentUser = auth.currentUser;
+    if (currentUser && (currentUser.isGuest || currentUser.uid === "guest")) {
+      // Redirect to guest home page
+      window.location.href = "/guest";
+    } else {
+      // Redirect to regular home page
+      window.location.href = "/";
+    }
   };
 
   return (

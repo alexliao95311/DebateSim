@@ -9,17 +9,17 @@ import "./Home.css";
 function Home({ setMode, setTopic, user, onLogout }) {
   const [selectedMode, setSelectedMode] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
-  // We'll now fetch history from Firestore rather than localStorage.
+  // We'll now fetch history from Firestore (only for non-guest users).
   const [history, setHistory] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedTranscript, setSelectedTranscript] = useState(null);
   const inputRef = useRef(null);
 
-  // Fetch saved transcripts from Firestore when the component mounts.
+  // Fetch saved transcripts from Firestore only if user is not a guest.
   useEffect(() => {
     async function fetchHistory() {
-      if (!user) return;
+      if (!user || user.isGuest) return; // Skip history for guest users.
       try {
         const db = getFirestore();
         const transcriptsRef = collection(db, "users", user.uid, "transcripts");
@@ -42,8 +42,6 @@ function Home({ setMode, setTopic, user, onLogout }) {
     try {
       const storedSuggestions = JSON.parse(localStorage.getItem("debateHistory"));
       if (storedSuggestions && Array.isArray(storedSuggestions)) {
-        // For suggestions, we assume an array of topics.
-        // You might merge these with the Firestore history if needed.
         console.log("Loaded debate suggestions from localStorage:", storedSuggestions);
       } else {
         console.log("No debate suggestions found in localStorage.");
@@ -58,8 +56,6 @@ function Home({ setMode, setTopic, user, onLogout }) {
       alert("Please select a mode and enter a topic.");
       return;
     }
-    // Optionally, update localStorage history as a fallback.
-    // (If you want to track suggestions locally in addition to Firestore history.)
     setMode(selectedMode);
     setTopic(debateTopic);
   };

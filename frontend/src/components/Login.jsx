@@ -21,11 +21,21 @@ function Login({ onLogin }) {
     }
   };
 
+  const handleGuestLogin = () => {
+    // Create a guest user object with a flag that indicates no history should be saved.
+    const guestUser = {
+      displayName: "Guest",
+      uid: "guest", // Using a constant UID for guest users.
+      isGuest: true,
+    };
+    onLogin(guestUser);
+  };
+
   return (
     <div className="home-container">
       <div className="login-content">
         <h1>Welcome to DebateSim</h1>
-        <p>Sign in to start debating</p>
+        <p>AI-Powered Debate Simulation</p>
         {error && <p className="error">{error}</p>}
         <button 
           className="login-button" 
@@ -33,6 +43,13 @@ function Login({ onLogin }) {
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign in with Google"}
+        </button>
+        <button 
+          className="login-button guest-button" 
+          onClick={handleGuestLogin}
+          disabled={loading}
+        >
+          Continue as Guest
         </button>
       </div>
     </div>
