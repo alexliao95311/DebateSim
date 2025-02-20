@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getAuth, signOut } from "firebase/auth";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { auth } from "../firebase/firebaseConfig";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -9,21 +9,23 @@ import "./Home.css";
 function Home({ setMode, setTopic, user, onLogout }) {
   const [selectedMode, setSelectedMode] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
-  // We'll now fetch history from Firestore (only for non-guest users).
+  // We'll now fetch history from Firestore rather than localStorage.
   const [history, setHistory] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedTranscript, setSelectedTranscript] = useState(null);
   const inputRef = useRef(null);
 
-  // Fetch saved transcripts from Firestore only if user is not a guest.
+  // Fetch saved transcripts from Firestore whenever the sidebar is opened,
+  // ordering by createdAt descending so the most recent appears at the top.
   useEffect(() => {
     async function fetchHistory() {
       if (!user || user.isGuest) return; // Skip history for guest users.
       try {
         const db = getFirestore();
         const transcriptsRef = collection(db, "users", user.uid, "transcripts");
-        const snapshot = await getDocs(transcriptsRef);
+        const q = query(transcriptsRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
         const fetchedHistory = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -34,8 +36,10 @@ function Home({ setMode, setTopic, user, onLogout }) {
         console.error("Error fetching debate history:", err);
       }
     }
-    fetchHistory();
-  }, [user]);
+    if (showHistorySidebar) {
+      fetchHistory();
+    }
+  }, [showHistorySidebar, user]);
 
   // Optional: Also load suggestions from localStorage if desired.
   useEffect(() => {
