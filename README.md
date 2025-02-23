@@ -66,4 +66,4 @@ To run indefinitely:
 Ready to dive into the debate? Start with DebateSim and experience the power of AI in argumentation!
 
 
-test auto update
+test auto update 1
