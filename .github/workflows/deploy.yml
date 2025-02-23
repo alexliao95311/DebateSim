@@ -1,13 +1,12 @@
-name: Deploy to VM
+name: Deploy to Azure VM
 
 on:
   push:
     branches:
-      - main  # Change if using a different branch
+      - main  # Change if your main branch is different
 
 jobs:
   deploy:
-    name: Deploy to VM
     runs-on: ubuntu-latest
 
     steps:
@@ -19,23 +18,32 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VM_SSH_KEY }}
 
-      - name: Deploy Code to VM
+      - name: Deploy to VM
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-            cd ${{ secrets.DEPLOY_DIR }}
+            set -e  # Stop execution if any command fails
+
+            echo "🚀 Pulling latest changes..."
+            cd /home/${{ secrets.VM_USER }}/DebateSim
             git pull origin main
-            source .venv/bin/activate  # Activate virtual environment
-            pip install -r requirements.txt  # Install dependencies
-            sudo systemctl restart debatesim  # Restart the application
-          EOF
-      - name: Set Up Virtual Environment
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-            cd ${{ secrets.DEPLOY_DIR }}
-            if [ ! -d ".venv" ]; then
-              python3 -m venv .venv
-            fi
+
+            echo "🔄 Restarting Backend..."
             source .venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt --break-system-packages
+            BACKEND_PID=\$(sudo netstat -tulnp | grep 5000 | awk '{print \$7}' | cut -d'/' -f1)
+            if [ -n "\$BACKEND_PID" ]; then
+              sudo kill -9 \$BACKEND_PID
+            fi
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 > backend.log 2>&1 &
+
+            echo "🛠 Rebuilding Frontend..."
+            cd frontend
+            FRONTEND_PID=\$(sudo netstat -tulnp | grep 3000 | awk '{print \$7}' | cut -d'/' -f1)
+            if [ -n "\$FRONTEND_PID" ]; then
+              sudo kill -9 \$FRONTEND_PID
+            fi
+            npm install  # Ensure dependencies are up to date
+            npm run build
+            nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 & disown
+
+            echo "✅ Deployment Completed!"
           EOF
