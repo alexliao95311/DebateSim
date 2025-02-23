@@ -197,36 +197,18 @@ function Home({ setMode, setTopic, user, onLogout }) {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-content">
-          <a
-            href="https://github.com/alexliao95311/DebateSim"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="github-link"
-          >
-            <svg className="github-icon" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M12,0.5C5.65,0.5,0.5,5.65,0.5,12c0,5.08,3.29,9.39,7.85,10.93
-                c0.57,0.1,0.78-0.25,0.78-0.56c0-0.28-0.01-1.02-0.02-2c-3.19,0.69-3.86-1.54-3.86-1.54
-                c-0.52-1.33-1.27-1.69-1.27-1.69c-1.04-0.71,0.08-0.7,0.08-0.7c1.15,0.08,1.75,1.18,1.75,1.18
-                c1.02,1.75,2.68,1.24,3.33,0.95c0.1-0.74,0.4-1.24,0.73-1.52c-2.55-0.29-5.23-1.28-5.23-5.7
-                c0-1.26,0.45-2.29,1.18-3.1c-0.12-0.29-0.51-1.46,0.11-3.04c0,0,0.96-0.31,3.15,1.18
-                c0.91-0.25,1.88-0.38,2.85-0.38c0.97,0,1.94,0.13,2.85,0.38
-                c2.19-1.49,3.15-1.18,3.15-1.18
-                c0.62,1.58,0.23,2.75,0.11,3.04c0.73,0.81,1.18,1.84,1.18,3.1
-                c0,4.43-2.69,5.41-5.25,5.69
-                c0.41,0.36,0.77,1.1,0.77,2.22c0,1.6-0.01,2.89-0.01,3.29c0,0.31,0.21,0.67,0.79,0.56
-                C20.71,21.39,24,17.08,24,12C24,5.65,18.85,0.5,12,0.5z"
-              />
-            </svg>
-            GitHub
-          </a>
-          <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
-        </div>
-      </footer>
+      {/* Bottom Text */}
+        <div className="bottom-text">
+        <a
+          href="https://github.com/alexliao95311/DebateSim"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="github-link"
+        >
+          GitHub
+        </a>
+        <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+      </div>
     </div>
   );
 }
