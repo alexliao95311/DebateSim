@@ -1,7 +1,9 @@
 import axios from "axios";
 
 // Adjust the URL if using a custom port or domain
-const API_URL = "http://127.0.0.1:8000";
+// Use the environment variable; default to local URL if not set
+const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+export default API_URL;
 
 export const generateAIResponse = async (debater, prompt, model) => {
   try {
