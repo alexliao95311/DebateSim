@@ -207,7 +207,7 @@ function Home({ setMode, setTopic, user, onLogout }) {
         >
           GitHub
         </a>
-        <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+        <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved. Easter Egg</span>
       </div>
     </div>
   );
