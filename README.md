@@ -35,13 +35,13 @@ DebateSim is an innovative website designed to simulate debate scenarios using a
 # Virtual Machine
 1. Log into VM: `ssh azureuser@20.3.246.40`
 2. Set up python venv: `source ./venv/bin/activate`
-3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
+3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5001 --reload`
 4. Move to frontend directory: `cd frontend`
 5. Build frontend: `npm run build`
 6. Run frontend: `npx serve -s dist -l 3000 --no-clipboard --single`
 
 To run indefinitely: 
-- Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
+- Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5001 --reload > backend.log 2>&1 &`
 - Frontend: `nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 & disown`
 
 *Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
