@@ -1,0 +1,30 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - main  # Change if using a different branch
+
+jobs:
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH Connection
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.VM_SSH_KEY }}
+
+      - name: Deploy Code to VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            cd ${{ secrets.DEPLOY_DIR }}
+            git pull origin main
+            source .venv/bin/activate  # Activate virtual environment
+            pip install -r requirements.txt  # Install dependencies
+            sudo systemctl restart debatesim  # Restart the application
+          EOF
