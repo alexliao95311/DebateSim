@@ -98,7 +98,7 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
             " - A concise summary of each debater's main arguments.\n"
             " - An assessment of the strengths and weaknesses in each debater's arguments.\n"
             " - A clear decision on which debater performed better, supported by logical reasoning.\n"
-            "Ensure your judgement is fair and based solely on the transcript provided."
+            "Ensure your judgement is fair and based solely on the transcript provided. Do not use bullet points or numbered lists, organize your response in paragraphs with headers. "
         )
         user_message = f"Debate Transcript:\n{prompt}"
         messages = [
