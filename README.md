@@ -58,6 +58,13 @@ To run indefinitely:
 [AI Debater 2]: Rebuttal...
 5.	Review judge feedback: [AI Judge] - Based on logical coherence, evidence, and rhetorical skill...
 
+# Contributing 
+1. Make a new branch `git checkout -b branch-name` (replace branch-name with the name of the branch such as the feature you made)
+2. `git add .`
+3. `git commit -m "your commit message"`
+4. `git push origin branch-name`
+5. Go to GitHub, click pull requests, new pull request, create one
+
 # Acknowledgments
 - **OpenAI**: For providing the foundational AI capabilities.
 - **Debate Organizations**: For inspiration in structuring the debate formats.
