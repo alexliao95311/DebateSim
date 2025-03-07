@@ -64,6 +64,7 @@ To run indefinitely:
 3. `git commit -m "your commit message"`
 4. `git push origin branch-name`
 5. Go to GitHub, click pull requests, new pull request, create one
+6. Once your pull request is reviewed + merged, the branch will be deleted. The next time you work on the project, go back to the main branch with `git checkout main` and run `git pull`
 
 # Acknowledgments
 - **OpenAI**: For providing the foundational AI capabilities.
