@@ -61,7 +61,11 @@ To run indefinitely:
 # Contributing 
 1. Make a new branch `git checkout -b branch-name` (replace branch-name with the name of the branch such as the feature you made)
 2. `git add .`
-3. `git commit -m "your commit message"`
+3. `git commit`
+    - 3a. type `i` in the termainl to enter insert mode 
+    - 3b. on the first line type your commit message (be specific)
+    - 3c. on the second line type `close #xxx` where xxx is the issue number
+    - 3d. type `:wq` then enter to exit out
 4. `git push origin branch-name`
 5. Go to GitHub, click pull requests, new pull request, create one
 6. Once your pull request is reviewed + merged, the branch will be deleted. The next time you work on the project, go back to the main branch with `git checkout main` and run `git pull`
