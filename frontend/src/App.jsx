@@ -5,7 +5,8 @@ import Login from "./components/Login";
 import Home from "./components/Home";
 import DebateSim from "./components/DebateSim";
 import Debate from "./components/Debate";
-import Judge from "./components/Judge"; // Import Judge
+import Judge from "./components/Judge";
+import Legislation from "./components/Legislation";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -47,7 +48,8 @@ function App() {
             <Route path="/" element={<Home user={user} onLogout={handleLogout} />} />
             <Route path="/debatesim" element={<DebateSim user={user} />} />
             <Route path="/debate" element={<Debate />} />
-            <Route path="/judge" element={<Judge />} /> {/* New Judge route */}
+            <Route path="/judge" element={<Judge />} />
+            <Route path="/legislation" element={<Legislation />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
