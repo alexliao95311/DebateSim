@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-
+import { useLocation, useNavigate } from "react-router-dom";
 import { generateAIResponse } from "../api";
-import { saveTranscriptToUser } from "../firebase/saveTranscript"; // NEW: import our transcript saving helper
-import "./Debate.css";
+import { saveTranscriptToUser } from "../firebase/saveTranscript"; // Import transcript-saving helper
+import "./Debate.css"; 
+
 
 const modelOptions = [
   "anthropic/claude-3.5-sonnet",
@@ -14,65 +15,60 @@ const modelOptions = [
   "mistralai/mistral-small-24b-instruct-2501"
 ];
 
-/** Escape < and > so user-supplied HTML doesn't break layout. */
 function sanitizeUserInput(str) {
   return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel, setJudgeModel }) {
-  // Common state
+function Debate() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { mode, topic } = location.state || {};
+  if (!mode || !topic) {
+    navigate("/debatesim");
+    return null;
+  }
+
+  // =================== State Variables ===================
+  const [transcript, setTranscript] = useState("");
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Sidebar navigation
+  const [judgeModel, setJudgeModel] = useState(modelOptions[4]);
   const [speechList, setSpeechList] = useState([]);
-  // NEW: Toggle sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
-  // Max rounds for AI vs AI
-  const maxRounds = 5;
-
-  // Model selection for AI sides (judgeModel is now passed in via props)
+  // Debate Models
   const [proModel, setProModel] = useState(modelOptions[4]);
   const [conModel, setConModel] = useState(modelOptions[4]);
   const [singleAIModel, setSingleAIModel] = useState(modelOptions[4]);
 
-  // Mode-specific states
-  const [aiSide, setAiSide] = useState("pro"); // Mode 1
-  const [userSide, setUserSide] = useState(""); // Mode 2
-  const [userVsUserSide, setUserVsUserSide] = useState("pro"); // Mode 3
+  // Mode-Specific States
+  const [aiSide, setAiSide] = useState("pro"); // For AI vs AI
+  const [userSide, setUserSide] = useState("");  // For AI vs User
+  const [userVsUserSide, setUserVsUserSide] = useState("pro"); // For User vs User
 
-  // Insert divider <hr> if transcript isn’t empty
+  // =================== Helper Functions ===================
   const appendDivider = (currentTranscript) =>
     currentTranscript.trim() !== ""
       ? currentTranscript + "\n<hr class='divider' />\n"
       : currentTranscript;
 
-  /**
-   * Create a speech block as raw HTML.
-   */
-  const addSpeechBlock = (title, content, modelName) => {
-    const newId = `speech-${speechList.length + 1}`;
-    setSpeechList((prevList) => [...prevList, { id: newId, title }]);
-
-    const isUserSpeech = title.toLowerCase().includes("(user");
-    const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
-
-    const maybeModel = (!isUserSpeech && modelName)
-      ? `<p class="model-info">Model: ${modelName}</p>`
-      : "";
-
-    return `
-<div id="${newId}" class="speech-block">
-  <h3>${title}:</h3>
-  ${maybeModel}
-  ${safeContent}
-</div>
-`;
-  };
-
+    const addSpeechBlock = (title, content, modelName) => {
+      const newId = `speech-${speechList.length + 1}`;
+      setSpeechList(prevList => [...prevList, { id: newId, title }]);
+      const isUserSpeech = title.toLowerCase().includes("(user");
+      const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
+      const maybeModel = (!isUserSpeech && modelName)
+        ? `<p class="model-info">Model: ${modelName}</p>`
+        : "";
+      return `<div id="${newId}" class="speech-block">
+    <h3>${title}:</h3>
+    ${maybeModel}
+    ${safeContent}
+    </div>`;
+    };
+  
   const scrollToSpeech = (id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -80,26 +76,28 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
     }
   };
 
+  // =================== End Debate ===================
+  // Now redirects to Judge.jsx with the debate transcript and other info.
   const handleEndDebate = async () => {
     setLoading(true);
     setError("");
     try {
-      //await saveTranscriptToUser(transcript);
+      await saveTranscriptToUser(transcript);
+      navigate("/judge", { state: { transcript, topic, mode, judgeModel } });
     } catch (err) {
       console.error("Error saving transcript:", err);
       setError("Failed to save transcript.");
     } finally {
       setLoading(false);
-      endDebate();
     }
   };
 
   // =================== MODE 1: AI vs AI ===================
+  const maxRounds = 5;
   const handleAIDebate = async () => {
     if (round > maxRounds) return;
     setLoading(true);
     setError("");
-
     try {
       let newTranscript = transcript.trim();
       const lines = newTranscript.split("\n");
@@ -110,7 +108,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
           break;
         }
       }
-
       if (aiSide === "pro") {
         const proPrompt = `
           Debate topic: "${topic}"
@@ -142,13 +139,11 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
         );
         setAiSide("pro");
         setRound((prev) => prev + 1);
-
         if (round === maxRounds) {
           await handleEndDebate();
           return;
         }
       }
-
       setTranscript(newTranscript);
     } catch (err) {
       setError("Failed to fetch AI response for AI vs AI mode.");
@@ -161,7 +156,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
-
     if (side === "con") {
       setLoading(true);
       try {
@@ -190,7 +184,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
     if (!userInput.trim()) return;
     setLoading(true);
     setError("");
-
     try {
       let newTranscript = transcript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
@@ -199,18 +192,13 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
       setTranscript(newTranscript);
       setUserInput("");
       setRound((prev) => prev + 1);
-
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
       const prompt = `
         You are an AI debater on the ${aiSideLocal} side, topic: "${topic}".
         The user just said: "${userInput}"
         Provide a rebuttal from the ${aiSideLocal} perspective.
       `;
-      const aiResponse = await generateAIResponse(
-        `AI Debater (${aiSideLocal})`,
-        prompt,
-        singleAIModel
-      );
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
       newTranscript = appendDivider(newTranscript);
       newTranscript += addSpeechBlock(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setTranscript(newTranscript);
@@ -228,10 +216,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
       return;
     }
     if (!userInput.trim()) return;
-
     setLoading(true);
     setError("");
-
     try {
       let newTranscript = transcript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
@@ -240,7 +226,6 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
       setTranscript(newTranscript);
       setUserInput("");
       setRound((prev) => prev + 1);
-
       await handleEndDebate();
     } catch (err) {
       setError("Failed to send final user argument.");
@@ -252,10 +237,8 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
   // =================== MODE 3: User vs User ===================
   const handleUserVsUser = () => {
     if (!userInput.trim()) return;
-
     let newTranscript = transcript;
     newTranscript = appendDivider(newTranscript);
-
     if (userVsUserSide === "pro") {
       newTranscript += addSpeechBlock("Pro (User 1)", userInput.trim());
       setUserVsUserSide("con");
@@ -263,19 +246,16 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
       newTranscript += addSpeechBlock("Con (User 2)", userInput.trim());
       setUserVsUserSide("pro");
     }
-
     setTranscript(newTranscript);
     setUserInput("");
     setError("");
   };
 
+  // =================== Render JSX ===================
   return (
     <div className="debate-container">
       {/* Sidebar Toggle Button */}
-      <button 
-        className="toggle-sidebar" 
-        onClick={() => setSidebarExpanded(!sidebarExpanded)}
-      >
+      <button className="toggle-sidebar" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
         {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
       </button>
 
@@ -295,7 +275,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
         <div className="debate-content">
           <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
 
-          {/* Model Selection and Debate Transcript... */}
+          {/* Model Selection */}
           <div className="model-selection">
             {mode === "ai-vs-ai" && (
               <>
@@ -319,45 +299,9 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
                     ))}
                   </select>
                 </label>
-                <label>
-                  Judge Model:
-                  <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
-                    {modelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               </>
             )}
-
-            {mode === "ai-vs-user" && (
-              <>
-                <label>
-                  AI Model:
-                  <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
-                    {modelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Judge Model:
-                  <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
-                    {modelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            )}
-
-            {mode === "user-vs-user" && (
+            {mode !== "user-vs-user" && (
               <label>
                 Judge Model:
                 <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
@@ -371,10 +315,12 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
             )}
           </div>
 
+          {/* Debate Transcript */}
           <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
             {transcript}
           </ReactMarkdown>
 
+          {/* Mode 1: AI vs AI */}
           {mode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
@@ -389,6 +335,7 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
             </div>
           )}
 
+          {/* Mode 2: AI vs User */}
           {mode === "ai-vs-user" && (
             <>
               {!userSide && (
@@ -431,12 +378,11 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
             </>
           )}
 
+          {/* Mode 3: User vs User */}
           {mode === "user-vs-user" && (
             <div style={{ marginTop: "1rem" }}>
               <p style={{ fontStyle: "italic" }}>
-                {userVsUserSide === "pro"
-                  ? "It's Pro's turn (User 1)."
-                  : "It's Con's turn (User 2)."}
+                {userVsUserSide === "pro" ? "It's Pro's turn (User 1)." : "It's Con's turn (User 2)."}
               </p>
               <textarea
                 placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
@@ -457,9 +403,11 @@ function Debate({ mode, topic, transcript, setTranscript, endDebate, judgeModel,
             </div>
           )}
 
+          {/* Error & Loading Messages */}
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && <p>Loading AI response...</p>}
 
+          {/* End Debate Button */}
           <button onClick={handleEndDebate} style={{ marginTop: "1rem" }} disabled={loading}>
             End Debate
           </button>
