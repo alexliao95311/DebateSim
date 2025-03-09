@@ -18,10 +18,14 @@ function Home({ user, onLogout }) {
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
-          <h1 className="site-title">
-            Feature Hub
-          </h1>
-          <div className="user-section">
+          {/* Empty left section */}
+          <div className="header-left"></div>
+          
+          <div className="header-center">
+            <h1 className="site-title">Feature Hub</h1>
+          </div>
+          
+          <div className="header-right">
             <span className="username">{user?.displayName}</span>
             <button className="logout-button" onClick={handleLogout}>
               Logout
