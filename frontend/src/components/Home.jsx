@@ -92,64 +92,66 @@ function Home({ setMode, setTopic, user, onLogout }) {
         </div>
       </header>
 
-      <div className="home-content">
-        <h1 className="welcome-message">Welcome, {user?.displayName}</h1>
-        <h2>Select a Mode</h2>
-        <div className="mode-buttons">
-          <button
-            style={selectedMode === "ai-vs-ai" ? { border: "4px solid #4a90e2" } : {}}
-            onClick={() => setSelectedMode("ai-vs-ai")}
-          >
-            AI vs AI
-          </button>
-          <button
-            style={selectedMode === "ai-vs-user" ? { border: "4px solid #4a90e2" } : {}}
-            onClick={() => setSelectedMode("ai-vs-user")}
-          >
-            AI vs User
-          </button>
-          <button
-            style={selectedMode === "user-vs-user" ? { border: "4px solid #4a90e2" } : {}}
-            onClick={() => setSelectedMode("user-vs-user")}
-          >
-            User vs User
-          </button>
-        </div>
-
-        <h2>Enter Debate Topic</h2>
-        <div className="input-container">
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="What's the debate topic?"
-            value={debateTopic}
-            onChange={(e) => setDebateTopic(e.target.value)}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
-          />
-          {debateTopic && (
-            <button className="clear-button" onClick={() => setDebateTopic("")}>
-              &#x2715;
+      <div className="main-content">
+        <div className="home-content">
+          <h1 className="welcome-message">Welcome, {user?.displayName}</h1>
+          <h2>Select a Mode</h2>
+          <div className="mode-buttons">
+            <button
+              style={selectedMode === "ai-vs-ai" ? { border: "4px solid #4a90e2" } : {}}
+              onClick={() => setSelectedMode("ai-vs-ai")}
+            >
+              AI vs AI
             </button>
-          )}
-          {showSuggestions && history.length > 0 && (
-            <ul className="suggestions-list">
-              {history.map((item) => (
-                <li
-                  key={item.id}
-                  onMouseDown={() => {
-                    setDebateTopic(item.topic);
-                    setShowSuggestions(false);
-                  }}
-                >
-                  {item.topic}
-                </li>
-              ))}
-            </ul>
-          )}
+            <button
+              style={selectedMode === "ai-vs-user" ? { border: "4px solid #4a90e2" } : {}}
+              onClick={() => setSelectedMode("ai-vs-user")}
+            >
+              AI vs User
+            </button>
+            <button
+              style={selectedMode === "user-vs-user" ? { border: "4px solid #4a90e2" } : {}}
+              onClick={() => setSelectedMode("user-vs-user")}
+            >
+              User vs User
+            </button>
+          </div>
+
+          <h2>Enter Debate Topic</h2>
+          <div className="input-container">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="What's the debate topic?"
+              value={debateTopic}
+              onChange={(e) => setDebateTopic(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+            />
+            {debateTopic && (
+              <button className="clear-button" onClick={() => setDebateTopic("")}>
+                &#x2715;
+              </button>
+            )}
+            {showSuggestions && history.length > 0 && (
+              <ul className="suggestions-list">
+                {history.map((item) => (
+                  <li
+                    key={item.id}
+                    onMouseDown={() => {
+                      setDebateTopic(item.topic);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    {item.topic}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
+        <button className="start-debate-button" onClick={handleStart}>Start Debate</button>
       </div>
-      <button onClick={handleStart}>Start Debate</button>
 
       {/* History Sidebar (without a close X) */}
       {showHistorySidebar && (
@@ -198,7 +200,7 @@ function Home({ setMode, setTopic, user, onLogout }) {
       )}
 
       {/* Bottom Text */}
-        <div className="bottom-text">
+      <footer className="bottom-text">
         <a
           href="https://github.com/alexliao95311/DebateSim"
           target="_blank"
@@ -208,7 +210,7 @@ function Home({ setMode, setTopic, user, onLogout }) {
           GitHub
         </a>
         <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved. </span>
-      </div>
+      </footer>
     </div>
   );
 }

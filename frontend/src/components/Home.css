@@ -9,6 +9,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start; /* Add this */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Heading styles */
@@ -371,6 +374,9 @@
   font-size: 0.9rem;
   color: #666;
   width: 100%;
+  text-align: center;
+  padding: 1rem;
+  margin-top: auto; /* Ensure footer is at the bottom */
 }
 
 .bottom-text .github-link {
@@ -382,4 +388,16 @@
 
 .bottom-text .github-link:hover {
   text-decoration: underline;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-debate-button {
+  margin-top: 1rem;
 }
