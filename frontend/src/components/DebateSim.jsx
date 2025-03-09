@@ -39,7 +39,6 @@ function DebateSim({ user }) {
     fetchHistory();
   }, [user]);
 
-  // Redirects to Debate.jsx with mode & topic
   const handleStartDebate = () => {
     if (!mode) {
       alert("Please select a debate mode before starting.");
@@ -56,24 +55,35 @@ function DebateSim({ user }) {
       .catch((err) => console.error("Logout error:", err));
   };
 
-  // New function: clicking the header text returns to home.
-  const handleHomeClick = () => {
-    navigate("/");
-  };
-
   return (
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
-          <button className="history-toggle" onClick={() => setShowHistorySidebar(!showHistorySidebar)}>
-            History
-          </button>
-          <h1 onClick={handleHomeClick} style={{ cursor: "pointer" }}>Debate Simulator</h1>
-          <div className="user-section">
-            <span className="username">{user?.displayName}</span>
-            <button className="logout-button" onClick={handleLogout}>
-              Logout
+          {/* LEFT SECTION: History Button */}
+          <div className="header-left">
+            <button
+              className="history-button"
+              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+            >
+              History
             </button>
+          </div>
+
+          {/* CENTER SECTION: Title */}
+          <div className="header-center">
+          <h1 onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+            Debate Simulator
+          </h1>
+          </div>
+
+          {/* RIGHT SECTION: User + Logout */}
+          <div className="header-right">
+            <div className="user-section">
+              <span className="username">{user?.displayName}</span>
+              <button className="logout-button" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -82,13 +92,22 @@ function DebateSim({ user }) {
         <h1 className="welcome-message">Welcome, {user?.displayName}</h1>
         <h2>Select a Debate Mode</h2>
         <div className="mode-buttons">
-          <button className={mode === "ai-vs-ai" ? "selected-mode" : ""} onClick={() => setMode("ai-vs-ai")}>
+          <button
+            className={mode === "ai-vs-ai" ? "selected-mode" : ""}
+            onClick={() => setMode("ai-vs-ai")}
+          >
             AI vs AI
           </button>
-          <button className={mode === "ai-vs-user" ? "selected-mode" : ""} onClick={() => setMode("ai-vs-user")}>
+          <button
+            className={mode === "ai-vs-user" ? "selected-mode" : ""}
+            onClick={() => setMode("ai-vs-user")}
+          >
             AI vs User
           </button>
-          <button className={mode === "user-vs-user" ? "selected-mode" : ""} onClick={() => setMode("user-vs-user")}>
+          <button
+            className={mode === "user-vs-user" ? "selected-mode" : ""}
+            onClick={() => setMode("user-vs-user")}
+          >
             User vs User
           </button>
         </div>
@@ -133,7 +152,12 @@ function DebateSim({ user }) {
       )}
 
       <footer className="bottom-text">
-        <a href="https://github.com/alexliao95311/DebateSim" target="_blank" rel="noopener noreferrer" className="github-link">
+        <a
+          href="https://github.com/alexliao95311/DebateSim"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="github-link"
+        >
           GitHub
         </a>
         <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>

@@ -18,7 +18,7 @@ function Home({ user, onLogout }) {
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
-          <h1 className="site-title" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+          <h1 className="site-title">
             Feature Hub
           </h1>
           <div className="user-section">
