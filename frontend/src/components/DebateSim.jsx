@@ -17,11 +17,13 @@ function DebateSim({ user }) {
   useEffect(() => {
     async function fetchHistory() {
       if (!user || user.isGuest) return;
+
       try {
         const db = getFirestore();
         const transcriptsRef = collection(db, "users", user.uid, "transcripts");
         const q = query(transcriptsRef, orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
+
         if (!snapshot.empty) {
           const fetchedHistory = snapshot.docs.map((doc) => ({
             id: doc.id,
@@ -33,6 +35,7 @@ function DebateSim({ user }) {
         console.error("Error fetching debate history:", err);
       }
     }
+
     fetchHistory();
   }, [user]);
 
@@ -53,7 +56,7 @@ function DebateSim({ user }) {
       .catch((err) => console.error("Logout error:", err));
   };
 
-  // Navigate home
+  // New function: clicking the header text returns to home.
   const handleHomeClick = () => {
     navigate("/");
   };
@@ -62,24 +65,15 @@ function DebateSim({ user }) {
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
-          <div className="header-left">
-            <button className="home-button" onClick={handleHomeClick}>
-              Home
+          <button className="history-toggle" onClick={() => setShowHistorySidebar(!showHistorySidebar)}>
+            History
+          </button>
+          <h1 onClick={handleHomeClick} style={{ cursor: "pointer" }}>Debate Simulator</h1>
+          <div className="user-section">
+            <span className="username">{user?.displayName}</span>
+            <button className="logout-button" onClick={handleLogout}>
+              Logout
             </button>
-          </div>
-          <div className="header-center">
-            <h1>Debate Simulator</h1>
-          </div>
-          <div className="header-right">
-            <button className="history-toggle" onClick={() => setShowHistorySidebar(!showHistorySidebar)}>
-              History
-            </button>
-            <div className="user-section">
-              <span className="username">{user?.displayName}</span>
-              <button className="logout-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
           </div>
         </div>
       </header>
