@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Login from "./components/Login";
 import Home from "./components/Home";
+import DebateSim from "./components/DebateSim";
 import Debate from "./components/Debate";
-import Judge from "./components/Judge";
+import Judge from "./components/Judge"; // Import Judge
 
 function App() {
-  const [mode, setMode] = useState("");
-  const [topic, setTopic] = useState("");
-  const [transcript, setTranscript] = useState("");
-  const [showJudge, setShowJudge] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [judgeModel, setJudgeModel] = useState(
-    "mistralai/mistral-small-24b-instruct-2501"
-  );
-
   const auth = getAuth();
 
   useEffect(() => {
@@ -26,16 +20,10 @@ function App() {
     return () => unsubscribe();
   }, [auth]);
 
-  const handleEndDebate = () => setShowJudge(true);
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
       setUser(null);
-      setMode("");
-      setTopic("");
-      setTranscript("");
-      setShowJudge(false);
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -49,38 +37,22 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <Login onLogin={setUser} />;
-  }
-
   return (
-    <div>
-      {!mode ? (
-        <Home 
-          user={user} 
-          setMode={setMode} 
-          setTopic={setTopic} 
-          onLogout={handleLogout} 
-        />
-      ) : !showJudge ? (
-        <Debate
-          mode={mode}
-          topic={topic}
-          transcript={transcript}
-          setTranscript={setTranscript}
-          judgeModel={judgeModel}
-          setJudgeModel={setJudgeModel}
-          endDebate={handleEndDebate}
-        />
-      ) : (
-        <Judge 
-          transcript={transcript} 
-          topic={topic} 
-          mode={mode} 
-          judgeModel={judgeModel}
-        />
-      )}
-    </div>
+    <Router>
+      <Routes>
+        {!user ? (
+          <Route path="*" element={<Login onLogin={setUser} />} />
+        ) : (
+          <>
+            <Route path="/" element={<Home user={user} onLogout={handleLogout} />} />
+            <Route path="/debatesim" element={<DebateSim user={user} />} />
+            <Route path="/debate" element={<Debate />} />
+            <Route path="/judge" element={<Judge />} /> {/* New Judge route */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </>
+        )}
+      </Routes>
+    </Router>
   );
 }
 
