@@ -2,6 +2,12 @@
 
 DebateSim is an innovative website designed to simulate debate scenarios using artificial intelligence. This tool allows users to explore the dynamics of debates by enabling AI to take on roles such as debaters, judges, or both. Whether you’re a student, coach, or debate enthusiast, DebateSim provides an interactive and educational platform to enhance critical thinking, argumentation, and decision-making skills. 
 
+# Live Demo
+
+https://tinyurl.com/debatesim1
+* It will direct to http://20.3.246.40:3000/
+* Note that some school or library wifi may block websites using IP addresses.
+
 # Features
 - **AI Debaters**: Simulate debates with AI participants capable of representing opposing viewpoints.
 - **AI Judges**: Let the AI evaluate debates based on structured criteria, offering feedback and scoring.
