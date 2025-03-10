@@ -49,7 +49,7 @@ function Home({ user, onLogout }) {
           </div>
           <div className="feature">
             <h3>Bill and Legislation Debate</h3>
-            <a className="feature-link" href="/feature2">
+            <a className="feature-link" href="/legislation">
               Go to Bill and Legislation Debate
             </a>
             <p className="feature-description">
