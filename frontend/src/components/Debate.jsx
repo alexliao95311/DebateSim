@@ -397,6 +397,11 @@ function Debate() {
                         Send & End (No AI Reply)
                       </button>
                     )}
+                    {firstSide === "pro" && userSide === "pro" && (
+                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()}>
+                        Send & End (No AI Reply)
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
