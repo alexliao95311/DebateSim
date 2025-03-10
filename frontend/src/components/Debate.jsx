@@ -55,20 +55,16 @@ function Debate() {
       ? currentTranscript + "\n<hr class='divider' />\n"
       : currentTranscript;
 
-  const addSpeechBlock = (title, content, modelName) => {
-    const newId = `speech-${speechList.length + 1}`;
-    setSpeechList(prevList => [...prevList, { id: newId, title }]);
-    const isUserSpeech = title.toLowerCase().includes("(user");
-    const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
-    const maybeModel = (!isUserSpeech && modelName)
-      ? `<p class="model-info">Model: ${modelName}</p>`
-      : "";
-    return `<div id="${newId}" class="speech-block">
-      <h3>${title}:</h3>
-      ${maybeModel}
-      ${safeContent}
-    </div>`;
-  };
+      const addSpeechBlock = (title, content, modelName) => {
+        const newId = `speech-${speechList.length + 1}`;
+        setSpeechList((prevList) => [...prevList, { id: newId, title }]);
+        const isUserSpeech = title.toLowerCase().includes("(user");
+        const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
+        const maybeModel = (!isUserSpeech && modelName)
+          ? `<p class="model-info">Model: ${modelName}</p>`
+          : "";
+          return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
+      };
 
   const scrollToSpeech = (id) => {
     const el = document.getElementById(id);
