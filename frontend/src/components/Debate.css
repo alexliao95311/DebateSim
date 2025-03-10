@@ -195,3 +195,51 @@ hr.divider {
 .toggle-sidebar:hover {
   background-color: #3a7cd1;
 }
+
+/* ======================== */
+/* 🎛️ AI VS USER UI         */
+/* ======================== */
+.ai-vs-user-order {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.ai-vs-user-order label {
+  font-size: 1rem;
+  color: #333;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  min-width: 150px;
+}
+
+.ai-vs-user-order select {
+  margin-left: 0.5rem;
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  border: 2px solid #aac0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #fff;
+  color: #222;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+.ai-vs-user-order select:hover {
+  border-color: #007bff;
+}
+
+.ai-vs-user-order select:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 5px rgba(0, 91, 187, 0.5);
+}
