@@ -47,6 +47,7 @@ function Debate() {
   const [aiSide, setAiSide] = useState("pro"); // For AI vs AI
   const [userSide, setUserSide] = useState("");  // For AI vs User
   const [userVsUserSide, setUserVsUserSide] = useState("pro"); // For User vs User
+  const [firstSide, setFirstSide] = useState("pro"); // For choosing which side goes first
 
   // =================== Helper Functions ===================
   const appendDivider = (currentTranscript) =>
@@ -156,7 +157,7 @@ function Debate() {
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
-    if (side === "con") {
+    if (side === "con" && firstSide === "pro") {
       setLoading(true);
       try {
         let newTranscript = transcript;
@@ -170,6 +171,23 @@ function Debate() {
         setTranscript(newTranscript);
       } catch (err) {
         setError("Failed to fetch AI's Pro opening argument.");
+      } finally {
+        setLoading(false);
+      }
+    } else if (side === "pro" && firstSide === "con") {
+      setLoading(true);
+      try {
+        let newTranscript = transcript;
+        const conPrompt = `
+          You are an AI debater on the Con side for topic: "${topic}".
+          Provide an opening argument in favor of the Con position.
+        `;
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
+        newTranscript = appendDivider(newTranscript);
+        newTranscript += addSpeechBlock("Con (AI)", conResponse, singleAIModel);
+        setTranscript(newTranscript);
+      } catch (err) {
+        setError("Failed to fetch AI's Con opening argument.");
       } finally {
         setLoading(false);
       }
@@ -340,11 +358,18 @@ function Debate() {
             <>
               {!userSide && (
                 <div style={{ marginBottom: "1rem" }}>
+                  <label>
+                    Who goes first?
+                    <select value={firstSide} onChange={(e) => setFirstSide(e.target.value)}>
+                      <option value="pro">Pro</option>
+                      <option value="con">Con</option>
+                    </select>
+                  </label>
                   <button onClick={() => handleChooseSide("pro")} style={{ marginRight: "0.5rem" }}>
-                    Argue Pro (User First)
+                    Argue Pro
                   </button>
                   <button onClick={() => handleChooseSide("con")}>
-                    Argue Con (AI First)
+                    Argue Con
                   </button>
                 </div>
               )}
@@ -381,6 +406,13 @@ function Debate() {
           {/* Mode 3: User vs User */}
           {mode === "user-vs-user" && (
             <div style={{ marginTop: "1rem" }}>
+              <label>
+                Who goes first?
+                <select value={firstSide} onChange={(e) => setFirstSide(e.target.value)}>
+                  <option value="pro">Pro</option>
+                  <option value="con">Con</option>
+                </select>
+              </label>
               <p style={{ fontStyle: "italic" }}>
                 {userVsUserSide === "pro" ? "It's Pro's turn (User 1)." : "It's Con's turn (User 2)."}
               </p>
