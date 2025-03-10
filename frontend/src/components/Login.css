@@ -7,7 +7,7 @@
 }
 
 .left-panel {
-  flex: 1;
+  flex: 2;
   background: url("/images/background4.png") center center/cover no-repeat;
   display: flex;
   flex-direction: column; 
