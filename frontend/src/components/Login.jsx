@@ -22,35 +22,49 @@ function Login({ onLogin }) {
   };
 
   const handleGuestLogin = () => {
-    // Create a guest user object with a flag that indicates no history should be saved.
     const guestUser = {
       displayName: "Guest",
-      uid: "guest", // Using a constant UID for guest users.
+      uid: "guest",
       isGuest: true,
     };
     onLogin(guestUser);
   };
 
   return (
-    <div className="home-container">
-      <div className="login-content">
-        <h1>Welcome to DebateSim</h1>
-        <p>AI-Powered Debate Simulation</p>
-        {error && <p className="error">{error}</p>}
-        <button 
-          className="login-button" 
-          onClick={handleGoogleLogin}
-          disabled={loading}
-        >
-          {loading ? "Signing in..." : "Sign in with Google"}
-        </button>
-        <button 
-          className="login-button guest-button" 
-          onClick={handleGuestLogin}
-          disabled={loading}
-        >
-          Continue as Guest
-        </button>
+    <div className="login-container">
+      {/* Left Side: Welcome Section */}
+      <div className="left-panel">
+        <h1>
+          <span className="word">Welcome</span>
+          <span className="word">to</span>
+          <span className="word">DebateSim</span>
+        </h1>
+        <p>
+          <span className="word">AI-Powered</span>
+          <span className="word">Debate</span>
+          <span className="word">Simulation</span>
+        </p>
+      </div>
+
+      {/* Right Side: Login Form */}
+      <div className="right-panel">
+        <div className="login-content">
+          {error && <p className="error">{error}</p>}
+          <button
+            className="login-button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign in with Google"}
+          </button>
+          <button
+            className="login-button guest-button"
+            onClick={handleGuestLogin}
+            disabled={loading}
+          >
+            Continue as Guest
+          </button>
+        </div>
       </div>
     </div>
   );
