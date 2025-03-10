@@ -1,25 +1,35 @@
 /* Full page layout */
-.login-container {
+body, html {
+  height: 100%;
+  margin: 0;
+}
+
+.container-fluid {
+  height: 100%;
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  background: #f4f4f4;
+  padding: 0;
 }
 
 .left-panel {
-  flex: 1;
   background: url("/images/background4.png") center center/cover no-repeat;
   display: flex;
   flex-direction: column; 
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, sans-serif;
   justify-content: center;
   align-items: center;
   text-align: center;
   padding: 3rem;
-  min-width: 350px;
   height: 100%;
 }
+.left-panel > h1 {
+  font-size:600%;
+  font-weight: bold;
 
+}
+.left-panel > p{
+  font-size:200%;
+  font-weight: normal;
+}
+/* Adding back the animations */
 @keyframes rotateUpDebateSim {
   0% {
     opacity: 0;
@@ -31,60 +41,28 @@
   }
 }
 
-.left-panel h1 {
-  color: white;
-  font-size: 600%;
-  text-align: center;
-  display: flex; 
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, sans-serif;
-
-}
-
-.left-panel h1 .word {
-  display: inline-block;
-  opacity: 0; 
-  animation: rotateUpDebateSim 0.4s ease-out forwards;
-  margin: 0 10px; 
-}
-
-.left-panel h1 .word:nth-child(1) {
-  animation-delay: 0s; 
-}
-
-.left-panel h1 .word:nth-child(2) {
-  animation-delay: 0.5s; 
-}
-
-.left-panel h1 .word:nth-child(3) {
-  animation-delay: 1s; 
-}
-
-
-.left-panel p {
-  color: white;
-  font-size: 250%;
-  text-align: center;
-  display: flex; 
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, sans-serif;
-
-}
-
+.left-panel h1 .word,
 .left-panel p .word {
   display: inline-block;
   opacity: 0; 
   animation: rotateUpDebateSim 0.4s ease-out forwards;
-  margin: 0 10px; 
+  margin: 0 5px;
+}
+
+.left-panel h1 .word:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.left-panel h1 .word:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.left-panel h1 .word:nth-child(3) {
+  animation-delay: 1s;
 }
 
 .left-panel p .word:nth-child(1) {
-  animation-delay: 1.5s; 
+  animation-delay: 1.5s;
 }
 
 .left-panel p .word:nth-child(2) {
@@ -96,23 +74,12 @@
 }
 
 /* Right side - Login form */
-.right-panel {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.867);
-}
-
 .login-content {
-  background: rgba(255, 255, 255, 0.7); 
+  background: rgba(255, 255, 255, 0.8);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   text-align: center;
-  max-width: 400px;
-  width: 90%;
-  backdrop-filter: blur(10px); 
 }
 
 .login-button {
@@ -120,7 +87,7 @@
   font-size: 1.1em;
   border: none;
   border-radius: 6px;
-  background-color: rgba(113,137,156,1);
+  background-color: rgb(86, 122, 152);
   color: #fff;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -134,7 +101,7 @@
 }
 
 .login-button:hover {
-  background-color: #357abf;
+  background-color: #2a5c8e;
   transform: translateY(-1px);
 }
 
@@ -144,7 +111,6 @@
   transform: none;
 }
 
-/* Error message */
 .error {
   color: #ff4444;
   margin: 1rem 0;
