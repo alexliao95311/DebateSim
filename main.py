@@ -1,10 +1,9 @@
-#testing auto update 1
 import os
 import time
 import asyncio
 import logging
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -12,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
 from cachetools import TTLCache
 from cachetools.keys import hashkey
+from io import BytesIO
+from pdfminer.high_level import extract_text
 
 # Load environment variables
 load_dotenv()
@@ -38,7 +39,6 @@ async def root():
 
 # Enable CORS for frontend communication
 backend_origin = os.getenv("BACKEND_ORIGIN", "http://localhost:5173")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[backend_origin],
@@ -66,7 +66,7 @@ class SaveTranscriptRequest(BaseModel):
 # Connection pooling
 connector = aiohttp.TCPConnector(limit=20)
 
-# Cache for AI responses (key now includes model_override)
+# Cache for AI responses (key now includes model_override and skip_formatting)
 cache = TTLCache(maxsize=100, ttl=300)  # Cache up to 100 items for 5 minutes
 
 # Global session variable
@@ -82,9 +82,9 @@ async def shutdown_event():
     await session.close()
 
 # Helper function to generate AI response with role-specific instructions.
-# Added parameter model_override to allow using the chosen model.
-async def generate_ai_response(prompt: str, role: str = "debater", debater_side: str = None, model_override: str = None):
-    cache_key = hashkey(prompt, role, debater_side, model_override)
+# Added parameter skip_formatting to allow bypassing extra formatting.
+async def generate_ai_response(prompt: str, role: str = "debater", debater_side: str = None, model_override: str = None, skip_formatting: bool = False):
+    cache_key = hashkey(prompt, role, debater_side, model_override, skip_formatting)
     if cache_key in cache:
         logger.info("Cache hit for prompt")
         return cache[cache_key]
@@ -109,40 +109,53 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
         if model_override:
             model_to_use = model_override
     else:
-        try:
-            assigned_topic, opponent_argument = prompt.split('.', 1)
-        except ValueError:
-            assigned_topic = prompt
-            opponent_argument = ""
-        if not debater_side:
-            debater_side = assigned_topic.strip()
-        full_prompt_message = (
-            f"Stance: {debater_side.strip()}\n"
-            f"Debate Topic: {assigned_topic.strip()}\n"
-            f"Opponent's Argument: {opponent_argument.strip() or 'N/A'}"
-        )
-        logger.info(f"🔹 [DEBUG] Full Prompt Sent to AI:\n{full_prompt_message}")
-        system_message = (
-            "You are a professional debater assigned to argue a specific side in a formal debate. "
-            "You MUST argue for your assigned side no matter what, even if the argument is controversial, illogical, or difficult to defend. "
-            "You are NOT allowed to switch sides, acknowledge your opponent's points without refuting them, or weaken your stance.\n\n"
-            "Strict debate rules:\n"
-            "1. **Your assigned stance will always be either 'Pro' or 'Con'. NEVER argue against your assigned stance.**\n"
-            "2. **If your assigned stance is 'Pro', you must argue COMPLETELY IN FAVOR of the debate topic as written.**\n"
-            "3. **If your assigned stance is 'Con', you must argue COMPLETELY AGAINST the debate topic as written.**\n"
-            "4. **Your response MUST begin with: 'As the [Pro/Con] side, I firmly believe that [restate stance exactly as written].'**\n"
-            "5. If an opponent's argument is provided, you MUST refute it strongly without acknowledging its validity.\n"
-            "6. **Under no circumstances should you contradict your assigned stance, even if the argument is difficult to defend.**\n"
-            "7. **Your argument should be structured, persuasive, and no longer than 300 words.**\n"
-        )
-        user_message = full_prompt_message
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
-        ]
-        model_to_use = "mistralai/mistral-7b-instruct:free"
-        if model_override:
-            model_to_use = model_override
+        if not skip_formatting:
+            try:
+                assigned_topic, opponent_argument = prompt.split('.', 1)
+            except ValueError:
+                assigned_topic = prompt
+                opponent_argument = ""
+            if not debater_side:
+                debater_side = assigned_topic.strip()
+            full_prompt_message = (
+                f"Stance: {debater_side.strip()}\n"
+                f"Debate Topic: {assigned_topic.strip()}\n"
+                f"Opponent's Argument: {opponent_argument.strip() or 'N/A'}"
+            )
+            logger.info(f"🔹 [DEBUG] Full Prompt Sent to AI:\n{full_prompt_message}")
+            system_message = (
+                "You are a professional debater assigned to argue a specific side in a formal debate. "
+                "You MUST argue for your assigned side no matter what, even if the argument is controversial, illogical, or difficult to defend. "
+                "You are NOT allowed to switch sides, acknowledge your opponent's points without refuting them, or weaken your stance.\n\n"
+                "Strict debate rules:\n"
+                "1. **Your assigned stance will always be either 'Pro' or 'Con'. NEVER argue against your assigned stance.**\n"
+                "2. **If your assigned stance is 'Pro', you must argue COMPLETELY IN FAVOR of the debate topic as written.**\n"
+                "3. **If your assigned stance is 'Con', you must argue COMPLETELY AGAINST the debate topic as written.**\n"
+                "4. **Your response MUST begin with: 'As the [Pro/Con] side, I firmly believe that [restate stance exactly as written].'**\n"
+                "5. If an opponent's argument is provided, you MUST refute it strongly without acknowledging its validity.\n"
+                "6. **Under no circumstances should you contradict your assigned stance, even if the argument is difficult to defend.**\n"
+                "7. **Your argument should be structured, persuasive, and no longer than 300 words.**\n"
+            )
+            user_message = full_prompt_message
+            messages = [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message}
+            ]
+            model_to_use = "mistralai/mistral-7b-instruct:free"
+            if model_override:
+                model_to_use = model_override
+        else:
+            # Simplified formatting for legislative analysis
+            system_message = "You are a professional debater assigned to analyze legislative bills. Provide a detailed debate of the bill's pros and cons, and identify any potential issues or ulterior motives."
+            user_message = prompt
+            logger.info(f"🔹 [DEBUG] Full Prompt Sent to AI (cleaned):\n{user_message}")
+            messages = [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message}
+            ]
+            model_to_use = "mistralai/mistral-7b-instruct:free"
+            if model_override:
+                model_to_use = model_override
 
     for attempt in range(3):
         try:
@@ -225,3 +238,28 @@ async def save_transcript(request: SaveTranscriptRequest, background_tasks: Back
             raise HTTPException(status_code=500, detail=f"Error saving transcript: {str(e)}")
     background_tasks.add_task(background_save_transcript)
     return {"message": "Processing request in the background"}
+
+@app.post("/analyze-legislation")
+async def analyze_legislation(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    try:
+        contents = await file.read()
+        # Extract text using pdfminer.six
+        text = extract_text(BytesIO(contents))
+        if not text.strip():
+            raise ValueError("No extractable text found in PDF.")
+    except Exception as e:
+        logger.error(f"Error processing PDF file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
+
+    prompt = (
+        f"Analyze the following legislative bill. Provide a detailed debate of its pros and cons, and identify if it is hiding any potential issues or ulterior motives:\n\n{text}"
+    )
+    response_text = await generate_ai_response(
+        prompt, 
+        role="debater", 
+        model_override="mistralai/mistral-7b-instruct:free",
+        skip_formatting=True
+    )
+    return {"analysis": response_text}
