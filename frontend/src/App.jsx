@@ -14,20 +14,30 @@ function App() {
   const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    // Check if a guest user is persisted in localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
       setLoading(false);
-    });
-    return () => unsubscribe();
+    } else {
+      // Subscribe to Firebase auth state only if there's no persisted guest user
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    }
   }, [auth]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUser(null);
     } catch (error) {
       console.error("Logout error:", error);
     }
+    // Remove persisted guest user (if any)
+    localStorage.removeItem("user");
+    setUser(null);
   };
 
   if (loading) {

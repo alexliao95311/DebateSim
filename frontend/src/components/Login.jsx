@@ -28,6 +28,8 @@ function Login({ onLogin }) {
       uid: "guest",
       isGuest: true,
     };
+    // Persist the guest user to localStorage
+    localStorage.setItem("user", JSON.stringify(guestUser));
     onLogin(guestUser);
   };
 
