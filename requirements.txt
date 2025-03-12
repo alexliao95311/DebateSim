@@ -4,3 +4,4 @@ python-dotenv
 aiohttp
 cachetools
 uvicorn
+pdfminer.six
