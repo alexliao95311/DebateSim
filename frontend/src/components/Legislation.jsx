@@ -4,6 +4,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
+import API_URL from "../api";
 import "./Legislation.css";
 
 const Legislation = ({ user }) => {
@@ -81,7 +82,7 @@ const Legislation = ({ user }) => {
         const formData = new FormData();
         formData.append('file', pdfFile);
         try {
-          const response = await fetch("http://localhost:8000/analyze-legislation", {
+          const response = await fetch(`${API_URL}/analyze-legislation`, {
             method: "POST",
             body: formData,
           });
@@ -101,7 +102,7 @@ const Legislation = ({ user }) => {
         const formData = new FormData();
         formData.append('file', pdfFile);
         try {
-          const response = await fetch("http://localhost:8000/extract-text", {
+          const response = await fetch(`${API_URL}/extract-text`, {
             method: "POST",
             body: formData,
           });
