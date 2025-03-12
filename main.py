@@ -263,3 +263,18 @@ async def analyze_legislation(file: UploadFile = File(...)):
         skip_formatting=True
     )
     return {"analysis": response_text}
+
+@app.post("/extract-text")
+async def extract_text_endpoint(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    try:
+        contents = await file.read()
+        # Extract text using pdfminer.six
+        text = extract_text(BytesIO(contents))
+        if not text.strip():
+            raise ValueError("No extractable text found in PDF.")
+    except Exception as e:
+        logger.error(f"Error extracting text from PDF file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error extracting text from PDF file: " + str(e))
+    return {"text": text}
