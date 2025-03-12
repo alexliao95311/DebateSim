@@ -7,6 +7,8 @@ const Legislation = ({ user }) => {
   const [pdfFile, setPdfFile] = useState(null);
   const [articleLink, setArticleLink] = useState('');
   const [error, setError] = useState('');
+  const [analysisResult, setAnalysisResult] = useState('');
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const navigate = useNavigate();
 
   const handlePdfUpload = (event) => {
@@ -23,15 +25,30 @@ const Legislation = ({ user }) => {
     setArticleLink(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!pdfFile && !articleLink) {
       setError('Please upload a PDF or provide a link to a legislative article.');
       return;
     }
-    // Handle the form submission logic here
-    console.log('PDF File:', pdfFile);
-    console.log('Article Link:', articleLink);
+    if (pdfFile) {
+      setAnalysisLoading(true);
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      try {
+        const response = await fetch("http://localhost:8000/analyze-legislation", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+        setAnalysisResult(data.analysis);
+      } catch (err) {
+        setError("Error analyzing the bill.");
+      }
+      setAnalysisLoading(false);
+    } else if (articleLink) {
+      setError("Article link analysis is not supported yet.");
+    }
   };
 
   const handleLogout = () => {
@@ -49,7 +66,7 @@ const Legislation = ({ user }) => {
           <div className="header-left"></div>
           <div className="header-center">
             <h1 className="site-title" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-                Bill and Legislation Debate
+              Bill and Legislation Debate
             </h1>
           </div>
           <div className="header-right">
@@ -75,6 +92,13 @@ const Legislation = ({ user }) => {
           {error && <p className="error-text">{error}</p>}
           <button type="submit">Submit</button>
         </form>
+        {analysisLoading && <p>Analyzing bill, please wait...</p>}
+        {analysisResult && (
+          <div className="analysis-result">
+            <h3>Bill Analysis</h3>
+            <p>{analysisResult}</p>
+          </div>
+        )}
       </div>
 
       <footer className="bottom-text">
