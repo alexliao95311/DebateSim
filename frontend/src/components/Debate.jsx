@@ -56,14 +56,14 @@ function Debate() {
       : currentTranscript;
 
       const addSpeechBlock = (title, content, modelName) => {
-        const newId = `speech-${speechList.length + 1}`;
+        const newId = `speech-${Date.now()}-${Math.random()}`;
         setSpeechList((prevList) => [...prevList, { id: newId, title }]);
         const isUserSpeech = title.toLowerCase().includes("(user");
         const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
         const maybeModel = (!isUserSpeech && modelName)
           ? `<p class="model-info">Model: ${modelName}</p>`
           : "";
-          return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
+        return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
       };
 
   const scrollToSpeech = (id) => {
@@ -240,6 +240,7 @@ function Debate() {
       setTranscript(newTranscript);
       setUserInput("");
       setRound((prev) => prev + 1);
+      await saveTranscriptToUser(newTranscript); // Ensure the updated transcript is saved
       await handleEndDebate();
     } catch (err) {
       setError("Failed to send final user argument.");
@@ -392,13 +393,13 @@ function Debate() {
                     <button onClick={handleUserVsAISubmit} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
                       {loading ? "Loading..." : "Send & Get AI Reply"}
                     </button>
-                    {userSide === "con" && (
-                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()}>
+                    {firstSide === "con" && userSide === "pro" && (
+                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
                         Send & End (No AI Reply)
                       </button>
                     )}
-                    {firstSide === "pro" && userSide === "pro" && (
-                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()}>
+                    {firstSide === "pro" && userSide === "con" && (
+                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
                         Send & End (No AI Reply)
                       </button>
                     )}
