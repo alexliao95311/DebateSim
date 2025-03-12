@@ -4,7 +4,6 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";  
 
-console.log('API Key:', process.env.VITE_FIREBASE_API_KEY);
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,

@@ -4,9 +4,9 @@ import { getAuth, signOut } from 'firebase/auth';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
-import API_URL from "../api";
 import "./Legislation.css";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const Legislation = ({ user }) => {
   // View mode: "analyze" or "debate"
   const [viewMode, setViewMode] = useState("analyze");
