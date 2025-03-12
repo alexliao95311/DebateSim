@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import "./Legislation.css";
 
 const Legislation = ({ user }) => {
@@ -87,7 +89,13 @@ const Legislation = ({ user }) => {
           </div>
           <div className="form-group">
             <label htmlFor="articleLink">Or provide a link:</label>
-            <input type="url" id="articleLink" value={articleLink} onChange={handleLinkChange} placeholder="https://example.com/article" />
+            <input
+              type="url"
+              id="articleLink"
+              value={articleLink}
+              onChange={handleLinkChange}
+              placeholder="https://example.com/article"
+            />
           </div>
           {error && <p className="error-text">{error}</p>}
           <button type="submit">Submit</button>
@@ -96,7 +104,9 @@ const Legislation = ({ user }) => {
         {analysisResult && (
           <div className="analysis-result">
             <h3>Bill Analysis</h3>
-            <p>{analysisResult}</p>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
+              {analysisResult}
+            </ReactMarkdown>
           </div>
         )}
       </div>
