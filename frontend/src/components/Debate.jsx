@@ -418,17 +418,17 @@ function Debate() {
                   </label>
                   <br />
                   <button onClick={() => handleChooseUserVsUserSide("pro")} style={{ marginRight: "0.5rem" }}>
-                    Pro (User 1)
+                    Pro
                   </button>
                   <button onClick={() => handleChooseUserVsUserSide("con")}>
-                    Con (User 2)
+                    Con
                   </button>
                 </div>
               )}
               {userVsUserSide && (
                 <div style={{ marginTop: "1rem" }}>
                   <p style={{ fontStyle: "italic" }}>
-                    {userVsUserSide === "pro" ? "It's Pro's turn (User 1)." : "It's Con's turn (User 2)."}
+                    {userVsUserSide === "pro" ? "It's Pro's turn." : "It's Con's turn."}
                   </p>
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
