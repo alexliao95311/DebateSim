@@ -73,13 +73,13 @@ function Debate() {
   };
 
   // =================== End Debate ===================
-  // Now redirects to Judge.jsx with the debate transcript and other info.
-  const handleEndDebate = async () => {
+  // Accept an optional transcript parameter so the final transcript is used.
+  const handleEndDebate = async (finalTranscript = transcript) => {
     setLoading(true);
     setError("");
     try {
-      await saveTranscriptToUser(transcript);
-      navigate("/judge", { state: { transcript, topic, mode, judgeModel } });
+      await saveTranscriptToUser(finalTranscript);
+      navigate("/judge", { state: { transcript: finalTranscript, topic, mode, judgeModel } });
     } catch (err) {
       console.error("Error saving transcript:", err);
       setError("Failed to save transcript.");
@@ -136,7 +136,7 @@ function Debate() {
         setAiSide("pro");
         setRound((prev) => prev + 1);
         if (round === maxRounds) {
-          await handleEndDebate();
+          await handleEndDebate(newTranscript);
           return;
         }
       }
@@ -245,8 +245,8 @@ function Debate() {
       setTranscript(newTranscript);
       setUserInput("");
       setRound((prev) => prev + 1);
-      await saveTranscriptToUser(newTranscript); // Ensure the updated transcript is saved
-      await handleEndDebate();
+      // Call handleEndDebate with the updated transcript (no duplicate save call)
+      await handleEndDebate(newTranscript);
     } catch (err) {
       setError("Failed to send final user argument.");
     } finally {
@@ -401,16 +401,12 @@ function Debate() {
                     <button onClick={handleUserVsAISubmit} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
                       {loading ? "Loading..." : "Send & Get AI Reply"}
                     </button>
-                    {firstSide === "con" && userSide === "pro" && (
+                    {(firstSide === "con" && userSide === "pro") ||
+                     (firstSide === "pro" && userSide === "con") ? (
                       <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
                         Send & End (No AI Reply)
                       </button>
-                    )}
-                    {firstSide === "pro" && userSide === "con" && (
-                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
-                        Send & End (No AI Reply)
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -464,9 +460,9 @@ function Debate() {
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && <p>Loading AI response...</p>}
 
-          {/* End Debate Button */}
+          {/* End Debate Button: wrap the call in an arrow function so no event is passed */}
           <button
-            onClick={handleEndDebate}
+            onClick={() => handleEndDebate()}
             style={{ marginTop: "1rem" }}
             disabled={loading || transcript.trim().length === 0}
           >
