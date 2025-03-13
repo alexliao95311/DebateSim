@@ -3,6 +3,8 @@ import { getFirestore, collection, getDocs, query, orderBy } from "firebase/fire
 import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {
@@ -10,6 +12,7 @@ function DebateSim({ user }) {
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState(null); // New state for selected history item
   const navigate = useNavigate();
   const inputRef = useRef(null);
 
@@ -17,13 +20,11 @@ function DebateSim({ user }) {
   useEffect(() => {
     async function fetchHistory() {
       if (!user || user.isGuest) return;
-
       try {
         const db = getFirestore();
         const transcriptsRef = collection(db, "users", user.uid, "transcripts");
         const q = query(transcriptsRef, orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
-
         if (!snapshot.empty) {
           const fetchedHistory = snapshot.docs.map((doc) => ({
             id: doc.id,
@@ -35,7 +36,6 @@ function DebateSim({ user }) {
         console.error("Error fetching debate history:", err);
       }
     }
-
     fetchHistory();
   }, [user]);
 
@@ -44,7 +44,7 @@ function DebateSim({ user }) {
       alert("Please select a debate mode before starting.");
       return;
     }
-    // NEW: Check if debate topic is blank
+    // Check if debate topic is blank
     if (!debateTopic.trim()) {
       alert("Please enter a debate topic.");
       return;
@@ -144,8 +144,13 @@ function DebateSim({ user }) {
           <ul>
             {history.length > 0 ? (
               history.map((item) => (
-                <li key={item.id} onClick={() => setDebateTopic(item.topic)}>
-                  {item.topic} - {new Date(item.createdAt).toLocaleDateString()}
+                <li
+                  key={item.id}
+                  onClick={() => setSelectedHistory(item)}
+                  title="Click to view full transcript"
+                >
+                  {item.topic ? item.topic : "Untitled Topic"} -{" "}
+                  {new Date(item.createdAt).toLocaleDateString()}
                 </li>
               ))
             ) : (
@@ -153,6 +158,25 @@ function DebateSim({ user }) {
             )}
           </ul>
           <button onClick={() => setShowHistorySidebar(false)}>Close</button>
+        </div>
+      )}
+
+      {/* Modal to view selected history transcript */}
+      {selectedHistory && (
+        <div className="history-modal">
+          <div className="modal-content">
+            <button className="modal-close" onClick={() => setSelectedHistory(null)}>
+              &times;
+            </button>
+            <h2>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
+            <div className="transcript-viewer">
+              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                {selectedHistory.transcript
+                  ? selectedHistory.transcript
+                  : "No transcript available."}
+              </ReactMarkdown>
+            </div>
+          </div>
         </div>
       )}
 
