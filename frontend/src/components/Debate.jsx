@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateAIResponse } from "../api";
-import { saveTranscriptToUser } from "../firebase/saveTranscript"; // Import transcript-saving helper
+import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import "./Debate.css"; 
 
 const modelOptions = [
@@ -19,16 +19,18 @@ function sanitizeUserInput(str) {
 }
 
 function Debate() {
-  const location = useLocation();
+  // Retrieve debate parameters: short topic (bill name) and full description.
+  const { mode, topic, description } = useLocation().state || {};
   const navigate = useNavigate();
-  const { mode, topic } = location.state || {};
   if (!mode || !topic) {
     navigate("/debatesim");
     return null;
   }
 
-  // =================== State Variables ===================
-  const [transcript, setTranscript] = useState("");
+  // Use separate states for the full transcript (for saving and AI prompts)
+  // and the visible transcript (for display).
+  const [fullTranscript, setFullTranscript] = useState("");
+  const [displayTranscript, setDisplayTranscript] = useState("");
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,24 +38,23 @@ function Debate() {
   const [judgeModel, setJudgeModel] = useState(modelOptions[4]);
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
-  // Debate Models
+  // Debate Models and mode-specific states.
   const [proModel, setProModel] = useState(modelOptions[4]);
   const [conModel, setConModel] = useState(modelOptions[4]);
   const [singleAIModel, setSingleAIModel] = useState(modelOptions[4]);
+  const [aiSide, setAiSide] = useState("pro");
+  const [userSide, setUserSide] = useState("");
+  const [userVsUserSide, setUserVsUserSide] = useState("");
+  const [firstSide, setFirstSide] = useState("pro");
 
-  // Mode-Specific States
-  const [aiSide, setAiSide] = useState("pro"); // For AI vs AI
-  const [userSide, setUserSide] = useState("");  // For AI vs User
-  const [userVsUserSide, setUserVsUserSide] = useState(""); // For User vs User
-  const [firstSide, setFirstSide] = useState("pro"); // For choosing which side goes first
+  // Helper: Append a divider if needed.
+  const appendDivider = (current) =>
+    current.trim() !== "" ? current + "\n<hr class='divider' />\n" : current;
 
-  // =================== Helper Functions ===================
-  const appendDivider = (currentTranscript) =>
-    currentTranscript.trim() !== ""
-      ? currentTranscript + "\n<hr class='divider' />\n"
-      : currentTranscript;
-
+  // addSpeechBlock creates a new speech block and updates the speechList.
+  // Note: We add every block to the speechList, but we'll filter out "Bill Description" in the sidebar.
   const addSpeechBlock = (title, content, modelName) => {
     const newId = `speech-${Date.now()}-${Math.random()}`;
     setSpeechList((prevList) => [...prevList, { id: newId, title }]);
@@ -67,14 +68,21 @@ function Debate() {
 
   const scrollToSpeech = (id) => {
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // =================== End Debate ===================
-  // Accept an optional transcript parameter so the final transcript is used.
-  const handleEndDebate = async (finalTranscript = transcript) => {
+  // On mount, add the Bill Description to the full transcript only.
+  useEffect(() => {
+    if (description && fullTranscript.trim() === "") {
+      const initialBlock = addSpeechBlock("Bill Description", description, null);
+      setFullTranscript(initialBlock);
+      // Do not update displayTranscript so the bill description stays hidden.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [description]);
+
+  // End Debate: Save fullTranscript (which includes the bill description) and navigate.
+  const handleEndDebate = async (finalTranscript = fullTranscript) => {
     setLoading(true);
     setError("");
     try {
@@ -88,15 +96,16 @@ function Debate() {
     }
   };
 
-  // =================== MODE 1: AI vs AI ===================
   const maxRounds = 5;
   const handleAIDebate = async () => {
     if (round > maxRounds) return;
     setLoading(true);
     setError("");
     try {
-      let newTranscript = transcript.trim();
-      const lines = newTranscript.split("\n");
+      let newFull = fullTranscript.trim();
+      let newDisplay = displayTranscript.trim();
+      // Get the last displayed argument.
+      const lines = newDisplay.split("\n");
       let lastArgument = "";
       for (let i = lines.length - 1; i >= 0; i--) {
         if (lines[i].trim()) {
@@ -107,40 +116,37 @@ function Debate() {
       if (aiSide === "pro") {
         const proPrompt = `
           Debate topic: "${topic}"
+          Bill description: "${description}"
           Respond as PRO in Round ${round}.
           Opponent's last argument: "${lastArgument}"
           Rebut and strengthen PRO stance.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
-        newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock(
-          `AI Debater (Pro) - Round ${round}/${maxRounds}`,
-          proResponse,
-          proModel
-        );
+        const block = addSpeechBlock(`AI Debater (Pro) - Round ${round}/${maxRounds}`, proResponse, proModel);
+        newFull = appendDivider(newFull) + block;
+        newDisplay = appendDivider(newDisplay) + block;
         setAiSide("con");
       } else {
         const conPrompt = `
           Debate topic: "${topic}"
+          Bill description: "${description}"
           Respond as CON in Round ${round}.
           Opponent's last argument: "${lastArgument}"
           Rebut and strengthen CON stance.
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
-        newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock(
-          `AI Debater (Con) - Round ${round}/${maxRounds}`,
-          conResponse,
-          conModel
-        );
+        const block = addSpeechBlock(`AI Debater (Con) - Round ${round}/${maxRounds}`, conResponse, conModel);
+        newFull = appendDivider(newFull) + block;
+        newDisplay = appendDivider(newDisplay) + block;
         setAiSide("pro");
         setRound((prev) => prev + 1);
         if (round === maxRounds) {
-          await handleEndDebate(newTranscript);
+          await handleEndDebate(newFull);
           return;
         }
       }
-      setTranscript(newTranscript);
+      setFullTranscript(newFull);
+      setDisplayTranscript(newDisplay);
     } catch (err) {
       setError("Failed to fetch AI response for AI vs AI mode.");
     } finally {
@@ -148,22 +154,25 @@ function Debate() {
     }
   };
 
-  // =================== MODE 2: AI vs User ===================
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
     if (firstSide === "con" && side === "pro") {
       setLoading(true);
       try {
-        let newTranscript = transcript;
+        let newFull = fullTranscript;
+        let newDisplay = displayTranscript;
         const conPrompt = `
-          You are an AI debater on the Con side for topic: "${topic}".
+          You are an AI debater on the Con side for topic: "${topic}"
+          Bill description: "${description}"
           Provide an opening argument in favor of the Con position.
         `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
-        newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock("Con (AI)", conResponse, singleAIModel);
-        setTranscript(newTranscript);
+        const block = addSpeechBlock("Con (AI)", conResponse, singleAIModel);
+        newFull = appendDivider(newFull) + block;
+        newDisplay = appendDivider(newDisplay) + block;
+        setFullTranscript(newFull);
+        setDisplayTranscript(newDisplay);
       } catch (err) {
         setError("Failed to fetch AI's Con opening argument.");
       } finally {
@@ -172,15 +181,19 @@ function Debate() {
     } else if (firstSide === "pro" && side === "con") {
       setLoading(true);
       try {
-        let newTranscript = transcript;
+        let newFull = fullTranscript;
+        let newDisplay = displayTranscript;
         const proPrompt = `
-          You are an AI debater on the Pro side for topic: "${topic}".
+          You are an AI debater on the Pro side for topic: "${topic}"
+          Bill description: "${description}"
           Provide an opening argument in favor of the Pro position.
         `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel);
-        newTranscript = appendDivider(newTranscript);
-        newTranscript += addSpeechBlock("Pro (AI)", proResponse, singleAIModel);
-        setTranscript(newTranscript);
+        const block = addSpeechBlock("Pro (AI)", proResponse, singleAIModel);
+        newFull = appendDivider(newFull) + block;
+        newDisplay = appendDivider(newDisplay) + block;
+        setFullTranscript(newFull);
+        setDisplayTranscript(newDisplay);
       } catch (err) {
         setError("Failed to fetch AI's Pro opening argument.");
       } finally {
@@ -201,23 +214,29 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      let newTranscript = transcript;
+      let newFull = fullTranscript;
+      let newDisplay = displayTranscript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      newTranscript = appendDivider(newTranscript);
-      newTranscript += addSpeechBlock(userLabel, userInput);
-      setTranscript(newTranscript);
+      const block = addSpeechBlock(userLabel, userInput);
+      newFull = appendDivider(newFull) + block;
+      newDisplay = appendDivider(newDisplay) + block;
+      setFullTranscript(newFull);
+      setDisplayTranscript(newDisplay);
       setUserInput("");
       setRound((prev) => prev + 1);
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
       const prompt = `
-        You are an AI debater on the ${aiSideLocal} side, topic: "${topic}".
+        Debate topic: "${topic}"
+        Bill description: "${description}"
         The user just said: "${userInput}"
         Provide a rebuttal from the ${aiSideLocal} perspective.
       `;
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
-      newTranscript = appendDivider(newTranscript);
-      newTranscript += addSpeechBlock(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
-      setTranscript(newTranscript);
+      const block2 = addSpeechBlock(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
+      newFull = appendDivider(newFull) + block2;
+      newDisplay = appendDivider(newDisplay) + block2;
+      setFullTranscript(newFull);
+      setDisplayTranscript(newDisplay);
       setRound((prev) => prev + 1);
     } catch (err) {
       setError("Failed to fetch AI rebuttal.");
@@ -238,15 +257,17 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      let newTranscript = transcript;
+      let newFull = fullTranscript;
+      let newDisplay = displayTranscript;
       const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      newTranscript = appendDivider(newTranscript);
-      newTranscript += addSpeechBlock(userLabel, userInput);
-      setTranscript(newTranscript);
+      const block = addSpeechBlock(userLabel, userInput);
+      newFull = appendDivider(newFull) + block;
+      newDisplay = appendDivider(newDisplay) + block;
+      setFullTranscript(newFull);
+      setDisplayTranscript(newDisplay);
       setUserInput("");
       setRound((prev) => prev + 1);
-      // Call handleEndDebate with the updated transcript (no duplicate save call)
-      await handleEndDebate(newTranscript);
+      await handleEndDebate(newFull);
     } catch (err) {
       setError("Failed to send final user argument.");
     } finally {
@@ -254,22 +275,18 @@ function Debate() {
     }
   };
 
-  // =================== MODE 3: User vs User ===================
   const handleUserVsUser = () => {
     if (!userInput.trim()) {
       alert("Input field cannot be blank. Please enter your argument.");
       return;
     }
-    let newTranscript = transcript;
-    newTranscript = appendDivider(newTranscript);
-    if (userVsUserSide === "pro") {
-      newTranscript += addSpeechBlock("Pro (User 1)", userInput.trim());
-      setUserVsUserSide("con");
-    } else {
-      newTranscript += addSpeechBlock("Con (User 2)", userInput.trim());
-      setUserVsUserSide("pro");
-    }
-    setTranscript(newTranscript);
+    let newFull = fullTranscript;
+    let newDisplay = displayTranscript;
+    const block = addSpeechBlock("User vs User", userInput.trim());
+    newFull = appendDivider(newFull) + block;
+    newDisplay = appendDivider(newDisplay) + block;
+    setFullTranscript(newFull);
+    setDisplayTranscript(newDisplay);
     setUserInput("");
     setError("");
   };
@@ -278,31 +295,43 @@ function Debate() {
     setUserVsUserSide(side);
   };
 
-  // =================== Render JSX ===================
   return (
     <div className="debate-container">
-      {/* Sidebar Toggle Button */}
       <button className="toggle-sidebar" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
         {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
       </button>
-
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
         <h3>Speeches</h3>
         <ul>
-          {speechList.map((item) => (
-            <li key={item.id} onClick={() => scrollToSpeech(item.id)}>
-              {item.title}
-            </li>
-          ))}
+          {speechList
+            .filter((item) => item.title !== "Bill Description")
+            .map((item) => (
+              <li key={item.id} onClick={() => scrollToSpeech(item.id)}>
+                {item.title}
+              </li>
+            ))}
         </ul>
       </div>
-
       <div className="debate-wrapper">
         <div className="debate-content">
           <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
-
-          {/* Model Selection */}
+          {description && (
+            <div className="bill-description">
+              <button
+                className="toggle-description"
+                onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+              >
+                {descriptionExpanded ? "Hide Bill Description" : "Show Bill Description"}
+              </button>
+              {descriptionExpanded && (
+                <div className="description-content">
+                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                    {description}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          )}
           <div className="model-selection">
             {mode === "ai-vs-ai" && (
               <>
@@ -341,13 +370,9 @@ function Debate() {
               </label>
             )}
           </div>
-
-          {/* Debate Transcript */}
           <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
-            {transcript}
+            {displayTranscript}
           </ReactMarkdown>
-
-          {/* Mode 1: AI vs AI */}
           {mode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
@@ -361,8 +386,6 @@ function Debate() {
               </button>
             </div>
           )}
-
-          {/* Mode 2: AI vs User */}
           {mode === "ai-vs-user" && (
             <>
               {!userSide && (
@@ -412,8 +435,6 @@ function Debate() {
               )}
             </>
           )}
-
-          {/* Mode 3: User vs User */}
           {mode === "user-vs-user" && (
             <>
               {!userVsUserSide && (
@@ -455,16 +476,12 @@ function Debate() {
               )}
             </>
           )}
-
-          {/* Error & Loading Messages */}
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && <p>Loading AI response...</p>}
-
-          {/* End Debate Button: wrap the call in an arrow function so no event is passed */}
           <button
             onClick={() => handleEndDebate()}
             style={{ marginTop: "1rem" }}
-            disabled={loading || transcript.trim().length === 0}
+            disabled={loading || fullTranscript.trim().length === 0}
           >
             End Debate
           </button>
