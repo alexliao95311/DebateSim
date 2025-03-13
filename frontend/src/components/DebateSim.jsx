@@ -44,6 +44,11 @@ function DebateSim({ user }) {
       alert("Please select a debate mode before starting.");
       return;
     }
+    // NEW: Check if debate topic is blank
+    if (!debateTopic.trim()) {
+      alert("Please enter a debate topic.");
+      return;
+    }
     navigate("/debate", { state: { mode, topic: debateTopic } });
   };
 
@@ -71,9 +76,9 @@ function DebateSim({ user }) {
 
           {/* CENTER SECTION: Title */}
           <div className="header-center">
-          <h1 onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            Debate Simulator
-          </h1>
+            <h1 onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+              Debate Simulator
+            </h1>
           </div>
 
           {/* RIGHT SECTION: User + Logout */}
