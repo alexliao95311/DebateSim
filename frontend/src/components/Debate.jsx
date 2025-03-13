@@ -6,7 +6,6 @@ import { generateAIResponse } from "../api";
 import { saveTranscriptToUser } from "../firebase/saveTranscript"; // Import transcript-saving helper
 import "./Debate.css"; 
 
-
 const modelOptions = [
   "anthropic/claude-3.5-sonnet",
   "google/gemini-flash-1.5",
@@ -55,16 +54,16 @@ function Debate() {
       ? currentTranscript + "\n<hr class='divider' />\n"
       : currentTranscript;
 
-      const addSpeechBlock = (title, content, modelName) => {
-        const newId = `speech-${Date.now()}-${Math.random()}`;
-        setSpeechList((prevList) => [...prevList, { id: newId, title }]);
-        const isUserSpeech = title.toLowerCase().includes("(user");
-        const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
-        const maybeModel = (!isUserSpeech && modelName)
-          ? `<p class="model-info">Model: ${modelName}</p>`
-          : "";
-        return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
-      };
+  const addSpeechBlock = (title, content, modelName) => {
+    const newId = `speech-${Date.now()}-${Math.random()}`;
+    setSpeechList((prevList) => [...prevList, { id: newId, title }]);
+    const isUserSpeech = title.toLowerCase().includes("(user");
+    const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
+    const maybeModel = (!isUserSpeech && modelName)
+      ? `<p class="model-info">Model: ${modelName}</p>`
+      : "";
+    return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
+  };
 
   const scrollToSpeech = (id) => {
     const el = document.getElementById(id);
@@ -191,11 +190,14 @@ function Debate() {
   };
 
   const handleUserVsAISubmit = async () => {
+    if (!userInput.trim()) {
+      alert("Input field cannot be blank. Please enter your argument.");
+      return;
+    }
     if (!userSide) {
       setError("Please choose Pro or Con before proceeding.");
       return;
     }
-    if (!userInput.trim()) return;
     setLoading(true);
     setError("");
     try {
@@ -225,11 +227,14 @@ function Debate() {
   };
 
   const handleUserVsAISubmitAndEnd = async () => {
+    if (!userInput.trim()) {
+      alert("Input field cannot be blank. Please enter your argument.");
+      return;
+    }
     if (!userSide) {
       setError("Please choose Pro or Con before proceeding.");
       return;
     }
-    if (!userInput.trim()) return;
     setLoading(true);
     setError("");
     try {
@@ -251,7 +256,10 @@ function Debate() {
 
   // =================== MODE 3: User vs User ===================
   const handleUserVsUser = () => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim()) {
+      alert("Input field cannot be blank. Please enter your argument.");
+      return;
+    }
     let newTranscript = transcript;
     newTranscript = appendDivider(newTranscript);
     if (userVsUserSide === "pro") {
@@ -457,7 +465,11 @@ function Debate() {
           {loading && !error && <p>Loading AI response...</p>}
 
           {/* End Debate Button */}
-          <button onClick={handleEndDebate} style={{ marginTop: "1rem" }} disabled={loading}>
+          <button
+            onClick={handleEndDebate}
+            style={{ marginTop: "1rem" }}
+            disabled={loading || transcript.trim().length === 0}
+          >
             End Debate
           </button>
         </div>
