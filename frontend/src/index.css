@@ -61,7 +61,7 @@ button {
   background-color: #3469a6; /* Lighter blue */
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 6px !important;
   padding: 0.8rem 1.2rem;
   font-size: 1em;
   font-weight: 600;
