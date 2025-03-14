@@ -26,12 +26,15 @@ const Legislation = ({ user }) => {
   const [debateTopic, setDebateTopic] = useState('');
   const [extractedText, setExtractedText] = useState('');
   const [debateMode, setDebateMode] = useState(''); // "ai-vs-ai", "ai-vs-user", "user-vs-user"
+  
+  // History state and sidebar toggle (for debate mode only)
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  
   const billNameInputRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch debate history (like in DebateSim.jsx)
+  // Fetch debate history when in debate mode.
   useEffect(() => {
     async function fetchHistory() {
       if (!user || user.isGuest) return;
@@ -137,7 +140,7 @@ const Legislation = ({ user }) => {
       alert("Please select a debate mode before starting.");
       return;
     }
-    // Pass the short topic (bill name) and full extracted text to debate.jsx.
+    // Pass the (possibly edited) bill name and full extracted text to debate.jsx.
     navigate("/debate", { state: { mode: debateMode, topic: debateTopic, description: extractedText } });
   };
 
@@ -147,21 +150,15 @@ const Legislation = ({ user }) => {
       .catch((err) => console.error("Logout error:", err));
   };
 
-  // This function safely handles input changes for the bill name field
+  // Handle changes in the bill name input.
   const handleBillNameChange = (e) => {
-    e.stopPropagation(); // Stop event from bubbling up
+    e.stopPropagation();
     setDebateTopic(e.target.value);
   };
 
-  // Handle key down events separately to prevent form submit on Enter
+  // Prevent certain key events from triggering unwanted behavior.
   const handleKeyDown = (e) => {
-    if (e.key === 'Backspace' && window.getSelection().toString() === debateTopic) {
-      e.stopPropagation(); // Stop event propagation
-      setDebateTopic(''); // Clear the debate topic
-      return;
-    }
-    
-    // Prevent Enter key from submitting any forms
+    // For example, prevent Enter from submitting the form.
     if (e.key === 'Enter') {
       e.preventDefault();
     }
@@ -184,7 +181,7 @@ const Legislation = ({ user }) => {
         </div>
       </header>
 
-      {/* Mode Toggle for Legislation Page */}
+      {/* Mode Toggle */}
       <div className="mode-toggle">
         <button onClick={() => setViewMode("analyze")} disabled={viewMode === "analyze"}>
           Analyze Bill
@@ -193,6 +190,35 @@ const Legislation = ({ user }) => {
           Debate Bill
         </button>
       </div>
+
+      {/* If in debate mode, render a History Sidebar toggle */}
+      {viewMode === "debate" && (
+        <div style={{ margin: "1rem" }}>
+          <button 
+            className="history-button" 
+            onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+          >
+            History
+          </button>
+          {showHistorySidebar && (
+            <div className="history-sidebar">
+              <h2>Debate History</h2>
+              <ul>
+                {history.length > 0 ? (
+                  history.map((item) => (
+                    <li key={item.id} onClick={() => setDebateTopic(item.topic)}>
+                      {item.topic || "Untitled Topic"} - {new Date(item.createdAt).toLocaleDateString()}
+                    </li>
+                  ))
+                ) : (
+                  <li>No history available</li>
+                )}
+              </ul>
+              <button onClick={() => setShowHistorySidebar(false)}>Close</button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="main-content">
         {viewMode === "analyze" && (
@@ -205,7 +231,13 @@ const Legislation = ({ user }) => {
               </div>
               <div className="form-group">
                 <label htmlFor="articleLink">Or provide a link:</label>
-                <input type="url" id="articleLink" value={articleLink} onChange={handleLinkChange} placeholder="https://example.com/article" />
+                <input
+                  type="url"
+                  id="articleLink"
+                  value={articleLink}
+                  onChange={handleLinkChange}
+                  placeholder="https://example.com/article"
+                />
               </div>
               {error && <p className="error-text">{error}</p>}
               <button type="submit">Submit</button>
@@ -232,16 +264,22 @@ const Legislation = ({ user }) => {
               </div>
               <div className="form-group">
                 <label htmlFor="articleLink">Or provide a link:</label>
-                <input type="url" id="articleLink" value={articleLink} onChange={handleLinkChange} placeholder="https://example.com/article" />
+                <input
+                  type="url"
+                  id="articleLink"
+                  value={articleLink}
+                  onChange={handleLinkChange}
+                  placeholder="https://example.com/article"
+                />
               </div>
               {error && <p className="error-text">{error}</p>}
               <button type="submit">Extract Bill Text</button>
             </form>
             {loadingState && <p>Extracting bill text for debate, please wait...</p>}
-            {debateTopic !== null && debateTopic !== undefined && (
+            {debateTopic && (
               <>
                 <h2>Debate Simulator</h2>
-                {/* Isolated bill name input outside of any forms */}
+                {/* Editable Bill Name Field */}
                 <div className="input-container">
                   <label htmlFor="billName">Bill Name:</label>
                   <input
@@ -251,14 +289,11 @@ const Legislation = ({ user }) => {
                     value={debateTopic}
                     onChange={handleBillNameChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={(e) => {
-                      e.preventDefault();
-                      e.target.select();
-                    }}
+                    onFocus={(e) => e.target.select()}
                     style={{ width: "100%", padding: "0.8rem", fontSize: "1rem" }}
                   />
                 </div>
-                {/* Mode selection */}
+                {/* Mode Selection */}
                 <h2>Select a Debate Mode</h2>
                 <div className="mode-buttons">
                   <button
@@ -283,11 +318,7 @@ const Legislation = ({ user }) => {
                     User vs User
                   </button>
                 </div>
-                <button 
-                  type="button" 
-                  className="start-debate-button" 
-                  onClick={handleStartDebate}
-                >
+                <button type="button" className="start-debate-button" onClick={handleStartDebate}>
                   Start Debate
                 </button>
               </>
