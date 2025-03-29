@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import "./Legislation.css";
 
@@ -36,29 +34,26 @@ const Legislation = ({ user }) => {
 
   // Fetch debate history when in debate mode.
   useEffect(() => {
-    async function fetchHistory() {
-      if (!user || user.isGuest) return;
-      try {
-        const db = getFirestore();
-        const transcriptsRef = collection(db, "users", user.uid, "transcripts");
-        const q = query(transcriptsRef, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const fetchedHistory = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setHistory(fetchedHistory);
+      async function fetchHistory() {
+        if (!user || user.isGuest) return;
+        try {
+          const db = getFirestore();
+          const transcriptsRef = collection(db, "users", user.uid, "transcripts");
+          const q = query(transcriptsRef, orderBy("createdAt", "desc"));
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            const fetchedHistory = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setHistory(fetchedHistory);
+          }
+        } catch (err) {
+          console.error("Error fetching debate history:", err);
         }
-      } catch (err) {
-        console.error("Error fetching debate history:", err);
       }
-    }
-    if (viewMode === "debate") {
       fetchHistory();
-    }
-  }, [user, viewMode]);
-
+    }, [user]);
   const handlePdfUpload = (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -156,9 +151,8 @@ const Legislation = ({ user }) => {
     setDebateTopic(e.target.value);
   };
 
-  // Prevent certain key events from triggering unwanted behavior.
+  // Prevent Enter key from submitting the form.
   const handleKeyDown = (e) => {
-    // For example, prevent Enter from submitting the form.
     if (e.key === 'Enter') {
       e.preventDefault();
     }
@@ -168,17 +162,60 @@ const Legislation = ({ user }) => {
     <div className="legislation-container">
       <header className="home-header">
         <div className="header-content">
-          <div className="header-left"></div>
+          {/* LEFT SECTION: History Button (only in debate mode) */}
+          <div className="header-left">
+            {viewMode === "debate" && (
+              <button
+                className="history-button"
+                onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+              >
+                History
+              </button>
+            )}
+          </div>
+
+          {/* CENTER SECTION: Title */}
           <div className="header-center">
             <h1 className="site-title" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
               Bill and Legislation Debate
             </h1>
           </div>
+
+          {/* RIGHT SECTION: User + Logout */}
           <div className="header-right">
-            <span className="username">{user?.displayName}</span>
-            <button className="logout-button" onClick={handleLogout}>Logout</button>
+            <div className="user-section">
+              <span className="username">{user?.displayName}</span>
+              <button className="logout-button" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
+        {/* History Sidebar Overlay */}
+        {viewMode === "debate" && showHistorySidebar && (
+          <div className="history-sidebar">
+            <h2>Debate History</h2>
+            <ul>
+              {history.length > 0 ? (
+                history.map((item) => (
+                  <li
+                    key={item.id}
+                    onClick={() => {
+                      setDebateTopic(item.topic);
+                      setShowHistorySidebar(false);
+                    }}
+                    title="Click to set as Bill Name"
+                  >
+                    {item.topic || "Untitled Topic"} - {new Date(item.createdAt).toLocaleDateString()}
+                  </li>
+                ))
+              ) : (
+                <li>No history available</li>
+              )}
+            </ul>
+            <button onClick={() => setShowHistorySidebar(false)}>Close</button>
+          </div>
+        )}
       </header>
 
       {/* Mode Toggle */}
@@ -190,35 +227,6 @@ const Legislation = ({ user }) => {
           Debate Bill
         </button>
       </div>
-
-      {/* If in debate mode, render a History Sidebar toggle */}
-      {viewMode === "debate" && (
-        <div style={{ margin: "1rem" }}>
-          <button 
-            className="history-button" 
-            onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-          >
-            History
-          </button>
-          {showHistorySidebar && (
-            <div className="history-sidebar">
-              <h2>Debate History</h2>
-              <ul>
-                {history.length > 0 ? (
-                  history.map((item) => (
-                    <li key={item.id} onClick={() => setDebateTopic(item.topic)}>
-                      {item.topic || "Untitled Topic"} - {new Date(item.createdAt).toLocaleDateString()}
-                    </li>
-                  ))
-                ) : (
-                  <li>No history available</li>
-                )}
-              </ul>
-              <button onClick={() => setShowHistorySidebar(false)}>Close</button>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="main-content">
         {viewMode === "analyze" && (
