@@ -11,7 +11,8 @@ const modelOptions = [
   "google/gemini-flash-1.5",
   "openai/gpt-4o-mini",
   "meta-llama/llama-3.3-70b-instruct",
-  "mistralai/mistral-small-24b-instruct-2501"
+  "mistralai/mistral-small-24b-instruct-2501",
+  "openai/gpt-4o-mini-search-preview"
 ];
 
 function sanitizeUserInput(str) {
