@@ -77,6 +77,41 @@
   background-color: #357abd;
 }
 
+/* === Mode toggle & button highlight === */
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.mode-button:hover {
+  background: #f5f5f5;
+}
+
+.mode-button.active {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+/* ================================ */
+
+.upload-container {
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 2rem;
+}
+
 .main-content {
   flex: 1;
   width: 100%;
@@ -110,33 +145,9 @@
   text-align: center;
 }
 
-button:hover {
-  background-color: #357abd;
-}
-
-.bottom-text {
-  margin-top: 2rem;
-  padding: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #666;
-  width: 100%;
-}
-
-.github-link {
-  color: #4a90e2;
-  text-decoration: none;
-  font-weight: bold;
-  margin-right: 0.5rem;
-}
-
-.github-link:hover {
-  text-decoration: underline;
-}
-
 .history-sidebar {
   position: fixed;
-  top: 64px; /* below the fixed header */
+  top: 64px;
   left: 0;
   width: 300px;
   height: calc(100vh - 64px);
@@ -184,4 +195,24 @@ button:hover {
 
 .history-sidebar button:hover {
   background-color: #357abd;
+}
+
+.bottom-text {
+  margin-top: 2rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  width: 100%;
+}
+
+.github-link {
+  color: #4a90e2;
+  text-decoration: none;
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.github-link:hover {
+  text-decoration: underline;
 }
