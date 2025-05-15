@@ -112,6 +112,60 @@
   margin-bottom: 2rem;
 }
 
+.upload-container form button[type="submit"] {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.7rem 1.2rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+}
+
+.upload-container form button[type="submit"]:hover {
+  background-color: #357abd;
+  transform: translateY(-1px);
+}
+
+.upload-container form button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+.upload-container p {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background-color: #f3f8ff;
+  border-radius: 6px;
+  text-align: center;
+  color: #4a90e2;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-container p::before {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  border: 2px solid #4a90e2;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .main-content {
   flex: 1;
   width: 100%;
@@ -137,6 +191,124 @@
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.form-group input[type="file"] {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.form-group input[type="file"] + label {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  margin-top: 0.5rem;
+  border: 2px solid #aac0e0;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #333;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
+.form-group input[type="file"] + label:hover {
+  border-color: #4a90e2;
+  background-color: #f8fafd;
+}
+
+.form-group input[type="file"] + label:active {
+  background-color: #e9f2fd;
+}
+
+.form-group input[type="file"] + label svg {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  fill: currentColor;
+  margin-right: 0.5em;
+}
+
+.selected-file {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f3f8ff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  color: #444;
+}
+
+.selected-file svg {
+  color: #4a90e2;
+  margin-right: 0.5rem;
+}
+
+.form-group input[type="url"] {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-top: 0.5rem;
+  border: 2px solid #aac0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #333;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-group input[type="url"]:hover {
+  border-color: #4a90e2;
+}
+
+.form-group input[type="url"]:focus {
+  outline: none;
+  border-color: #357abd;
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.4);
+}
+
+.form-group select {
+  width: 100%;
+  padding: 0.6rem 2rem 0.6rem 1rem;
+  margin-top: 0.5rem;
+  border: 2px solid #aac0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: #fff;
+  color: #333;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a90e2"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group select:hover {
+  border-color: #4a90e2;
+  background-color: #f8fafd;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #357abd;
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.4);
+}
+
+.form-group select option {
+  padding: 10px;
+  background-color: #fff;
+  color: #333;
 }
 
 .error-text {
@@ -215,4 +387,61 @@
 
 .github-link:hover {
   text-decoration: underline;
+}
+
+.dropdown-styled {
+  margin-left: 0.5rem;
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  border: 2px solid #aac0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #fff;
+  color: #222;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+.dropdown-styled:hover {
+  border-color: #007bff;
+}
+
+.dropdown-styled:focus {
+  outline: none;
+  border-color: #0056b3;
+  box-shadow: 0 0 5px rgba(0, 91, 187, 0.5);
+}
+
+/* Select Wrapper for additional styling control */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+/* Make model selection more prominent */
+.model-selection {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.model-selection label {
+  font-weight: 600;
+  color: #333;
 }
