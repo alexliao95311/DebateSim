@@ -445,3 +445,25 @@
   font-weight: 600;
   color: #333;
 }
+
+.success-message {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  background-color: rgba(72, 187, 120, 0.1);
+  border-left: 4px solid #48bb78;
+  border-radius: 4px;
+  color: #2f855a;
+  font-weight: 500;
+}
+
+.success-message svg {
+  color: #48bb78;
+  margin-right: 0.5rem;
+  stroke-width: 2.5;
+}
+
+.success-message span {
+  flex: 1;
+}

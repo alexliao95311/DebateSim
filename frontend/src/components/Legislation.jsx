@@ -36,6 +36,7 @@ const Legislation = ({ user }) => {
   const [debateMode, setDebateMode] = useState(''); // "ai-vs-ai", "ai-vs-user", "user-vs-user"
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [extractionSuccess, setExtractionSuccess] = useState(false);
 
   const billNameInputRef = useRef(null);
   const navigate = useNavigate();
@@ -106,9 +107,17 @@ const Legislation = ({ user }) => {
         const data = await res.json();
         const text = data.text || '';
         const lines = text.trim().split('\n');
-        const billName = lines.find(line => line.trim() !== '') || "Unnamed Bill";
+        // Find first non-empty line, or use default if all lines are empty
+        let billName = "Unnamed Bill";
+        for (const line of lines) {
+          if (line.trim()) {
+            billName = line.trim();
+            break;
+          }
+        }
         setDebateTopic(billName);
         setExtractedText(text);
+        setExtractionSuccess(true);
       }
     } catch (err) {
       setError(`Error ${viewMode === "analyze" ? "analyzing" : "extracting"} the bill.`);
@@ -122,7 +131,17 @@ const Legislation = ({ user }) => {
       alert("Please select a debate mode before starting.");
       return;
     }
-    navigate("/debate", { state: { mode: debateMode, topic: debateTopic, description: extractedText } });
+    
+    // Check if bill name is empty and set a default if needed
+    const finalBillName = debateTopic.trim() ? debateTopic : "Unnamed Bill";
+    
+    navigate("/debate", { 
+      state: { 
+        mode: debateMode, 
+        topic: finalBillName,
+        description: extractedText 
+      } 
+    });
   };
 
   const handleLogout = () => {
@@ -134,6 +153,10 @@ const Legislation = ({ user }) => {
   const handleBillNameChange = (e) => {
     e.stopPropagation();
     setDebateTopic(e.target.value);
+    // Make sure we don't lose the extracted text when bill name is emptied
+    if (!e.target.value) {
+      e.preventDefault(); // Prevent any default behavior
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -283,6 +306,15 @@ const Legislation = ({ user }) => {
               : "Extracting bill text for debate, please wait..."}
           </p>
         )}
+        {viewMode === "debate" && extractionSuccess && (
+          <div className="success-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Text successfully extracted! You can now set up your debate.</span>
+          </div>
+        )}
       </div>
 
       <div className="main-content">
@@ -295,7 +327,7 @@ const Legislation = ({ user }) => {
           </div>
         )}
 
-        {viewMode === "debate" && debateTopic && (
+        {(viewMode === "debate" && extractionSuccess) && (
           <>
             <h2>Debate Simulator</h2>
             <div className="input-container">
@@ -339,6 +371,7 @@ const Legislation = ({ user }) => {
               type="button"
               className="start-debate-button"
               onClick={handleStartDebate}
+              disabled={!debateTopic.trim()}
             >
               Start Debate
             </button>
