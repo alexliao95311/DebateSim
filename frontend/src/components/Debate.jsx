@@ -7,11 +7,12 @@ import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import "./Debate.css"; 
 
 const modelOptions = [
+  "deepseek/deepseek-prover-v2:free", 
+  "meta-llama/llama-3-8b-instruct:free", 
+  "google/gemini-2.0-flash-exp:free",
   "anthropic/claude-3.5-sonnet",
-  "google/gemini-flash-1.5",
   "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct",
-  "mistralai/mistral-small-24b-instruct-2501",
+  "meta-llama/llama-3.3-70b-instruct", 
   "openai/gpt-4o-mini-search-preview"
 ];
 
@@ -36,19 +37,24 @@ function Debate() {
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [judgeModel, setJudgeModel] = useState(modelOptions[4]);
+  const [judgeModel, setJudgeModel] = useState(modelOptions[0]);
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   // Debate Models and mode-specific states.
-  const [proModel, setProModel] = useState(modelOptions[4]);
-  const [conModel, setConModel] = useState(modelOptions[4]);
-  const [singleAIModel, setSingleAIModel] = useState(modelOptions[4]);
+  const [proModel, setProModel] = useState(modelOptions[0]);
+  const [conModel, setConModel] = useState(modelOptions[0]);
+  const [singleAIModel, setSingleAIModel] = useState(modelOptions[0]);
   const [aiSide, setAiSide] = useState("pro");
   const [userSide, setUserSide] = useState("");
   const [userVsUserSide, setUserVsUserSide] = useState("");
   const [firstSide, setFirstSide] = useState("pro");
+
+  // Handler for the back to home button
+  const handleBackToHome = () => {
+    navigate("/debatesim");
+  };
 
   // Helper: Append a divider if needed.
   const appendDivider = (current) =>
@@ -298,6 +304,11 @@ function Debate() {
 
   return (
     <div className="debate-container">
+      {/* Back to Home button in the top right corner */}
+      <button className="back-to-home" onClick={handleBackToHome}>
+        Back to Home
+      </button>
+
       <button className="toggle-sidebar" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
         {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
       </button>

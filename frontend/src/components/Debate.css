@@ -243,3 +243,30 @@ hr.divider {
   border-color: #0056b3;
   box-shadow: 0 0 5px rgba(0, 91, 187, 0.5);
 }
+
+/* ======================== */
+/* Back to Home Button      */
+/* ======================== */
+.back-to-home {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 110;
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  height: 36px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-to-home:hover {
+  background-color: #357abd;
+}

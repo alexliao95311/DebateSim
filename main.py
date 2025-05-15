@@ -24,6 +24,10 @@ if not API_KEY:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Global model configuration
+DEFAULT_MODEL = "deepseek/deepseek-prover-v2:free"
+FALLBACK_MODEL = "meta-llama/llama-3-8b-instruct:free"
+
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -47,15 +51,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Models – now with an extra field for model selection
+# Models – now referencing the global DEFAULT_MODEL
 class GenerateResponseRequest(BaseModel):
     debater: str  # e.g., "Pro" or "Con"
     prompt: str   # Expected format: "debate topic. opponent's argument"
-    model: str = "mistralai/mistral-small-24b-instruct-2501"  # Chosen debater model
+    model: str = DEFAULT_MODEL  # Use the global default model
 
 class JudgeRequest(BaseModel):
     transcript: str
-    model: str = "mistralai/mistral-small-24b-instruct-2501"  # Chosen judge model
+    model: str = DEFAULT_MODEL  # Use the global default model
 
 class SaveTranscriptRequest(BaseModel):
     transcript: str
@@ -105,7 +109,7 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message}
         ]
-        model_to_use = "mistralai/mistral-small-24b-instruct-2501"
+        model_to_use = DEFAULT_MODEL  # Use the global default model
         if model_override:
             model_to_use = model_override
     else:
@@ -141,7 +145,7 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message}
             ]
-            model_to_use = "mistralai/mistral-7b-instruct:free"
+            model_to_use = DEFAULT_MODEL  # Use the global default model
             if model_override:
                 model_to_use = model_override
         else:
@@ -153,27 +157,56 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": user_message}
             ]
-            model_to_use = "mistralai/mistral-7b-instruct:free"
+            model_to_use = DEFAULT_MODEL  # Use the global default model
             if model_override:
                 model_to_use = model_override
 
     for attempt in range(3):
         try:
+            # Debug: log outgoing OpenRouter request payload
+            payload = {
+                "model": model_to_use,
+                "messages": messages,
+                "temperature": 0.7,
+            }
+            logger.debug("▶️ OpenRouter request payload: %s", payload)
             async with session.post(
                 "https://openrouter.ai/api/v1/chat/completions",
-                json={
-                    "model": model_to_use,
-                    "messages": messages,
-                    "temperature": 0.7,
-                },
+                json=payload,
                 headers={"Authorization": f"Bearer {API_KEY}"}
             ) as response:
+                # Debug: capture raw HTTP response body
+                raw = await response.text()
+                logger.debug("⬅️ OpenRouter HTTP %s response body:\n%s", response.status, raw)
                 if response.status != 200:
-                    logger.error(f"⚠️ [ERROR] AI Response Error: {response.status} {response.reason}")
+                    logger.error("🔴 OpenRouter returned HTTP %s: %s", response.status, raw)
                     raise HTTPException(status_code=response.status, detail="Error generating AI response")
-                data = await response.json()
-                if "choices" not in data or not data["choices"]:
-                    logger.error("⚠️ [ERROR] Invalid response format from AI service")
+                try:
+                    import json
+                    data = json.loads(raw)
+                    # Handle error payload from OpenRouter/provider
+                    error = data.get("error")
+                    if error:
+                        code = error.get("code")
+                        message = error.get("message", "")
+                        if code == 429:
+                            logger.warning("🔄 Upstream rate-limited (code %s): %s; retrying...", code, message)
+                            await asyncio.sleep(2 ** attempt)
+                            continue
+                        else:
+                            logger.error("🔴 Upstream provider error: %s (code %s)", message, code)
+                            raise HTTPException(status_code=502, detail=f"Upstream error: {message}")
+                except json.JSONDecodeError as e:
+                    logger.error("🔴 Failed to parse JSON: %s", e)
+                    raise HTTPException(status_code=500, detail="Invalid JSON from AI service")
+                if not data.get("choices"):
+                    logger.error("🔴 Missing `choices` in response JSON: %s", data)
+                    # Try with fallback model on the last attempt
+                    if attempt == 2:
+                        if model_to_use == DEFAULT_MODEL:
+                            logger.info("Trying with fallback model")
+                            model_to_use = FALLBACK_MODEL
+                            continue
                     raise HTTPException(status_code=500, detail="Invalid response format from AI service")
                 result = data["choices"][0]["message"]["content"].strip()
                 cache[cache_key] = result
@@ -182,7 +215,12 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
         except aiohttp.ClientError as e:
             logger.error(f"⚠️ [ERROR] Attempt {attempt + 1} failed: {str(e)}")
             if attempt == 2:
-                raise HTTPException(status_code=response.status, detail="Error generating AI response after multiple attempts")
+                # On the last attempt, try with fallback model
+                if model_to_use == DEFAULT_MODEL:
+                    logger.info("Trying with fallback model after client error")
+                    model_to_use = FALLBACK_MODEL
+                    continue
+                raise HTTPException(status_code=500, detail="Error generating AI response after multiple attempts")
             await asyncio.sleep(1)
 
     raise HTTPException(status_code=500, detail="Failed to generate AI response.")
@@ -191,27 +229,65 @@ async def generate_ai_response(prompt: str, role: str = "debater", debater_side:
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
+    logger.info("📩 /generate-response called with debater=%s, model=%s, prompt=%r",
+                request.debater, request.model, request.prompt)
     start_time = time.time()
     full_prompt = f"{request.prompt}"
-    response_text = await generate_ai_response(
-        full_prompt, 
-        role="debater", 
-        debater_side=request.debater, 
-        model_override=request.model
-    )
-    logger.info(f"Total time for generate-response: {time.time() - start_time:.2f} seconds")
-    return {"response": response_text}
+    try:
+        response_text = await generate_ai_response(
+            full_prompt, 
+            role="debater", 
+            debater_side=request.debater, 
+            model_override=request.model
+        )
+        logger.info(f"Total time for generate-response: {time.time() - start_time:.2f} seconds")
+        return {"response": response_text}
+    except HTTPException as e:
+        logger.error(f"Error in generate-response: {e.detail}")
+        # Try with a fallback model if original fails
+        if request.model == DEFAULT_MODEL:
+            logger.info("Attempting with fallback model")
+            try:
+                response_text = await generate_ai_response(
+                    full_prompt,
+                    role="debater",
+                    debater_side=request.debater,
+                    model_override=FALLBACK_MODEL
+                )
+                logger.info(f"Total time for generate-response with fallback: {time.time() - start_time:.2f} seconds")
+                return {"response": response_text}
+            except Exception as fallback_error:
+                logger.error(f"Fallback also failed: {str(fallback_error)}")
+                # Re-raise the original error
+        raise
 
 @app.post("/judge-debate")
 async def judge_debate(request: JudgeRequest):
     start_time = time.time()
-    feedback = await generate_ai_response(
-        request.transcript, 
-        role="judge", 
-        model_override=request.model
-    )
-    logger.info(f"Total time for judge-debate: {time.time() - start_time:.2f} seconds")
-    return {"feedback": feedback}
+    try:
+        feedback = await generate_ai_response(
+            request.transcript, 
+            role="judge", 
+            model_override=request.model
+        )
+        logger.info(f"Total time for judge-debate: {time.time() - start_time:.2f} seconds")
+        return {"feedback": feedback}
+    except HTTPException as e:
+        logger.error(f"Error in judge-debate: {e.detail}")
+        # Try with a fallback model if original fails
+        if request.model == DEFAULT_MODEL:
+            logger.info("Attempting with fallback model for judge")
+            try:
+                feedback = await generate_ai_response(
+                    request.transcript,
+                    role="judge",
+                    model_override=FALLBACK_MODEL
+                )
+                logger.info(f"Total time for judge-debate with fallback: {time.time() - start_time:.2f} seconds")
+                return {"feedback": feedback}
+            except Exception as fallback_error:
+                logger.error(f"Fallback also failed: {str(fallback_error)}")
+        raise
 
 @app.post("/save-transcript")
 async def save_transcript(request: SaveTranscriptRequest, background_tasks: BackgroundTasks):
@@ -259,7 +335,7 @@ async def analyze_legislation(file: UploadFile = File(...)):
     response_text = await generate_ai_response(
         prompt, 
         role="debater", 
-        model_override="mistralai/mistral-7b-instruct:free",
+        model_override=DEFAULT_MODEL,  # Use the global default model
         skip_formatting=True
     )
     return {"analysis": response_text}
