@@ -333,7 +333,7 @@ function Debate() {
                 className="toggle-description"
                 onClick={() => setDescriptionExpanded(!descriptionExpanded)}
               >
-                {descriptionExpanded ? "Hide Bill Description" : "Show Bill Description"}
+                {descriptionExpanded ? "Hide Bill Text" : "Show Bill Text"}
               </button>
               {descriptionExpanded && (
                 <div className="description-content">
