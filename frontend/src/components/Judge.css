@@ -1,169 +1,308 @@
-/* Markdown Renderer for Judge Transcript & Feedback */
-.markdown-renderer {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    background: rgba(255, 255, 255, 0.55);
-    padding: 1.5rem 3rem; /* Increased horizontal padding */
-    margin: 1rem 2rem;   /* Increased horizontal margins */
-    border-radius: 8px;
-    font-family: "Arial", sans-serif;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-  
-  /* Global Styles */
-  input {
-    display: block;
-    margin: 10px 0;
-    padding: 10px;
-    font-size: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  button {
-    font-size: 1rem;
-    cursor: pointer;
-  }
-  
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  p {
-    margin: 10px 0;
-  }
-  
-  /* Judge Container – full screen with background image */
-  .judge-container {
-    width: 100vw;
-    min-height: 100vh;
-    margin: 0;
-    padding: 8rem 2rem 2rem 2rem;
-    background: url("/images/background4.png") center center/cover no-repeat;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  /* Container for Debate Sections (Transcript & Feedback) */
+/* Judge.css - Fixed layout with improved responsiveness */
+
+/* Base container with background */
+.judge-container {
+  width: 100vw;
+  min-height: 100vh;
+  padding: 5rem 1rem 2rem;
+  background: url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Back to home button */
+.back-to-home {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 110;
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  height: 36px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-to-home:hover {
+  background-color: #357abd;
+}
+
+/* Main heading styles */
+.main-heading {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.main-heading:after {
+  display: none; /* Remove the blue line entirely */
+}
+
+.sub-heading {
+  font-size: 1.3rem;
+  color: #555;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Container to ensure proper centering */
+.debate-sections-container {
+  width: 100%;
+  max-width: 1600px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Main layout with two columns */
+.debate-sections {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+/* Section styling */
+.transcript-section,
+.feedback-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(80vh - 2rem);
+}
+
+/* Section title styling - updated for consistency */
+.transcript-section h2,
+.feedback-section h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f5f7fa;
+  border-bottom: 1px solid #e0e7ee;
+  width: 100%;
+}
+
+/* Header with flex for showing bill text button */
+.section-header {
+  padding: 0; /* Remove padding since it's handled in h2 */
+  background-color: transparent;
+  border-bottom: none;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+}
+
+/* Toggle bill text button - completely fixed positioning */
+.toggle-bill-text {
+  padding: 0;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  height: 32px;
+  width: 120px; /* Fixed width */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none; /* Prevent any shadow changes */
+  outline: none; /* Remove outline on focus */
+}
+
+.toggle-bill-text:hover,
+.toggle-bill-text:active,
+.toggle-bill-text:focus {
+  background-color: #357abd;
+  transform: translateY(-50%); /* Keep the same transform on all states */
+  outline: none;
+  box-shadow: none;
+}
+
+/* Scrollable content area */
+.scrollable-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure consistent spacing regardless of content */
+.transcript-section .scrollable-content {
+  min-height: 100px; /* Ensure minimum height even when empty */
+}
+
+/* Specific adjustment to match top padding in both columns */
+.transcript-section .scrollable-content,
+.feedback-section .scrollable-content {
+  padding-top: 1.5rem; /* Ensure both have exactly the same top padding */
+}
+
+/* If there's a specific element causing extra padding in the left column */
+.transcript-section .scrollable-content > *:first-child,
+.feedback-section .scrollable-content > *:first-child {
+  margin-top: 0;
+}
+
+/* For empty content state */
+.transcript-section .scrollable-content:empty {
+  padding: 1.5rem;
+  height: 100%;
+}
+
+/* Loading feedback */
+.loading-feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+}
+
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #4a90e2;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Speech block styling */
+.speech-block {
+  background: #f9fafd;
+  border: 1px solid #e0e7ee;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  margin-top: 0; /* Prevent unexpected top margin */
+}
+
+.speech-block h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.model-info {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+/* Divider styling */
+hr.divider {
+  border: none;
+  height: 1px;
+  background-color: #e0e7ee;
+  margin: 1.5rem 0;
+}
+
+/* Button group at bottom */
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.button-group button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.download-button {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.download-button:hover:not(:disabled) {
+  background-color: #357abd;
+}
+
+.download-button:disabled {
+  background-color: #a3c5e9;
+  cursor: not-allowed;
+}
+
+.home-button {
+  background-color: #6c757d;
+  color: white;
+}
+
+.home-button:hover {
+  background-color: #5a6268;
+}
+
+/* Error message */
+.error-text {
+  color: #e74c3c;
+  margin-top: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Responsive styling */
+@media (max-width: 992px) {
   .debate-sections {
-    background: rgba(255, 255, 255, 0.45);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 1200px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    grid-template-columns: 1fr;
   }
   
-  /* Transcript and Feedback Section Styles */
   .transcript-section,
   .feedback-section {
-    background: rgba(255, 255, 255, 0.45);
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 50vh;
+  }
+}
+
+@media (max-width: 576px) {
+  .judge-container {
+    padding: 6rem 0.5rem 1.5rem;
   }
   
-  /* Scrollable Content Styling */
-  .scrollable-content {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding: 1.5rem;
-    border: 1px solid rgba(238, 238, 238, 0.45);
-    border-radius: 4px;
-    background: rgba(252, 252, 252, 0.45);
+  .main-heading {
+    font-size: 1.5rem;
   }
   
-  /* Loading Feedback Styling */
-  .loading-feedback {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100px;
-    color: rgba(102, 102, 102, 0.9);
-    font-style: italic;
-    background: rgba(255, 255, 255, 0.45);
-    border-radius: 8px;
-    padding: 1rem;
+  .sub-heading {
+    font-size: 1rem;
   }
   
-  /* Error Text Styling */
-  .error-text {
-    color: #ff4444;
-    margin: 1rem 0;
-  }
-  
-  /* Button Group Styling */
   .button-group {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .button-group button {
-    flex: 1;
-  }
-  
-  /* PDF Container Styling (for hidden PDF export) */
-  .pdf-container {
-    font-family: "Calibri", sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #000;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  
-  .pdf-container h1,
-  .pdf-container h2,
-  .pdf-container h3,
-  .pdf-container h4,
-  .pdf-container p {
-    page-break-inside: avoid;
-  }
-  
-  /* Force a page break on .page-break elements when printing */
-  @media print {
-    .page-break {
-      page-break-before: always;
-    }
-  }
-  
-  /* Base Container Styling (matching home page layout) */
-  .debate-container {
-    width: 100vw;
-    min-height: 100vh;
-    margin: 0;
-    padding: 8rem 2rem 2rem 2rem;
-    background: url("/images/background4.png") center center/cover no-repeat;
-    display: flex;
     flex-direction: column;
-    align-items: center;
   }
-  
-  /* Content Area Styling */
-  .debate-content {
-    background: rgba(255, 255, 255, 0.45);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 80%;
-    max-width: 1200px;
-  }
-  
-  /* Input Section Styling */
-  .input-section {
-    background: rgba(255, 255, 255, 0.45);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    width: 80%;
-    max-width: 800px;
-    margin-top: 2rem;
-  }
+}
