@@ -111,23 +111,33 @@ function Debate() {
     try {
       let newFull = fullTranscript.trim();
       let newDisplay = displayTranscript.trim();
-      // Get the last displayed argument.
-      const lines = newDisplay.split("\n");
-      let lastArgument = "";
-      for (let i = lines.length - 1; i >= 0; i--) {
-        if (lines[i].trim()) {
-          lastArgument = lines[i].trim();
-          break;
-        }
-      }
+      
+      // Get the entire previous speech block instead of just the last line
+      const lastSpeechMatch = newDisplay.match(/<div id="[^"]*" class="speech-block">[\s\S]*?<\/div>/);
+      const lastArgument = lastSpeechMatch ? lastSpeechMatch[0] : "";
+      
+      // Limit the size of the bill description by summarizing if it's too long
+      const truncatedDescription = description?.length > 3000 ? 
+        `${description.substring(0, 3000)}... (bill text continues)` : 
+        description;
+      
       if (aiSide === "pro") {
         const proPrompt = `
           Debate topic: "${topic}"
-          Bill description: "${description}"
-          Respond as PRO in Round ${round}.
-          Opponent's last argument: "${lastArgument}"
-          Rebut and strengthen PRO stance.
+          Bill description: "${truncatedDescription}"
+          Round: ${round} of ${maxRounds}
+          Your role: PRO
+          Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
+          ${lastArgument}
+          
+          Instructions:
+          1. Directly rebut the opponent's key points if they've spoken
+          2. Strengthen the PRO position with 2-3 clear arguments
+          3. Keep your response concise (max 500 words)
+          4. Be persuasive but respectful
+          5. Conclude with a strong summary statement
         `;
+        
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
         const block = addSpeechBlock(`AI Debater (Pro) - Round ${round}/${maxRounds}`, proResponse, proModel);
         newFull = appendDivider(newFull) + block;
@@ -136,11 +146,20 @@ function Debate() {
       } else {
         const conPrompt = `
           Debate topic: "${topic}"
-          Bill description: "${description}"
-          Respond as CON in Round ${round}.
-          Opponent's last argument: "${lastArgument}"
-          Rebut and strengthen CON stance.
+          Bill description: "${truncatedDescription}"
+          Round: ${round} of ${maxRounds}
+          Your role: CON
+          Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
+          ${lastArgument}
+          
+          Instructions:
+          1. Directly rebut the opponent's key points if they've spoken
+          2. Strengthen the CON position with 2-3 clear arguments
+          3. Keep your response concise (max 500 words)
+          4. Be persuasive but respectful
+          5. Conclude with a strong summary statement
         `;
+        
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
         const block = addSpeechBlock(`AI Debater (Con) - Round ${round}/${maxRounds}`, conResponse, conModel);
         newFull = appendDivider(newFull) + block;
@@ -161,19 +180,34 @@ function Debate() {
     }
   };
 
+  // Update handleChooseSide
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
+    
+    // Limit the size of the bill description by summarizing if it's too long
+    const truncatedDescription = description?.length > 3000 ? 
+      `${description.substring(0, 3000)}... (bill text continues)` : 
+      description;
+    
     if (firstSide === "con" && side === "pro") {
       setLoading(true);
       try {
         let newFull = fullTranscript;
         let newDisplay = displayTranscript;
         const conPrompt = `
-          You are an AI debater on the Con side for topic: "${topic}"
-          Bill description: "${description}"
-          Provide an opening argument in favor of the Con position.
+          Debate topic: "${topic}"
+          Bill description: "${truncatedDescription}"
+          Your role: Opening speaker for the CON side
+          
+          Instructions:
+          1. Provide an opening argument against the topic
+          2. Present 2-3 strong arguments for the CON position
+          3. Keep your response concise (max 400 words)
+          4. Be persuasive and clear
+          5. End with a strong statement
         `;
+        
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
         const block = addSpeechBlock("Con (AI)", conResponse, singleAIModel);
         newFull = appendDivider(newFull) + block;
@@ -191,10 +225,18 @@ function Debate() {
         let newFull = fullTranscript;
         let newDisplay = displayTranscript;
         const proPrompt = `
-          You are an AI debater on the Pro side for topic: "${topic}"
-          Bill description: "${description}"
-          Provide an opening argument in favor of the Pro position.
+          Debate topic: "${topic}"
+          Bill description: "${truncatedDescription}"
+          Your role: Opening speaker for the PRO side
+          
+          Instructions:
+          1. Provide an opening argument in favor of the topic
+          2. Present 2-3 strong arguments for the PRO position
+          3. Keep your response concise (max 400 words)
+          4. Be persuasive and clear
+          5. End with a strong statement
         `;
+        
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel);
         const block = addSpeechBlock("Pro (AI)", proResponse, singleAIModel);
         newFull = appendDivider(newFull) + block;
@@ -231,13 +273,33 @@ function Debate() {
       setDisplayTranscript(newDisplay);
       setUserInput("");
       setRound((prev) => prev + 1);
+      
+      // Limit the size of the bill description
+      const truncatedDescription = description?.length > 3000 ? 
+        `${description.substring(0, 3000)}... (bill text continues)` : 
+        description;
+      
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
+      
+      // Get the full debate context (last 3 exchanges maximum)
+      const lastExchanges = newDisplay.split("<hr class='divider' />").slice(-3).join("\n");
+      
       const prompt = `
         Debate topic: "${topic}"
-        Bill description: "${description}"
-        The user just said: "${userInput}"
-        Provide a rebuttal from the ${aiSideLocal} perspective.
+        Bill description: "${truncatedDescription}"
+        Recent exchanges: 
+        ${lastExchanges}
+        
+        The user just argued for the ${userSide.toUpperCase()} side.
+        
+        Instructions:
+        1. You are on the ${aiSideLocal.toUpperCase()} side
+        2. Directly rebut the user's key points
+        3. Present 1-2 strong counterarguments
+        4. Keep your response concise (max 400 words)
+        5. Be persuasive but respectful
       `;
+      
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
       const block2 = addSpeechBlock(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       newFull = appendDivider(newFull) + block2;

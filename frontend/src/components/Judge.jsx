@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import html2pdf from "html2pdf.js";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { auth } from "../firebase/firebaseConfig"; // adjust the path as needed
+import { auth } from "../firebase/firebaseConfig";
 import { getAIJudgeFeedback } from "../api";
 import "./Judge.css";
 import { jsPDF } from "jspdf";
@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 function Judge() {
   const location = useLocation();
   const navigate = useNavigate();
+  
   // Retrieve debate details from router state
   const { transcript, topic, mode, judgeModel } = location.state || {};
 
@@ -26,11 +27,21 @@ function Judge() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [timestamp] = useState(() => new Date().toLocaleString());
-
+  const [showBillText, setShowBillText] = useState(false);
+  
+  // Extract bill description from transcript
+  const [billDescription, setBillDescription] = useState("");
+  
   // Hidden PDF container ref
   const pdfContentRef = useRef(null);
 
   useEffect(() => {
+    // Extract bill description from transcript if it exists
+    const billMatch = transcript.match(/<div id="[^"]*" class="speech-block"><h3>Bill Description:<\/h3>([\s\S]*?)<\/div>/);
+    if (billMatch && billMatch[1]) {
+      setBillDescription(billMatch[1].trim());
+    }
+    
     const fetchFeedback = async () => {
       try {
         const result = await getAIJudgeFeedback(transcript);
@@ -80,7 +91,8 @@ function Judge() {
         transcript: combinedTranscript,
         topic: topic,
         mode: mode,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        judge_feedback: feedback
       });
       console.log("Transcript saved automatically!");
       setSaved(true);
@@ -146,44 +158,75 @@ function Judge() {
   };
 
   const handleBackToHome = () => {
-    const currentUser = auth.currentUser;
-    if (currentUser && (currentUser.isGuest || currentUser.uid === "guest")) {
-      window.location.href = "/guest";
-    } else {
-      window.location.href = "/";
+    navigate("/");
+  };
+
+  // Format transcript to hide bill description unless requested
+  const formattedTranscript = () => {
+    if (!billDescription || showBillText) {
+      return transcript;
     }
+    
+    // Hide bill description in display view
+    return transcript.replace(
+      /<div id="[^"]*" class="speech-block"><h3>Bill Description:<\/h3>[\s\S]*?<\/div>/, 
+      ''
+    );
   };
 
   return (
     <div className="judge-container">
-      <div id="debate-content" className="debate-sections">
-        <div className="transcript-section">
-          <h2>Debate Transcript</h2>
-          <div className="scrollable-content">
-            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-              {transcript}
-            </ReactMarkdown>
+      <button className="back-to-home" onClick={handleBackToHome}>
+        Back to Home
+      </button>
+      
+      <h1 className="main-heading">Debate Results</h1>
+      <h2 className="sub-heading">Topic: {topic}</h2>
+      
+      <div className="debate-sections-container">
+        <div className="debate-sections">
+          <div className="transcript-section">
+            <div className="section-header">
+              <h2>Debate Transcript</h2>
+              {billDescription && (
+                <button 
+                  className="toggle-bill-text" 
+                  onClick={() => setShowBillText(!showBillText)}
+                >
+                  {showBillText ? "Hide Bill Text" : "Show Bill Text"}
+                </button>
+              )}
+            </div>
+            <div className="scrollable-content">
+              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                {formattedTranscript()}
+              </ReactMarkdown>
+            </div>
           </div>
-        </div>
 
-        <div className="feedback-section">
-          <h2>AI Judge Feedback</h2>
-          <div className="scrollable-content">
-            {!feedback ? (
-              <div className="loading-feedback">Analyzing debate...</div>
-            ) : (
-              <div className="speech-block">
-                <h3>AI Judge:</h3>
-                <p className="model-info">Model: {judgeModel}</p>
-                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                  {feedback}
-                </ReactMarkdown>
-              </div>
-            )}
+          <div className="feedback-section">
+            <h2>AI Judge Feedback</h2>
+            <div className="scrollable-content">
+              {!feedback ? (
+                <div className="loading-feedback">
+                  <div className="loading-spinner"></div>
+                  <p>Analyzing debate...</p>
+                </div>
+              ) : (
+                <div className="speech-block">
+                  <h3>AI Judge:</h3>
+                  <p className="model-info">Model: {judgeModel}</p>
+                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                    {feedback}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Hidden PDF content for export */}
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div
           ref={pdfContentRef}
@@ -234,10 +277,16 @@ function Judge() {
 
       {error && <p className="error-text">{error}</p>}
       <div className="button-group">
-        <button onClick={handleDownloadPDF} disabled={!feedback}>
+        <button 
+          className="download-button" 
+          onClick={handleDownloadPDF} 
+          disabled={!feedback}
+        >
           Download as PDF
         </button>
-        <button onClick={handleBackToHome}>Back to Home</button>
+        <button className="home-button" onClick={handleBackToHome}>
+          Back to Home
+        </button>
       </div>
     </div>
   );
