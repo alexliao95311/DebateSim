@@ -336,7 +336,7 @@ function Debate() {
                 {descriptionExpanded ? "Hide Bill Text" : "Show Bill Text"}
               </button>
               {descriptionExpanded && (
-                <div className="description-content">
+                <div className="description-content scrollable">
                   <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                     {description}
                   </ReactMarkdown>
