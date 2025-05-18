@@ -60,12 +60,13 @@
 /* Container to ensure proper centering */
 .debate-sections-container {
   width: 100%;
-  max-width: 1600px;
+  max-width: 1800px; /* Increase max-width to allow more space */
   display: flex;
   justify-content: center;
+  padding: 0 1rem;
 }
 
-/* Main layout with two columns */
+/* Main layout with two columns - enforce horizontal layout */
 .debate-sections {
   width: 100%;
   display: grid;
@@ -84,6 +85,7 @@
   display: flex;
   flex-direction: column;
   height: calc(80vh - 2rem);
+  min-width: 0; /* Prevent flex items from overflowing */
 }
 
 /* Section title styling - updated for consistency */
@@ -147,9 +149,11 @@
 .scrollable-content {
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   flex: 1;
   display: flex;
   flex-direction: column;
+  word-break: break-word; /* Ensure long words don't overflow */
 }
 
 /* Ensure consistent spacing regardless of content */
@@ -278,7 +282,7 @@ hr.divider {
 }
 
 /* Responsive styling */
-@media (max-width: 992px) {
+@media (max-width: 768px) {
   .debate-sections {
     grid-template-columns: 1fr;
   }
