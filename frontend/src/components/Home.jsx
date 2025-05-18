@@ -40,30 +40,41 @@ function Home({ user, onLogout }) {
         <div className="feature-sections">
           <div className="feature">
             <h3>Debate Simulator</h3>
-            <a className="feature-link" href="/debatesim">
-              Go to Debate Simulator
-            </a>
             <p className="feature-description">
-              Experience dynamic debates with AI. Challenge your thinking by exploring multiple perspectives, enhance your argumentation skills, and deepen your understanding of complex topics. Debate against AI opponents, invite friends to join, or watch as AI personas debate each other to reveal new insights and approaches.
+              Experience dynamic debates with AI. Challenge your thinking by exploring multiple perspectives, enhance your argumentation skills, and deepen your understanding of complex topics.
             </p>
+            <button 
+              className="feature-button" 
+              onClick={() => navigate("/debatesim")}
+            >
+              Go to Debate Simulator
+            </button>
           </div>
+          
           <div className="feature">
             <h3>Bill and Legislation Debate</h3>
-            <a className="feature-link" href="/legislation">
-              Go to Bill and Legislation Debate
-            </a>
             <p className="feature-description">
-              In progress! Upload any Congressional bill and engage in thoughtful debates about its merits with friends or AI opponents. Explore the legislation's pros and cons from multiple perspectives, gaining deeper insights that can help inform your voting decisions and understanding of complex policy issues.
+              In progress! Upload any Congressional bill and engage in thoughtful debates about its merits with friends or AI opponents. Explore legislation from multiple perspectives.
             </p>
+            <button 
+              className="feature-button" 
+              onClick={() => navigate("/legislation")}
+            >
+              Go to Bill Debate
+            </button>
           </div>
+          
           <div className="feature">
             <h3>Bias Detector</h3>
-            <a className="feature-link" href="/feature3">
-              Go to Bias Detector
-            </a>
             <p className="feature-description">
-              In progress! Evaluate online content for accuracy and bias! Analyze websites, news articles, or any text to identify potential slant and misinformation. Assess source credibility and information reliability to make more informed decisions and develop balanced perspectives on complex topics.
+              In progress! Evaluate online content for accuracy and bias! Analyze websites, news articles, or any text to identify potential slant and misinformation.
             </p>
+            <button 
+              className="feature-button" 
+              onClick={() => navigate("/feature3")}
+            >
+              Go to Bias Detector
+            </button>
           </div>
         </div>
       </div>
