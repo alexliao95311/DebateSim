@@ -176,10 +176,6 @@ function Judge() {
 
   return (
     <div className="judge-container">
-      <button className="back-to-home" onClick={handleBackToHome}>
-        Back to Home
-      </button>
-      
       <h1 className="main-heading">Debate Results</h1>
       <h2 className="sub-heading">Topic: {topic}</h2>
       
