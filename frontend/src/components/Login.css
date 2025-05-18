@@ -1,120 +1,131 @@
-/* Full page layout */
 body, html {
   height: 100%;
   margin: 0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-.container-fluid {
-  height: 100%;
-  display: flex;
-  padding: 0;
-}
-
-.left-panel {
-  background: url("/images/background4.png") center center/cover no-repeat;
-  display: flex;
-  flex-direction: column; 
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 3rem;
-  height: 100%;
-}
-.left-panel > h1 {
-  font-size:600%;
-  font-weight: bold;
-
-}
-.left-panel > p{
-  font-size:200%;
-  font-weight: normal;
-}
-/* Adding back the animations */
-@keyframes rotateUpDebateSim {
-  0% {
-    opacity: 0;
-    transform: translateY(50px); 
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0); 
-  }
-}
-
-.left-panel h1 .word,
-.left-panel p .word {
-  display: inline-block;
-  opacity: 0; 
-  animation: rotateUpDebateSim 0.4s ease-out forwards;
-  margin: 0 5px;
-}
-
-.left-panel h1 .word:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.left-panel h1 .word:nth-child(2) {
-  animation-delay: 0.5s;
-}
-
-.left-panel h1 .word:nth-child(3) {
-  animation-delay: 1s;
-}
-
-.left-panel p .word:nth-child(1) {
-  animation-delay: 1.5s;
-}
-
-.left-panel p .word:nth-child(2) {
-  animation-delay: 2s;
-}
-
-.left-panel p .word:nth-child(3) {
-  animation-delay: 2.5s;
-}
-
-/* Right side - Login form */
-.login-content {
-  background: rgba(255, 255, 255, 0.8);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.login-button {
-  padding: 0.8rem 2rem;
-  font-size: 1.1em;
-  border: none;
-  border-radius: 6px;
-  background-color: rgb(86, 122, 152);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 1rem auto;
+.login-page {
+  height: 100vh;
   width: 100%;
-  max-width: 300px;
+  background: linear-gradient(
+      rgba(0, 0, 32, 0.85),
+      rgba(0, 0, 64, 0.9)
+    ),
+    url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
 }
 
-.login-button:hover {
-  background-color: #2a5c8e;
-  transform: translateY(-1px);
+/* Navbar */
+.navbar {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 1rem 2rem;
 }
 
-.login-button:disabled {
-  background-color: #ccc;
+.login-btn-primary {
+  background-color: #001f3f;
+  border: none;
+  color: white;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.login-btn-primary:hover:not(:disabled) {
+  background-color: #003366;
+  transform: translateY(-2px);
+}
+
+.login-btn-secondary {
+  background-color: #f0f0f0;
+  color: #001f3f;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.login-btn-secondary:hover:not(:disabled) {
+  background-color: #e6e6e6;
+  color: #001f3f;
+  transform: translateY(-2px);
+}
+
+.login-btn-primary:disabled,
+.login-btn-secondary:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-.error {
-  color: #ff4444;
-  margin: 1rem 0;
-  padding: 0.5rem;
-  border-radius: 4px;
-  background-color: rgba(255, 68, 68, 0.1);
+/* Main content */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
 }
+
+.main-content h1 {
+  font-size: 4.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.main-content p {
+  font-size: 1.75rem;
+  font-weight: 400;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* Slide-up animation */
+@keyframes slideUpDebateSim {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.word {
+  display: inline-block;
+  opacity: 0;
+  animation: slideUpDebateSim 0.5s ease-out forwards;
+  margin: 0 6px;
+}
+
+.word:nth-child(1) { animation-delay: 0s; }
+.word:nth-child(2) { animation-delay: 0.3s; }
+.word:nth-child(3) { animation-delay: 0.6s; }
+
+/* Error */
+.alert-danger {
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.login-error {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #ff4d4d;
+  border: 1px solid #ffcccc;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  max-width: 400px;
+  margin: 1rem auto 0;
+  text-align: center;
+  box-shadow: 0 0 6px rgba(255, 0, 0, 0.15);
+}
+
