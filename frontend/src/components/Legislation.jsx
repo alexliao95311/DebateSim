@@ -319,9 +319,21 @@ const Legislation = ({ user }) => {
 
       <div className="main-content">
         {viewMode === "analyze" && analysisResult && (
-          <div className="analysis-result">
+          <div className="analysis-result markdown-content">
             <h3>Bill Analysis</h3>
-            <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
+            <ReactMarkdown 
+              rehypePlugins={[rehypeRaw]} 
+              className="markdown-renderer"
+              components={{
+                h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
+                h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
+                h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
+                h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
+                p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+              }}
+            >
               {analysisResult}
             </ReactMarkdown>
           </div>

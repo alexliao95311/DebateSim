@@ -467,3 +467,104 @@
 .success-message span {
   flex: 1;
 }
+
+/* Enhanced markdown rendering for bill analysis */
+.analysis-result {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 800px;
+}
+
+.markdown-content {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.markdown-renderer {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.3;
+}
+
+.markdown-renderer h1,
+.markdown-renderer h2,
+.markdown-renderer h3,
+.markdown-renderer h4,
+.markdown-renderer h5,
+.markdown-renderer h6 {
+  margin-top: 0.8rem; /* Further reduced from 1.2rem */
+  margin-bottom: 0.5rem; /* Further reduced from 0.7rem */
+  color: #333;
+  font-weight: 600;
+}
+
+.markdown-renderer h1 + h2,
+.markdown-renderer h2 + h3,
+.markdown-renderer h3 + h4,
+.markdown-renderer h4 + h5,
+.markdown-renderer h5 + h6 {
+  margin-top: 0.5rem;
+}
+
+/* Reduce the text size slightly for better compactness */
+.markdown-renderer h1 {
+  font-size: 1.8rem; /* Reduced from 2rem */
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 0.3rem; /* Reduced from 0.5rem */
+}
+
+.markdown-renderer h2 {
+  font-size: 1.6rem; /* Reduced from 1.75rem */
+}
+
+.markdown-renderer h3 {
+  font-size: 1.4rem; /* Reduced from 1.5rem */
+}
+
+.markdown-renderer h4 {
+  font-size: 1.2rem; /* Reduced from 1.25rem */
+}
+
+/* Improve special formatting for Markdown-style headers with hashtags */
+.markdown-renderer p:first-child strong:first-child {
+  font-size: 1.3rem;
+  display: block;
+  margin-bottom: 0.3rem;
+  margin-top: 0.7rem; /* Add some space above but less than regular headings */
+}
+
+/* Special handling for subsequent paragraphs after headings */
+.markdown-renderer h1 + p,
+.markdown-renderer h2 + p,
+.markdown-renderer h3 + p,
+.markdown-renderer h4 + p {
+  margin-top: 0.3rem;
+}
+
+/* Add compact spacing for paragraphs within list items */
+.markdown-renderer li p {
+  margin-bottom: 0.3rem;
+}
+
+/* Additional fixes for hashtag headings and spacing */
+.markdown-renderer p:first-child {
+  white-space: pre-wrap;
+  margin-top: 0;
+}
+
+.markdown-renderer pre {
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  padding: 0.7rem; /* Reduced from 1rem */
+  margin-bottom: 0.7rem; /* Reduced from 1rem */
+  overflow-x: auto;
+}
+
+/* Add specific styling for hashtag headings to make them more distinct */
+.markdown-renderer p strong {
+  display: inline-block;
+  margin-top: 0.5rem;
+}
