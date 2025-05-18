@@ -123,8 +123,9 @@
 /* Feature Sections */
 .feature-sections {
   display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  flex-direction: row; /* Changed from column to row */
+  justify-content: space-between;
+  gap: 1.5rem; /* Reduced gap between cards */
   width: 100%;
   margin-top: 2rem;
 }
@@ -135,6 +136,12 @@
   border-radius: 8px;
   padding: 1.5rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center all content */
+  text-align: center; /* Center text alignment */
+  flex: 1; /* Make all cards take equal width */
+  min-width: 0; /* Prevent overflow in flexbox */
 }
 
 .feature:hover {
@@ -145,22 +152,47 @@
 .feature h3 {
   margin-top: 0;
   color: #333;
+  text-align: center;
+  font-size: 1.3rem; /* Slightly smaller heading */
 }
 
-.feature-link {
-  color: #4a90e2;
-  font-weight: bold;
-  text-decoration: none;
-  transition: text-decoration 0.2s ease;
+/* Replace the feature-link with a button style */
+.feature-button {
+  margin-top: auto; /* Push button to bottom of card */
+  padding: 0.7rem 1.2rem;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 80%; /* Not full width */
 }
 
-.feature-link:hover {
-  text-decoration: underline;
+.feature-button:hover {
+  background-color: #357abd;
 }
 
 .feature-description {
-  margin-top: 0.5rem;
+  margin: 0.8rem 0 1.5rem 0;
   color: #555;
+  font-size: 1rem !important; /* Decreased from 0.95rem to 0.85rem */
+  flex-grow: 1; /* Allow description to take available space */
+  line-height: 1.4; /* Adding proper line height for readability */
+  max-width: 90%; /* Prevent text from stretching too wide */
+}
+
+/* Add media query for responsive design */
+@media (max-width: 768px) {
+  .feature-sections {
+    flex-direction: column; /* Stack cards on mobile */
+  }
+  
+  .feature {
+    width: 100%;
+  }
 }
 
 /* Bottom Text Styles */
