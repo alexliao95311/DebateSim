@@ -5,3 +5,4 @@ aiohttp
 cachetools
 uvicorn
 pdfminer.six
+pdfminer
