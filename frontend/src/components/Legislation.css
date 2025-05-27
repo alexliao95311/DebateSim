@@ -484,87 +484,94 @@
   word-wrap: break-word;
 }
 
+/* Enhanced markdown rendering for bill analysis with !important flags */
 .markdown-renderer {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.3;
+  line-height: 1.2 !important; /* Reduced from 1.3 */
 }
 
+/* Drastically reduce heading margins */
 .markdown-renderer h1,
 .markdown-renderer h2,
 .markdown-renderer h3,
 .markdown-renderer h4,
 .markdown-renderer h5,
 .markdown-renderer h6 {
-  margin-top: 0.8rem; /* Further reduced from 1.2rem */
-  margin-bottom: 0.5rem; /* Further reduced from 0.7rem */
+  margin-top: 0.5rem !important; /* Further reduced */
+  margin-bottom: 0.3rem !important; /* Further reduced */
   color: #333;
   font-weight: 600;
 }
 
-.markdown-renderer h1 + h2,
-.markdown-renderer h2 + h3,
-.markdown-renderer h3 + h4,
-.markdown-renderer h4 + h5,
-.markdown-renderer h5 + h6 {
-  margin-top: 0.5rem;
+/* Minimize paragraph margins */
+.markdown-renderer p {
+  margin-bottom: 0.4rem !important;
+  margin-top: 0 !important;
 }
 
-/* Reduce the text size slightly for better compactness */
+/* Reduce list spacing */
+.markdown-renderer ul,
+.markdown-renderer ol {
+  margin-top: 0.2rem !important;
+  margin-bottom: 0.4rem !important;
+  padding-left: 1.2rem !important;
+}
+
+.markdown-renderer li {
+  margin-bottom: 0.1rem !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Tighten list item spacing */
+.markdown-renderer li p {
+  margin-bottom: 0.1rem !important;
+  margin-top: 0 !important;
+}
+
+/* Fix heading sizes while keeping them compact */
 .markdown-renderer h1 {
-  font-size: 1.8rem; /* Reduced from 2rem */
-  border-bottom: 1px solid #eaeaea;
-  padding-bottom: 0.3rem; /* Reduced from 0.5rem */
+  font-size: 1.6rem !important;
+  padding-bottom: 0.2rem !important;
 }
 
 .markdown-renderer h2 {
-  font-size: 1.6rem; /* Reduced from 1.75rem */
+  font-size: 1.4rem !important;
 }
 
 .markdown-renderer h3 {
-  font-size: 1.4rem; /* Reduced from 1.5rem */
+  font-size: 1.2rem !important;
 }
 
 .markdown-renderer h4 {
-  font-size: 1.2rem; /* Reduced from 1.25rem */
+  font-size: 1.1rem !important;
 }
 
-/* Improve special formatting for Markdown-style headers with hashtags */
-.markdown-renderer p:first-child strong:first-child {
-  font-size: 1.3rem;
-  display: block;
-  margin-bottom: 0.3rem;
-  margin-top: 0.7rem; /* Add some space above but less than regular headings */
+/* Special handling for numbered lists to keep them compact */
+.analysis-numbered-list {
+  margin-top: 0 !important;
+  margin-bottom: 0.3rem !important;
 }
 
-/* Special handling for subsequent paragraphs after headings */
-.markdown-renderer h1 + p,
-.markdown-renderer h2 + p,
-.markdown-renderer h3 + p,
-.markdown-renderer h4 + p {
-  margin-top: 0.3rem;
+.analysis-numbered-list li {
+  margin-bottom: 0.1rem !important;
 }
 
-/* Add compact spacing for paragraphs within list items */
-.markdown-renderer li p {
-  margin-bottom: 0.3rem;
+/* Target strong text that might be used for emphasis */
+.markdown-renderer strong {
+  display: inline !important;
+  margin: 0 !important;
 }
 
-/* Additional fixes for hashtag headings and spacing */
-.markdown-renderer p:first-child {
-  white-space: pre-wrap;
-  margin-top: 0;
+/* Fix spacing around empty elements */
+.markdown-renderer br {
+  display: none !important;
 }
 
-.markdown-renderer pre {
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  padding: 0.7rem; /* Reduced from 1rem */
-  margin-bottom: 0.7rem; /* Reduced from 1rem */
-  overflow-x: auto;
-}
-
-/* Add specific styling for hashtag headings to make them more distinct */
-.markdown-renderer p strong {
-  display: inline-block;
-  margin-top: 0.5rem;
+/* Override any possible paragraph styles causing extra spacing */
+.analysis-paragraph {
+  margin-top: 0 !important;
+  margin-bottom: 0.4rem !important;
+  line-height: 1.3 !important;
 }
