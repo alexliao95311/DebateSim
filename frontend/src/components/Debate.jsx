@@ -29,10 +29,8 @@ function Debate() {
     return null;
   }
 
-  // Use separate states for the full transcript (for saving and AI prompts)
-  // and the visible transcript (for display).
-  const [fullTranscript, setFullTranscript] = useState("");
-  const [displayTranscript, setDisplayTranscript] = useState("");
+  // Each message: { speaker: string, text: string, model?: string }
+  const [messageList, setMessageList] = useState([]);
   const [round, setRound] = useState(1);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,21 +54,22 @@ function Debate() {
     navigate("/debatesim");
   };
 
-  // Helper: Append a divider if needed.
-  const appendDivider = (current) =>
-    current.trim() !== "" ? current + "\n<hr class='divider' />\n" : current;
+  // Append a new message object to messageList
+  const appendMessage = (speaker, text, modelName = null) => {
+    setMessageList(prev => [
+      ...prev,
+      { speaker, text: text.trim(), model: modelName },
+    ]);
+  };
 
-  // addSpeechBlock creates a new speech block and updates the speechList.
-  // Note: We add every block to the speechList, but we'll filter out "Bill Description" in the sidebar.
-  const addSpeechBlock = (title, content, modelName) => {
-    const newId = `speech-${Date.now()}-${Math.random()}`;
-    setSpeechList((prevList) => [...prevList, { id: newId, title }]);
-    const isUserSpeech = title.toLowerCase().includes("(user");
-    const safeContent = isUserSpeech ? sanitizeUserInput(content) : content;
-    const maybeModel = (!isUserSpeech && modelName)
-      ? `<p class="model-info">Model: ${modelName}</p>`
-      : "";
-    return `<div id="${newId}" class="speech-block"><h3>${title}:</h3>${maybeModel}${safeContent}</div>`;
+  // Build a single Markdown transcript from messageList
+  const buildPlainTranscript = () => {
+    return messageList
+      .map(({ speaker, text, model }) => {
+        const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+        return `## ${speaker}\n${modelInfo}${text}`;
+      })
+      .join("\n\n---\n\n");
   };
 
   const scrollToSpeech = (id) => {
@@ -78,21 +77,19 @@ function Debate() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // On mount, add the Bill Description to the full transcript only.
   useEffect(() => {
-    if (description && fullTranscript.trim() === "") {
-      const initialBlock = addSpeechBlock("Bill Description", description, null);
-      setFullTranscript(initialBlock);
-      // Do not update displayTranscript so the bill description stays hidden.
+    if (description && messageList.length === 0) {
+      // First message is the Bill Description
+      appendMessage("Bill Description", description);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description]);
 
-  // End Debate: Save fullTranscript (which includes the bill description) and navigate.
-  const handleEndDebate = async (finalTranscript = fullTranscript) => {
+  const handleEndDebate = async () => {
     setLoading(true);
     setError("");
     try {
+      const finalTranscript = buildPlainTranscript();
       await saveTranscriptToUser(finalTranscript);
       navigate("/judge", { state: { transcript: finalTranscript, topic, mode, judgeModel } });
     } catch (err) {
@@ -109,70 +106,62 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      let newFull = fullTranscript.trim();
-      let newDisplay = displayTranscript.trim();
-      
-      // Get the entire previous speech block instead of just the last line
-      const lastSpeechMatch = newDisplay.match(/<div id="[^"]*" class="speech-block">[\s\S]*?<\/div>/);
-      const lastArgument = lastSpeechMatch ? lastSpeechMatch[0] : "";
-      
-      // Limit the size of the bill description by summarizing if it's too long
-      const truncatedDescription = description?.length > 3000 ? 
-        `${description.substring(0, 3000)}... (bill text continues)` : 
-        description;
-      
+      // Get last message text
+      const lastMessage = messageList.length > 0
+        ? messageList[messageList.length - 1]
+        : null;
+      const lastArgument = lastMessage ? lastMessage.text : "";
+
+      const truncatedDescription = description?.length > 3000
+        ? `${description.substring(0, 3000)}... (bill text continues)`
+        : description;
+
+      let aiResponse;
       if (aiSide === "pro") {
         const proPrompt = `
-          Debate topic: "${topic}"
-          Bill description: "${truncatedDescription}"
-          Round: ${round} of ${maxRounds}
-          Your role: PRO
-          Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
-          ${lastArgument}
-          
-          Instructions:
-          1. Directly rebut the opponent's key points if they've spoken
-          2. Strengthen the PRO position with 2-3 clear arguments
-          3. Keep your response concise (max 500 words)
-          4. Be persuasive but respectful
-          5. Conclude with a strong summary statement
-        `;
-        
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
-        const block = addSpeechBlock(`AI Debater (Pro) - Round ${round}/${maxRounds}`, proResponse, proModel);
-        newFull = appendDivider(newFull) + block;
-        newDisplay = appendDivider(newDisplay) + block;
+             Debate topic: "${topic}"
+             Bill description: "${truncatedDescription}"
+             Round: ${round} of ${maxRounds}
+             Your role: PRO
+             Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
+             ${lastArgument}
+
+             Instructions:
+             1. Directly rebut the opponent's key points if they've spoken
+             2. Strengthen the PRO position with 2-3 clear arguments
+             3. Keep your response concise (max 500 words)
+             4. Be persuasive but respectful
+             5. Conclude with a strong summary statement
+           `;
+        aiResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
+        appendMessage(`AI Debater (Pro) - Round ${round}/${maxRounds}`, aiResponse, proModel);
         setAiSide("con");
       } else {
         const conPrompt = `
-          Debate topic: "${topic}"
-          Bill description: "${truncatedDescription}"
-          Round: ${round} of ${maxRounds}
-          Your role: CON
-          Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
-          ${lastArgument}
-          
-          Instructions:
-          1. Directly rebut the opponent's key points if they've spoken
-          2. Strengthen the CON position with 2-3 clear arguments
-          3. Keep your response concise (max 500 words)
-          4. Be persuasive but respectful
-          5. Conclude with a strong summary statement
-        `;
-        
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
-        const block = addSpeechBlock(`AI Debater (Con) - Round ${round}/${maxRounds}`, conResponse, conModel);
-        newFull = appendDivider(newFull) + block;
-        newDisplay = appendDivider(newDisplay) + block;
+             Debate topic: "${topic}"
+             Bill description: "${truncatedDescription}"
+             Round: ${round} of ${maxRounds}
+             Your role: CON
+             Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
+             ${lastArgument}
+
+             Instructions:
+             1. Directly rebut the opponent's key points if they've spoken
+             2. Strengthen the CON position with 2-3 clear arguments
+             3. Keep your response concise (max 500 words)
+             4. Be persuasive but respectful
+             5. Conclude with a strong summary statement
+           `;
+        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
+        appendMessage(`AI Debater (Con) - Round ${round}/${maxRounds}`, aiResponse, conModel);
         setAiSide("pro");
-        setRound((prev) => prev + 1);
+        setRound(prev => prev + 1);
         if (round === maxRounds) {
-          await handleEndDebate(newFull);
+          await handleEndDebate();
           return;
         }
       }
-      setFullTranscript(newFull);
-      setDisplayTranscript(newDisplay);
+      setRound(prev => prev + 1);
     } catch (err) {
       setError("Failed to fetch AI response for AI vs AI mode.");
     } finally {
@@ -180,74 +169,51 @@ function Debate() {
     }
   };
 
-  // Update handleChooseSide
   const handleChooseSide = async (side) => {
     setUserSide(side);
     setError("");
-    
-    // Limit the size of the bill description by summarizing if it's too long
-    const truncatedDescription = description?.length > 3000 ? 
-      `${description.substring(0, 3000)}... (bill text continues)` : 
-      description;
-    
-    if (firstSide === "con" && side === "pro") {
-      setLoading(true);
-      try {
-        let newFull = fullTranscript;
-        let newDisplay = displayTranscript;
+
+    const truncatedDescription = description?.length > 3000
+      ? `${description.substring(0, 3000)}... (bill text continues)`
+      : description;
+
+    setLoading(true);
+    try {
+      if (firstSide === "con" && side === "pro") {
         const conPrompt = `
-          Debate topic: "${topic}"
-          Bill description: "${truncatedDescription}"
-          Your role: Opening speaker for the CON side
-          
-          Instructions:
-          1. Provide an opening argument against the topic
-          2. Present 2-3 strong arguments for the CON position
-          3. Keep your response concise (max 400 words)
-          4. Be persuasive and clear
-          5. End with a strong statement
-        `;
-        
+             Debate topic: "${topic}"
+             Bill description: "${truncatedDescription}"
+             Your role: Opening speaker for the CON side
+
+             Instructions:
+             1. Provide an opening argument against the topic
+             2. Present 2-3 strong arguments for the CON position
+             3. Keep your response concise (max 400 words)
+             4. Be persuasive and clear
+             5. End with a strong statement
+           `;
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
-        const block = addSpeechBlock("Con (AI)", conResponse, singleAIModel);
-        newFull = appendDivider(newFull) + block;
-        newDisplay = appendDivider(newDisplay) + block;
-        setFullTranscript(newFull);
-        setDisplayTranscript(newDisplay);
-      } catch (err) {
-        setError("Failed to fetch AI's Con opening argument.");
-      } finally {
-        setLoading(false);
-      }
-    } else if (firstSide === "pro" && side === "con") {
-      setLoading(true);
-      try {
-        let newFull = fullTranscript;
-        let newDisplay = displayTranscript;
+        appendMessage("Con (AI)", conResponse, singleAIModel);
+      } else if (firstSide === "pro" && side === "con") {
         const proPrompt = `
-          Debate topic: "${topic}"
-          Bill description: "${truncatedDescription}"
-          Your role: Opening speaker for the PRO side
-          
-          Instructions:
-          1. Provide an opening argument in favor of the topic
-          2. Present 2-3 strong arguments for the PRO position
-          3. Keep your response concise (max 400 words)
-          4. Be persuasive and clear
-          5. End with a strong statement
-        `;
-        
+             Debate topic: "${topic}"
+             Bill description: "${truncatedDescription}"
+             Your role: Opening speaker for the PRO side
+
+             Instructions:
+             1. Provide an opening argument in favor of the topic
+             2. Present 2-3 strong arguments for the PRO position
+             3. Keep your response concise (max 400 words)
+             4. Be persuasive and clear
+             5. End with a strong statement
+           `;
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel);
-        const block = addSpeechBlock("Pro (AI)", proResponse, singleAIModel);
-        newFull = appendDivider(newFull) + block;
-        newDisplay = appendDivider(newDisplay) + block;
-        setFullTranscript(newFull);
-        setDisplayTranscript(newDisplay);
-      } catch (err) {
-        setError("Failed to fetch AI's Pro opening argument.");
-      } finally {
-        setLoading(false);
+        appendMessage("Pro (AI)", proResponse, singleAIModel);
       }
+    } catch (err) {
+      setError(`Failed to fetch AI's ${side === "pro" ? "Pro" : "Con"} opening argument.`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -263,50 +229,42 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      let newFull = fullTranscript;
-      let newDisplay = displayTranscript;
-      const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      const block = addSpeechBlock(userLabel, userInput);
-      newFull = appendDivider(newFull) + block;
-      newDisplay = appendDivider(newDisplay) + block;
-      setFullTranscript(newFull);
-      setDisplayTranscript(newDisplay);
+      appendMessage(
+        userSide === "pro" ? "Pro (User)" : "Con (User)",
+        userInput
+      );
       setUserInput("");
-      setRound((prev) => prev + 1);
-      
-      // Limit the size of the bill description
-      const truncatedDescription = description?.length > 3000 ? 
-        `${description.substring(0, 3000)}... (bill text continues)` : 
-        description;
-      
+
+      const recentMessages = messageList
+        .slice(-3)
+        .map(msg => `${msg.speaker}: ${msg.text}`)
+        .join("\n");
+
+      const truncatedDescription = description?.length > 3000
+        ? `${description.substring(0, 3000)}... (bill text continues)`
+        : description;
+
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
-      
-      // Get the full debate context (last 3 exchanges maximum)
-      const lastExchanges = newDisplay.split("<hr class='divider' />").slice(-3).join("\n");
-      
+
       const prompt = `
-        Debate topic: "${topic}"
-        Bill description: "${truncatedDescription}"
-        Recent exchanges: 
-        ${lastExchanges}
-        
-        The user just argued for the ${userSide.toUpperCase()} side.
-        
-        Instructions:
-        1. You are on the ${aiSideLocal.toUpperCase()} side
-        2. Directly rebut the user's key points
-        3. Present 1-2 strong counterarguments
-        4. Keep your response concise (max 400 words)
-        5. Be persuasive but respectful
-      `;
-      
+           Debate topic: "${topic}"
+           Bill description: "${truncatedDescription}"
+           Recent exchanges:
+           ${recentMessages}
+
+           The user just argued for the ${userSide.toUpperCase()} side.
+
+           Instructions:
+           1. You are on the ${aiSideLocal.toUpperCase()} side
+           2. Directly rebut the user's key points
+           3. Present 1-2 strong counterarguments
+           4. Keep your response concise (max 400 words)
+           5. Be persuasive but respectful
+         `;
+
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
-      const block2 = addSpeechBlock(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
-      newFull = appendDivider(newFull) + block2;
-      newDisplay = appendDivider(newDisplay) + block2;
-      setFullTranscript(newFull);
-      setDisplayTranscript(newDisplay);
-      setRound((prev) => prev + 1);
+      appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
+      setRound(prev => prev + 1);
     } catch (err) {
       setError("Failed to fetch AI rebuttal.");
     } finally {
@@ -326,17 +284,13 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      let newFull = fullTranscript;
-      let newDisplay = displayTranscript;
-      const userLabel = userSide === "pro" ? "Pro (User)" : "Con (User)";
-      const block = addSpeechBlock(userLabel, userInput);
-      newFull = appendDivider(newFull) + block;
-      newDisplay = appendDivider(newDisplay) + block;
-      setFullTranscript(newFull);
-      setDisplayTranscript(newDisplay);
+      appendMessage(
+        userSide === "pro" ? "Pro (User)" : "Con (User)",
+        userInput
+      );
       setUserInput("");
-      setRound((prev) => prev + 1);
-      await handleEndDebate(newFull);
+      setRound(prev => prev + 1);
+      await handleEndDebate();
     } catch (err) {
       setError("Failed to send final user argument.");
     } finally {
@@ -349,13 +303,7 @@ function Debate() {
       alert("Input field cannot be blank. Please enter your argument.");
       return;
     }
-    let newFull = fullTranscript;
-    let newDisplay = displayTranscript;
-    const block = addSpeechBlock("User vs User", userInput.trim());
-    newFull = appendDivider(newFull) + block;
-    newDisplay = appendDivider(newDisplay) + block;
-    setFullTranscript(newFull);
-    setDisplayTranscript(newDisplay);
+    appendMessage("User vs User", userInput.trim());
     setUserInput("");
     setError("");
   };
@@ -445,7 +393,12 @@ function Debate() {
             )}
           </div>
           <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
-            {displayTranscript}
+            {messageList
+              .map(({ speaker, text, model }) => {
+                const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+                return `## ${speaker}\n${modelInfo}${text}`;
+              })
+              .join("\n\n---\n\n")}
           </ReactMarkdown>
           {mode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
@@ -555,7 +508,7 @@ function Debate() {
           <button
             onClick={() => handleEndDebate()}
             style={{ marginTop: "1rem" }}
-            disabled={loading || fullTranscript.trim().length === 0}
+            disabled={loading || messageList.length === 0}
           >
             End Debate
           </button>
