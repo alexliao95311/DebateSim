@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import "./Home.css";
-
+console.log("API_URL:", import.meta.env.VITE_API_URL);
 function Home({ user, onLogout }) {
   const navigate = useNavigate();
 
