@@ -37,7 +37,7 @@ function Judge() {
 
   useEffect(() => {
     // Extract bill description from transcript if it exists
-    const billMatch = transcript.match(/<div id="[^"]*" class="speech-block"><h3>Bill Description:<\/h3>([\s\S]*?)<\/div>/);
+    const billMatch = transcript.match(/## Bill Description\s+([\s\S]*?)(?:\n## |\n### |$)/);
     if (billMatch && billMatch[1]) {
       setBillDescription(billMatch[1].trim());
     }
@@ -75,14 +75,16 @@ function Judge() {
     setSaving(true);
     setError("");
     try {
-      const combinedTranscript =
-        transcript +
-        "\n<hr class='divider' />\n" +
-        `<div class="judge-feedback">
-          <h3>AI Judge Feedback:</h3>
-          <p class="model-info">Model: ${judgeModel}</p>
-          ${feedback}
-        </div>`;
+      const combinedTranscript = `# Debate Transcript
+
+${transcript}
+
+---
+
+### AI Judge Feedback
+*Model: ${judgeModel}*
+
+${feedback}`;
 
       const db = getFirestore();
       const transcriptsRef = collection(db, "users", currentUser.uid, "transcripts");
@@ -166,10 +168,9 @@ function Judge() {
     if (!billDescription || showBillText) {
       return transcript;
     }
-    
-    // Hide bill description in display view
+    // Remove the "## Bill Description" section from Markdown
     return transcript.replace(
-      /<div id="[^"]*" class="speech-block"><h3>Bill Description:<\/h3>[\s\S]*?<\/div>/, 
+      /## Bill Description\s+[\s\S]*?(?=\n## |\n### |$)/,
       ''
     );
   };
