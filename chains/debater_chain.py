@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 from typing import List, Dict, Any, Mapping, Optional, ClassVar
 from pydantic import Field
 import os
@@ -18,15 +19,45 @@ if not API_KEY:
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
     """Custom LangChain chat model for OpenRouter API."""
-    
+
+    # --- Helper -----------------------------------------------------------
+    def _ensure_full_model_name(self, name: str) -> str:
+        """
+        Guarantee that the provider prefix (e.g. ``deepseek/``) is present.
+
+        OpenRouter expects model identifiers in the form ``provider/model-id``.
+        If the caller accidentally supplies just ``model-id`` (without the
+        provider), we try to infer it from the model-id's leading token and
+        prepend the correct provider so the request does not break.
+        """
+        # If the string already contains a provider prefix, nothing to do.
+        if "/" in name:
+            return name
+
+        # Heuristic inference – extend this map as you add more providers.
+        provider_map = {
+            "deepseek": "deepseek",
+            "openai": "openai",
+            "google": "google",
+            "mistral": "mistralai",
+            "meta": "meta",
+        }
+        root_token = name.split("-", 1)[0]  # e.g. "deepseek" from "deepseek-prover-v2:free"
+        provider = provider_map.get(root_token)
+        if provider:
+            return f"{provider}/{name}"
+
+        # Fall‑back: return the original string unchanged.
+        return name
+
     model_name: str = Field(default="deepseek/deepseek-prover-v2:free")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
-    
+
     class Config:
         arbitrary_types_allowed = True
-    
+
     def _generate(self, messages: List[Any], stop: Optional[List[str]] = None, **kwargs):
         """Generate a chat response using OpenRouter API."""
         headers = {
@@ -49,7 +80,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -68,8 +99,14 @@ class OpenRouterChat(BaseChatModel):
         result = response.json()
         assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        # Convert the raw assistant text into LangChain's ChatResult/ChatGeneration structure
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     async def _agenerate(self, messages: List[Any], stop: Optional[List[str]] = None, **kwargs):
         """Async version of _generate for OpenRouter API."""
@@ -93,7 +130,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -115,8 +152,13 @@ class OpenRouterChat(BaseChatModel):
                 result = await response.json()
                 assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     # Required LangChain methods
     @property
@@ -125,20 +167,35 @@ class OpenRouterChat(BaseChatModel):
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
-        return {"model_name": self.model_name, "temperature": self.temperature}
+        return {
+            "model_name": self._ensure_full_model_name(self.model_name),
+            "temperature": self.temperature,
+        }
 
-# Create a template for the debater prompts
-template = """You are a professional debater taking the {debater_role} side on the topic: "{topic}".
+# --- Prompt template ----------------------------------------------------
+template = """
+You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **“{topic}.”**
 
-{bill_description}
+------------------------------------------------------------------
+Formatting Rules  **(STRICT — the UI parses your markdown)**
+1. **Title line (exact):**
+   `# AI Debater ({debater_role}) – Round {round_num}/5`
+   – Use the *round_num* that is supplied in the variables.
+   – Do **NOT** invent or skip numbers.
+2. After the title, produce *at most* **200 words** total.
+3. Use only *level‑3* markdown headings (`###`).
+   – No other markdown syntax (no lists, tables, code blocks, or images).
+4. Keep paragraphs short (≤ 3 sentences).
+5. Do not add extra blank lines at the end of the message.
 
-{history}
+------------------------------------------------------------------
+Guidelines
+• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent’s last argument, quoted below.  
+• Second, **strengthen your side** with **up to three** numbered points.  
+• Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Please provide a strong, logical argument for your side. Structure your response with:
-1. Clear claims and evidence
-2. Logical reasoning
-3. Organized paragraphs under clear headings (using markdown ### for headings)
-4. Keep your response concise and focused (around 300-500 words)
+Opponent’s last argument (for context — do **not** quote it back verbatim):  
+“{history}”
 """
 
 # Create the chat prompt template
@@ -148,7 +205,7 @@ chat_prompt = ChatPromptTemplate.from_template(template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
+def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free", *, round_num: int = 1):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -184,6 +241,7 @@ def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
             "topic": RunnablePassthrough(),
             "bill_description": RunnablePassthrough(),
             "history": get_history,
+            "round_num": lambda inputs: round_num,
         }
         | chat_prompt
         | llm
@@ -194,19 +252,31 @@ def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
     class ChainWrapper:
         def __init__(self, chain_func):
             self.chain = chain_func
-            
+
         def run(self, **kwargs):
-            response = self.chain.invoke(kwargs)
-            
-            # Add the response to memory
+            """
+            Execute the LCEL chain. We must pass **one positional dict** to
+            `invoke()`, so we assemble that here from the kwargs. The caller may
+            specify `round_num`; otherwise we fall back to the default captured
+            in the closure.
+            """
+            local_round = kwargs.get("round_num", round_num)
+            input_dict = dict(kwargs)
+            input_dict["round_num"] = local_round
+
+            # Invoke the chain
+            response = self.chain.invoke(input_dict)
+
+            # Persist assistant output to memory
             chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
-            if chain_id in memory_map:
-                memory_map[chain_id].append({"role": "assistant", "content": response})
-            
+            if chain_id not in memory_map:
+                memory_map[chain_id] = []
+            memory_map[chain_id].append({"role": "assistant", "content": response})
+
             return response
     
     # Return the wrapper object
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain()
+debater_chain = get_debater_chain(round_num=1)
