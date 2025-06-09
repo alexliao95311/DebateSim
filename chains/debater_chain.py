@@ -172,18 +172,30 @@ class OpenRouterChat(BaseChatModel):
             "temperature": self.temperature,
         }
 
-# Create a template for the debater prompts
-template = """You are a professional debater taking the {debater_role} side on the topic: "{topic}".
+# --- Prompt template ----------------------------------------------------
+template = """
+You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **“{topic}.”**
 
-{bill_description}
+------------------------------------------------------------------
+Formatting Rules  **(STRICT — the UI parses your markdown)**
+1. **Title line (exact):**
+   `# AI Debater ({debater_role}) – Round {round_num}/5`
+   – Use the *round_num* that is supplied in the variables.
+   – Do **NOT** invent or skip numbers.
+2. After the title, produce *at most* **200 words** total.
+3. Use only *level‑3* markdown headings (`###`).
+   – No other markdown syntax (no lists, tables, code blocks, or images).
+4. Keep paragraphs short (≤ 3 sentences).
+5. Do not add extra blank lines at the end of the message.
 
-{history}
+------------------------------------------------------------------
+Guidelines
+• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent’s last argument, quoted below.  
+• Second, **strengthen your side** with **up to three** numbered points.  
+• Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Please provide a strong, logical argument for your side. Structure your response with:
-1. Clear claims and evidence
-2. Logical reasoning
-3. Organized paragraphs under clear headings (using markdown ### for headings)
-4. Keep your response concise and focused (around 300-500 words)
+Opponent’s last argument (for context — do **not** quote it back verbatim):  
+“{history}”
 """
 
 # Create the chat prompt template
@@ -193,7 +205,7 @@ chat_prompt = ChatPromptTemplate.from_template(template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
+def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free", *, round_num: int = 1):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -229,6 +241,7 @@ def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
             "topic": RunnablePassthrough(),
             "bill_description": RunnablePassthrough(),
             "history": get_history,
+            "round_num": lambda inputs: round_num,
         }
         | chat_prompt
         | llm
@@ -239,19 +252,31 @@ def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free"):
     class ChainWrapper:
         def __init__(self, chain_func):
             self.chain = chain_func
-            
+
         def run(self, **kwargs):
-            response = self.chain.invoke(kwargs)
-            
-            # Add the response to memory
+            """
+            Execute the LCEL chain. We must pass **one positional dict** to
+            `invoke()`, so we assemble that here from the kwargs. The caller may
+            specify `round_num`; otherwise we fall back to the default captured
+            in the closure.
+            """
+            local_round = kwargs.get("round_num", round_num)
+            input_dict = dict(kwargs)
+            input_dict["round_num"] = local_round
+
+            # Invoke the chain
+            response = self.chain.invoke(input_dict)
+
+            # Persist assistant output to memory
             chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
-            if chain_id in memory_map:
-                memory_map[chain_id].append({"role": "assistant", "content": response})
-            
+            if chain_id not in memory_map:
+                memory_map[chain_id] = []
+            memory_map[chain_id].append({"role": "assistant", "content": response})
+
             return response
     
     # Return the wrapper object
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain()
+debater_chain = get_debater_chain(round_num=1)
