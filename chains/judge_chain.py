@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 from typing import List, Dict, Any, Mapping, Optional, ClassVar
 from pydantic import Field
 import os
@@ -19,6 +20,30 @@ if not API_KEY:
 class OpenRouterChat(BaseChatModel):
     """Custom LangChain chat model for OpenRouter API."""
     
+    # --- Helper -----------------------------------------------------------
+    def _ensure_full_model_name(self, name: str) -> str:
+        """
+        Guarantee that the provider prefix (e.g. ``deepseek/``) is present.
+
+        OpenRouter expects model identifiers in the form ``provider/model-id``.
+        If the caller accidentally supplies just ``model-id`` (without the
+        provider), we try to infer it from the model-id's leading token and
+        prepend the correct provider so the request does not break.
+        """
+        if "/" in name:
+            return name
+
+        provider_map = {
+            "deepseek": "deepseek",
+            "openai": "openai",
+            "google": "google",
+            "mistral": "mistralai",
+            "meta": "meta",
+        }
+        root_token = name.split("-", 1)[0]
+        provider = provider_map.get(root_token)
+        return f"{provider}/{name}" if provider else name
+
     model_name: str = Field(default="deepseek/deepseek-prover-v2:free")
     temperature: float = Field(default=0.5)
     api_key: str = Field(default=API_KEY)
@@ -49,7 +74,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -68,8 +93,13 @@ class OpenRouterChat(BaseChatModel):
         result = response.json()
         assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     async def _agenerate(self, messages: List[Any], stop: Optional[List[str]] = None, **kwargs):
         """Async version of _generate for OpenRouter API."""
@@ -93,7 +123,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -115,8 +145,13 @@ class OpenRouterChat(BaseChatModel):
                 result = await response.json()
                 assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     # Required LangChain methods
     @property
@@ -125,7 +160,10 @@ class OpenRouterChat(BaseChatModel):
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
-        return {"model_name": self.model_name, "temperature": self.temperature}
+        return {
+            "model_name": self._ensure_full_model_name(self.model_name),
+            "temperature": self.temperature,
+        }
 
 # Define the template for the judge
 template = """You are an expert debate judge. Analyze the following debate transcript and provide comprehensive feedback.
@@ -166,7 +204,24 @@ def get_judge_chain(model_name="deepseek/deepseek-prover-v2:free"):
             self.chain = chain_func
             
         def run(self, **kwargs):
-            return self.chain.invoke(kwargs)
+            """
+            LangChain Runnable chains created with a mapping like
+            ``{"transcript": RunnablePassthrough()}`` expect **one positional
+            input** (the transcript string). Passing keyword args through to
+            ``invoke`` therefore triggers ``missing 1 required positional
+            argument: 'input'``.
+
+            We accept exactly one keyword—grab its value and forward it as the
+            single positional argument.
+            """
+            if len(kwargs) != 1:
+                raise ValueError(
+                    "judge_chain.run() expects exactly one argument (e.g. "
+                    "`transcript=<str>`)."
+                )
+            # Extract the sole provided value
+            (inp,) = kwargs.values()
+            return self.chain.invoke(inp)
     
     # Return the wrapper object
     return ChainWrapper(chain)
