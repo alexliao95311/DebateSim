@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 from typing import List, Dict, Any, Mapping, Optional, ClassVar
 from pydantic import Field
 import os
@@ -18,15 +19,45 @@ if not API_KEY:
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
     """Custom LangChain chat model for OpenRouter API."""
-    
+
+    # --- Helper -----------------------------------------------------------
+    def _ensure_full_model_name(self, name: str) -> str:
+        """
+        Guarantee that the provider prefix (e.g. ``deepseek/``) is present.
+
+        OpenRouter expects model identifiers in the form ``provider/model-id``.
+        If the caller accidentally supplies just ``model-id`` (without the
+        provider), we try to infer it from the model-id's leading token and
+        prepend the correct provider so the request does not break.
+        """
+        # If the string already contains a provider prefix, nothing to do.
+        if "/" in name:
+            return name
+
+        # Heuristic inference – extend this map as you add more providers.
+        provider_map = {
+            "deepseek": "deepseek",
+            "openai": "openai",
+            "google": "google",
+            "mistral": "mistralai",
+            "meta": "meta",
+        }
+        root_token = name.split("-", 1)[0]  # e.g. "deepseek" from "deepseek-prover-v2:free"
+        provider = provider_map.get(root_token)
+        if provider:
+            return f"{provider}/{name}"
+
+        # Fall‑back: return the original string unchanged.
+        return name
+
     model_name: str = Field(default="deepseek/deepseek-prover-v2:free")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
-    
+
     class Config:
         arbitrary_types_allowed = True
-    
+
     def _generate(self, messages: List[Any], stop: Optional[List[str]] = None, **kwargs):
         """Generate a chat response using OpenRouter API."""
         headers = {
@@ -49,7 +80,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -68,8 +99,14 @@ class OpenRouterChat(BaseChatModel):
         result = response.json()
         assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        # Convert the raw assistant text into LangChain's ChatResult/ChatGeneration structure
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     async def _agenerate(self, messages: List[Any], stop: Optional[List[str]] = None, **kwargs):
         """Async version of _generate for OpenRouter API."""
@@ -93,7 +130,7 @@ class OpenRouterChat(BaseChatModel):
                 formatted_messages.append({"role": "user", "content": str(message)})
         
         payload = {
-            "model": self.model_name,
+            "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
@@ -115,8 +152,13 @@ class OpenRouterChat(BaseChatModel):
                 result = await response.json()
                 assistant_message = result["choices"][0]["message"]["content"]
         
-        # Return in the format LangChain expects
-        return {"generations": [{"text": assistant_message}]}
+        return ChatResult(
+            generations=[
+                ChatGeneration(
+                    message=AIMessage(content=assistant_message)
+                )
+            ]
+        )
     
     # Required LangChain methods
     @property
@@ -125,7 +167,10 @@ class OpenRouterChat(BaseChatModel):
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
-        return {"model_name": self.model_name, "temperature": self.temperature}
+        return {
+            "model_name": self._ensure_full_model_name(self.model_name),
+            "temperature": self.temperature,
+        }
 
 # Create a template for the debater prompts
 template = """You are a professional debater taking the {debater_role} side on the topic: "{topic}".
