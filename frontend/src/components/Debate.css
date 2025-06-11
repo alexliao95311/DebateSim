@@ -246,20 +246,121 @@ hr.divider {
 
 /* Speech blocks */
 .speech-block {
-  background: var(--light-bg);
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 .speech-block h3 {
-  font-size: 1.2rem;
+  color: var(--primary);
+  font-size: 1.25rem;
   margin-bottom: 0.5rem;
 }
 .speech-block .model-info {
   font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 0.5rem;
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+
+/* Markdown content inside speech blocks - CRITICAL STYLES */
+.speech-content {
+  line-height: 1.6;
+}
+
+/* Ensure markdown headings render properly */
+.speech-content .debate-heading-h1,
+.speech-content h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 1rem 0 0.5rem 0;
+  color: var(--primary);
+}
+
+.speech-content .debate-heading-h2,
+.speech-content h2 {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin: 1rem 0 0.5rem 0;
+  color: var(--primary);
+}
+
+.speech-content .debate-heading-h3,
+.speech-content h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0.8rem 0 0.4rem 0;
+  color: var(--text-main);
+}
+
+.speech-content .debate-heading-h4,
+.speech-content h4 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0.6rem 0 0.3rem 0;
+  color: var(--text-main);
+}
+
+.speech-content .debate-paragraph,
+.speech-content p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  color: var(--text-main);
+}
+
+.speech-content .debate-list,
+.speech-content ul {
+  margin: 0.5rem 0 1rem 1.5rem;
+  list-style-type: disc;
+}
+
+.speech-content .debate-numbered-list,
+.speech-content ol {
+  margin: 0.5rem 0 1rem 1.5rem;
+  list-style-type: decimal;
+}
+
+.speech-content .debate-list-item,
+.speech-content li {
+  margin-bottom: 0.3rem;
+  line-height: 1.5;
+}
+
+.speech-content .debate-strong,
+.speech-content strong {
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.speech-content .debate-emphasis,
+.speech-content em {
+  font-style: italic;
+  color: var(--text-main);
+}
+
+.speech-content .divider,
+.speech-content hr {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 1.5rem 0;
+}
+
+/* Ensure any raw text is properly formatted */
+.speech-content pre {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.speech-content code {
+  background: #f5f5f5;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
 }
 
 /* Inputs & Buttons */
