@@ -77,6 +77,15 @@ function Debate() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // Update speechList whenever messageList changes
+  useEffect(() => {
+    const newSpeechList = messageList.map((msg, index) => ({
+      id: `speech-${index}`,
+      title: msg.speaker
+    }));
+    setSpeechList(newSpeechList);
+  }, [messageList]);
+
   useEffect(() => {
     if (description && messageList.length === 0) {
       // First message is the Bill Description
@@ -379,6 +388,18 @@ function Debate() {
                 </label>
               </>
             )}
+            {mode === "user-vs-ai" && (
+              <label>
+                AI Model:
+                <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                  {modelOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {mode !== "user-vs-user" && (
               <label>
                 Judge Model:
@@ -392,14 +413,32 @@ function Debate() {
               </label>
             )}
           </div>
-          <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
-            {messageList
-              .map(({ speaker, text, model }) => {
-                const modelInfo = model ? `*Model: ${model}*\n\n` : "";
-                return `## ${speaker}\n${modelInfo}${text}`;
-              })
-              .join("\n\n---\n\n")}
-          </ReactMarkdown>
+        {/* Render each speech as its own block */}
+        {messageList.map(({ speaker, text, model }, i) => (
+          <div key={i} className="speech-block" id={`speech-${i}`}>
+            <h3>{speaker}</h3>
+            {model && <div className="model-info">Model: {model}</div>}
+            <div className="speech-content">
+              <ReactMarkdown
+                components={{
+                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
+                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
+                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
+                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                  hr: ({node, ...props}) => <hr className="divider" {...props} />
+                }}
+              >
+                {text}
+              </ReactMarkdown>
+            </div>
+          </div>
+        ))}
           {mode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
@@ -488,7 +527,7 @@ function Debate() {
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
-                    style={{ width: "100%", resize: "vertical" }}
+                    style={{ width: "100%", resize: vertical }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
                         e.preventDefault();

@@ -190,7 +190,7 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 
 ------------------------------------------------------------------
 Guidelines
-• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent’s last argument, quoted below.  
+• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent’s last argument, quoted below . If there are no previous arguments, do not include this section. 
 • Second, **strengthen your side** with **up to three** numbered points.  
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
