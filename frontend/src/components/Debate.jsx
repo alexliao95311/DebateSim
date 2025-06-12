@@ -395,8 +395,8 @@ function Debate() {
           <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
             {messageList
               .map(({ speaker, text, model }) => {
-                const modelInfo = model ? `*Model: ${model}*\n\n` : "";
-                return `## ${speaker}\n${modelInfo}${text}`;
+                const modelInfo = model ? `**Model:** ${model}\n\n` : "";
+                return `# ${speaker}\n\n${modelInfo}${text.trim()}`;
               })
               .join("\n\n---\n\n")}
           </ReactMarkdown>
