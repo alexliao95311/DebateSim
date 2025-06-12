@@ -45,7 +45,7 @@ async def root():
     return {"message": "FastAPI backend is running!"}
 
 # Enable CORS for frontend communication
-backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:300,http://20.3.246.40:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in backend_origins],

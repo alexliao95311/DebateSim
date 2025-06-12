@@ -16,6 +16,11 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+function unescapeMarkdown(text) {
+  // Unescape common Markdown characters if they are escaped
+  return text.replace(/\\([*_`~])/g, '$1');
+}
+
 function sanitizeUserInput(str) {
   return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -395,8 +400,8 @@ function Debate() {
           <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
             {messageList
               .map(({ speaker, text, model }) => {
-                const modelInfo = model ? `**Model:** ${model}\n\n` : "";
-                return `# ${speaker}\n\n${modelInfo}${text.trim()}`;
+                const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+                return `## ${speaker}\n${modelInfo}${text}`;
               })
               .join("\n\n---\n\n")}
           </ReactMarkdown>
