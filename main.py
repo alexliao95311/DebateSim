@@ -45,10 +45,13 @@ async def root():
     return {"message": "FastAPI backend is running!"}
 
 # Enable CORS for frontend communication
-backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:300,http://20.3.246.40:3000").split(",")
+backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://20.3.246.40:3000").split(",")
+cleaned_origins = [origin.strip().rstrip("/") for origin in backend_origins]
+print("[Cleaned CORS Origins]:", cleaned_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in backend_origins],
+    allow_origins=cleaned_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -236,3 +239,7 @@ async def judge_feedback(request: JudgeFeedbackRequest):
     except Exception as e:
         logger.error(f"Error in judge_chain: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error generating judge feedback")
+    
+@app.options("/test-cors")
+async def test_cors():
+    return {"message": "CORS preflight OK"}
