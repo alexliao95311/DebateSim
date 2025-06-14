@@ -105,7 +105,7 @@ function Login({ onLogin }) {
         >
           <h1>Welcome to DebateSim</h1>
           <button className="btn-start" onClick={scrollToNextSection}>
-            Get Started
+            Start Debating  ➤
           </button>
         </section>
 
