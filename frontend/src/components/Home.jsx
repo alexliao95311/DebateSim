@@ -2,16 +2,18 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import "./Home.css";
+
 console.log("API_URL:", import.meta.env.VITE_API_URL);
+
 function Home({ user, onLogout }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    signOut(getAuth())
+    signOut(getAuth()) 
       .then(() => {
         onLogout();
       })
-      .catch((err) => console.error("Logout error:", err));
+      .catch((err) => console.error("Logout error.", err));
   };
 
   return (
@@ -20,11 +22,11 @@ function Home({ user, onLogout }) {
         <div className="header-content">
           {/* Empty left section */}
           <div className="header-left"></div>
-          
+
           <div className="header-center">
             <h1 className="site-title">Feature Hub</h1>
           </div>
-          
+
           <div className="header-right">
             <span className="username">{user?.displayName}</span>
             <button className="logout-button" onClick={handleLogout}>
@@ -45,12 +47,12 @@ function Home({ user, onLogout }) {
             </p>
             <button 
               className="feature-button" 
-              onClick={() => navigate("/debatesim")}
+              onClick={() => navigate("/debatesim")} 
             >
               Go to Debate Simulator
             </button>
           </div>
-          
+
           <div className="feature">
             <h3>Bill and Legislation Debate</h3>
             <p className="feature-description">
@@ -58,22 +60,26 @@ function Home({ user, onLogout }) {
             </p>
             <button 
               className="feature-button" 
-              onClick={() => navigate("/legislation")}
+              onClick={() => navigate("/legislation")} 
             >
               Go to Bill Debate
             </button>
           </div>
-          
-          <div className="feature">
+
+          <div className="feature bias-detector">
             <h3>Bias Detector</h3>
             <p className="feature-description">
               In progress! Evaluate online content for accuracy and bias! Analyze websites, news articles, or any text to identify potential slant and misinformation.
             </p>
+
+            {/* Coming soon ribbon */}
+            <div className="coming-soon-banner">COMING SOON</div>
+
             <button 
-              className="feature-button" 
-              onClick={() => navigate("/feature3")}
+              className="feature-button disabled" 
+              disabled
             >
-              Go to Bias Detector
+              Coming Soon
             </button>
           </div>
         </div>

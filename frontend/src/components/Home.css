@@ -142,6 +142,7 @@
   text-align: center !important;
   flex: 1 !important;
   min-width: 0 !important;
+  border: 1px solid #ccc !important;
 }
 
 .feature:hover {
@@ -182,6 +183,32 @@
   line-height: 1.4 !important;
   max-width: 90% !important;
 }
+
+.feature.bias-detector {
+  position: relative !important;
+  padding: 20px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 12px !important;
+}
+
+.coming-soon-banner {
+  position: absolute !important;
+  top: 10px !important;
+  right: -34px !important;
+  background: rgb(242, 83, 83) !important;
+  padding: 5px 10px !important;
+  transform: rotate(45deg) !important;
+  font-size: 0.9rem !important;
+  font-weight: bold !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.5) !important;
+}
+
+.feature-button.disabled {
+  background: #888 !important;
+  cursor: not-allowed !important;
+  filter: brightness(0.7) !important;
+}
+
 
 /* Responsive design */
 @media (max-width: 768px) {
