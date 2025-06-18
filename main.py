@@ -14,8 +14,8 @@ from cachetools.keys import hashkey
 from io import BytesIO
 from pdfminer.high_level import extract_text
 
-from chains.debater_chain import debater_chain
-from chains.judge_chain import judge_chain
+from chains.debater_chain import get_debater_chain
+from chains.judge_chain import judge_chain, get_judge_chain
 
 # Load environment variables
 load_dotenv()
@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global model configuration
-DEFAULT_MODEL = "deepseek/deepseek-prover-v2:free"
+DEFAULT_MODEL = "deepseek/deepseek-r1-0528:free"
 FALLBACK_MODEL = "meta-llama/llama-3-8b-instruct:free"
 
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
@@ -114,14 +114,8 @@ async def generate_response(request: GenerateResponseRequest):
             topic = request.prompt.strip()
             opponent_arg = ""
         
-        # Extract model name from the format "provider/model-name"
-        model_name = request.model
-        if '/' in model_name:
-            model_name = model_name.split('/')[-1]
-        
         # Get a debater chain with the specified model
-        from chains.debater_chain import get_debater_chain
-        model_specific_debater_chain = get_debater_chain(model_name)
+        model_specific_debater_chain = get_debater_chain(request.model)
         
         # Call the run method
         ai_output = model_specific_debater_chain.run(
@@ -189,7 +183,10 @@ async def analyze_legislation(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
 
     try:
-        analysis = debater_chain.run(
+        # Get a debater chain with the default model for legislation analysis
+        analysis_chain = get_debater_chain(DEFAULT_MODEL)
+        
+        analysis = analysis_chain.run(
             debater_role="Analyst",
             topic="Legislation Analysis",
             bill_description=text,
@@ -221,14 +218,7 @@ async def judge_feedback(request: JudgeFeedbackRequest):
     logger.info(f"📩 /judge-feedback called with model={request.model!r}")
     try:
         # Get the appropriate judge chain with the requested model
-        from chains.judge_chain import get_judge_chain
-        
-        # Extract model name from the format "provider/model-name"
-        model_parts = request.model.split('/')
-        model_name = model_parts[-1] if len(model_parts) > 1 else request.model
-        
-        # Get a judge chain with the specified model
-        model_specific_judge_chain = get_judge_chain(model_name)
+        model_specific_judge_chain = get_judge_chain(request.model)
         
         # Run the chain with the transcript
         feedback = model_specific_judge_chain.run(

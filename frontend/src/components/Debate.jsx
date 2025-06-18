@@ -7,12 +7,12 @@ import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import "./Debate.css"; 
 
 const modelOptions = [
-  "deepseek/deepseek-prover-v2:free", 
-  "meta-llama/llama-3-8b-instruct:free", 
+  "deepseek/deepseek-r1-0528:free",
+  "meta-llama/llama-3-8b-instruct:free",
   "google/gemini-2.0-flash-exp:free",
   "anthropic/claude-3.5-sonnet",
   "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct", 
+  "meta-llama/llama-3.3-70b-instruct",
   "openai/gpt-4o-mini-search-preview"
 ];
 
@@ -170,7 +170,6 @@ function Debate() {
           return;
         }
       }
-      setRound(prev => prev + 1);
     } catch (err) {
       setError("Failed to fetch AI response for AI vs AI mode.");
     } finally {
