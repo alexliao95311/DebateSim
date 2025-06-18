@@ -93,7 +93,8 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    await session.close()
+    if session is not None:
+        await session.close()
 
 
 # API Endpoints
