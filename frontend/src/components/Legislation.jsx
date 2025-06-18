@@ -8,7 +8,7 @@ import rehypeRaw from 'rehype-raw';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
-  "deepseek/deepseek-prover-v2:free", 
+  "deepseek/deepseek-r1-0528:free", 
   "meta-llama/llama-3-8b-instruct:free", 
   "google/gemini-2.0-flash-exp:free",
   "anthropic/claude-3.5-sonnet",

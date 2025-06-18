@@ -125,7 +125,7 @@ function Login({ onLogin }) {
         </section>
 
         <section className="feature-section fade-section" ref={el => (sectionsRef.current[3] = el)}>
-          <h2>Select a Feature</h2>
+          <h2>Diverse Features</h2>
           <div className="feature-cards">
             <div className="feature-card">
               <h3>Debate Simulator</h3>
