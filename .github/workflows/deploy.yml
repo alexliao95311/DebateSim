@@ -13,22 +13,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Debug Secrets (masked)
-        run: |
-          echo "VM_HOST length: ${#VM_HOST}"
-          echo "VM_USER length: ${#VM_USER}"
-          echo "VM_HOST starts with: ${VM_HOST:0:3}..."
-          echo "VM_USER is: $VM_USER"
-        env:
-          VM_HOST: ${{ secrets.VM_HOST }}
-          VM_USER: ${{ secrets.VM_USER }}
-
-      - name: Set up SSH Connection
-        uses: webfactory/ssh-agent@v0.5.4
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v0.1.7
         with:
-          ssh-private-key: ${{ secrets.VM_SSH_KEY }}
-
-      - name: Test SSH Connection with verbose output
-        run: |
-          echo "Attempting SSH connection..."
-          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "echo 'Connection successful'"
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+            echo "🚀 Starting deployment..."
+            cd /home/${{ secrets.VM_USER }}/DebateSim
+            git pull origin main
+            
+            echo "🔄 Restarting Backend..."
+            pkill -f "uvicorn main:app" || echo "No existing backend process"
+            source .venv/bin/activate
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 > backend.log 2>&1 &
+            
+            echo "🛠 Rebuilding Frontend..."
+            cd frontend
+            pkill -f "npx serve" || echo "No existing frontend process"
+            npm install
+            npm run build
+            nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 &
+            
+            echo "✅ Deployment Completed!"
