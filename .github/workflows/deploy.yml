@@ -18,34 +18,44 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VM_SSH_KEY }}
 
+      - name: Test SSH Connection
+        run: |
+          echo "Testing connection to ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} "echo 'SSH connection successful'"
+
       - name: Deploy to VM
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
-            set -e  # Stop execution if any command fails
-
-            echo "🚀 Pulling latest changes..."
-            cd /home/${{ secrets.VM_USER }}/DebateSim
+            set -e
+            
+            echo "🚀 Starting deployment..."
+            echo "Current user: $(whoami)"
+            echo "Current directory: $(pwd)"
+            
+            echo "📁 Navigating to project directory..."
+            cd /home/$(whoami)/DebateSim || { echo "Project directory not found"; exit 1; }
+            
+            echo "🔄 Pulling latest changes..."
             git pull origin main
-
+            
             echo "🔄 Restarting Backend..."
+            # More reliable way to find and kill processes
+            pkill -f "uvicorn main:app" || echo "No existing backend process found"
+            
             source .venv/bin/activate
-            BACKEND_PID=`sudo netstat -tulnp | grep ':5000' | head -n 1 | awk '{print $7}' | cut -d'/' -f1 || echo ""`
-            if [ -n "$BACKEND_PID" ]; then
-              echo "Killing existing backend process: $BACKEND_PID"
-              sudo kill -9 $BACKEND_PID
-            fi
             nohup uvicorn main:app --host 0.0.0.0 --port 5000 > backend.log 2>&1 &
-
+            echo "Backend started with PID: $!"
+            
             echo "🛠 Rebuilding Frontend..."
             cd frontend
-            FRONTEND_PID=`sudo netstat -tulnp | grep ':3000' | head -n 1 | awk '{print $7}' | cut -d'/' -f1 || echo ""`
-            if [ -n "$FRONTEND_PID" ]; then
-              echo "Killing existing frontend process: $FRONTEND_PID"
-              sudo kill -9 $FRONTEND_PID
-            fi
-            npm install  # Ensure dependencies are up to date
+            
+            # Kill existing frontend process
+            pkill -f "npx serve" || echo "No existing frontend process found"
+            
+            npm install
             npm run build
-            nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 & disown
-
+            nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 &
+            echo "Frontend started with PID: $!"
+            
             echo "✅ Deployment Completed!"
           EOF
