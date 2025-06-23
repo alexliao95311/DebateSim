@@ -1,11 +1,11 @@
 # DebateSim: AI-Powered Debate Simulation
 
-DebateSim is an innovative website designed to simulate debate scenarios using artificial intelligence. This tool allows users to explore the dynamics of debates by enabling AI to take on roles such as debaters, judges, or both. Whether you’re a student, coach, or debate enthusiast, DebateSim provides an interactive and educational platform to enhance critical thinking, argumentation, and decision-making skills. 
+DebateSim is an innovative website designed to simulate debate scenarios using artificial intelligence. This tool allows users to explore the dynamics of debates by enabling AI to take on roles such as debaters, judges, or both. Whether you're a student, coach, or debate enthusiast, DebateSim provides an interactive and educational platform to enhance critical thinking, argumentation, and decision-making skills. 
 
 # Live Demo
 
 https://tinyurl.com/debatesim1
-* It will direct to http://20.3.246.40:3000/
+* It will direct to http://172.190.97.150/
 * Note that some school or library wifi may block websites using IP addresses.
 
 # Features
@@ -39,16 +39,16 @@ https://tinyurl.com/debatesim1
 6. Navigate to api.js and update the link
 
 # Virtual Machine
-1. Log into VM: `ssh azureuser@20.3.246.40`
+1. Log into VM: `ssh azureuser@172.190.97.150`
 2. Set up python venv: `source ./venv/bin/activate`
 3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
 4. Move to frontend directory: `cd frontend`
 5. Build frontend: `npm run build`
-6. Run frontend: `npx serve -s dist -l 3000`
+6. Run frontend: `sudo npx serve -s dist -l 80`
 
 To run indefinitely: 
 - Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
-- Frontend: `nohup npx serve -s dist -l 3000 > frontend.log 2>&1 & disown`
+- Frontend: `nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown`
 
 *Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
 *To kill processes: `kill -9 <PID>` 
