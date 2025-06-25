@@ -28,8 +28,8 @@ jobs:
             echo "🔄 Restarting Backend..."
             pkill -f "uvicorn main:app" || echo "No existing backend process"
             sleep 2
-            source .venv/bin/activate
-            nohup uvicorn main:app --host 0.0.0.0 --port 5000 > backend.log 2>&1 &
+            source venv/bin/activate
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
             sleep 1
             
             echo "🛠 Rebuilding Frontend..."
@@ -38,12 +38,12 @@ jobs:
             sleep 2
             npm install
             npm run build
-            nohup npx serve -s dist -l 3000 --no-clipboard --single > frontend.log 2>&1 &
+            nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown
             sleep 1
             
             echo "✅ Deployment Completed Successfully!"
             echo "Backend running on port 5000"
-            echo "Frontend running on port 3000"
+            echo "Frontend running on port 80"
             
             # Verify processes are running
             pgrep -f "uvicorn main:app" && echo "✅ Backend process confirmed running"

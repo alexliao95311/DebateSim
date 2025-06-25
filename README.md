@@ -44,7 +44,7 @@ https://tinyurl.com/debatesim1
 3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
 4. Move to frontend directory: `cd frontend`
 5. Build frontend: `npm run build`
-6. Run frontend: `sudo npx serve -s dist -l 80`
+6. Serve frontend on port 80: `sudo npx serve -s dist -l 80`
 
 To run indefinitely: 
 - Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
@@ -53,7 +53,7 @@ To run indefinitely:
 *Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
 *To kill processes: `kill -9 <PID>` 
 
-
+**Note**: For development on your local machine, use `npm run dev` which will run on port 3000. For production deployment on the VM, build the project and serve the static files on port 80.
 
 # Example
 1.	Start DebateSim
