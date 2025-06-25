@@ -97,9 +97,8 @@ jobs:
             echo "🛠 Building Frontend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
             
-            # Kill existing frontend process
-            timeout 10s pkill -f "npx serve" || echo "No existing frontend process"
-            sleep 2
+            # Skip frontend process killing for testing
+            echo "Skipping frontend process termination..."
             
             echo "📦 Installing dependencies..."
             npm install
