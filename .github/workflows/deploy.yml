@@ -13,6 +13,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 1m
+          script: |
+            echo "🔍 Testing SSH connection..."
+            echo "Hostname: $(hostname)"
+            echo "Current user: $(whoami)"
+            echo "Current directory: $(pwd)"
+            echo "✅ SSH connection successful"
+
       - name: Update Code
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -35,25 +50,26 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           timeout: 60s
-          command_timeout: 5m
+          command_timeout: 2m
           script: |
             set -e
             echo "🔄 Restarting Backend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim
+            
+            # Kill existing process
             pkill -f "uvicorn main:app" || echo "No existing backend process"
-            sleep 3
+            sleep 1
+            
+            # Start backend
             source venv/bin/activate
             nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
-            sleep 5
+            sleep 2
             
-            echo "📋 Backend logs:"
-            cat backend.log || echo "No backend logs yet"
-            
+            # Quick verification
             if pgrep -f "uvicorn main:app" > /dev/null; then
-              echo "✅ Backend process confirmed running"
+              echo "✅ Backend started successfully"
             else
-              echo "❌ Backend process not found"
-              cat backend.log || echo "No backend logs available"
+              echo "❌ Backend failed to start"
               exit 1
             fi
 
