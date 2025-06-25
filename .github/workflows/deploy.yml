@@ -56,14 +56,8 @@ jobs:
             echo "🔄 Restarting Backend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim
             
-            # Kill existing process gracefully
-            echo "Stopping existing backend..."
-            if pgrep -f "uvicorn main:app" > /dev/null; then
-              echo "Found existing backend process, stopping..."
-              pkill -f "uvicorn main:app" && sleep 2 || true
-            else
-              echo "No existing backend process found"
-            fi
+            # Skip process killing for testing
+            echo "Skipping backend process termination..."
             
             # Check if venv exists and activate
             if [ ! -f "venv/bin/activate" ]; then
