@@ -71,8 +71,8 @@ jobs:
             source venv/bin/activate
             
             echo "Starting backend server..."
-            # Start backend with timeout protection
-            timeout 30s nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
+            # Start backend server in background
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
             
             # Wait and check if process started
             sleep 3
