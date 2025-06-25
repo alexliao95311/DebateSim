@@ -155,6 +155,11 @@ jobs:
               exit 1
             fi
             
+            # Set correct permissions for nginx to read files
+            echo "Setting permissions for nginx..."
+            sudo chmod 755 /home/${{ secrets.VM_USER }} /home/${{ secrets.VM_USER }}/DebateSim /home/${{ secrets.VM_USER }}/DebateSim/frontend
+            sudo chmod -R 755 /home/${{ secrets.VM_USER }}/DebateSim/frontend/dist
+            
             # Test and reload nginx
             echo "Testing nginx configuration..."
             sudo nginx -t
