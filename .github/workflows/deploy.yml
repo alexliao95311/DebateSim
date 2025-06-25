@@ -58,7 +58,7 @@ jobs:
             
             # Kill existing process with timeout
             echo "Stopping existing backend..."
-            timeout 10s pkill -f "uvicorn main:app" || echo "No existing backend process"
+            pkill -f "uvicorn main:app" || true
             sleep 2
             
             # Check if venv exists and activate
