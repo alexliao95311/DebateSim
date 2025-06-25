@@ -6,51 +6,51 @@
 
 **An intelligent debate simulation platform powered by advanced AI models**
 
-[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-debatesim.us-success?style=flat-square)](https://debatesim.us)
+## **[🌐 LIVE DEMO - debatesim.us](https://debatesim.us)**
+
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=flat-square&logo=github)](https://github.com/alexliao95311/DebateSim)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
-## 🎯 Overview
+## Overview
 
 DebateSim is a sophisticated debate simulation platform that leverages cutting-edge AI technology to create engaging, educational debate experiences. Whether you're a student honing your argumentation skills, an educator facilitating classroom discussions, or simply someone passionate about exploring different perspectives on complex issues, DebateSim provides the tools to engage in structured, high-quality debates.
 
-## ✨ Key Features
+## Key Features
 
-### 🤖 **Multi-Modal Debate Formats**
+### **Multi-Modal Debate Formats**
 - **AI vs AI**: Watch two AI debaters engage in structured arguments on any topic
 - **AI vs User**: Challenge yourself against sophisticated AI opponents
 - **User vs User**: Facilitate human-to-human debates with AI moderation
 
-### 🧠 **Intelligent AI Judge System**
+### **Intelligent AI Judge System**
 - Comprehensive post-debate analysis and feedback
 - Objective evaluation of argument strength and logical consistency
 - Detailed breakdown of each debater's performance
 - Winner determination with clear reasoning
 
-### 📊 **Legislative Analysis** *(In Development)*
+### **Legislative Analysis** *(In Development)*
 - Upload Congressional bills and legislation documents (PDF)
 - AI-powered analysis of policy implications
 - Multi-perspective debate generation from legislative content
 - Text extraction and summarization capabilities
 
-### 📚 **Debate Management**
+### **Debate Management**
 - Persistent debate history and transcript storage
 - Downloadable debate records in multiple formats
 - User authentication and personalized experience
 - Real-time debate progression tracking
 
-### 🔧 **Advanced Technical Features**
+### **Advanced Technical Features**
 - Multiple AI model support (DeepSeek, OpenAI, Meta LLaMA, Google, Mistral)
 - Optimized response caching for improved performance
 - RESTful API architecture with FastAPI backend
 - Modern React frontend with responsive design
 - Firebase integration for user management and data persistence
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.8+
@@ -95,7 +95,7 @@ DebateSim is a sophisticated debate simulation platform that leverages cutting-e
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
 
-## 🏗️ Architecture
+## Architecture
 
 ### Backend Stack
 - **FastAPI**: High-performance Python web framework
@@ -117,7 +117,7 @@ DebateSim is a sophisticated debate simulation platform that leverages cutting-e
 - **Domain**: Custom domain with SSL termination
 - **Monitoring**: Comprehensive logging and error tracking
 
-## 📖 Usage Examples
+## Usage Examples
 
 ### Starting an AI vs AI Debate
 ```javascript
@@ -141,7 +141,7 @@ DebateSim is a sophisticated debate simulation platform that leverages cutting-e
 // Receive detailed performance breakdown
 ```
 
-## 🛠️ API Reference
+## API Reference
 
 ### Core Endpoints
 
@@ -176,16 +176,16 @@ Content-Type: multipart/form-data
 file: [PDF document]
 ```
 
-## 🚧 Roadmap
+## Roadmap
 
-- [ ] **Bias Detection Module**: Analyze content for potential bias and misinformation
-- [ ] **Advanced Debate Formats**: Parliamentary, Oxford Union, and custom formats
-- [ ] **Real-time Collaboration**: Live multi-user debate sessions
-- [ ] **Performance Analytics**: Detailed user progress tracking
-- [ ] **Mobile Application**: Native iOS/Android apps
-- [ ] **Integration APIs**: Webhook support for educational platforms
+- **Bias Detection Module**: Analyze content for potential bias and misinformation
+- **Advanced Debate Formats**: Parliamentary, Oxford Union, and custom formats
+- **Real-time Collaboration**: Live multi-user debate sessions
+- **Performance Analytics**: Detailed user progress tracking
+- **Mobile Application**: Native iOS/Android apps
+- **Integration APIs**: Webhook support for educational platforms
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
 
@@ -210,17 +210,13 @@ git commit -m "feat: add your feature description"
 git push origin feature/your-feature-name
 ```
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - OpenRouter for providing access to multiple AI models
 - The open-source community for invaluable tools and libraries
 - Contributors and beta testers who helped shape the platform
 
-## 📞 Support
+## Support
 
 - **Live Demo**: [debatesim.us](https://debatesim.us)
 - **GitHub Issues**: [Report bugs or request features](https://github.com/alexliao95311/DebateSim/issues)
@@ -230,7 +226,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ for the debate and education community**
+**Built with care for the debate and education community**
 
 *Empowering critical thinking through AI-powered discourse*
 
