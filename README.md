@@ -1,80 +1,26 @@
-# DebateSim: AI-Powered Debate Simulation
+# DebateSim
 
-DebateSim is an innovative website designed to simulate debate scenarios using artificial intelligence. This tool allows users to explore the dynamics of debates by enabling AI to take on roles such as debaters, judges, or both. Whether you're a student, coach, or debate enthusiast, DebateSim provides an interactive and educational platform to enhance critical thinking, argumentation, and decision-making skills. 
+AI-powered debate simulator that lets you watch (or join) structured, policy-style debates between large-language-model debaters.  
+Live at **https://debatesim.us**
 
-# Live Demo
+---
 
-https://tinyurl.com/debatesim1
-* It will direct to http://172.190.97.150/
-* Note that some school or library wifi may block websites using IP addresses.
+## Why DebateSim?
+* Sharpen critical-thinking and rebuttal skills by studying top-quality model arguments.
+* Experiment with popular formats such as Public Forum, Lincoln-Douglas and free-form cross-fire.
+* Instant AI judging &amp; feedback: receive concise round-by-round analysis highlighting strengths, weaknesses and a winner.
+* Bring your own style: jump in as a debater or judge, or let the bots battle it out.
 
-# Features
-- **AI Debaters**: Simulate debates with AI participants capable of representing opposing viewpoints.
-- **AI Judges**: Let the AI evaluate debates based on structured criteria, offering feedback and scoring.
-- **User-Controlled Interaction**: Choose the roles for AI (debaters, judges, or both) while optionally participating as a debater or judge.
-- **Customizable Topics**: Input any debate resolution or topic for tailored simulations.
-- **Debate Formats**: Supports popular formats such as Lincoln-Douglas, Public Forum, or custom styles.
-- **Scoring and Feedback**: Provides in-depth feedback on arguments, counterarguments, and debate strategies. 
+## Quick Peek
+```text
+> Select mode → enter topic → sit back and watch the rounds unfold.
+> Need to fact-check?  Ask the integrated judge for a ruling.
+```
+(Screenshots / demo GIF coming soon.)
 
-# Usage
-1. Run the simulation
-2. Choose a mode:
-- AI as both debaters and judge (full simulation)
-- AI as debaters, user as judge
-- AI as judge, users as debaters
-- AI as judge and debater, user as other debater
-3. Input Debate Parameters:
-- Select a format (e.g. Free-for-all crossfire, LD, PF, CX, etc.)
-- Provide a debate resolution or topic
-4.	Interact with the Simulation:
-- View arguments, counterarguments, and judge decisions.
-- Pause, rewind, or modify debates dynamically.
+## Get Started
+Developers &amp; self-hosters: see **Instructions.md** for full setup, deployment and contribution guides.
 
-# Setup
-1. `pip install -r requirements.txt`
-2. navigate to frontend folder, `npm install`
-3. create a .env file in root, append `OPENROUTER_API_KEY=`
-4. To run, navigate to root and run `python -m uvicorn main:app --reload`
-5. Then navigate to frontend and run `npm run dev`
-6. Navigate to api.js and update the link
+---
 
-# Virtual Machine
-1. Log into VM: `ssh azureuser@172.190.97.150`
-2. Set up python venv: `source ./venv/bin/activate`
-3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
-4. Move to frontend directory: `cd frontend`
-5. Build frontend: `npm run build`
-6. Serve frontend on port 80: `sudo npx serve -s dist -l 80`
-
-To run indefinitely: 
-- Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
-- Frontend: `nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown`
-
-*Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
-*To kill processes: `kill -9 <PID>` 
-
-**Note**: For development on your local machine, use `npm run dev` which will run on port 3000. For production deployment on the VM, build the project and serve the static files on port 80.
-
-# Example
-1.	Start DebateSim
-2.	Select a mode: AI as both debaters and judge
-3.	Enter a debate topic: "Resolved: Artificial Intelligence will do more harm than good in the next decade."
-4.	Watch the debate unfold:
-[AI Debater 1]: Opening Statement...
-[AI Debater 2]: Rebuttal...
-5.	Review judge feedback: [AI Judge] - Based on logical coherence, evidence, and rhetorical skill...
-
-# Contributing 
-1. Make a new branch `git checkout -b branch-name` (replace branch-name with the name of the branch such as the feature you made)
-2. `git add .`
-3. `git commit -m "your commit message. Closes #xxx"`
-4. `git push origin branch-name`
-5. Go to GitHub, click pull requests, new pull request, create one
-6. Once your pull request is reviewed + merged, the branch will be deleted. The next time you work on the project, go back to the main branch with `git checkout main` and run `git pull`
-
-# Acknowledgments
-- **OpenAI**: For providing the foundational AI capabilities.
-- **Debate Organizations**: For inspiration in structuring the debate formats.
-- **Community Contributors**: For valuable input and suggestions.
-
-Ready to dive into the debate? Start with DebateSim and experience the power of AI in argumentation!
+© 2025 DebateSim Project • MIT License
