@@ -30,21 +30,61 @@ jobs:
             sleep 2
             source venv/bin/activate
             nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
-            sleep 1
+            sleep 3
+            
+            echo "📋 Backend logs:"
+            cat backend.log || echo "No backend logs yet"
             
             echo "🛠 Rebuilding Frontend..."
             cd frontend
             pkill -f "npx serve" || echo "No existing frontend process"
             sleep 2
+            
+            echo "📦 Installing dependencies..."
             npm install
+            
+            echo "🔨 Building frontend..."
             npm run build
-            nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown
-            sleep 1
+            
+            echo "🌐 Starting frontend server..."
+            # Try port 80 first, fallback to 3000 if it fails
+            if nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown; then
+              echo "✅ Frontend started on port 80"
+              FRONTEND_PORT=80
+            else
+              echo "⚠️ Port 80 failed, trying port 3000..."
+              nohup npx serve -s dist -l 3000 > frontend.log 2>&1 & disown
+              echo "✅ Frontend started on port 3000"
+              FRONTEND_PORT=3000
+            fi
+            sleep 3
+            
+            echo "📋 Frontend logs:"
+            cat frontend.log || echo "No frontend logs yet"
             
             echo "✅ Deployment Completed Successfully!"
             echo "Backend running on port 5000"
-            echo "Frontend running on port 80"
+            echo "Frontend running on port $FRONTEND_PORT"
             
-            # Verify processes are running
-            pgrep -f "uvicorn main:app" && echo "✅ Backend process confirmed running"
-            pgrep -f "npx serve" && echo "✅ Frontend process confirmed running"
+            # Verify processes are running with better error handling
+            echo "🔍 Verifying processes..."
+            
+            if pgrep -f "uvicorn main:app" > /dev/null; then
+              echo "✅ Backend process confirmed running"
+            else
+              echo "❌ Backend process not found"
+              echo "Backend logs:"
+              cat backend.log || echo "No backend logs available"
+              exit 1
+            fi
+            
+            if pgrep -f "npx serve" > /dev/null; then
+              echo "✅ Frontend process confirmed running"
+            else
+              echo "❌ Frontend process not found"
+              echo "Frontend logs:"
+              cat frontend.log || echo "No frontend logs available"
+              exit 1
+            fi
+            
+            echo "🎉 All processes verified and running!"
