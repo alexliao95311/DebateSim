@@ -128,7 +128,7 @@ jobs:
             npm run build
             echo "✅ Frontend built successfully"
 
-      - name: Start Frontend
+      - name: Deploy Frontend with Nginx
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.VM_HOST }}
@@ -138,25 +138,39 @@ jobs:
           command_timeout: 3m
           script: |
             set -e
-            echo "🌐 Starting frontend server..."
+            echo "🌐 Deploying frontend with nginx..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
             
-            # Start frontend on port 3001 (avoiding nginx on 80)
-            echo "Starting frontend on port 3001..."
-            nohup npm run preview -- --port 3001 --host 0.0.0.0 > frontend.log 2>&1 &
-            echo $! > frontend.pid
-            FRONTEND_PORT=3001
-            sleep 3
+            # Stop any running frontend development server
+            if [ -f "frontend.pid" ]; then
+              if kill $(cat frontend.pid) 2>/dev/null; then
+                echo "Frontend development server stopped"
+              fi
+              rm -f frontend.pid
+            fi
             
-            if [ -f "frontend.pid" ] && kill -0 $(cat frontend.pid) 2>/dev/null; then
-              echo "✅ Frontend process confirmed running on port $FRONTEND_PORT"
+            # Ensure frontend build exists
+            if [ ! -d "dist" ]; then
+              echo "❌ Frontend dist directory not found. Build may have failed."
+              exit 1
+            fi
+            
+            # Test and reload nginx
+            echo "Testing nginx configuration..."
+            sudo nginx -t
+            
+            echo "Reloading nginx..."
+            sudo systemctl reload nginx
+            
+            # Verify nginx is running
+            if sudo systemctl is-active --quiet nginx; then
+              echo "✅ Nginx is running and serving frontend on port 80"
             else
-              echo "❌ Frontend process not found"
-              echo "Frontend logs:"
-              cat frontend.log || echo "No frontend logs available"
+              echo "❌ Nginx is not running"
+              sudo systemctl status nginx
               exit 1
             fi
             
             echo "🎉 Deployment completed successfully!"
             echo "Backend: http://${{ secrets.VM_HOST }}:5000"
-            echo "Frontend: http://${{ secrets.VM_HOST }}:$FRONTEND_PORT"
+            echo "Frontend: http://${{ secrets.VM_HOST }} (port 80)"
