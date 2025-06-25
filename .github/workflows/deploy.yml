@@ -56,8 +56,18 @@ jobs:
             echo "🔄 Restarting Backend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim
             
-            # Skip process killing for testing
-            echo "Skipping backend process termination..."
+            # Kill existing backend process using PID file
+            echo "Stopping existing backend..."
+            if [ -f "backend.pid" ]; then
+              if kill $(cat backend.pid) 2>/dev/null; then
+                echo "Backend process stopped"
+              else
+                echo "Backend PID file exists but process not running"
+              fi
+              rm -f backend.pid
+            else
+              echo "No backend PID file found"
+            fi
             
             # Check if venv exists and activate
             if [ ! -f "venv/bin/activate" ]; then
@@ -69,8 +79,9 @@ jobs:
             source venv/bin/activate
             
             echo "Starting backend server..."
-            # Start backend server in background
-            nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 & disown
+            # Start backend server in background and save PID
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &
+            echo $! > backend.pid
             
             # Wait and check if process started
             sleep 3
@@ -97,8 +108,18 @@ jobs:
             echo "🛠 Building Frontend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
             
-            # Skip frontend process killing for testing
-            echo "Skipping frontend process termination..."
+            # Kill existing frontend process using PID file
+            echo "Stopping existing frontend..."
+            if [ -f "frontend.pid" ]; then
+              if kill $(cat frontend.pid) 2>/dev/null; then
+                echo "Frontend process stopped"
+              else
+                echo "Frontend PID file exists but process not running"
+              fi
+              rm -f frontend.pid
+            else
+              echo "No frontend PID file found"
+            fi
             
             echo "📦 Installing dependencies..."
             npm install
@@ -120,19 +141,14 @@ jobs:
             echo "🌐 Starting frontend server..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
             
-            # Try port 80 first, fallback to 3000 if it fails
-            if timeout 30s nohup sudo npx serve -s dist -l 80 > frontend.log 2>&1 & disown; then
-              echo "✅ Frontend started on port 80"
-              FRONTEND_PORT=80
-            else
-              echo "⚠️ Port 80 failed, trying port 3000..."
-              timeout 30s nohup npx serve -s dist -l 3000 > frontend.log 2>&1 & disown
-              echo "✅ Frontend started on port 3000"
-              FRONTEND_PORT=3000
-            fi
+            # Start frontend on port 3001 (avoiding nginx on 80)
+            echo "Starting frontend on port 3001..."
+            nohup npm run preview -- --port 3001 --host 0.0.0.0 > frontend.log 2>&1 &
+            echo $! > frontend.pid
+            FRONTEND_PORT=3001
             sleep 3
             
-            if pgrep -f "npx serve" > /dev/null; then
+            if [ -f "frontend.pid" ] && kill -0 $(cat frontend.pid) 2>/dev/null; then
               echo "✅ Frontend process confirmed running on port $FRONTEND_PORT"
             else
               echo "❌ Frontend process not found"
