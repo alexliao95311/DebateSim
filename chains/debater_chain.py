@@ -50,7 +50,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="deepseek/deepseek-r1-0528:free")
+    model_name: str = Field(default="qwen/qwq-32b:free")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -205,7 +205,7 @@ chat_prompt = ChatPromptTemplate.from_template(template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="deepseek/deepseek-r1-0528:free", *, round_num: int = 1):
+def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -279,4 +279,4 @@ def get_debater_chain(model_name="deepseek/deepseek-r1-0528:free", *, round_num:
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(model_name="deepseek/deepseek-r1-0528:free", round_num=1)
+debater_chain = get_debater_chain(model_name="qwen/qwq-32b:free", round_num=1)

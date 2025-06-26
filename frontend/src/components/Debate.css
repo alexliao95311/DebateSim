@@ -35,6 +35,11 @@ html, body {
   flex-direction: column;
   align-items: center;
   overflow-x: hidden;
+  transition: padding-left 0.3s ease;
+}
+
+.debate-container.sidebar-open {
+  padding-left: 260px;
 }
 
 /* Corner Buttons */
@@ -68,13 +73,13 @@ html, body {
   width: 100%;
 }
 
-/* Sidebar overlay */
+/* Sidebar */
 .sidebar {
   position: fixed;
-  top: 1rem;
+  top: 4rem;
   left: 0;
   width: 240px;
-  height: calc(100vh - 2rem);
+  height: calc(100vh - 4rem);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 0 8px 8px 0;
