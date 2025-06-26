@@ -20,8 +20,6 @@ const LoadingSpinner = ({ message = "Loading...", showProgress = false, estimate
     <div className="loading-spinner-container">
       <div className="loading-spinner">
         <div className="spinner-ring"></div>
-        <div className="spinner-ring"></div>
-        <div className="spinner-ring"></div>
       </div>
       
       <div className="loading-content">

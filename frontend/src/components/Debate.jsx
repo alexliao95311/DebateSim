@@ -50,6 +50,7 @@ function Debate() {
   const [userSide, setUserSide] = useState("");
   const [userVsUserSide, setUserVsUserSide] = useState("");
   const [firstSide, setFirstSide] = useState("pro");
+  const [selectedSide, setSelectedSide] = useState(""); // For confirmation step
 
   // Handler for the back to home button
   const handleBackToHome = () => {
@@ -403,7 +404,7 @@ function Debate() {
                 </label>
               </>
             )}
-            {mode === "user-vs-ai" && (
+            {mode === "ai-vs-user" && (
               <label>
                 AI Model:
                 <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
@@ -470,30 +471,85 @@ function Debate() {
           {mode === "ai-vs-user" && (
             <>
               {!userSide && (
-                <div className="ai-vs-user-order" style={{ marginBottom: "1rem" }}>
-                  <label>
-                    Who goes first?
-                    <select value={firstSide} onChange={(e) => setFirstSide(e.target.value)}>
-                      <option value="pro">Pro</option>
-                      <option value="con">Con</option>
-                    </select>
-                  </label>
-                  <button onClick={() => handleChooseSide("pro")} style={{ marginRight: "0.5rem" }}>
-                    Argue Pro
-                  </button>
-                  <button onClick={() => handleChooseSide("con")}>
-                    Argue Con
-                  </button>
+                <div className="ai-vs-user-setup">
+                  <h3>Setup Your Debate</h3>
+                  
+                  <div className="side-selection-cards">
+                    <div 
+                      className={`side-card ${selectedSide === 'pro' ? 'selected' : ''}`}
+                      onClick={() => setSelectedSide("pro")}
+                    >
+                      <h4>🟢 Argue PRO</h4>
+                      <p>Support the topic</p>
+                      <p className="speaking-order">
+                        You will go {firstSide === 'pro' ? 'FIRST' : 'SECOND'}
+                      </p>
+                    </div>
+                    
+                    <div 
+                      className={`side-card ${selectedSide === 'con' ? 'selected' : ''}`}
+                      onClick={() => setSelectedSide("con")}
+                    >
+                      <h4>🔴 Argue CON</h4>
+                      <p>Oppose the topic</p>
+                      <p className="speaking-order">
+                        You will go {firstSide === 'con' ? 'FIRST' : 'SECOND'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="order-selection">
+                    <label>Speaking Order</label>
+                    <div className="order-buttons">
+                      <button 
+                        className={`order-button ${firstSide === 'pro' ? 'selected' : ''}`}
+                        onClick={() => setFirstSide('pro')}
+                      >
+                        PRO speaks first
+                      </button>
+                      <button 
+                        className={`order-button ${firstSide === 'con' ? 'selected' : ''}`}
+                        onClick={() => setFirstSide('con')}
+                      >
+                        CON speaks first
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="confirm-section">
+                    <button 
+                      className="confirm-button"
+                      disabled={!selectedSide}
+                      onClick={() => handleChooseSide(selectedSide)}
+                    >
+                      {selectedSide ? `Start Debate as ${selectedSide.toUpperCase()}` : 'Select your position first'}
+                    </button>
+                  </div>
                 </div>
               )}
               {userSide && (
-                <div style={{ marginTop: "1rem" }}>
+                <div className="ai-vs-user-setup">
+                  <h3>Debate as {userSide.toUpperCase()} vs AI</h3>
+                  
+                  <div className="model-selection" style={{ marginBottom: "1rem" }}>
+                    <label>
+                      AI Opponent Model:
+                      <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                        {modelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  
                   <textarea
                     placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
-                    style={{ width: "100%", resize: "vertical" }}
+                    style={{ width: "100%", resize: "vertical", marginBottom: "1rem" }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
                         e.preventDefault();
@@ -501,16 +557,43 @@ function Debate() {
                       }
                     }}
                   />
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <button onClick={handleUserVsAISubmit} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
-                      {loading ? "Loading..." : "Send & Get AI Reply"}
+                  
+                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button 
+                      onClick={handleUserVsAISubmit} 
+                      disabled={loading || !userInput.trim()}
+                      style={{
+                        background: "#4a90e2",
+                        color: "white",
+                        border: "none",
+                        padding: "0.75rem 1.5rem",
+                        borderRadius: "6px",
+                        cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
+                        opacity: loading || !userInput.trim() ? 0.6 : 1
+                      }}
+                    >
+                      {loading ? "Generating Response..." : "Send & Get AI Reply"}
                     </button>
+                    
                     {(firstSide === "con" && userSide === "pro") ||
                      (firstSide === "pro" && userSide === "con") ? (
-                      <button onClick={handleUserVsAISubmitAndEnd} disabled={loading || !userInput.trim()} style={{ marginRight: "1rem" }}>
+                      <button 
+                        onClick={handleUserVsAISubmitAndEnd} 
+                        disabled={loading || !userInput.trim()}
+                        style={{
+                          background: "#6c757d",
+                          color: "white",
+                          border: "none",
+                          padding: "0.75rem 1.5rem",
+                          borderRadius: "6px",
+                          cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
+                          opacity: loading || !userInput.trim() ? 0.6 : 1
+                        }}
+                      >
                         Send & End (No AI Reply)
                       </button>
                     ) : null}
+                    
                   </div>
                 </div>
               )}

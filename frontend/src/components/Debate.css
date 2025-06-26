@@ -124,6 +124,9 @@ html, body {
   text-align: center;
   margin-bottom: 1.5rem;
   font-size: 1.6rem;
+  color: #fff !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8) !important;
+  font-weight: 600;
 }
 
 /* Bill Description */
@@ -263,6 +266,8 @@ hr.divider {
   color: var(--primary);
   font-size: 1.25rem;
   margin-bottom: 0.5rem;
+  font-weight: 500;
+  text-shadow: none;
 }
 .speech-block .model-info {
   font-size: 0.85rem;
@@ -280,7 +285,7 @@ hr.divider {
 .speech-content .debate-heading-h1,
 .speech-content h1 {
   font-size: 1.5rem;
-  font-weight: bold;
+  font-weight: 600;
   margin: 1rem 0 0.5rem 0;
   color: var(--primary);
 }
@@ -288,7 +293,7 @@ hr.divider {
 .speech-content .debate-heading-h2,
 .speech-content h2 {
   font-size: 1.3rem;
-  font-weight: bold;
+  font-weight: 600;
   margin: 1rem 0 0.5rem 0;
   color: var(--primary);
 }
@@ -296,7 +301,7 @@ hr.divider {
 .speech-content .debate-heading-h3,
 .speech-content h3 {
   font-size: 1.2rem;
-  font-weight: bold;
+  font-weight: 500;
   margin: 0.8rem 0 0.4rem 0;
   color: var(--text-main);
 }
@@ -304,7 +309,7 @@ hr.divider {
 .speech-content .debate-heading-h4,
 .speech-content h4 {
   font-size: 1.1rem;
-  font-weight: bold;
+  font-weight: 500;
   margin: 0.6rem 0 0.3rem 0;
   color: var(--text-main);
 }
@@ -336,7 +341,7 @@ hr.divider {
 
 .speech-content .debate-strong,
 .speech-content strong {
-  font-weight: bold;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -421,6 +426,98 @@ button:disabled {
   .toggle-sidebar {
     display: block;
   }
+  
+  /* Mobile adjustments for user vs AI setup */
+  .side-selection-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .side-card {
+    min-width: 200px;
+    max-width: 250px;
+  }
+  
+  .order-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .order-button {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
+/* Text styling based on background context */
+
+/* Default headers and labels on background image - white text */
+.debate-container > h2,
+.debate-container > h3,
+.debate-container > h4,
+.debate-container > label,
+.debate-content > h2,
+.debate-content > h3,
+.debate-content > h4,
+.debate-content > label,
+.model-selection label {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+  font-weight: 500 !important;
+}
+
+/* Headers and text on white/light backgrounds - dark text */
+.speech-block h3,
+.speech-block h4,
+.speech-block p,
+.speech-block label,
+.ai-vs-user-setup h3,
+.ai-vs-user-setup h4,
+.ai-vs-user-setup label,
+.side-card h4,
+.side-card p,
+.order-selection label,
+.confirm-section h3,
+.confirm-section p,
+.bill-description h3,
+.bill-description h4,
+.description-content h1,
+.description-content h2,
+.description-content h3,
+.description-content h4,
+.description-content p {
+  color: #333 !important;
+  text-shadow: none !important;
+}
+
+/* Make sure paragraphs and other text elements are visible */
+p {
+  color: #333 !important;
+}
+
+/* White background contexts - dark text */
+.ai-vs-user-setup p,
+.ai-vs-user-setup label,
+.ai-vs-user-setup h3 {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+}
+
+/* Override for order selection on dark background */
+.order-selection label {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+}
+
+/* Speech content should be dark on white background */
+.speech-content,
+.speech-content p,
+.speech-content h1,
+.speech-content h2,
+.speech-content h3,
+.speech-content h4 {
+  color: #333 !important;
+  text-shadow: none !important;
 }
 
 .model-selection {
@@ -428,6 +525,149 @@ button:disabled {
   font-weight: bold;
   font-size: 1.1rem;
   text-shadow: 0 1px 4px #000;
+}
+
+.ai-vs-user-setup {
+  background: rgba(30, 41, 59, 0.95);
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 1rem 0;
+  text-align: center;
+  border: 1px solid #4a90e2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.ai-vs-user-setup h3 {
+  color: #ffffff !important;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  text-shadow: none !important;
+}
+
+.side-selection-cards {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.side-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #64748b;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 180px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.side-card:hover {
+  border-color: #4a90e2;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(74,144,226,0.2);
+}
+
+.side-card.selected {
+  border-color: #4a90e2;
+  background: rgba(248, 250, 255, 0.98);
+  box-shadow: 0 6px 20px rgba(74,144,226,0.4);
+}
+
+.side-card h4 {
+  color: #333 !important;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  text-shadow: none !important;
+}
+
+.side-card p {
+  color: #666 !important;
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+  text-shadow: none !important;
+}
+
+.side-card .speaking-order {
+  color: #4a90e2 !important;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.order-selection {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.order-selection label {
+  color: #ffffff !important;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-shadow: none !important;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.order-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.order-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #64748b;
+  color: #333 !important;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-shadow: none !important;
+}
+
+.order-button:hover {
+  border-color: #4a90e2;
+  color: #4a90e2 !important;
+}
+
+.order-button.selected {
+  background: #4a90e2;
+  border-color: #4a90e2;
+  color: #fff !important;
+}
+
+.confirm-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #64748b;
+}
+
+.confirm-button {
+  background: #28a745;
+  color: #fff !important;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: none !important;
+}
+
+.confirm-button:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.confirm-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .loading-message, .loading {

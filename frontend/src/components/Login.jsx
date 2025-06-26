@@ -127,7 +127,7 @@ function Login({ onLogin }) {
         <section className="feature-section fade-section" ref={el => (sectionsRef.current[3] = el)}>
           <h2>Diverse Features</h2>
           <div className="feature-cards">
-            <div className="feature-card">
+            <div className="feature-card" onClick={handleGoogleLogin}>
               <h3>Debate Simulator</h3>
               <p>
                 Experience dynamic debates with AI. Challenge your thinking by
@@ -135,7 +135,7 @@ function Login({ onLogin }) {
                 skills, and deepen your understanding of complex topics.
               </p>
             </div>
-            <div className="feature-card">
+            <div className="feature-card" onClick={handleGoogleLogin}>
               <h3>Bill and Legislation Debate</h3>
               <p>
                 In progress! Upload any Congressional bill and engage in thoughtful
@@ -143,7 +143,7 @@ function Login({ onLogin }) {
                 legislation from multiple perspectives.
               </p>
             </div>
-            <div className="feature-card">
+            <div className="feature-card" onClick={handleGoogleLogin}>
               <h3>Bias Detector</h3>
               <p>
                 In progress! Evaluate online content for accuracy and bias! Analyze
