@@ -77,11 +77,18 @@ class JudgeFeedbackRequest(BaseModel):
     transcript: str
     model: str = DEFAULT_MODEL  # Use the global default model
 
-# Connection pooling
-connector = aiohttp.TCPConnector(limit=20)
+# Connection pooling with optimizations
+connector = aiohttp.TCPConnector(
+    limit=30,
+    limit_per_host=20,
+    ttl_dns_cache=300,
+    use_dns_cache=True,
+    keepalive_timeout=60,
+    enable_cleanup_closed=True
+)
 
 # Cache for AI responses (key now includes model_override and skip_formatting)
-cache = TTLCache(maxsize=100, ttl=300)  # Cache up to 100 items for 5 minutes
+cache = TTLCache(maxsize=200, ttl=600)  # Cache up to 200 items for 10 minutes
 
 # Global session variable
 session = None
@@ -101,9 +108,10 @@ async def shutdown_event():
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
-    logger.info(f"📩 /generate-response called with debater={request.debater!r}, prompt={request.prompt!r}")
-    # Determine role: "Pro" or "Con"
-    debater_role = request.debater.strip().title()
+    start_time = time.time()
+    logger.info(f"📩 /generate-response called with debater={request.debater!r}, model={request.model}")
+    # Determine role: "Pro" or "Con" - ensure AI is properly capitalized
+    debater_role = request.debater.strip().title().replace("Ai ", "AI ")
     
     try:
         # Parse out topic and opponent argument if applicable
@@ -130,7 +138,8 @@ async def generate_response(request: GenerateResponseRequest):
         logger.error(f"Error in debater_chain: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error generating debater response: {str(e)}")
         
-    logger.info(f"✅ [LangChain] Debater response: {ai_output[:200]}...")
+    duration = time.time() - start_time
+    logger.info(f"✅ [LangChain] Debater response generated in {duration:.2f}s: {ai_output[:200]}...")
     return {"response": ai_output}
 
 @app.post("/judge-debate")
@@ -216,6 +225,7 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
 
 @app.post("/judge-feedback")
 async def judge_feedback(request: JudgeFeedbackRequest):
+    start_time = time.time()
     logger.info(f"📩 /judge-feedback called with model={request.model!r}")
     try:
         # Get the appropriate judge chain with the requested model
@@ -226,6 +236,8 @@ async def judge_feedback(request: JudgeFeedbackRequest):
             transcript=request.transcript
         )
         
+        duration = time.time() - start_time
+        logger.info(f"✅ Judge feedback generated in {duration:.2f}s")
         return {"response": feedback}
     except Exception as e:
         logger.error(f"Error in judge_chain: {e}", exc_info=True)

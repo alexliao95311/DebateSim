@@ -4,7 +4,7 @@ import { auth } from "./firebaseConfig"; // Adjust the path if needed
 
 const db = getFirestore();
 
-export const saveTranscriptToUser = async (transcript) => {
+export const saveTranscriptToUser = async (transcript, topic = null, mode = null) => {
   // Get the current logged-in user
   const user = auth.currentUser;
   if (!user) {
@@ -17,10 +17,16 @@ export const saveTranscriptToUser = async (transcript) => {
     const transcriptsRef = collection(db, "users", user.uid, "transcripts");
 
     // Add a new transcript document with the transcript text and a timestamp
-    await addDoc(transcriptsRef, {
+    const documentData = {
       transcript,
       createdAt: new Date().toISOString(),
-    });
+    };
+    
+    // Add topic and mode if provided
+    if (topic) documentData.topic = topic;
+    if (mode) documentData.mode = mode;
+
+    await addDoc(transcriptsRef, documentData);
     console.log("Transcript saved successfully!");
   } catch (error) {
     console.error("Error saving transcript:", error);
