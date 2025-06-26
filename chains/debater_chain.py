@@ -174,28 +174,36 @@ class OpenRouterChat(BaseChatModel):
 
 # --- Prompt template ----------------------------------------------------
 template = """
-You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}."**
+You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+
+CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
 
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
-1. **Title line (exact):**
-   `# AI Debater ({debater_role}) – Round {round_num}/5`
-   – Use the *round_num* that is supplied in the variables.
-   – Do **NOT** invent or skip numbers.
+1. **Title line (exact format):**
+   `# {debater_role} – Round {round_num}/5`
+   
 2. After the title, produce *at most* **200 words** total.
-3. Use only *level‑3* markdown headings (`###`).
+
+3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
+   
 4. Keep paragraphs short (≤ 3 sentences).
+
 5. Do not add extra blank lines at the end of the message.
 
+6. **NEVER include parameter names, variable information, or any technical details in your response.**
+
 ------------------------------------------------------------------
-Guidelines
-• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent's last argument, quoted below . If there are no previous arguments, do not include this section. 
-• Second, **strengthen your side** with **up to three** numbered points.  
+Content Guidelines
+• If there are previous arguments, start with a **concise rebuttal** (≤ 2 sentences).
+• Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Opponent's last argument (for context — do **not** quote it back verbatim):  
-"{history}"
+Previous opponent argument (for context only):  
+{history}
+
+Remember: Respond ONLY with the formatted debate content. No technical information or parameter details.
 """
 
 # Create the chat prompt template
@@ -237,11 +245,11 @@ def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
     # Build the runnable chain using LCEL
     chain = (
         {
-            "debater_role": RunnablePassthrough(),
-            "topic": RunnablePassthrough(),
-            "bill_description": RunnablePassthrough(),
-            "history": get_history,
-            "round_num": lambda inputs: round_num,
+            "debater_role": lambda inputs: inputs.get("debater_role", ""),
+            "topic": lambda inputs: inputs.get("topic", ""),
+            "bill_description": lambda inputs: inputs.get("bill_description", ""),
+            "history": lambda inputs: inputs.get("history", ""),
+            "round_num": lambda inputs: inputs.get("round_num", round_num),
         }
         | chat_prompt
         | llm

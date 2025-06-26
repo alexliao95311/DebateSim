@@ -6,13 +6,47 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 export default API_URL;
 
+// Configure axios with optimized settings
+const apiClient = axios.create({
+  baseURL: API_URL,
+  timeout: 120000, // 2 minutes timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor for optimization
+apiClient.interceptors.request.use((config) => {
+  // Add timestamp to prevent caching
+  config.headers['X-Request-Time'] = Date.now();
+  return config;
+});
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout - AI model may be slow');
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const generateAIResponse = async (debater, prompt, model) => {
   try {
-    const response = await axios.post(`${API_URL}/generate-response`, {
+    console.log(`🚀 Generating AI response for ${debater} using ${model}`);
+    const startTime = Date.now();
+    
+    const response = await apiClient.post('/generate-response', {
       debater,
       prompt,
       model, // Pass along the chosen model
     });
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ AI response generated in ${duration}ms`);
+    
     return response.data.response;
   } catch (error) {
     console.error("Error generating AI response:", error);
@@ -22,11 +56,18 @@ export const generateAIResponse = async (debater, prompt, model) => {
 
 export const getAIJudgeFeedback = async (transcript, model) => {
   try {
-    const response = await axios.post(`${API_URL}/judge-debate`, {
+    console.log(`🏛️ Generating judge feedback using ${model}`);
+    const startTime = Date.now();
+    
+    const response = await apiClient.post('/judge-feedback', {
       transcript,
       model, // Pass along the chosen judge model
     });
-    return response.data.feedback;
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ Judge feedback generated in ${duration}ms`);
+    
+    return response.data.response;
   } catch (error) {
     console.error("Error fetching AI judge feedback:", error);
     throw error;
@@ -35,7 +76,7 @@ export const getAIJudgeFeedback = async (transcript, model) => {
 
 export const saveTranscript = async (transcript, topic, mode, judgeFeedback) => {
   try {
-    const response = await axios.post(`${API_URL}/save-transcript`, {
+    const response = await apiClient.post('/save-transcript', {
       transcript,
       topic,
       mode,
