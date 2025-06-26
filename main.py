@@ -110,8 +110,8 @@ async def shutdown_event():
 async def generate_response(request: GenerateResponseRequest):
     start_time = time.time()
     logger.info(f"📩 /generate-response called with debater={request.debater!r}, model={request.model}")
-    # Determine role: "Pro" or "Con"
-    debater_role = request.debater.strip().title()
+    # Determine role: "Pro" or "Con" - ensure AI is properly capitalized
+    debater_role = request.debater.strip().title().replace("Ai ", "AI ")
     
     try:
         # Parse out topic and opponent argument if applicable
