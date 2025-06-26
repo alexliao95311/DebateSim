@@ -1,80 +1,233 @@
-# DebateSim: AI-Powered Debate Simulation
+# DebateSim
 
-DebateSim is an innovative website designed to simulate debate scenarios using artificial intelligence. This tool allows users to explore the dynamics of debates by enabling AI to take on roles such as debaters, judges, or both. Whether you’re a student, coach, or debate enthusiast, DebateSim provides an interactive and educational platform to enhance critical thinking, argumentation, and decision-making skills. 
+<div align="center">
 
-# Live Demo
+![DebateSim Logo](https://img.shields.io/badge/DebateSim-AI%20Powered%20Debates-blue?style=for-the-badge)
 
-https://tinyurl.com/debatesim1
-* It will direct to http://20.3.246.40:3000/
-* Note that some school or library wifi may block websites using IP addresses.
+**An intelligent debate simulation platform powered by advanced AI models**
 
-# Features
-- **AI Debaters**: Simulate debates with AI participants capable of representing opposing viewpoints.
-- **AI Judges**: Let the AI evaluate debates based on structured criteria, offering feedback and scoring.
-- **User-Controlled Interaction**: Choose the roles for AI (debaters, judges, or both) while optionally participating as a debater or judge.
-- **Customizable Topics**: Input any debate resolution or topic for tailored simulations.
-- **Debate Formats**: Supports popular formats such as Lincoln-Douglas, Public Forum, or custom styles.
-- **Scoring and Feedback**: Provides in-depth feedback on arguments, counterarguments, and debate strategies. 
+## **[🌐 LIVE DEMO - debatesim.us](https://debatesim.us)**
 
-# Usage
-1. Run the simulation
-2. Choose a mode:
-- AI as both debaters and judge (full simulation)
-- AI as debaters, user as judge
-- AI as judge, users as debaters
-- AI as judge and debater, user as other debater
-3. Input Debate Parameters:
-- Select a format (e.g. Free-for-all crossfire, LD, PF, CX, etc.)
-- Provide a debate resolution or topic
-4.	Interact with the Simulation:
-- View arguments, counterarguments, and judge decisions.
-- Pause, rewind, or modify debates dynamically.
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=flat-square&logo=github)](https://github.com/alexliao95311/DebateSim)
 
-# Setup
-1. `pip install -r requirements.txt`
-2. navigate to frontend folder, `npm install`
-3. create a .env file in root, append `OPENROUTER_API_KEY=`
-4. To run, navigate to root and run `python -m uvicorn main:app --reload`
-5. Then navigate to frontend and run `npm run dev`
-6. Navigate to api.js and update the link
+</div>
 
-# Virtual Machine
-1. Log into VM: `ssh azureuser@20.3.246.40`
-2. Set up python venv: `source ./venv/bin/activate`
-3. Start backend: `uvicorn main:app --host 0.0.0.0 --port 5000 --reload`
-4. Move to frontend directory: `cd frontend`
-5. Build frontend: `npm run build`
-6. Run frontend: `npx serve -s dist -l 3000`
+---
 
-To run indefinitely: 
-- Backend: `nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &`
-- Frontend: `nohup npx serve -s dist -l 3000 > frontend.log 2>&1 & disown`
+## Overview
 
-*Check processes: `sudo netstat -tulnp | grep <port>` or `ps aux | grep serve`
-*To kill processes: `kill -9 <PID>` 
+DebateSim is a sophisticated debate simulation platform that leverages cutting-edge AI technology to create engaging, educational debate experiences. Whether you're a student honing your argumentation skills, an educator facilitating classroom discussions, or simply someone passionate about exploring different perspectives on complex issues, DebateSim provides the tools to engage in structured, high-quality debates.
 
+## Key Features
 
+### **Multi-Modal Debate Formats**
+- **AI vs AI**: Watch two AI debaters engage in structured arguments on any topic
+- **AI vs User**: Challenge yourself against sophisticated AI opponents
+- **User vs User**: Facilitate human-to-human debates with AI moderation
 
-# Example
-1.	Start DebateSim
-2.	Select a mode: AI as both debaters and judge
-3.	Enter a debate topic: "Resolved: Artificial Intelligence will do more harm than good in the next decade."
-4.	Watch the debate unfold:
-[AI Debater 1]: Opening Statement...
-[AI Debater 2]: Rebuttal...
-5.	Review judge feedback: [AI Judge] - Based on logical coherence, evidence, and rhetorical skill...
+### **Intelligent AI Judge System**
+- Comprehensive post-debate analysis and feedback
+- Objective evaluation of argument strength and logical consistency
+- Detailed breakdown of each debater's performance
+- Winner determination with clear reasoning
 
-# Contributing 
-1. Make a new branch `git checkout -b branch-name` (replace branch-name with the name of the branch such as the feature you made)
-2. `git add .`
-3. `git commit -m "your commit message. Closes #xxx"`
-4. `git push origin branch-name`
-5. Go to GitHub, click pull requests, new pull request, create one
-6. Once your pull request is reviewed + merged, the branch will be deleted. The next time you work on the project, go back to the main branch with `git checkout main` and run `git pull`
+### **Legislative Analysis** *(In Development)*
+- Upload Congressional bills and legislation documents (PDF)
+- AI-powered analysis of policy implications
+- Multi-perspective debate generation from legislative content
+- Text extraction and summarization capabilities
 
-# Acknowledgments
-- **OpenAI**: For providing the foundational AI capabilities.
-- **Debate Organizations**: For inspiration in structuring the debate formats.
-- **Community Contributors**: For valuable input and suggestions.
+### **Debate Management**
+- Persistent debate history and transcript storage
+- Downloadable debate records in multiple formats
+- User authentication and personalized experience
+- Real-time debate progression tracking
 
-Ready to dive into the debate? Start with DebateSim and experience the power of AI in argumentation!
+### **Advanced Technical Features**
+- Multiple AI model support (DeepSeek, OpenAI, Meta LLaMA, Google, Mistral)
+- Optimized response caching for improved performance
+- RESTful API architecture with FastAPI backend
+- Modern React frontend with responsive design
+- Firebase integration for user management and data persistence
+
+## Getting Started
+
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- OpenRouter API key
+- Firebase project (for authentication)
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/alexliao95311/DebateSim.git
+   cd DebateSim
+   ```
+
+2. **Set up the backend**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Configure environment variables**
+   ```bash
+   # Create .env file in project root
+   echo "OPENROUTER_API_KEY=your_api_key_here" > .env
+   ```
+
+4. **Start the backend server**
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 5000
+   ```
+
+5. **Set up the frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+6. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+
+## Architecture
+
+### Backend Stack
+- **FastAPI**: High-performance Python web framework
+- **LangChain**: AI model orchestration and prompt management
+- **OpenRouter**: Multi-provider AI model access
+- **PDFMiner**: Document text extraction
+- **Async/Await**: Non-blocking request handling
+
+### Frontend Stack
+- **React 18**: Modern component-based UI framework
+- **Vite**: Fast build tool and development server
+- **React Router**: Client-side routing
+- **Firebase**: Authentication and real-time database
+- **Markdown Rendering**: Rich text display for debates
+
+### Deployment
+- **Production**: Azure VM with Nginx reverse proxy
+- **CI/CD**: GitHub Actions automated deployment
+- **Domain**: Custom domain with SSL termination
+- **Monitoring**: Comprehensive logging and error tracking
+
+## Usage Examples
+
+### Starting an AI vs AI Debate
+```javascript
+// Navigate to debate simulator
+// Select "AI vs AI" mode
+// Enter topic: "Universal Basic Income should be implemented globally"
+// Watch AI debaters engage in structured argumentation
+```
+
+### Analyzing Legislation
+```javascript
+// Upload PDF of Congressional bill
+// Receive AI-powered analysis of key provisions
+// Generate debate topics from legislative content
+```
+
+### Getting Judge Feedback
+```javascript
+// Complete any debate format
+// Request comprehensive judge analysis
+// Receive detailed performance breakdown
+```
+
+## API Reference
+
+### Core Endpoints
+
+#### Generate Debate Response
+```http
+POST /generate-response
+Content-Type: application/json
+
+{
+  "debater": "Pro",
+  "prompt": "Topic: Climate change. Opponent's argument: ...",
+  "model": "deepseek/deepseek-r1-0528:free"
+}
+```
+
+#### Judge Debate
+```http
+POST /judge-debate
+Content-Type: application/json
+
+{
+  "transcript": "Full debate transcript...",
+  "model": "deepseek/deepseek-r1-0528:free"
+}
+```
+
+#### Analyze Legislation
+```http
+POST /analyze-legislation
+Content-Type: multipart/form-data
+
+file: [PDF document]
+```
+
+## Roadmap
+
+- **Bias Detection Module**: Analyze content for potential bias and misinformation
+- **Advanced Debate Formats**: Parliamentary, Oxford Union, and custom formats
+- **Real-time Collaboration**: Live multi-user debate sessions
+- **Performance Analytics**: Detailed user progress tracking
+- **Mobile Application**: Native iOS/Android apps
+- **Integration APIs**: Webhook support for educational platforms
+
+## Contributing
+
+We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+
+- Code style and standards
+- Pull request process
+- Issue reporting guidelines
+- Development environment setup
+
+### Development Setup
+```bash
+# Fork the repository
+git clone https://github.com/yourusername/DebateSim.git
+cd DebateSim
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Make changes and commit
+git commit -m "feat: add your feature description"
+
+# Push and create pull request
+git push origin feature/your-feature-name
+```
+
+## Acknowledgments
+
+- OpenRouter for providing access to multiple AI models
+- The open-source community for invaluable tools and libraries
+- Contributors and beta testers who helped shape the platform
+
+## Support
+
+- **Live Demo**: [debatesim.us](https://debatesim.us)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/alexliao95311/DebateSim/issues)
+- **Documentation**: [Full setup and deployment guide](Instructions.md)
+
+---
+
+<div align="center">
+
+**Built with care for the debate and education community**
+
+*Empowering critical thinking through AI-powered discourse*
+
+</div>

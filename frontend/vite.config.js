@@ -5,7 +5,11 @@ import 'dotenv/config';
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: process.env.NODE_ENV === 'production' ? 80 : 3000,
     host: '0.0.0.0',
-    port: 3000,
+  },
+  preview: {
+    port: 80,
+    host: '0.0.0.0',
   }
 });

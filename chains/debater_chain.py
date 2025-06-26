@@ -30,7 +30,7 @@ class OpenRouterChat(BaseChatModel):
         provider), we try to infer it from the model-id's leading token and
         prepend the correct provider so the request does not break.
         """
-        # If the string already contains a provider prefix, nothing to do.
+        # If the string already contains a provider prefix, return as is
         if "/" in name:
             return name
 
@@ -50,7 +50,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="deepseek/deepseek-prover-v2:free")
+    model_name: str = Field(default="qwen/qwq-32b:free")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -174,10 +174,10 @@ class OpenRouterChat(BaseChatModel):
 
 # --- Prompt template ----------------------------------------------------
 template = """
-You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **“{topic}.”**
+You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}."**
 
 ------------------------------------------------------------------
-Formatting Rules  **(STRICT — the UI parses your markdown)**
+Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact):**
    `# AI Debater ({debater_role}) – Round {round_num}/5`
    – Use the *round_num* that is supplied in the variables.
@@ -185,17 +185,17 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 2. After the title, produce *at most* **200 words** total.
 3. Use only *level‑3* markdown headings (`###`).
    – No other markdown syntax (no lists, tables, code blocks, or images).
-4. Keep paragraphs short (≤ 3 sentences).
+4. Keep paragraphs short (≤ 3 sentences).
 5. Do not add extra blank lines at the end of the message.
 
 ------------------------------------------------------------------
 Guidelines
-• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent’s last argument, quoted below . If there are no previous arguments, do not include this section. 
+• First, offer a **concise rebuttal** (≤ 2 sentences) to the opponent's last argument, quoted below . If there are no previous arguments, do not include this section. 
 • Second, **strengthen your side** with **up to three** numbered points.  
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Opponent’s last argument (for context — do **not** quote it back verbatim):  
-“{history}”
+Opponent's last argument (for context — do **not** quote it back verbatim):  
+"{history}"
 """
 
 # Create the chat prompt template
@@ -205,7 +205,7 @@ chat_prompt = ChatPromptTemplate.from_template(template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free", *, round_num: int = 1):
+def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -279,4 +279,4 @@ def get_debater_chain(model_name="deepseek/deepseek-prover-v2:free", *, round_nu
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(round_num=1)
+debater_chain = get_debater_chain(model_name="qwen/qwq-32b:free", round_num=1)

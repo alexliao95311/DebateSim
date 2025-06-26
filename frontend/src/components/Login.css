@@ -1,131 +1,229 @@
-body, html {
-  height: 100%;
+/* Login.css - Includes dramatic scroll-triggered transitions and feature cards */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
+
+* {
+  box-sizing: border-box;
   margin: 0;
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  padding: 0;
 }
 
-.login-page {
-  height: 100vh;
+body,
+html {
+  height: 100%;
+  font-family: "Inter", sans-serif;
+  background-image: url("/images/back.png");
+  background-size: cover; /* or 'contain' or 'auto' */
+  background-repeat: no-repeat;
+  background-position: center center;
+  color: #f8fafc;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Sticky Navbar */
+.login-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.8rem 2rem;
+  background-color: rgba(11, 17, 32, 0.9);
+  position: fixed;
   width: 100%;
-  background: linear-gradient(
-      rgba(0, 0, 32, 0.85),
-      rgba(0, 0, 64, 0.9)
-    ),
-    url("/images/background4.png") center center/cover no-repeat;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.navbar-left {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-/* Navbar */
-.navbar {
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 1rem 2rem;
+.logo {
+  width: 32px;
+  height: 32px;
 }
 
-.login-btn-primary {
-  background-color: #001f3f;
-  border: none;
-  color: white;
-  padding: 0.6rem 1.5rem;
-  border-radius: 6px;
+.brand {
+  font-size: 1.2rem;
   font-weight: 600;
-  transition: all 0.3s ease;
+  color: #f8fafc;
 }
 
-.login-btn-primary:hover:not(:disabled) {
-  background-color: #003366;
-  transform: translateY(-2px);
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.login-btn-secondary {
-  background-color: #f0f0f0;
-  color: #001f3f;
+/* Buttons */
+.btn {
+  font-size: 0.95rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
   border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.login-btn-secondary:hover:not(:disabled) {
-  background-color: #e6e6e6;
-  color: #001f3f;
-  transform: translateY(-2px);
-}
-
-.login-btn-primary:disabled,
-.login-btn-secondary:disabled {
-  opacity: 0.6;
+.btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Main content */
-.main-content {
+.btn-ghost {
+  background-color: #1e293b;
+  color: #cbd5e1;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+.btn-google {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+.btn-google:hover:not(:disabled) {
+  background-color: #f1f5f9;
+}
+
+.btn-google img {
+  width: 18px;
+  height: 18px;
+}
+
+/* Main Sections */
+.login-main {
   flex-grow: 1;
+  margin-top: 100px;
+}
+
+.hero-section,
+.fade-section {
+  min-height: 70vh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
+  padding: 4rem 2rem 2rem;
   text-align: center;
-  padding: 2rem;
-}
-
-.main-content h1 {
-  font-size: 4.5rem;
-  font-weight: 800;
-  margin-bottom: 1.5rem;
-  line-height: 1.2;
-}
-
-.main-content p {
-  font-size: 1.75rem;
-  font-weight: 400;
-  max-width: 600px;
-  line-height: 1.5;
-}
-
-/* Slide-up animation */
-@keyframes slideUpDebateSim {
-  0% {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.word {
-  display: inline-block;
+  position: relative;
   opacity: 0;
-  animation: slideUpDebateSim 0.5s ease-out forwards;
-  margin: 0 6px;
+  transform: translateY(100px);
+  transition: opacity 1.4s ease-out, transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform, opacity;
 }
 
-.word:nth-child(1) { animation-delay: 0s; }
-.word:nth-child(2) { animation-delay: 0.3s; }
-.word:nth-child(3) { animation-delay: 0.6s; }
+.hero-section.visible,
+.fade-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-/* Error */
-.alert-danger {
-  font-size: 0.95rem;
-  padding: 0.75rem 1rem;
+.hero-section h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  color: #ffffff;
+  text-align: center;
+}
+
+.btn-start {
+  padding: 0.8rem 1.6rem;
+  font-size: 1.5rem;
   border-radius: 8px;
+  background-color: #f1060600;
+  color: #ffffff;
+  border: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-start:hover {
+  background-color: #d6e1ee4f !important;
+}
+.fade-section p {
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  max-width: 700px;
+  text-align: center;
   margin-top: 1rem;
 }
 
-.login-error {
-  background-color: rgba(255, 0, 0, 0.1);
-  color: #ff4d4d;
-  border: 1px solid #ffcccc;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  max-width: 400px;
-  margin: 1rem auto 0;
+/* Feature Section */
+.feature-section {
+  padding: 5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.feature-section h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  color: #f1f5f9;
+}
+
+.feature-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.feature-card {
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 300px;
+  color: #fdfeff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+}
+
+.feature-card h3 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #eaeff6;
+}
+
+.fade-section:last-of-type {
+  margin-bottom: 6rem;
+}
+
+/* Footer */
+.footer {
   text-align: center;
-  box-shadow: 0 0 6px rgba(255, 0, 0, 0.15);
+  color: #f8fafc;
+  font-size: 0.85rem;
+  padding: 2rem 1rem;
+  background-color: #0b1120;
 }
 

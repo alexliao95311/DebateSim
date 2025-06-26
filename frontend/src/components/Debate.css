@@ -35,6 +35,11 @@ html, body {
   flex-direction: column;
   align-items: center;
   overflow-x: hidden;
+  transition: padding-left 0.3s ease;
+}
+
+.debate-container.sidebar-open {
+  padding-left: 260px;
 }
 
 /* Corner Buttons */
@@ -68,13 +73,13 @@ html, body {
   width: 100%;
 }
 
-/* Sidebar overlay */
+/* Sidebar */
 .sidebar {
   position: fixed;
-  top: 1rem;
+  top: 4rem;
   left: 0;
   width: 240px;
-  height: calc(100vh - 2rem);
+  height: calc(100vh - 4rem);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 0 8px 8px 0;
@@ -217,9 +222,11 @@ html, body {
   margin-bottom: 1.5rem;
 }
 .model-selection label {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.15rem;
+  text-shadow: 0 1px 4px #000;
+  margin-bottom: 0.5rem;
 }
 
 /* Markdown output */
@@ -414,4 +421,26 @@ button:disabled {
   .toggle-sidebar {
     display: block;
   }
+}
+
+.model-selection {
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-shadow: 0 1px 4px #000;
+}
+
+.loading-message, .loading {
+  color: #fff !important;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: rgba(0,0,0,0.7);
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0008;
+  position: relative;
+  z-index: 1000;
+  text-align: center;
+  margin: 1rem auto;
+  display: block;
 }
