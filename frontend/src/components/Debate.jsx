@@ -7,9 +7,10 @@ import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import "./Debate.css"; 
 
 const modelOptions = [
-  "deepseek/deepseek-r1-0528:free",
+  "qwen/qwq-32b:free",
   "meta-llama/llama-3-8b-instruct:free",
   "google/gemini-2.0-flash-exp:free",
+  "deepseek/deepseek-r1-0528:free",
   "anthropic/claude-3.5-sonnet",
   "openai/gpt-4o-mini",
   "meta-llama/llama-3.3-70b-instruct",
@@ -79,12 +80,27 @@ function Debate() {
 
   // Update speechList whenever messageList changes
   useEffect(() => {
-    const newSpeechList = messageList.map((msg, index) => ({
-      id: `speech-${index}`,
-      title: msg.speaker
-    }));
+    const newSpeechList = messageList.map((msg, index) => {
+      let title = msg.speaker;
+      
+      // Add round information for AI debaters in AI vs AI mode
+      if (mode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
+        // Calculate which round this speech belongs to
+        // Count previous AI speeches to determine round
+        const previousAISpeeches = messageList.slice(0, index).filter(m => 
+          m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con"
+        ).length;
+        const speechRound = Math.ceil((previousAISpeeches + 1) / 2);
+        title = `${msg.speaker} - Round ${speechRound}/5`;
+      }
+      
+      return {
+        id: `speech-${index}`,
+        title: title
+      };
+    });
     setSpeechList(newSpeechList);
-  }, [messageList]);
+  }, [messageList, mode]);
 
   useEffect(() => {
     if (description && messageList.length === 0) {
@@ -143,7 +159,7 @@ function Debate() {
              5. Conclude with a strong summary statement
            `;
         aiResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
-        appendMessage(`AI Debater (Pro) - Round ${round}/${maxRounds}`, aiResponse, proModel);
+        appendMessage("AI Debater Pro", aiResponse, proModel);
         setAiSide("con");
       } else {
         const conPrompt = `
@@ -162,7 +178,7 @@ function Debate() {
              5. Conclude with a strong summary statement
            `;
         aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
-        appendMessage(`AI Debater (Con) - Round ${round}/${maxRounds}`, aiResponse, conModel);
+        appendMessage("AI Debater Con", aiResponse, conModel);
         setAiSide("pro");
         setRound(prev => prev + 1);
         if (round === maxRounds) {
@@ -321,7 +337,7 @@ function Debate() {
   };
 
   return (
-    <div className="debate-container">
+    <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
       {/* Back to Home button in the top right corner */}
       <button className="back-to-home" onClick={handleBackToHome}>
         Back to Home

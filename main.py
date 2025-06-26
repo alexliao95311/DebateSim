@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global model configuration
-DEFAULT_MODEL = "deepseek/deepseek-r1-0528:free"
+DEFAULT_MODEL = "qwen/qwq-32b:free"
 FALLBACK_MODEL = "meta-llama/llama-3-8b-instruct:free"
 
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
