@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import html2pdf from "html2pdf.js";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { auth } from "../firebase/firebaseConfig";
 import { getAIJudgeFeedback } from "../api";
+import { saveTranscriptToUser } from "../firebase/saveTranscript";
+import LoadingSpinner from "./LoadingSpinner";
 import "./Judge.css";
 import { jsPDF } from "jspdf";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -53,7 +53,7 @@ function Judge() {
     fetchFeedback();
   }, [transcript]);
 
-  // Automatically save after feedback is rendered.
+  // Automatically save after feedback is rendered
   useEffect(() => {
     if (feedback && !saved && !saving) {
       const timer = setTimeout(() => {
@@ -64,39 +64,24 @@ function Judge() {
   }, [feedback, saved, saving]);
 
   const handleSaveTranscript = async () => {
-    if (!feedback || saved) return;
-    const currentUser = auth.currentUser;
-    if (!currentUser || (currentUser.isGuest || currentUser.uid === "guest")) {
-      console.log("Guest user or no user detected; skipping save.");
-      setSaved(true);
-      return;
-    }
-
+    if (!feedback || saved || saving) return;
+    
     setSaving(true);
     setError("");
     try {
-      const combinedTranscript = `# Debate Transcript
-
-${transcript}
+      // Create a combined transcript with judge feedback
+      const combinedTranscript = `${transcript}
 
 ---
 
-### AI Judge Feedback
+# AI Judge Feedback
 *Model: ${judgeModel}*
 
 ${feedback}`;
 
-      const db = getFirestore();
-      const transcriptsRef = collection(db, "users", currentUser.uid, "transcripts");
-      
-      await addDoc(transcriptsRef, {
-        transcript: combinedTranscript,
-        topic: topic,
-        mode: mode,
-        createdAt: new Date().toISOString(),
-        judge_feedback: feedback
-      });
-      console.log("Transcript saved automatically!");
+      // Save using the improved saveTranscriptToUser function
+      await saveTranscriptToUser(combinedTranscript, topic, mode);
+      console.log("Complete transcript with judge feedback saved!");
       setSaved(true);
     } catch (err) {
       console.error("Error saving transcript:", err);
@@ -105,6 +90,7 @@ ${feedback}`;
       setSaving(false);
     }
   };
+
 
   const handleDownloadPDF = () => {
     setError("");
@@ -195,7 +181,22 @@ ${feedback}`;
               )}
             </div>
             <div className="scrollable-content">
-              <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+              <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
+                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
+                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
+                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                  hr: ({node, ...props}) => <hr className="divider" {...props} />
+                }}
+              >
                 {formattedTranscript()}
               </ReactMarkdown>
             </div>
@@ -205,15 +206,31 @@ ${feedback}`;
             <h2>AI Judge Feedback</h2>
             <div className="scrollable-content">
               {!feedback ? (
-                <div className="loading-feedback">
-                  <div className="loading-spinner"></div>
-                  <p>Analyzing debate...</p>
-                </div>
+                <LoadingSpinner 
+                  message="Analyzing debate and generating judgment" 
+                  showProgress={true}
+                  estimatedTime={60000}
+                />
               ) : (
                 <div className="speech-block">
                   <h3>AI Judge:</h3>
                   <p className="model-info">Model: {judgeModel}</p>
-                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                  <ReactMarkdown
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
+                      p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                      ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
+                      ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
+                      li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
+                      strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                      em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                      hr: ({node, ...props}) => <hr className="divider" {...props} />
+                    }}
+                  >
                     {feedback}
                   </ReactMarkdown>
                 </div>

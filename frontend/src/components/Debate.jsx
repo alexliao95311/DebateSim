@@ -4,6 +4,7 @@ import rehypeRaw from "rehype-raw";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateAIResponse } from "../api";
 import { saveTranscriptToUser } from "../firebase/saveTranscript";
+import LoadingSpinner from "./LoadingSpinner";
 import "./Debate.css"; 
 
 const modelOptions = [
@@ -115,11 +116,10 @@ function Debate() {
     setError("");
     try {
       const finalTranscript = buildPlainTranscript();
-      await saveTranscriptToUser(finalTranscript);
       navigate("/judge", { state: { transcript: finalTranscript, topic, mode, judgeModel } });
     } catch (err) {
-      console.error("Error saving transcript:", err);
-      setError("Failed to save transcript.");
+      console.error("Error ending debate:", err);
+      setError("Failed to end debate.");
     } finally {
       setLoading(false);
     }
@@ -158,7 +158,7 @@ function Debate() {
              4. Be persuasive but respectful
              5. Conclude with a strong summary statement
            `;
-        aiResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel);
         appendMessage("AI Debater Pro", aiResponse, proModel);
         setAiSide("con");
       } else {
@@ -458,7 +458,7 @@ function Debate() {
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
                 {loading
-                  ? "Loading..."
+                  ? "Generating Response..."
                   : round > maxRounds
                   ? "Debate Finished"
                   : aiSide === "pro"
@@ -558,7 +558,13 @@ function Debate() {
             </>
           )}
           {error && <p style={{ color: "red" }}>{error}</p>}
-          {loading && !error && <p>Loading AI response...</p>}
+          {loading && !error && (
+            <LoadingSpinner 
+              message="Generating AI response" 
+              showProgress={true}
+              estimatedTime={45000}
+            />
+          )}
           <button
             onClick={() => handleEndDebate()}
             style={{ marginTop: "1rem" }}
