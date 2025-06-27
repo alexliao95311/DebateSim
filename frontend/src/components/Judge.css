@@ -337,6 +337,7 @@ hr.divider {
 .scrollable-content .debate-list-item {
   margin-bottom: 0.3rem;
   line-height: 1.5;
+  color: #333 !important;
 }
 
 .scrollable-content strong,
@@ -373,6 +374,53 @@ hr.divider {
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
+}
+
+/* Override any global styles that might cause white text on white background */
+.judge-container .scrollable-content > *:not(.loading-spinner-container) {
+  color: #333 !important;
+}
+
+.judge-container .scrollable-content p,
+.judge-container .scrollable-content li,
+.judge-container .scrollable-content div:not(.loading-spinner-container):not(.loading-spinner-container *) {
+  color: #333 !important;
+}
+
+.judge-container .scrollable-content h1,
+.judge-container .scrollable-content h2,
+.judge-container .scrollable-content .debate-heading-h1,
+.judge-container .scrollable-content .debate-heading-h2 {
+  color: #4a90e2 !important;
+}
+
+.judge-container .speech-block h3 {
+  color: #333 !important;
+}
+
+.judge-container .model-info {
+  color: #666 !important;
+}
+
+/* Don't override loading spinner text colors - preserve original colors */
+.judge-container .loading-spinner-container .loading-message {
+  color: #333 !important;
+}
+
+.judge-container .loading-spinner-container .loading-tips p {
+  color: #555 !important;
+}
+
+.judge-container .loading-spinner-container .loading-tips strong {
+  color: #4a90e2 !important;
+}
+
+.judge-container .loading-spinner-container .progress-text {
+  color: #666 !important;
+}
+
+.judge-container .loading-spinner-container .estimated-time {
+  color: #666 !important;
 }
 
 /* Responsive styling */
