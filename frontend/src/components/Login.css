@@ -12,10 +12,10 @@ html {
   height: 100%;
   font-family: "Inter", sans-serif;
   background-image: url("/images/back.png");
-  background-size: cover; /* or 'contain' or 'auto' */
+  background-size: cover;
   background-repeat: no-repeat;
   background-position: center center;
-  color: #f8fafc;
+  color: #f8fafc !important;
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
@@ -54,7 +54,7 @@ html {
 .brand {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 .navbar-right {
@@ -84,21 +84,21 @@ html {
 
 .btn-ghost {
   background-color: #1e293b;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
 }
 
 .btn-ghost:hover:not(:disabled) {
   background-color: #334155;
-  color: #f8fafc;
+  color: #f8fafc !important;
 }
 
 .btn-google {
-  background-color: #ffffff;
+  background-color: #ffffff !important;
   color: #0f172a;
 }
 
 .btn-google:hover:not(:disabled) {
-  background-color: #f1f5f9;
+  background-color: #f1f5f9 !important;
 }
 
 .btn-google img {
@@ -138,7 +138,7 @@ html {
   font-size: 4rem;
   font-weight: 300;
   margin-bottom: 2rem;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
   text-align: center;
 }
 
@@ -147,7 +147,7 @@ html {
   font-size: 1.5rem;
   border-radius: 8px;
   background-color: #f1060600;
-  color: #ffffff;
+  color: #ffffff !important;
   border: none;
   font-weight: 500;
   transition: all 0.3s ease;
@@ -156,10 +156,11 @@ html {
 .btn-start:hover {
   background-color: #d6e1ee4f !important;
 }
+
 .fade-section p {
   font-size: 2.5rem;
   font-weight: 300;
-  color: #cbd5e1;
+  color: #cbd5e1 !important;
   max-width: 700px;
   text-align: center;
   margin-top: 1rem;
@@ -176,7 +177,7 @@ html {
 .feature-section h2 {
   font-size: 2.5rem;
   margin-bottom: 3rem;
-  color: #cbd5e1;
+  color: #ffffff !important;
   font-weight: 300;
 }
 
@@ -194,7 +195,7 @@ html {
   border-radius: 16px;
   padding: 2rem;
   width: 300px;
-  color: #fdfeff;
+  color: #fdfeff !important;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
@@ -208,12 +209,13 @@ html {
 .feature-card h3 {
   font-size: 1.4rem;
   margin-bottom: 1rem;
+  color: #ffffff;
 }
 
 .feature-card p {
   font-size: 1rem;
   line-height: 1.6;
-  color: #eaeff6;
+  color: #eaeff6 !important;
 }
 
 .fade-section:last-of-type {
@@ -223,9 +225,8 @@ html {
 /* Footer */
 .footer {
   text-align: center;
-  color: #f8fafc;
+  color: #f8fafc !important;
   font-size: 0.85rem;
   padding: 2rem 1rem;
   background-color: #0b1120;
 }
-
