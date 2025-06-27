@@ -68,17 +68,20 @@
   width: 100% !important;
 }
 
-/* Left, center, right section spacing */
+/* Left, center, right section spacing - Mobile optimized */
 .header-left,
 .header-right {
   display: flex !important;
   align-items: center !important;
   gap: 1rem !important;
+  flex: 1 !important;
+  min-width: 0 !important; /* Allow shrinking */
 }
 
 .header-center {
-  flex: 1 !important;
+  flex: 0 0 auto !important;
   text-align: center !important;
+  overflow: hidden !important;
 }
 
 .site-title {
@@ -87,6 +90,13 @@
   margin: 0 !important;
   font-weight: 600 !important;
   text-shadow: 0 1px 2px #ffffffcc !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.header-right {
+  justify-content: flex-end !important;
 }
 
 .user-section {
@@ -98,6 +108,10 @@
 .username {
   font-weight: 500 !important;
   color: #f8fafc !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 120px !important;
 }
 
 .logout-button {
@@ -211,13 +225,166 @@
 
 
 /* Responsive design */
+/* Mobile responsiveness - Reduce header clutter */
 @media (max-width: 768px) {
+  /* Make header less cluttered on mobile */
+  .home-header {
+    height: 56px !important;
+  }
+  
+  .header-content {
+    padding: 0 1rem !important;
+  }
+  
+  .header-left,
+  .header-right {
+    gap: 0.5rem !important;
+  }
+  
+  .header-left h1 {
+    font-size: 1.2rem !important;
+  }
+  
+  /* Better mobile header layout */
+  .header-center {
+    max-width: 180px !important;
+  }
+  
+  .site-title {
+    font-size: 1.6rem !important;
+  }
+  
+  .username {
+    max-width: 100px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .logout-button {
+    padding: 0 0.75rem !important;
+    height: 32px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Stack feature sections */
   .feature-sections {
     flex-direction: column !important;
+    gap: 1rem !important;
   }
 
   .feature {
     width: 100% !important;
+    padding: 1.5rem !important;
+  }
+  
+  .feature h3 {
+    font-size: 1.2rem !important;
+  }
+  
+  .feature p {
+    font-size: 0.9rem !important;
+  }
+  
+  /* Reduce main heading sizes */
+  .home-container h1 {
+    font-size: 1.6rem !important;
+  }
+  
+  .welcome-message {
+    font-size: 1.5rem !important;
+  }
+  
+  .main-content {
+    padding: 0 1rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Extra small screens - further reduce clutter */
+  .home-header {
+    height: 48px !important;
+  }
+  
+  .header-content {
+    padding: 0 0.5rem !important;
+  }
+  
+  .header-left h1 {
+    font-size: 1rem !important;
+  }
+  
+  .header-right {
+    gap: 0.25rem !important;
+  }
+  
+  /* iPhone-specific header optimization */
+  .header-center {
+    max-width: 140px !important;
+  }
+  
+  .site-title {
+    font-size: 1.3rem !important;
+  }
+  
+  .username {
+    max-width: 80px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .logout-button {
+    padding: 0 0.5rem !important;
+    height: 28px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .home-container h1 {
+    font-size: 1.4rem !important;
+  }
+  
+  .welcome-message {
+    font-size: 1.3rem !important;
+  }
+  
+  .feature {
+    padding: 1rem !important;
+  }
+  
+  .feature h3 {
+    font-size: 1.1rem !important;
+  }
+  
+  .feature p {
+    font-size: 0.85rem !important;
+  }
+}
+
+/* iPhone-specific breakpoint for very small screens */
+@media (max-width: 414px) {
+  .header-content {
+    padding: 0 0.25rem !important;
+  }
+  
+  .header-center {
+    max-width: 120px !important;
+  }
+  
+  .site-title {
+    font-size: 1.1rem !important;
+  }
+  
+  .username {
+    max-width: 60px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .logout-button {
+    padding: 0 0.4rem !important;
+    height: 26px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .header-left,
+  .header-right {
+    gap: 0.15rem !important;
   }
 }
 

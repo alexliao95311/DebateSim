@@ -366,37 +366,78 @@ button:disabled {
 }
 
 /* Mobile & small screens */
-@media (max-width: 992px) {
-  .debate-wrapper {
-    flex-direction: column;
-  }
-  .sidebar {
-    /* Slide in from left on small screens */
-    position: fixed;
-    top: 1rem;
-    left: 0;
-    width: 240px;
-    height: calc(100vh - 2rem);
-    transform: translateX(-100%);
-    border-radius: 0 8px 8px 0;
-    transition: transform 0.3s ease;
-  }
-  .sidebar.expanded {
-    transform: translateX(0);
-  }
-  .toggle-sidebar {
-    display: block;
+/* Mobile Responsiveness - Focus on reducing header clutter */
+@media (max-width: 768px) {
+  /* Make container more mobile friendly */
+  .debate-container {
+    padding: 3rem 0.5rem 2rem;
   }
   
-  /* Mobile adjustments for user vs AI setup */
+  /* Reduce header font size for mobile */
+  .debate-topic-header {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+    padding: 0 1rem;
+  }
+  
+  /* Stack buttons vertically to reduce header clutter */
+  .back-to-home {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Make model selection less cluttered */
+  .model-selection {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .model-selection label {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .model-selection select {
+    font-size: 0.9rem;
+    padding: 0.4rem 1.5rem 0.4rem 0.8rem;
+    margin-left: 0;
+  }
+  
+  /* Bill description toggle - make it smaller */
+  .toggle-description {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Mobile adjustments for setup modals */
+  .ai-vs-user-setup {
+    padding: 1.5rem 1rem;
+    margin: 0.5rem 0;
+  }
+  
+  .ai-vs-user-setup h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
   .side-selection-cards {
     flex-direction: column;
-    align-items: center;
+    gap: 1rem;
+    margin: 1rem 0;
   }
   
   .side-card {
-    min-width: 200px;
-    max-width: 250px;
+    min-width: auto;
+    max-width: 100%;
+    padding: 1.5rem 1rem;
+  }
+  
+  .side-card h4 {
+    font-size: 1.1rem;
   }
   
   .order-buttons {
@@ -406,7 +447,41 @@ button:disabled {
   
   .order-button {
     width: 100%;
-    max-width: 200px;
+    max-width: none;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .confirm-button {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  /* Speech blocks - make more compact */
+  .speech-block {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .speech-block h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .model-info {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .debate-wrapper {
+    flex-direction: column;
+  }
+  
+  /* Sidebar adjustments for tablets */
+  .toggle-sidebar {
+    display: block;
   }
 }
 
