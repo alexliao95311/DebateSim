@@ -41,7 +41,7 @@
 }
 
 .loading-message {
-  color: #333;
+  color: #333 !important;
   font-size: 1.2rem;
   margin: 0 0 1rem 0;
   font-weight: 600;
@@ -92,12 +92,12 @@
 
 .progress-text {
   font-size: 0.9rem;
-  color: #666;
+  color: #666 !important;
   font-weight: 500;
 }
 
 .estimated-time {
-  color: #666;
+  color: #666 !important;
   font-size: 0.9rem;
   margin: 0.5rem 0;
   font-style: italic;
@@ -114,7 +114,7 @@
 .loading-tips p {
   margin: 0;
   font-size: 0.85rem;
-  color: #555;
+  color: #555 !important;
   line-height: 1.4;
 }
 

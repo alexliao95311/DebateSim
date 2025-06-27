@@ -1,0 +1,102 @@
+/* DebateSidebar.css - Clean and simple now that global !important is removed */
+
+/* Toggle button */
+.toggle-sidebar {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  z-index: 30;
+  transition: background 0.2s ease;
+}
+
+.toggle-sidebar:hover {
+  background-color: #357abd;
+}
+
+/* Clean sidebar styling */
+.debate-sidebar {
+  position: fixed;
+  top: 4rem;
+  left: 0;
+  width: 240px;
+  height: calc(100vh - 4rem);
+  background: #ffffff;
+  border: 1px solid #e0e7ee;
+  border-radius: 0 8px 8px 0;
+  padding: 1rem;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.1);
+  z-index: 20;
+  color: #333;
+}
+
+.debate-sidebar.expanded {
+  transform: translateX(0);
+}
+
+.sidebar-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.sidebar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-item {
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.sidebar-text {
+  color: #333;
+  font-weight: 500;
+}
+
+.sidebar-item:hover {
+  background-color: #4a90e2;
+}
+
+.sidebar-item:hover .sidebar-text {
+  color: #ffffff;
+}
+
+/* Mobile responsive */
+@media (max-width: 992px) {
+  .debate-sidebar {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 0 !important;
+    width: 240px !important;
+    height: calc(100vh - 2rem) !important;
+    transform: translateX(-100%) !important;
+    border-radius: 0 8px 8px 0 !important;
+    transition: transform 0.3s ease !important;
+  }
+  
+  .debate-sidebar.expanded {
+    transform: translateX(0) !important;
+  }
+  
+  .toggle-sidebar {
+    display: block !important;
+  }
+}
