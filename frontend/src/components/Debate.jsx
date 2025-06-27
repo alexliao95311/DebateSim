@@ -9,12 +9,11 @@ import "./Debate.css";
 
 const modelOptions = [
   "qwen/qwq-32b:free",
-  "meta-llama/llama-3-8b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
+  "meta-llama/llama-3.3-70b-instruct",
+  "google/gemini-2.0-flash-001",
   "deepseek/deepseek-r1-0528:free",
   "anthropic/claude-3.5-sonnet",
   "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct",
   "openai/gpt-4o-mini-search-preview"
 ];
 
@@ -49,6 +48,12 @@ function Debate() {
   const [aiSide, setAiSide] = useState("pro");
   const [userSide, setUserSide] = useState("");
   const [userVsUserSide, setUserVsUserSide] = useState("");
+  const [userVsUserSetup, setUserVsUserSetup] = useState({
+    proUser: "",
+    conUser: "",
+    firstSpeaker: "pro",
+    confirmed: false
+  });
   const [firstSide, setFirstSide] = useState("pro");
   const [selectedSide, setSelectedSide] = useState(""); // For confirmation step
 
@@ -328,13 +333,30 @@ function Debate() {
       alert("Input field cannot be blank. Please enter your argument.");
       return;
     }
-    appendMessage("User vs User", userInput.trim());
+    
+    const currentUserName = userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser;
+    const speakerLabel = `${userVsUserSide.toUpperCase()} (${currentUserName})`;
+    
+    appendMessage(speakerLabel, userInput.trim());
     setUserInput("");
     setError("");
+    
+    // Switch turns
+    setUserVsUserSide(userVsUserSide === "pro" ? "con" : "pro");
   };
 
   const handleChooseUserVsUserSide = (side) => {
     setUserVsUserSide(side);
+  };
+
+  const handleUserVsUserConfirm = () => {
+    if (!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()) {
+      setError("Please enter names for both Pro and Con debaters.");
+      return;
+    }
+    setUserVsUserSetup(prev => ({ ...prev, confirmed: true }));
+    setUserVsUserSide(userVsUserSetup.firstSpeaker);
+    setError("");
   };
 
   return (
@@ -601,31 +623,117 @@ function Debate() {
           )}
           {mode === "user-vs-user" && (
             <>
-              {!userVsUserSide && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <label>
-                    Who goes first? 
-                  </label>
-                  <br />
-                  <button onClick={() => handleChooseUserVsUserSide("pro")} style={{ marginRight: "0.5rem" }}>
-                    Pro
-                  </button>
-                  <button onClick={() => handleChooseUserVsUserSide("con")}>
-                    Con
-                  </button>
+              {!userVsUserSetup.confirmed && (
+                <div className="ai-vs-user-setup">
+                  <h3>Setup User vs User Debate</h3>
+                  
+                  <div className="user-name-inputs">
+                    <div className="name-input-group">
+                      <label>Pro Debater Name:</label>
+                      <input
+                        type="text"
+                        placeholder="Enter Pro debater's name"
+                        value={userVsUserSetup.proUser}
+                        onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, proUser: e.target.value }))}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          borderRadius: "6px",
+                          border: "2px solid #e0e7ee",
+                          fontSize: "1rem",
+                          marginBottom: "1rem"
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="name-input-group">
+                      <label>Con Debater Name:</label>
+                      <input
+                        type="text"
+                        placeholder="Enter Con debater's name"
+                        value={userVsUserSetup.conUser}
+                        onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, conUser: e.target.value }))}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          borderRadius: "6px",
+                          border: "2px solid #e0e7ee",
+                          fontSize: "1rem",
+                          marginBottom: "1rem"
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="order-selection">
+                    <label>Who speaks first?</label>
+                    <div className="order-buttons">
+                      <button 
+                        className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
+                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
+                      >
+                        {userVsUserSetup.proUser || 'Pro'} speaks first
+                      </button>
+                      <button 
+                        className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
+                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
+                      >
+                        {userVsUserSetup.conUser || 'Con'} speaks first
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="model-selection" style={{ marginBottom: "1.5rem" }}>
+                    <label>
+                      Judge Model:
+                      <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                        {modelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  
+                  <div className="confirm-section">
+                    <button 
+                      className="confirm-button"
+                      disabled={!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()}
+                      onClick={handleUserVsUserConfirm}
+                    >
+                      {userVsUserSetup.proUser.trim() && userVsUserSetup.conUser.trim() 
+                        ? 'Start Debate' 
+                        : 'Enter both debater names first'
+                      }
+                    </button>
+                  </div>
                 </div>
               )}
-              {userVsUserSide && (
-                <div style={{ marginTop: "1rem" }}>
-                  <p style={{ fontStyle: "italic" }}>
-                    {userVsUserSide === "pro" ? "It's Pro's turn." : "It's Con's turn."}
+              
+              {userVsUserSetup.confirmed && (
+                <div className="ai-vs-user-setup">
+                  <h3>User vs User Debate</h3>
+                  <p style={{ marginBottom: "1rem", color: "#666" }}>
+                    Current turn: <strong>
+                      {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                    </strong> ({userVsUserSide.toUpperCase()})
                   </p>
+                  
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
-                    style={{ width: "100%", resize: vertical }}
+                    style={{ 
+                      width: "100%", 
+                      resize: "vertical", 
+                      marginBottom: "1rem",
+                      padding: "0.75rem",
+                      borderRadius: "6px",
+                      border: "2px solid #e0e7ee",
+                      fontSize: "1rem"
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
                         e.preventDefault();
@@ -633,9 +741,40 @@ function Debate() {
                       }
                     }}
                   />
-                  <button onClick={handleUserVsUser} disabled={loading || !userInput.trim()}>
-                    Send ({userVsUserSide === "pro" ? "Pro" : "Con"})
-                  </button>
+                  
+                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button 
+                      onClick={handleUserVsUser} 
+                      disabled={loading || !userInput.trim()}
+                      style={{
+                        background: "#4a90e2",
+                        color: "white",
+                        border: "none",
+                        padding: "0.75rem 1.5rem",
+                        borderRadius: "6px",
+                        cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
+                        opacity: loading || !userInput.trim() ? 0.6 : 1,
+                        fontSize: "1rem"
+                      }}
+                    >
+                      Send as {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                    </button>
+                    
+                    <button 
+                      onClick={() => setUserVsUserSetup(prev => ({ ...prev, confirmed: false }))}
+                      style={{
+                        background: "rgba(255,255,255,0.1)",
+                        color: "white",
+                        border: "1px solid #4a90e2",
+                        padding: "0.75rem 1.5rem",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "1rem"
+                      }}
+                    >
+                      Restart Setup
+                    </button>
+                  </div>
                 </div>
               )}
             </>

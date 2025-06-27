@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 # Global model configuration
 DEFAULT_MODEL = "qwen/qwq-32b:free"
-FALLBACK_MODEL = "meta-llama/llama-3-8b-instruct:free"
+FALLBACK_MODEL = "meta-llama/llama-3.3-70b-instruct"
 
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
 client = OpenAI(
