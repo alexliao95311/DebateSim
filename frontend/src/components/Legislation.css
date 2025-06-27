@@ -159,6 +159,9 @@
   border-top-color: transparent;
   animation: spin 1s linear infinite;
 }
+.upload-container h2{
+  color:white;
+}
 
 @keyframes spin {
   to {
@@ -335,6 +338,7 @@
   font-size: 1.5em;
   margin-bottom: 1rem;
   text-align: center;
+  color:white;
 }
 
 .history-sidebar ul {
@@ -538,6 +542,7 @@
 
 .markdown-renderer h2 {
   font-size: 1.4rem !important;
+
 }
 
 .markdown-renderer h3 {
