@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { generateAIResponse } from "../api";
 import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import LoadingSpinner from "./LoadingSpinner";
+import DebateSidebar from "./DebateSidebar";
 import "./Debate.css"; 
 
 const modelOptions = [
@@ -366,21 +367,12 @@ function Debate() {
         Back to Home
       </button>
 
-      <button className="toggle-sidebar" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
-        {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
-      </button>
-      <div className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <h3>Speeches</h3>
-        <ul>
-          {speechList
-            .filter((item) => item.title !== "Bill Description")
-            .map((item) => (
-              <li key={item.id} onClick={() => scrollToSpeech(item.id)}>
-                {item.title}
-              </li>
-            ))}
-        </ul>
-      </div>
+      <DebateSidebar 
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        speechList={speechList}
+        scrollToSpeech={scrollToSpeech}
+      />
       <div className="debate-wrapper">
         <div className="debate-content">
           <h2 className="debate-topic-header">Debate Topic: {topic}</h2>

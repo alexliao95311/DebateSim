@@ -15,7 +15,7 @@ html {
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center center;
-  color: #f8fafc !important;
+  color: #f8fafc;
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
