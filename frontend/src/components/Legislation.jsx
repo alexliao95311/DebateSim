@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { saveTranscriptToUser } from '../firebase/saveTranscript';
+import { jsPDF } from "jspdf";
 import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -125,6 +126,8 @@ const Legislation = ({ user }) => {
   const [debateMode, setDebateMode] = useState(''); // "ai-vs-ai", "ai-vs-user", "user-vs-user"
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState(null);
+  const [pdfError, setPdfError] = useState("");
   const [extractionSuccess, setExtractionSuccess] = useState(false);
 
   // Recommended bills state
@@ -135,30 +138,24 @@ const Legislation = ({ user }) => {
   const [processingStage, setProcessingStage] = useState('');
 
   const billNameInputRef = useRef(null);
+  const pdfContentRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch debate history function
   const fetchHistory = async () => {
-    console.log("fetchHistory called, user:", user);
-    if (!user || user.isGuest) {
-      console.log("User not available or is guest, skipping fetch");
-      return;
-    }
+    if (!user || user.isGuest) return;
     try {
       const db = getFirestore();
       const transcriptsRef = collection(db, "users", user.uid, "transcripts");
       const q = query(transcriptsRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
-      console.log("Snapshot empty:", snapshot.empty, "Docs count:", snapshot.docs.length);
       if (!snapshot.empty) {
         const fetchedHistory = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        console.log("Fetched history:", fetchedHistory);
         setHistory(fetchedHistory);
       } else {
-        console.log("No history documents found");
         setHistory([]); // Explicitly set empty array
       }
     } catch (err) {
@@ -170,6 +167,64 @@ const Legislation = ({ user }) => {
   useEffect(() => {
     fetchHistory();
   }, [user]);
+
+  const handleDownloadPDF = () => {
+    if (!selectedHistory) return;
+    
+    setPdfError("");
+    try {
+      const element = pdfContentRef.current;
+      if (!element) {
+        throw new Error("PDF content element not found");
+      }
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "letter",
+      });
+
+      const margins = [72, 36, 72, 36];
+
+      pdf.setFontSize(12);
+
+      pdf.html(element, {
+        callback: (pdfInstance) => {
+          const totalPages = pdfInstance.internal.getNumberOfPages();
+          for (let i = 1; i <= totalPages; i++) {
+            pdfInstance.setPage(i);
+            pdfInstance.setFontSize(10);
+            pdfInstance.setTextColor(150);
+            const pageWidth = pdfInstance.internal.pageSize.getWidth();
+            const pageHeight = pdfInstance.internal.pageSize.getHeight();
+            pdfInstance.text(
+              `Page ${i} of ${totalPages}`,
+              pageWidth - margins[1],
+              pageHeight - 18,
+              { align: "right" }
+            );
+          }
+          const fileName = selectedHistory.topic 
+            ? `${selectedHistory.topic.replace(/[^a-z0-9]/gi, '_')}_transcript.pdf`
+            : `activity_transcript_${Date.now()}.pdf`;
+          pdfInstance.save(fileName);
+        },
+        margin: margins,
+        autoPaging: "text",
+        break: {
+          avoid: "li, p, h2, h3",
+        },
+        html2canvas: {
+          scale: 0.75,
+          windowWidth: 540,
+          useCORS: true,
+        },
+      });
+    } catch (err) {
+      setPdfError("Failed to generate PDF. Please try again.");
+      console.error("PDF generation error:", err);
+    }
+  };
 
   // Fetch recommended bills from Congress.gov API
   useEffect(() => {
@@ -276,7 +331,6 @@ const Legislation = ({ user }) => {
         if (user && !user.isGuest) {
           try {
             const billName = pdfFile?.name || 'Uploaded Bill';
-            console.log("Saving analysis to history:", `Bill Analysis: ${billName}`);
             await saveTranscriptToUser(
               data.analysis,
               `Bill Analysis: ${billName}`,
@@ -284,7 +338,6 @@ const Legislation = ({ user }) => {
               'Analyze Bill'
             );
             // Refresh history after saving
-            console.log("Analysis saved, refreshing history...");
             await fetchHistory();
           } catch (err) {
             console.error("Error saving analysis to history:", err);
@@ -405,7 +458,6 @@ const Legislation = ({ user }) => {
         // Save analysis to history
         if (user && !user.isGuest) {
           try {
-            console.log("Saving recommended bill analysis to history:", `Bill Analysis: ${bill.title}`);
             await saveTranscriptToUser(
               data.analysis,
               `Bill Analysis: ${bill.title}`,
@@ -413,7 +465,6 @@ const Legislation = ({ user }) => {
               'Analyze Bill'
             );
             // Refresh history after saving
-            console.log("Recommended bill analysis saved, refreshing history...");
             await fetchHistory();
           } catch (err) {
             console.error("Error saving analysis to history:", err);
@@ -507,13 +558,8 @@ const Legislation = ({ user }) => {
               {history.length ? history.map(item => (
                 <li
                   key={item.id}
-                  onClick={() => {
-                    if (viewMode === "debate") {
-                      setDebateTopic(item.topic);
-                    }
-                    setShowHistorySidebar(false);
-                  }}
-                  title={viewMode === "debate" ? "Click to set as Bill Name" : "View activity details"}
+                  onClick={() => setSelectedHistory(item)}
+                  title="Click to view full transcript"
                 >
                   <div className="history-item">
                     <div className="history-title">{item.topic}</div>
@@ -526,6 +572,55 @@ const Legislation = ({ user }) => {
               )) : <li>No history available</li>}
             </ul>
             <button onClick={() => setShowHistorySidebar(false)}>Close</button>
+          </div>
+        )}
+
+        {/* Modal to view selected history transcript */}
+        {selectedHistory && (
+          <div className="history-modal">
+            <div className="modal-content">
+              <button className="modal-close" onClick={() => setSelectedHistory(null)}>
+                &times;
+              </button>
+              <h2>{selectedHistory.topic || "Untitled Activity"}</h2>
+              <div className="transcript-viewer">
+                <ReactMarkdown
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
+                    p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                    ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
+                    ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
+                    li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
+                    strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                    em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                    hr: ({node, ...props}) => <hr className="divider" {...props} />
+                  }}
+                >
+                  {selectedHistory.transcript || "No transcript available."}
+                </ReactMarkdown>
+              </div>
+              
+              {/* Error message and download button */}
+              {pdfError && <p className="error-text">{pdfError}</p>}
+              <div className="modal-button-group">
+                <button 
+                  className="download-button" 
+                  onClick={handleDownloadPDF}
+                >
+                  Download as PDF
+                </button>
+                <button 
+                  className="close-button" 
+                  onClick={() => setSelectedHistory(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </header>
@@ -755,6 +850,57 @@ const Legislation = ({ user }) => {
           </>
         )}
       </div>
+
+      {/* Hidden PDF content for export */}
+      {selectedHistory && (
+        <div style={{ position: "absolute", left: "-9999px" }}>
+          <div
+            ref={pdfContentRef}
+            className="pdf-container"
+            style={{
+              width: "7.5in",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              whiteSpace: "normal",
+              lineHeight: "1.4",
+            }}
+          >
+            <style>
+              {`
+                li, p, h2, h3 {
+                  page-break-inside: avoid;
+                  break-inside: avoid-page;
+                }
+              `}
+            </style>
+            <p style={{ fontStyle: "italic", color: "#555", fontSize: "10pt" }}>
+              Generated on: {new Date().toLocaleString()}
+            </p>
+            <h1 style={{ textAlign: "center", marginTop: 0, fontSize: "18pt" }}>
+              {selectedHistory.activityType || "Activity"} Transcript
+            </h1>
+            <hr />
+            <h2 style={{ fontSize: "16pt" }}>
+              Topic: {selectedHistory.topic || "Untitled Activity"}
+            </h2>
+            {selectedHistory.mode && (
+              <p style={{ fontSize: "12pt", color: "#666" }}>
+                Mode: {selectedHistory.mode}
+              </p>
+            )}
+            {selectedHistory.activityType && (
+              <p style={{ fontSize: "12pt", color: "#666" }}>
+                Activity Type: {selectedHistory.activityType}
+              </p>
+            )}
+            <p style={{ fontSize: "10pt", color: "#999" }}>
+              Created: {new Date(selectedHistory.createdAt).toLocaleString()}
+            </p>
+            <hr />
+            <div dangerouslySetInnerHTML={{ __html: selectedHistory.transcript || "No content available." }} />
+          </div>
+        </div>
+      )}
 
       <footer className="bottom-text">
         <a
