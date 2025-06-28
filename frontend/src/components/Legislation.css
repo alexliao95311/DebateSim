@@ -400,13 +400,41 @@
 }
 
 .history-type {
-  background: #4a90e2;
   color: white;
   padding: 0.15rem 0.4rem;
   border-radius: 12px;
   font-size: 0.7rem;
   font-weight: 500;
   text-transform: uppercase;
+}
+
+/* Color coding for different activity types */
+.history-type.type-analyze {
+  background: #28a745; /* Green for analysis */
+}
+
+.history-type.type-bill-debate {
+  background: #dc3545; /* Red for bill debates */
+}
+
+.history-type.type-topic-debate {
+  background: #6f42c1; /* Purple for topic debates */
+}
+
+.history-type.type-ai-vs-ai {
+  background: #fd7e14; /* Orange for AI vs AI */
+}
+
+.history-type.type-ai-vs-user {
+  background: #20c997; /* Teal for AI vs User */
+}
+
+.history-type.type-user-vs-user {
+  background: #6c757d; /* Gray for User vs User */
+}
+
+.history-type.type-default {
+  background: #4a90e2; /* Blue as fallback */
 }
 
 .history-date {
