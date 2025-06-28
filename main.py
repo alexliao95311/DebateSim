@@ -51,7 +51,7 @@ async def root():
     return {"message": "FastAPI backend is running!"}
 
 # Enable CORS for frontend communication
-backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost,http://127.0.0.1,http://20.3.246.40,http://localhost:80,http://127.0.0.1:80,http://20.3.246.40:80,http://localhost:3000,http://127.0.0.1:3000,http://20.3.246.40:3000,http://172.190.97.150:3000,http://172.190.97.150:80,http://debatesim.us,https://debatesim.us").split(",")
+backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost,http://127.0.0.1,http://20.3.246.40,http://localhost:80,http://127.0.0.1:80,http://20.3.246.40:80,http://localhost:3000,http://127.0.0.1:3000,http://20.3.246.40:3000,http://20.3.246.40:5000,http://172.190.97.150:3000,http://172.190.97.150:80,http://172.190.97.150:5000,http://debatesim.us,https://debatesim.us").split(",")
 cleaned_origins = [origin.strip().rstrip("/") for origin in backend_origins]
 print("[Cleaned CORS Origins]:", cleaned_origins)
 
