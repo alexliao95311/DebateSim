@@ -16,6 +16,81 @@ const modelOptions = [
   "openai/gpt-4o-mini",
   "openai/gpt-4o-mini-search-preview"
 ];
+
+// BillCard component for better organization
+const BillCard = ({ bill, viewMode, onSelect }) => {
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [isDescriptionLong, setIsDescriptionLong] = useState(false);
+  
+  useEffect(() => {
+    // Check if description is longer than 120 characters (lower threshold for meaningful read more)
+    setIsDescriptionLong(bill.description.length > 120);
+  }, [bill.description]);
+  
+  const truncatedDescription = bill.description.length > 120 
+    ? bill.description.substring(0, 120) + "..."
+    : bill.description;
+
+  // Generate correct Congress.gov URL
+  const getBillTypeUrl = (type) => {
+    switch(type.toUpperCase()) {
+      case 'HR': return 'house-bill';
+      case 'S': return 'senate-bill';
+      case 'HJRES': return 'house-joint-resolution';
+      case 'SJRES': return 'senate-joint-resolution';
+      case 'HCONRES': return 'house-concurrent-resolution';
+      case 'SCONRES': return 'senate-concurrent-resolution';
+      case 'HRES': return 'house-resolution';
+      case 'SRES': return 'senate-resolution';
+      default: return 'bill';
+    }
+  };
+  
+  const congressUrl = `https://www.congress.gov/bill/119th-congress/${getBillTypeUrl(bill.type)}/${bill.number}`;
+
+  return (
+    <div className="bill-card compact">
+      <div className="bill-header-row">
+        <div className="bill-code-line">
+          <span className="bill-type">{bill.type} {bill.number}</span>
+        </div>
+        <a 
+          href={congressUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="congress-link"
+          title="View on Congress.gov"
+        >
+          View Full Text
+        </a>
+      </div>
+      <div className="bill-status-line">
+        <span className="bill-status">{bill.lastAction}</span>
+      </div>
+      <h3 className="bill-title">{bill.title}</h3>
+      <p className="bill-sponsor">Sponsored by {bill.sponsor}</p>
+      <div className="bill-description-container">
+        <p className="bill-description">
+          {showFullDescription ? bill.description : truncatedDescription}
+        </p>
+        {isDescriptionLong && (
+          <button 
+            className="read-more-button"
+            onClick={() => setShowFullDescription(!showFullDescription)}
+          >
+            {showFullDescription ? "Read Less" : "Read More"}
+          </button>
+        )}
+      </div>
+      <button 
+        className="select-bill-button"
+        onClick={() => onSelect(bill)}
+      >
+        {viewMode === "analyze" ? "Analyze" : "Debate"}
+      </button>
+    </div>
+  );
+};
 const Legislation = ({ user }) => {
   // View mode: "analyze" or "debate"
   const [viewMode, setViewMode] = useState("analyze");
@@ -37,6 +112,11 @@ const Legislation = ({ user }) => {
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [extractionSuccess, setExtractionSuccess] = useState(false);
+
+  // Recommended bills state
+  const [recommendedBills, setRecommendedBills] = useState([]);
+  const [billsLoading, setBillsLoading] = useState(false);
+  const [billsError, setBillsError] = useState('');
 
   const billNameInputRef = useRef(null);
   const navigate = useNavigate();
@@ -63,6 +143,60 @@ const Legislation = ({ user }) => {
     }
     fetchHistory();
   }, [user]);
+
+  // Fetch recommended bills from Congress.gov API
+  useEffect(() => {
+    async function fetchRecommendedBills() {
+      setBillsLoading(true);
+      setBillsError('');
+      try {
+        // Note: In production, you would store the API key securely in environment variables
+        // For now, we'll use a demo endpoint or mock data
+        const response = await fetch(`${API_URL}/recommended-bills`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch recommended bills');
+        }
+        const data = await response.json();
+        setRecommendedBills(data.bills || []);
+      } catch (err) {
+        console.error("Error fetching recommended bills:", err);
+        setBillsError('Unable to load recommended bills. Please try again later.');
+        // Set mock data for development
+        setRecommendedBills([
+          {
+            id: 'hr1234',
+            title: 'American Innovation and Manufacturing Act',
+            type: 'HR',
+            number: '1234',
+            sponsor: 'Rep. Smith (D-CA)',
+            lastAction: 'Passed House',
+            description: 'A bill to promote innovation in American manufacturing and strengthen domestic supply chains.'
+          },
+          {
+            id: 's5678',
+            title: 'Climate Resilience Infrastructure Act',
+            type: 'S',
+            number: '5678',
+            sponsor: 'Sen. Johnson (R-TX)',
+            lastAction: 'Committee Review',
+            description: 'Legislation to improve infrastructure resilience to climate change impacts.'
+          },
+          {
+            id: 'hr9999',
+            title: 'Digital Privacy Protection Act',
+            type: 'HR',
+            number: '9999',
+            sponsor: 'Rep. Williams (D-NY)',
+            lastAction: 'Introduced',
+            description: 'A comprehensive bill to protect consumer data privacy and regulate data collection practices.'
+          }
+        ]);
+      } finally {
+        setBillsLoading(false);
+      }
+    }
+    fetchRecommendedBills();
+  }, []);
 
   const handlePdfUpload = (e) => {
     const file = e.target.files[0];
@@ -163,6 +297,23 @@ const Legislation = ({ user }) => {
     if (e.key === 'Enter') e.preventDefault();
   };
 
+  const handleSelectRecommendedBill = (bill) => {
+    if (viewMode === "analyze") {
+      // For analyze mode, we would need to fetch the bill text and analyze it
+      alert("Bill analysis for recommended bills will be implemented soon!");
+    } else {
+      // For debate mode, set up the bill for debate
+      setDebateTopic(bill.title);
+      setExtractedText(bill.description);
+      setExtractionSuccess(true);
+      // Scroll to the debate setup section
+      const debateSection = document.querySelector('.input-container');
+      if (debateSection) {
+        debateSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <div className="legislation-container">
       <header className="home-header">
@@ -211,7 +362,38 @@ const Legislation = ({ user }) => {
         )}
       </header>
 
-      {/* Mode Toggle */}
+      {/* Recommended Bills Section - Moved to top */}
+      <div className="recommended-bills-section compact">
+        <h2>Trending Congressional Bills</h2>
+        
+        {billsLoading && (
+          <div className="bills-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading current bills from Congress...</p>
+          </div>
+        )}
+        
+        {billsError && (
+          <div className="bills-error">
+            <p>{billsError}</p>
+          </div>
+        )}
+        
+        {!billsLoading && !billsError && recommendedBills.length > 0 && (
+          <div className="bills-horizontal-scroll">
+            {recommendedBills.map((bill) => (
+              <BillCard 
+                key={bill.id} 
+                bill={bill} 
+                viewMode={viewMode}
+                onSelect={handleSelectRecommendedBill}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mode Toggle - Moved below recommended bills */}
       <div className="mode-toggle">
         <button
           type="button"

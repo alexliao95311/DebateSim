@@ -13,6 +13,8 @@ from cachetools import TTLCache
 from cachetools.keys import hashkey
 from io import BytesIO
 from pdfminer.high_level import extract_text
+import json
+from typing import List, Dict, Any
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
@@ -22,6 +24,10 @@ load_dotenv()
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set the OPENROUTER_API_KEY environment variable.")
+
+CONGRESS_API_KEY = os.getenv("CONGRESS_API_KEY")
+if not CONGRESS_API_KEY:
+    logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
@@ -246,3 +252,190 @@ async def judge_feedback(request: JudgeFeedbackRequest):
 @app.options("/test-cors")
 async def test_cors():
     return {"message": "CORS preflight OK"}
+
+# Cache for Congress bills
+bills_cache = TTLCache(maxsize=50, ttl=3600)  # Cache for 1 hour
+
+async def fetch_congress_bills() -> List[Dict[str, Any]]:
+    """Fetch current bills from Congress.gov API"""
+    if not CONGRESS_API_KEY:
+        # Return mock data if no API key
+        return [
+            {
+                "id": "hr1234-119",
+                "title": "American Innovation and Manufacturing Act of 2025",
+                "type": "HR",
+                "number": "1234",
+                "sponsor": "Rep. Smith (D-CA)",
+                "lastAction": "Passed House",
+                "description": "A bill to promote innovation in American manufacturing, strengthen domestic supply chains, and create jobs in emerging technologies including renewable energy and advanced materials."
+            },
+            {
+                "id": "s5678-119",
+                "title": "Climate Resilience Infrastructure Act of 2025",
+                "type": "S",
+                "number": "5678",
+                "sponsor": "Sen. Johnson (R-TX)",
+                "lastAction": "Committee Review",
+                "description": "Comprehensive legislation to improve infrastructure resilience to climate change impacts, including funding for flood protection, wildfire prevention, and extreme weather preparedness."
+            },
+            {
+                "id": "hr9999-119",
+                "title": "Digital Privacy Protection Act of 2025",
+                "type": "HR",
+                "number": "9999",
+                "sponsor": "Rep. Williams (D-NY)",
+                "lastAction": "Introduced",
+                "description": "A comprehensive bill to protect consumer data privacy, regulate data collection practices by tech companies, and establish a federal data protection agency."
+            },
+            {
+                "id": "s2468-119",
+                "title": "Healthcare Access and Affordability Act",
+                "type": "S",
+                "number": "2468",
+                "sponsor": "Sen. Davis (R-FL)",
+                "lastAction": "Markup Scheduled",
+                "description": "Legislation to expand healthcare access in rural areas, reduce prescription drug costs, and improve mental health services nationwide."
+            },
+            {
+                "id": "hr1357-119",
+                "title": "Education Equity and Innovation Act",
+                "type": "HR",
+                "number": "1357",
+                "sponsor": "Rep. Garcia (D-TX)",
+                "lastAction": "Subcommittee Review",
+                "description": "A bill to improve educational outcomes by increasing funding for underserved schools, expanding STEM programs, and supporting teacher training initiatives."
+            }
+        ]
+    
+    # Use cached result if available
+    cache_key = "congress_bills_current"
+    if cache_key in bills_cache:
+        return bills_cache[cache_key]
+    
+    try:
+        # Current Congress is 119th (2025-2027)
+        current_congress = 119
+        
+        # Fetch recent bills from current Congress
+        url = f"https://api.congress.gov/v3/bill/{current_congress}"
+        params = {
+            "api_key": CONGRESS_API_KEY,
+            "format": "json",
+            "limit": 20,
+            "sort": "updateDate+desc"  # Sort by most recently updated
+        }
+        
+        async with session.get(url, params=params) as response:
+            if response.status != 200:
+                logger.error(f"Congress API error: {response.status}")
+                raise HTTPException(status_code=500, detail="Error fetching bills from Congress API")
+            
+            data = await response.json()
+            bills_data = data.get("bills", [])
+            
+            # Transform the data to our format
+            processed_bills = []
+            for bill in bills_data[:8]:  # Limit to 8 bills for UI
+                try:
+                    # Extract bill information
+                    bill_type = bill.get("type", "")
+                    bill_number = bill.get("number", "")
+                    title = bill.get("title", "Untitled Bill")
+                    
+                    # Get sponsor information
+                    sponsors = bill.get("sponsors", [])
+                    sponsor_name = "Unknown Sponsor"
+                    if sponsors:
+                        sponsor = sponsors[0]
+                        first_name = sponsor.get("firstName", "")
+                        last_name = sponsor.get("lastName", "")
+                        party = sponsor.get("party", "")
+                        state = sponsor.get("state", "")
+                        sponsor_name = f"Rep. {first_name} {last_name} ({party}-{state})" if sponsor.get("type") == "Representative" else f"Sen. {first_name} {last_name} ({party}-{state})"
+                    
+                    # Get latest action
+                    latest_action = bill.get("latestAction", {})
+                    action_text = latest_action.get("text", "No recent action")
+                    
+                    # Get better description from summary or policy areas
+                    description = title  # Fallback to title
+                    
+                    # Try to get summary first
+                    summaries = bill.get("summaries", [])
+                    if summaries:
+                        latest_summary = summaries[0]  # Get the most recent summary
+                        summary_text = latest_summary.get("text", "")
+                        if summary_text:
+                            description = summary_text
+                    
+                    # If no summary, try to use policy areas to create description
+                    if description == title:
+                        policy_areas = bill.get("policyArea", {})
+                        policy_name = policy_areas.get("name", "")
+                        subjects = bill.get("subjects", [])
+                        if policy_name and subjects:
+                            subject_names = [s.get("name", "") for s in subjects[:3] if s.get("name")]
+                            if subject_names:
+                                description = f"Legislation related to {policy_name}. Key areas: {', '.join(subject_names)}."
+                    
+                    # Only truncate if still very long (over 500 chars)
+                    if len(description) > 500:
+                        description = description[:500] + "..."
+                    
+                    processed_bill = {
+                        "id": f"{bill_type.lower()}{bill_number}-{current_congress}",
+                        "title": title,
+                        "type": bill_type,
+                        "number": bill_number,
+                        "sponsor": sponsor_name,
+                        "lastAction": action_text,  # Don't truncate action text
+                        "description": description
+                    }
+                    processed_bills.append(processed_bill)
+                    
+                except Exception as e:
+                    logger.warning(f"Error processing bill data: {e}")
+                    continue
+            
+            # Cache the results
+            bills_cache[cache_key] = processed_bills
+            return processed_bills
+            
+    except Exception as e:
+        logger.error(f"Error fetching Congress bills: {e}")
+        # Return mock data as fallback by calling the function with temporarily disabled API key
+        original_key = CONGRESS_API_KEY
+        globals()['CONGRESS_API_KEY'] = None
+        mock_data = [
+            {
+                "id": "hr1234-119",
+                "title": "American Innovation and Manufacturing Act of 2025",
+                "type": "HR",
+                "number": "1234",
+                "sponsor": "Rep. Smith (D-CA)",
+                "lastAction": "Passed House",
+                "description": "A bill to promote innovation in American manufacturing, strengthen domestic supply chains, and create jobs in emerging technologies including renewable energy and advanced materials."
+            },
+            {
+                "id": "s5678-119",
+                "title": "Climate Resilience Infrastructure Act of 2025",
+                "type": "S",
+                "number": "5678",
+                "sponsor": "Sen. Johnson (R-TX)",
+                "lastAction": "Committee Review",
+                "description": "Comprehensive legislation to improve infrastructure resilience to climate change impacts, including funding for flood protection, wildfire prevention, and extreme weather preparedness."
+            }
+        ]
+        globals()['CONGRESS_API_KEY'] = original_key
+        return mock_data
+
+@app.get("/recommended-bills")
+async def get_recommended_bills():
+    """Get current trending bills from Congress"""
+    try:
+        bills = await fetch_congress_bills()
+        return {"bills": bills}
+    except Exception as e:
+        logger.error(f"Error in /recommended-bills endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching recommended bills")
