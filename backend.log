@@ -1,2 +1,8 @@
-nohup: ignoring input
-nohup: failed to run command 'uvicorn': No such file or directory
+INFO:     Started server process [65615]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[Cleaned CORS Origins]: ['http://localhost', 'http://127.0.0.1', 'http://20.3.246.40', 'http://localhost:80', 'http://127.0.0.1:80', 'http://20.3.246.40:80', 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://20.3.246.40:3000', 'http://172.190.97.150:3000', 'http://172.190.97.150:80', 'http://debatesim.us', 'https://debatesim.us']
+INFO:     127.0.0.1:49646 - "GET /recommended-bills HTTP/1.1" 200 OK
+INFO:     172.190.97.150:0 - "GET /recommended-bills HTTP/1.0" 200 OK
+INFO:     73.162.130.252:0 - "GET /recommended-bills HTTP/1.0" 200 OK

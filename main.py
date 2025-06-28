@@ -19,6 +19,10 @@ from typing import List, Dict, Any
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
 
+# Initialize logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -28,10 +32,6 @@ if not API_KEY:
 CONGRESS_API_KEY = os.getenv("CONGRESS_API_KEY")
 if not CONGRESS_API_KEY:
     logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
-
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Global model configuration
 DEFAULT_MODEL = "qwen/qwq-32b:free"
