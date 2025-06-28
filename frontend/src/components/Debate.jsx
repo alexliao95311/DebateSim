@@ -24,9 +24,14 @@ function sanitizeUserInput(str) {
 
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, topic, description } = useLocation().state || {};
+  const { mode, debateMode, topic, description } = useLocation().state || {};
   const navigate = useNavigate();
-  if (!mode || !topic) {
+  
+  // Handle both old format (direct mode) and new format (bill-debate with debateMode)
+  const actualMode = mode === 'bill-debate' ? debateMode : mode;
+  const isBillDebate = mode === 'bill-debate';
+  
+  if (!actualMode || !topic) {
     navigate("/debatesim");
     return null;
   }
@@ -92,7 +97,7 @@ function Debate() {
       let title = msg.speaker;
       
       // Add round information for AI debaters in AI vs AI mode
-      if (mode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
+      if (actualMode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
         // Calculate which round this speech belongs to
         // Count previous AI speeches to determine round
         const previousAISpeeches = messageList.slice(0, index).filter(m => 
@@ -108,22 +113,17 @@ function Debate() {
       };
     });
     setSpeechList(newSpeechList);
-  }, [messageList, mode]);
+  }, [messageList, actualMode]);
 
-  useEffect(() => {
-    if (description && messageList.length === 0) {
-      // First message is the Bill Description
-      appendMessage("Bill Description", description);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [description]);
+  // Removed automatic bill description addition to messageList to prevent duplication
+  // The bill description is now only shown in the toggle section
 
   const handleEndDebate = async () => {
     setLoading(true);
     setError("");
     try {
       const finalTranscript = buildPlainTranscript();
-      navigate("/judge", { state: { transcript: finalTranscript, topic, mode, judgeModel } });
+      navigate("/judge", { state: { transcript: finalTranscript, topic, mode: isBillDebate ? 'bill-debate' : actualMode, judgeModel } });
     } catch (err) {
       console.error("Error ending debate:", err);
       setError("Failed to end debate.");
@@ -394,7 +394,7 @@ function Debate() {
             </div>
           )}
           <div className="model-selection">
-            {mode === "ai-vs-ai" && (
+            {actualMode === "ai-vs-ai" && (
               <>
                 <label>
                   Pro Model:
@@ -418,7 +418,7 @@ function Debate() {
                 </label>
               </>
             )}
-            {mode === "ai-vs-user" && (
+            {actualMode === "ai-vs-user" && (
               <label>
                 AI Model:
                 <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
@@ -430,7 +430,7 @@ function Debate() {
                 </select>
               </label>
             )}
-            {mode !== "user-vs-user" && (
+            {actualMode !== "user-vs-user" && (
               <label>
                 Judge Model:
                 <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
@@ -469,7 +469,7 @@ function Debate() {
             </div>
           </div>
         ))}
-          {mode === "ai-vs-ai" && (
+          {actualMode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
                 {loading
@@ -482,7 +482,7 @@ function Debate() {
               </button>
             </div>
           )}
-          {mode === "ai-vs-user" && (
+          {actualMode === "ai-vs-user" && (
             <>
               {!userSide && (
                 <div className="ai-vs-user-setup">
@@ -613,7 +613,7 @@ function Debate() {
               )}
             </>
           )}
-          {mode === "user-vs-user" && (
+          {actualMode === "user-vs-user" && (
             <>
               {!userVsUserSetup.confirmed && (
                 <div className="ai-vs-user-setup">
