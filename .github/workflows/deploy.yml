@@ -84,10 +84,16 @@ jobs:
             echo $! > backend.pid
             
             # Wait and check if process started
-            sleep 3
+            sleep 5
             
             if pgrep -f "uvicorn main:app" > /dev/null; then
               echo "✅ Backend started successfully"
+              # Test backend is responding
+              if curl -f -s http://localhost:5000/docs > /dev/null; then
+                echo "✅ Backend is responding to requests"
+              else
+                echo "⚠️  Backend process running but not responding"
+              fi
             else
               echo "❌ Backend failed to start"
               echo "Backend logs:"
