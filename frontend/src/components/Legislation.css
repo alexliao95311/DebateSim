@@ -337,9 +337,15 @@
 }
 
 .error-text {
-  color: red;
-  margin-top: 1rem;
+  color: #e74c3c !important;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
   text-align: center;
+  font-weight: 500;
+  font-size: 1rem;
 }
 
 .history-sidebar {
@@ -531,7 +537,8 @@
 
 .model-selection label {
   font-weight: 600;
-  color: #333;
+  color: #000 !important;
+  text-shadow: none !important;
 }
 
 .success-message {
@@ -576,6 +583,9 @@
 .markdown-renderer {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.2 !important; /* Reduced from 1.3 */
+  text-align: left; /* Reset text alignment for content readability */
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 /* Drastically reduce heading margins */
@@ -669,7 +679,7 @@
 .recommended-bills-section {
   width: 100%;
   max-width: 1000px;
-  margin: 0.5rem 3rem 2rem 3rem;
+  margin: 0.5rem auto 2rem auto;
   padding: 1rem 1.5rem 2rem 1.5rem;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
@@ -740,25 +750,33 @@
   overflow-y: hidden;
   padding: 0.5rem 0 1rem 0;
   scrollbar-width: thin;
-  scrollbar-color: #4a90e2 rgba(255, 255, 255, 0.1);
+  scrollbar-color: #4a90e2 rgba(220, 220, 220, 0.8);
 }
 
 .bills-horizontal-scroll::-webkit-scrollbar {
-  height: 8px;
+  height: 10px;
+  -webkit-appearance: none;
 }
 
 .bills-horizontal-scroll::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: rgba(220, 220, 220, 0.8);
+  border-radius: 5px;
+  border: 1px solid rgba(200, 200, 200, 0.6);
 }
 
 .bills-horizontal-scroll::-webkit-scrollbar-thumb {
   background: #4a90e2;
-  border-radius: 4px;
+  border-radius: 5px;
+  border: 1px solid rgba(74, 144, 226, 0.8);
+  min-width: 30px;
 }
 
 .bills-horizontal-scroll::-webkit-scrollbar-thumb:hover {
   background: #357abd;
+}
+
+.bills-horizontal-scroll::-webkit-scrollbar-corner {
+  background: rgba(220, 220, 220, 0.8);
 }
 
 .bills-grid {
@@ -824,6 +842,7 @@
 
 .bill-code-line {
   flex: 1;
+  text-align: left;
 }
 
 .congress-link {
@@ -855,6 +874,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   display: inline-block;
+  text-align: left;
 }
 
 .bill-status {
@@ -1010,12 +1030,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
   padding: 1.5rem;
   background: rgba(74, 144, 226, 0.1);
   border-radius: 8px;
   border: 1px solid rgba(74, 144, 226, 0.3);
-  margin-top: 1rem;
+  margin: 2rem auto;
+  text-align: center;
+  max-width: 500px;
 }
 
 .loading-spinner {
@@ -1060,9 +1083,50 @@
 .upload-section {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: center;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.upload-btn {
+  background: #4a90e2;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.upload-btn:hover {
+  background: #357abd;
+  transform: translateY(-2px);
+}
+
+.or-text {
+  color: #666;
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.link-input {
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 300px;
+  transition: border-color 0.3s ease;
+}
+
+.link-input:focus {
+  outline: none;
+  border-color: #4a90e2;
 }
 
 .upload-button {
@@ -1216,5 +1280,452 @@
   
   .bill-description {
     font-size: 0.9rem;
+  }
+}
+
+/* === 3-Step Process UI Styles === */
+.step-by-step-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.step-number {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background: #4a90e2;
+  color: white;
+  transform: scale(1.1);
+}
+
+.step-label {
+  font-size: 1rem;
+  color: #6c757d;
+  font-weight: 500;
+  text-align: center;
+}
+
+.step.active .step-label {
+  color: #4a90e2;
+  font-weight: 600;
+}
+
+.step-arrow {
+  color: #dee2e6;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.step-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 3rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  min-height: 500px;
+  text-align: center;
+}
+
+.step-content h2 {
+  color: #333 !important;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.step-content h3 {
+  color: #333 !important;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.step-description {
+  color: #666 !important;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+/* Bill codes should be white on blue background */
+.bill-code {
+  color: white !important;
+}
+
+/* Step Navigation */
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.nav-button {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button.back {
+  background: #6c757d;
+  color: white;
+}
+
+.nav-button.back:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.nav-button.next {
+  background: #4a90e2;
+  color: white;
+}
+
+.nav-button.next:hover {
+  background: #357abd;
+  transform: translateY(-2px);
+}
+
+.nav-button.execute {
+  background: #28a745;
+  color: white;
+  padding: 1.2rem 3rem;
+  font-size: 1.1rem;
+}
+
+.nav-button.execute:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.nav-button:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button Groups */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  width: 100%;
+}
+
+/* Results Section */
+.results-section {
+  margin: 3rem 0 0 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 100%;
+  text-align: center;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.results-header h2 {
+  color: #333 !important;
+  margin: 0;
+}
+
+.new-analysis-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.new-analysis-btn:hover {
+  background: #5a6268;
+}
+
+/* Selected Bill Display */
+.selected-bill-display {
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.selected-bill-display h3 {
+  color: #333 !important;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+/* Action Cards for Step 2 */
+.action-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+  justify-content: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.action-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #e9ecef;
+  border-radius: 15px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.action-card:hover {
+  border-color: #4a90e2;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(74, 144, 226, 0.2);
+}
+
+.action-card.selected {
+  border-color: #4a90e2;
+  background: rgba(74, 144, 226, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+}
+
+.action-card .action-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.action-card h3 {
+  color: #333 !important;
+  font-size: 1.5rem;
+  margin: 1rem 0;
+}
+
+.action-card p {
+  color: #666 !important;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Step 3 Configuration Sections */
+.config-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.model-selection {
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.model-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #000 !important;
+  margin-bottom: 1rem;
+  cursor: default;
+  text-shadow: none !important;
+}
+
+.model-label * {
+  color: #000 !important;
+  text-shadow: none !important;
+}
+
+.label-icon {
+  font-size: 1.4rem;
+}
+
+.model-dropdown {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 3rem;
+}
+
+.model-dropdown:hover {
+  border-color: #4a90e2;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+}
+
+.model-dropdown:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+}
+
+.model-description {
+  color: #666 !important;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+.action-display {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.action-display h3 {
+  color: #28a745 !important;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .step-by-step-container {
+    padding: 1rem;
+  }
+  
+  .progress-steps {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .step-arrow {
+    transform: rotate(90deg);
+    margin: 0.5rem 0;
+  }
+  
+  .step-content {
+    padding: 2rem 1rem;
+  }
+  
+  .step-content h2 {
+    font-size: 1.5rem;
+  }
+  
+  .action-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .step-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .nav-button {
+    width: 100%;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .button-group .nav-button {
+    width: 100%;
+  }
+  
+  .upload-section {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .link-input {
+    min-width: 250px;
+  }
+  
+  .config-section {
+    padding: 1.5rem;
+    margin: 1rem 0;
+  }
+  
+  .model-selection {
+    max-width: 100%;
+  }
+  
+  .model-dropdown {
+    font-size: 0.9rem;
+    padding: 0.8rem 1rem;
+    padding-right: 2.5rem;
   }
 }
