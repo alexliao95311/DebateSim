@@ -24,8 +24,21 @@ function sanitizeUserInput(str) {
 
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, debateMode, topic, description } = useLocation().state || {};
+  const { mode, debateMode, topic, description, billText, billTitle } = useLocation().state || {};
   const navigate = useNavigate();
+  
+  // For bill debates, use billText as description if available
+  const actualDescription = billText || description;
+  
+  // Debug logging
+  console.log('Debate component received:', { 
+    mode, 
+    debateMode, 
+    topic, 
+    billText: billText ? `${billText.length} chars` : 'none',
+    billTitle,
+    description: description ? `${description.length} chars` : 'none'
+  });
   
   // Handle both old format (direct mode) and new format (bill-debate with debateMode)
   const actualMode = mode === 'bill-debate' ? debateMode : mode;
@@ -165,7 +178,7 @@ function Debate() {
              4. Be persuasive but respectful
              5. Conclude with a strong summary statement
            `;
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
         appendMessage("AI Debater Pro", aiResponse, proModel);
         setAiSide("con");
       } else {
@@ -184,7 +197,7 @@ function Debate() {
              4. Be persuasive but respectful
              5. Conclude with a strong summary statement
            `;
-        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
+        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel, actualDescription);
         appendMessage("AI Debater Con", aiResponse, conModel);
         setAiSide("pro");
         setRound(prev => prev + 1);
@@ -223,7 +236,7 @@ function Debate() {
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription);
         appendMessage("Con (AI)", conResponse, singleAIModel);
       } else if (firstSide === "pro" && side === "con") {
         const proPrompt = `
@@ -238,7 +251,7 @@ function Debate() {
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel);
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription);
         appendMessage("Pro (AI)", proResponse, singleAIModel);
       }
     } catch (err) {
@@ -293,7 +306,7 @@ function Debate() {
            5. Be persuasive but respectful
          `;
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setRound(prev => prev + 1);
     } catch (err) {
@@ -376,7 +389,7 @@ function Debate() {
       <div className="debate-wrapper">
         <div className="debate-content">
           <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
-          {description && (
+          {actualDescription && (
             <div className="bill-description">
               <button
                 className="toggle-description"
@@ -387,7 +400,7 @@ function Debate() {
               {descriptionExpanded && (
                 <div className="description-content scrollable">
                   <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                    {description}
+                    {actualDescription}
                   </ReactMarkdown>
                 </div>
               )}

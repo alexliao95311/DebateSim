@@ -383,6 +383,18 @@ const Legislation = ({ user }) => {
   // Step 2: Handle action selection
   const handleActionSelection = (action) => {
     setActionType(action);
+    
+    // Auto-fill debate topic when entering debate mode
+    if (action === 'debate' && selectedBill) {
+      let billName = '';
+      if (billSource === 'recommended') {
+        billName = `${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`;
+      } else {
+        billName = selectedBill.name.replace('.pdf', '');
+      }
+      setDebateTopic(billName);
+    }
+    
     setCurrentStep(3);
   };
 
@@ -507,6 +519,11 @@ const Legislation = ({ user }) => {
         const data = await response.json();
         
         // Navigate to debate with extracted text
+        const billTitle = selectedBill.name || debateTopic;
+        
+        console.log('Navigating to debate with PDF bill text length:', data.text.length);
+        console.log('Bill title:', billTitle);
+        
         navigate('/debate', {
           state: {
             mode: 'bill-debate',
@@ -524,6 +541,12 @@ const Legislation = ({ user }) => {
       }
     } else {
       // For recommended bills, use pre-extracted text
+      const billText = extractedBillData?.text || '';
+      const billTitle = extractedBillData?.title || debateTopic;
+      
+      console.log('Navigating to debate with bill text length:', billText.length);
+      console.log('Bill title:', billTitle);
+      
       navigate('/debate', {
         state: {
           mode: 'bill-debate',
@@ -856,35 +879,51 @@ const Legislation = ({ user }) => {
               {actionType === 'debate' && (
                 <div className="debate-config">
                   <h2>Step 3: Configure Debate</h2>
-                  <div className="debate-setup">
-                    <div className="form-group">
-                      <label>Bill Name for Debate:</label>
+                  <div className="config-section">
+                    <div className="debate-topic-section">
+                      <label className="debate-label">
+                        <span className="label-icon">📝</span>
+                        Bill Name for Debate
+                      </label>
                       <input
                         type="text"
+                        className="debate-topic-input"
                         value={debateTopic}
                         onChange={(e) => setDebateTopic(e.target.value)}
                         placeholder="Enter debate topic name"
                       />
+                      <p className="input-description">
+                        This will be the topic displayed during the debate session.
+                      </p>
                     </div>
                     
-                    <div className="form-group">
-                      <label>Debate Mode:</label>
+                    <div className="debate-mode-section">
+                      <label className="debate-label">
+                        <span className="label-icon">⚔️</span>
+                        Select Debate Mode
+                      </label>
                       <div className="debate-mode-cards">
                         {[
-                          { mode: 'ai-vs-ai', label: 'AI vs AI', desc: 'Watch two AIs debate' },
-                          { mode: 'ai-vs-user', label: 'AI vs User', desc: 'Debate against AI' },
-                          { mode: 'user-vs-user', label: 'User vs User', desc: 'Debate with friend' }
-                        ].map(({ mode, label, desc }) => (
+                          { mode: 'ai-vs-ai', label: 'AI vs AI', desc: 'Watch two AIs debate', icon: '🤖' },
+                          { mode: 'ai-vs-user', label: 'AI vs User', desc: 'Debate against AI', icon: '🧠' },
+                          { mode: 'user-vs-user', label: 'User vs User', desc: 'Debate with friend', icon: '👥' }
+                        ].map(({ mode, label, desc, icon }) => (
                           <div 
                             key={mode}
                             className={`debate-mode-card ${debateMode === mode ? 'selected' : ''}`}
                             onClick={() => setDebateMode(mode)}
                           >
-                            <strong>{label}</strong>
-                            <span>{desc}</span>
+                            <div className="mode-icon">{icon}</div>
+                            <div className="mode-content">
+                              <strong className="mode-title">{label}</strong>
+                              <span className="mode-description">{desc}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
+                      <p className="mode-description-text">
+                        Choose how you want to conduct the debate about this bill.
+                      </p>
                     </div>
                   </div>
                   

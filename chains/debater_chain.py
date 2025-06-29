@@ -176,6 +176,9 @@ class OpenRouterChat(BaseChatModel):
 template = """
 You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
 
+BILL CONTEXT (for reference):
+{bill_description}
+
 CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
 
 ------------------------------------------------------------------
@@ -198,12 +201,14 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 Content Guidelines
 • If there are previous arguments, start with a **concise rebuttal** (≤ 2 sentences).
 • Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
+• **IMPORTANT**: Support your arguments with specific textual evidence from the bill whenever possible. Quote relevant sections to strengthen your position.
+• When referencing the bill, use phrases like "The bill states..." or "Section X clearly indicates..." followed by brief quotes.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
 Previous opponent argument (for context only):  
 {history}
 
-Remember: Respond ONLY with the formatted debate content. No technical information or parameter details.
+Remember: Respond ONLY with the formatted debate content. Use bill text evidence to support your arguments. No technical information or parameter details.
 """
 
 # Create the chat prompt template

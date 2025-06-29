@@ -63,6 +63,28 @@ function DebateSim({ user }) {
       .catch((err) => console.error("Logout error:", err));
   };
 
+  // Helper functions for color-coded activity types (matching Legislation.jsx)
+  const getActivityTypeDisplay = (item) => {
+    if (item.activityType === 'Analyze Bill') return 'Analyze Bill';
+    if (item.activityType === 'Debate Bill') return 'Bill Debate';
+    if (item.activityType === 'Debate Topic') return 'Topic Debate';
+    if (item.mode === 'bill-debate') return 'Bill Debate';
+    if (item.mode === 'ai-vs-ai') return 'AI vs AI';
+    if (item.mode === 'ai-vs-user') return 'AI vs User';
+    if (item.mode === 'user-vs-user') return 'User vs User';
+    return 'Debate';
+  };
+
+  const getActivityTypeClass = (item) => {
+    if (item.activityType === 'Analyze Bill') return 'type-analyze';
+    if (item.activityType === 'Debate Bill' || item.mode === 'bill-debate') return 'type-bill-debate';
+    if (item.activityType === 'Debate Topic') return 'type-topic-debate';
+    if (item.mode === 'ai-vs-ai') return 'type-ai-vs-ai';
+    if (item.mode === 'ai-vs-user') return 'type-ai-vs-user';
+    if (item.mode === 'user-vs-user') return 'type-user-vs-user';
+    return 'type-default';
+  };
+
   const handleDownloadPDF = () => {
     if (!selectedHistory) return;
     
@@ -210,8 +232,15 @@ function DebateSim({ user }) {
                   onClick={() => setSelectedHistory(item)}
                   title="Click to view full transcript"
                 >
-                  {item.topic ? item.topic : "Untitled Topic"} -{" "}
-                  {new Date(item.createdAt).toLocaleDateString()}
+                  <div className="history-item">
+                    <div className="history-title">{item.topic || "Untitled Topic"}</div>
+                    <div className="history-meta">
+                      <span className={`history-type ${getActivityTypeClass(item)}`}>
+                        {getActivityTypeDisplay(item)}
+                      </span>
+                      <span className="history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </li>
               ))
             ) : (
