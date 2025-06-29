@@ -436,45 +436,195 @@ async def get_recommended_bills():
         logger.error(f"Error in /recommended-bills endpoint: {e}")
         raise HTTPException(status_code=500, detail="Error fetching recommended bills")
 
+def extract_key_bill_sections(bill_text: str, max_chars: int) -> str:
+    """
+    Intelligently extract key sections from large bills for analysis
+    """
+    import re
+    
+    # Split into lines for processing
+    lines = bill_text.split('\n')
+    
+    # Priority sections to always include (case insensitive)
+    priority_patterns = [
+        r'SHORT TITLE|TITLE.*Act',
+        r'FINDINGS|PURPOSES?|POLICY',
+        r'DEFINITIONS?',
+        r'SECTION 1\.|SEC\. 1\.',
+        r'AUTHORIZATION|APPROPRIATION',
+        r'EFFECTIVE DATE|SUNSET|TERMINATION'
+    ]
+    
+    # Section markers to identify content blocks
+    section_markers = [
+        r'SECTION \d+\.|SEC\. \d+\.',
+        r'TITLE [IVX]+',
+        r'CHAPTER \d+',
+        r'PART [A-Z]+',
+        r'Subtitle [A-Z]'
+    ]
+    
+    key_sections = []
+    current_section = []
+    section_header = ""
+    chars_used = 0
+    
+    # Always include the beginning (title, short title, etc.) - but limit it
+    header_lines = min(30, len(lines))
+    header_text = '\n'.join(lines[:header_lines])
+    if len(header_text) > max_chars * 0.2:  # Don't let header use more than 20% of space
+        header_text = header_text[:int(max_chars * 0.2)]
+    key_sections.append(f"=== BILL HEADER ===\n{header_text}")
+    chars_used += len(header_text)
+    
+    # Process remaining lines looking for important sections
+    for i, line in enumerate(lines[header_lines:], header_lines):
+        line_upper = line.strip().upper()
+        
+        # Check if this line starts a new section
+        is_section_start = any(re.match(pattern, line_upper) for pattern in section_markers)
+        is_priority = any(re.search(pattern, line_upper) for pattern in priority_patterns)
+        
+        if is_section_start or is_priority:
+            # Save previous section if it exists and we have room
+            if current_section and chars_used < max_chars * 0.7:
+                section_text = '\n'.join(current_section)
+                # Limit individual sections to prevent one section from dominating
+                if len(section_text) > max_chars * 0.15:  # Max 15% per section
+                    section_text = section_text[:int(max_chars * 0.15)] + "\n[Section truncated...]"
+                
+                if chars_used + len(section_text) < max_chars * 0.8:
+                    key_sections.append(f"=== {section_header} ===\n{section_text}")
+                    chars_used += len(section_text)
+            
+            # Start new section
+            current_section = [line]
+            section_header = line.strip()[:100]  # Limit header length
+        else:
+            current_section.append(line)
+        
+        # Stop if we're approaching the limit
+        if chars_used > max_chars * 0.8:
+            break
+    
+    # Add the last section if there's room
+    if current_section and chars_used < max_chars * 0.7:
+        section_text = '\n'.join(current_section)
+        # Apply same size limit to last section
+        if len(section_text) > max_chars * 0.15:
+            section_text = section_text[:int(max_chars * 0.15)] + "\n[Section truncated...]"
+        
+        if chars_used + len(section_text) < max_chars * 0.8:
+            key_sections.append(f"=== {section_header} ===\n{section_text}")
+    
+    # Combine all sections
+    result = '\n\n'.join(key_sections)
+    
+    # Final safety check
+    if len(result) > max_chars * 0.9:
+        result = result[:int(max_chars * 0.9)] + "\n\n[Content truncated to fit limits...]"
+    
+    # Add summary note
+    result += f"\n\n[NOTE: This analysis covers key sections extracted from a {len(bill_text):,} character bill. The analysis focuses on the most important provisions including title, definitions, main sections, and implementation details.]"
+    
+    return result
+
 async def analyze_legislation_text(bill_text: str, model: str) -> str:
     """Analyze legislation text with a custom analysis prompt"""
+    
+    # Debug logging
+    logger.info(f"Analyzing bill text with model {model}")
+    logger.info(f"Bill text length for analysis: {len(bill_text)}")
+    
+    # Check if bill text is unavailable from Congress.gov
+    if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
+        logger.warning("Bill text unavailable from Congress.gov API")
+        return f"""
+# Bill Text Currently Unavailable
+
+## Notice
+The full text of this bill could not be retrieved from Congress.gov at this time.
+
+## Possible Reasons
+This may occur because:
+- The bill text is not yet available in the Congressional API
+- The bill is still being processed by Congress
+- There was a temporary API issue
+- The bill may be very recent or in early stages
+
+## What You Can Do
+1. **Check Congress.gov directly**: Visit the official Congress.gov website to see if the full text is available there
+2. **Try again later**: Bill text may become available as it progresses through the legislative process
+3. **Upload a PDF**: If you have access to the bill text in PDF format, you can upload it directly for analysis
+4. **Use Debate Mode**: You can still set up a debate about this bill using the title and description
+
+## Alternative Analysis
+Based on the bill information available:
+- **Bill Number**: {bill_text.split()[0] if bill_text.split() else 'Unknown'}
+- **Status**: Text retrieval from official sources currently unavailable
+- **Recommendation**: Check back later or use alternative methods mentioned above
+
+*This is an automated message when official bill text cannot be retrieved from Congress.gov.*
+        """.strip()
+    
+    # Handle large bill texts by creating a smart summary approach
+    max_chars = 40000  # Conservative limit to avoid API token limits
+    
+    if len(bill_text) > max_chars:
+        logger.info(f"Bill text too long ({len(bill_text)} chars), using intelligent summarization approach")
+        
+        # Extract key sections for analysis
+        bill_analysis_text = extract_key_bill_sections(bill_text, max_chars)
+        logger.info(f"After extraction: {len(bill_analysis_text)} chars")
+        
+        # Double-check: if still too long, do emergency truncation
+        if len(bill_analysis_text) > max_chars:
+            logger.warning(f"Extracted text still too long ({len(bill_analysis_text)} chars), applying emergency truncation")
+            bill_analysis_text = bill_analysis_text[:max_chars-1000] + "\n\n[NOTE: Bill text was truncated due to length constraints.]"
+            logger.info(f"Final length after emergency truncation: {len(bill_analysis_text)} chars")
+        
+    else:
+        bill_analysis_text = bill_text
+    
     analysis_prompt = f"""
-You are a legislative analyst providing a comprehensive analysis of the following bill. Your analysis should be structured, informative, and evidence-based.
+You are a legislative analyst providing a comprehensive analysis of the following bill. The bill text may include key extracted sections marked with === headers === for large bills.
 
 BILL TEXT:
-{bill_text}
+{bill_analysis_text}
 
 Please provide a detailed analysis with the following sections:
 
 ## Executive Summary
-Provide a 2-3 sentence overview of what this bill does and its main purpose.
+Provide a 2-3 sentence overview of what this bill does and its main purpose based on the title, findings, and key provisions.
 
 ## Bill Details
+- **Bill Title**: Extract the official title and short title if available
 - **Primary Sponsor**: Identify who drafted/sponsored this bill (if mentioned in the text)
 - **Legislative Goals**: What are the main objectives this bill aims to achieve?
-- **Key Provisions**: List the 3-5 most important sections or provisions
+- **Key Provisions**: List the 3-5 most important sections or provisions from the extracted content
 
 ## Policy Analysis
 ### Potential Benefits
 - Identify 2-3 positive aspects or benefits this bill could provide
-- Support each point with specific text evidence from the bill
+- Support each point with specific text evidence from the available sections
 
 ### Potential Concerns
 - Identify 2-3 potential problems, challenges, or negative consequences
-- Support each point with specific text evidence from the bill
+- Support each point with specific text evidence from the available sections
 
 ### Implementation Considerations
 - What challenges might arise in implementing this legislation?
 - Are there any unclear provisions or potential ambiguities?
+- Consider authorization levels, effective dates, and enforcement mechanisms if mentioned
 
 ## Evidence from Bill Text
-For each major point you make, include direct quotes from the bill text to support your analysis. Format quotes as:
+For each major point you make, include direct quotes from the bill sections to support your analysis. Format quotes as:
 > "Direct quote from the bill"
 
 ## Overall Assessment
-Provide a balanced conclusion about the bill's likely effectiveness and impact.
+Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.
 
-Please ensure your analysis is objective, evidence-based, and draws directly from the bill text provided.
+Please ensure your analysis is objective, evidence-based, and draws directly from the bill text sections provided.
 """
 
     try:
@@ -506,29 +656,66 @@ Please ensure your analysis is objective, evidence-based, and draws directly fro
             
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}")
+        # Try once more with an even smaller text sample if the error suggests token limits
+        if "400" in str(e) or "token" in str(e).lower():
+            try:
+                logger.info("Attempting analysis with emergency reduced text size")
+                # Emergency fallback - use only first 20k characters
+                emergency_text = bill_analysis_text[:20000] + "\n\n[NOTE: Emergency text reduction applied due to API limits]"
+                
+                emergency_prompt = f"""
+Please provide a brief analysis of this bill excerpt:
+
+{emergency_text}
+
+Include:
+1. Executive Summary (2-3 sentences)
+2. Main Purpose
+3. Key Provisions identified
+4. Note that this is a partial analysis due to length constraints
+
+Keep response concise and focused.
+"""
+                
+                payload_emergency = {
+                    "model": model,
+                    "messages": [
+                        {"role": "system", "content": "You are a legislative analyst. Provide concise, factual analysis."},
+                        {"role": "user", "content": emergency_prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 2000  # Limit response size too
+                }
+                
+                async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload_emergency) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        return result["choices"][0]["message"]["content"]
+                        
+            except Exception as emergency_error:
+                logger.error(f"Emergency analysis also failed: {emergency_error}")
+        
         # Return a basic fallback analysis
         return f"""
-# Legislative Analysis
+# Legislative Analysis - Processing Error
 
-## Executive Summary
-This bill appears to address legislative matters as indicated by its structure and content. A detailed analysis requires further review of the specific provisions.
+## Notice
+This analysis could not be completed due to technical limitations with the bill size or API constraints.
 
-## Bill Details
-- **Primary Sponsor**: Information not clearly available in provided text
-- **Legislative Goals**: Based on the bill content, this legislation aims to [goals would be identified from bill text]
-- **Key Provisions**: [Key sections would be analyzed from the bill text]
+## What We Know
+- **Bill Size**: {len(bill_text):,} characters
+- **Processing Status**: Text extraction successful, but analysis failed due to size limitations
 
-## Policy Analysis
-### Potential Benefits
-Analysis of potential positive impacts would be provided based on the bill's specific provisions.
+## Recommendation
+For a complete analysis of this large bill, consider:
+1. Reviewing the bill directly on Congress.gov
+2. Focusing on specific sections of interest
+3. Trying the analysis again (some temporary API issues may resolve)
 
-### Potential Concerns  
-Potential challenges or negative consequences would be identified from the bill text.
+## Alternative
+You can try uploading a PDF of specific sections you're most interested in analyzing, or use the debate feature to discuss particular aspects of the legislation.
 
-## Overall Assessment
-A comprehensive analysis requires review of the complete bill text and context. This preliminary analysis provides a framework for understanding the legislation's scope and potential impact.
-
-*Note: This is a fallback analysis due to processing limitations. For a complete analysis, please try again or review the bill text manually.*
+*Note: This is an automated response due to processing limitations with very large bills.*
         """.strip()
 
 async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119) -> str:
@@ -611,8 +798,18 @@ The provisions of this Act shall take effect 90 days after the date of enactment
             import re
             # Basic HTML tag removal
             clean_text = re.sub(r'<[^>]+>', '', text_content)
+            # Remove HTML entities
+            clean_text = re.sub(r'&lt;', '<', clean_text)
+            clean_text = re.sub(r'&gt;', '>', clean_text)
+            clean_text = re.sub(r'&amp;', '&', clean_text)
+            clean_text = re.sub(r'&quot;', '"', clean_text)
+            clean_text = re.sub(r'&apos;', "'", clean_text)
             # Remove excessive whitespace
             clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            # Remove document metadata that's not useful for analysis
+            clean_text = re.sub(r'\[Congressional Bills.*?\]', '', clean_text)
+            clean_text = re.sub(r'\[From the U\.S\. Government Publishing Office\]', '', clean_text)
+            clean_text = re.sub(r'&lt;DOC&gt;.*?&lt;/DOC&gt;', '', clean_text, flags=re.DOTALL)
             
             return clean_text
             
@@ -650,8 +847,16 @@ async def analyze_recommended_bill(request: dict):
         # Fetch the full bill text
         bill_text = await fetch_bill_text(bill_type, bill_number)
         
+        # Add bill title like the extract endpoint does
+        bill_title = f"{bill_type} {bill_number}"
+        full_bill_text = f"{bill_title}\n\n{bill_text}"
+        
+        # Debug logging
+        logger.info(f"Fetched bill text length: {len(full_bill_text)}")
+        logger.info(f"Bill text preview: {full_bill_text[:200]}...")
+        
         # Use a custom analysis function instead of debater chain
-        analysis = await analyze_legislation_text(bill_text, model)
+        analysis = await analyze_legislation_text(full_bill_text, model)
         
         return {"analysis": analysis}
         
