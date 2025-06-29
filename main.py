@@ -64,10 +64,6 @@ app.add_middleware(
 )
 
 # Models – now referencing the global DEFAULT_MODEL
-class GenerateResponseRequest(BaseModel):
-    debater: str  # e.g., "Pro" or "Con"
-    prompt: str   # Expected format: "debate topic. opponent's argument"
-    model: str = DEFAULT_MODEL  # Use the global default model
 
 class JudgeRequest(BaseModel):
     transcript: str
@@ -112,6 +108,12 @@ async def shutdown_event():
 
 # API Endpoints
 
+class GenerateResponseRequest(BaseModel):
+    debater: str  # e.g., "Pro" or "Con"
+    prompt: str   # Expected format: "debate topic. opponent's argument"
+    model: str = DEFAULT_MODEL  # Use the global default model
+    bill_description: str = ""  # Full bill text for evidence-based arguments
+
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
     start_time = time.time()
@@ -129,6 +131,9 @@ async def generate_response(request: GenerateResponseRequest):
             topic = request.prompt.strip()
             opponent_arg = ""
         
+        # Use provided bill description or fallback to topic
+        bill_description = request.bill_description if request.bill_description.strip() else topic
+        
         # Get a debater chain with the specified model
         model_specific_debater_chain = get_debater_chain(request.model)
         
@@ -136,7 +141,7 @@ async def generate_response(request: GenerateResponseRequest):
         ai_output = model_specific_debater_chain.run(
             debater_role=debater_role,
             topic=topic,
-            bill_description=topic, # You can modify this if needed
+            bill_description=bill_description,  # Now uses actual bill text
             history=opponent_arg
         )
         
