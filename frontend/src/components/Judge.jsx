@@ -79,8 +79,18 @@ function Judge() {
 
 ${feedback}`;
 
+      // Determine activity type based on topic content
+      let activityType;
+      if (topic.includes('Bill Analysis:')) {
+        activityType = 'Analyze Bill';
+      } else if (billDescription || topic.toLowerCase().includes('bill') || mode === 'bill-debate') {
+        activityType = 'Debate Bill';
+      } else {
+        activityType = 'Debate Topic';
+      }
+      
       // Save using the improved saveTranscriptToUser function
-      await saveTranscriptToUser(combinedTranscript, topic, mode);
+      await saveTranscriptToUser(combinedTranscript, topic, mode, activityType);
       console.log("Complete transcript with judge feedback saved!");
       setSaved(true);
     } catch (err) {

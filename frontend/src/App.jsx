@@ -59,7 +59,7 @@ function App() {
             <Route path="/debatesim" element={<DebateSim user={user} />} />
             <Route path="/debate" element={<Debate />} />
             <Route path="/judge" element={<Judge />} />
-            <Route path="/legislation" element={<Legislation />} />
+            <Route path="/legislation" element={<Legislation user={user} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}

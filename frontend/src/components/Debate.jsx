@@ -4,16 +4,17 @@ import rehypeRaw from "rehype-raw";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateAIResponse } from "../api";
 import { saveTranscriptToUser } from "../firebase/saveTranscript";
+import LoadingSpinner from "./LoadingSpinner";
+import DebateSidebar from "./DebateSidebar";
 import "./Debate.css"; 
 
 const modelOptions = [
   "qwen/qwq-32b:free",
-  "meta-llama/llama-3-8b-instruct:free",
-  "google/gemini-2.0-flash-exp:free",
+  "meta-llama/llama-3.3-70b-instruct",
+  "google/gemini-2.0-flash-001",
   "deepseek/deepseek-r1-0528:free",
   "anthropic/claude-3.5-sonnet",
   "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct",
   "openai/gpt-4o-mini-search-preview"
 ];
 
@@ -28,9 +29,27 @@ function sanitizeUserInput(str) {
 
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, topic, description } = useLocation().state || {};
+  const { mode, debateMode, topic, description, billText, billTitle } = useLocation().state || {};
   const navigate = useNavigate();
-  if (!mode || !topic) {
+  
+  // For bill debates, use billText as description if available
+  const actualDescription = billText || description;
+  
+  // Debug logging
+  console.log('Debate component received:', { 
+    mode, 
+    debateMode, 
+    topic, 
+    billText: billText ? `${billText.length} chars` : 'none',
+    billTitle,
+    description: description ? `${description.length} chars` : 'none'
+  });
+  
+  // Handle both old format (direct mode) and new format (bill-debate with debateMode)
+  const actualMode = mode === 'bill-debate' ? debateMode : mode;
+  const isBillDebate = mode === 'bill-debate';
+  
+  if (!actualMode || !topic) {
     navigate("/debatesim");
     return null;
   }
@@ -53,6 +72,12 @@ function Debate() {
   const [aiSide, setAiSide] = useState("pro");
   const [userSide, setUserSide] = useState("");
   const [userVsUserSide, setUserVsUserSide] = useState("");
+  const [userVsUserSetup, setUserVsUserSetup] = useState({
+    proUser: "",
+    conUser: "",
+    firstSpeaker: "pro",
+    confirmed: false
+  });
   const [firstSide, setFirstSide] = useState("pro");
 
   // Handler for the back to home button
@@ -89,7 +114,7 @@ function Debate() {
       let title = msg.speaker;
       
       // Add round information for AI debaters in AI vs AI mode
-      if (mode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
+      if (actualMode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
         // Calculate which round this speech belongs to
         // Count previous AI speeches to determine round
         const previousAISpeeches = messageList.slice(0, index).filter(m => 
@@ -105,14 +130,10 @@ function Debate() {
       };
     });
     setSpeechList(newSpeechList);
-  }, [messageList, mode]);
-  useEffect(() => {
-    if (description && messageList.length === 0) {
-      // First message is the Bill Description
-      appendMessage("Bill Description", description);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [description]);
+  }, [messageList, actualMode]);
+
+  // Removed automatic bill description addition to messageList to prevent duplication
+  // The bill description is now only shown in the toggle section
 
   const handleEndDebate = async () => {
     setLoading(true);
@@ -120,7 +141,7 @@ function Debate() {
     try {
       const finalTranscript = buildPlainTranscript();
       await saveTranscriptToUser(finalTranscript);
-      navigate("/judge", { state: { transcript: finalTranscript, topic, mode, judgeModel } });
+      navigate("/judge", { state: { transcript: finalTranscript, topic, mode: isBillDebate ? 'bill-debate' : actualMode, judgeModel } });
     } catch (err) {
       console.error("Error saving transcript:", err);
       setError("Failed to save transcript.");
@@ -162,7 +183,7 @@ function Debate() {
              4. Be persuasive but respectful
              5. Conclude with a strong summary statement
            `;
-        aiResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, proModel);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
         appendMessage("AI Debater Pro", aiResponse, proModel);
         setAiSide("con");
       } else {
@@ -181,7 +202,7 @@ function Debate() {
              4. Be persuasive but respectful
              5. Conclude with a strong summary statement
            `;
-        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel);
+        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel, actualDescription);
         appendMessage("AI Debater Con", aiResponse, conModel);
         setAiSide("pro");
         setRound(prev => prev + 1);
@@ -220,7 +241,7 @@ function Debate() {
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel);
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription);
         appendMessage("Con (AI)", conResponse, singleAIModel);
       } else if (firstSide === "pro" && side === "con") {
         const proPrompt = `
@@ -235,7 +256,7 @@ function Debate() {
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel);
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription);
         appendMessage("Pro (AI)", proResponse, singleAIModel);
       }
     } catch (err) {
@@ -290,7 +311,7 @@ function Debate() {
            5. Be persuasive but respectful
          `;
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel);
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setRound(prev => prev + 1);
     } catch (err) {
@@ -331,13 +352,30 @@ function Debate() {
       alert("Input field cannot be blank. Please enter your argument.");
       return;
     }
-    appendMessage("User vs User", userInput.trim());
+    
+    const currentUserName = userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser;
+    const speakerLabel = `${userVsUserSide.toUpperCase()} (${currentUserName})`;
+    
+    appendMessage(speakerLabel, userInput.trim());
     setUserInput("");
     setError("");
+    
+    // Switch turns
+    setUserVsUserSide(userVsUserSide === "pro" ? "con" : "pro");
   };
 
   const handleChooseUserVsUserSide = (side) => {
     setUserVsUserSide(side);
+  };
+
+  const handleUserVsUserConfirm = () => {
+    if (!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()) {
+      setError("Please enter names for both Pro and Con debaters.");
+      return;
+    }
+    setUserVsUserSetup(prev => ({ ...prev, confirmed: true }));
+    setUserVsUserSide(userVsUserSetup.firstSpeaker);
+    setError("");
   };
 
   return (
@@ -347,25 +385,16 @@ function Debate() {
         Back to Home
       </button>
 
-      <button className="toggle-sidebar" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
-        {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
-      </button>
-      <div className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <h3>Speeches</h3>
-        <ul>
-          {speechList
-            .filter((item) => item.title !== "Bill Description")
-            .map((item) => (
-              <li key={item.id} onClick={() => scrollToSpeech(item.id)}>
-                {item.title}
-              </li>
-            ))}
-        </ul>
-      </div>
+      <DebateSidebar 
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+        speechList={speechList}
+        scrollToSpeech={scrollToSpeech}
+      />
       <div className="debate-wrapper">
         <div className="debate-content">
           <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
-          {description && (
+          {actualDescription && (
             <div className="bill-description">
               <button
                 className="toggle-description"
@@ -376,14 +405,14 @@ function Debate() {
               {descriptionExpanded && (
                 <div className="description-content scrollable">
                   <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                    {description}
+                    {actualDescription}
                   </ReactMarkdown>
                 </div>
               )}
             </div>
           )}
           <div className="model-selection">
-            {mode === "ai-vs-ai" && (
+            {actualMode === "ai-vs-ai" && (
               <>
                 <label>
                   Pro Model:
@@ -407,7 +436,19 @@ function Debate() {
                 </label>
               </>
             )}
-            {mode !== "user-vs-user" && (
+            {actualMode === "ai-vs-user" && (
+              <label>
+                AI Model:
+                <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                  {modelOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {actualMode !== "user-vs-user" && (
               <label>
                 Judge Model:
                 <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
@@ -420,15 +461,33 @@ function Debate() {
               </label>
             )}
           </div>
-          <ReactMarkdown rehypePlugins={[rehypeRaw]} className="markdown-renderer">
-            {messageList
-              .map(({ speaker, text, model }) => {
-                const modelInfo = model ? `*Model: ${model}*\n\n` : "";
-                return `## ${speaker}\n${modelInfo}${text}`;
-              })
-              .join("\n\n---\n\n")}
-          </ReactMarkdown>
-          {mode === "ai-vs-ai" && (
+        {/* Render each speech as its own block */}
+        {messageList.map(({ speaker, text, model }, i) => (
+          <div key={i} className="speech-block" id={`speech-${i}`}>
+            <h3>{speaker}</h3>
+            {model && <div className="model-info">Model: {model}</div>}
+            <div className="speech-content">
+              <ReactMarkdown
+                components={{
+                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
+                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
+                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
+                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                  hr: ({node, ...props}) => <hr className="divider" {...props} />
+                }}
+              >
+                {text}
+              </ReactMarkdown>
+            </div>
+          </div>
+        ))}
+          {actualMode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
               <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
                 {loading
@@ -441,7 +500,7 @@ function Debate() {
               </button>
             </div>
           )}
-          {mode === "ai-vs-user" && (
+          {actualMode === "ai-vs-user" && (
             <>
               {!userSide && (
                 <div className="ai-vs-user-order" style={{ marginBottom: "1rem" }}>
@@ -490,33 +549,119 @@ function Debate() {
               )}
             </>
           )}
-          {mode === "user-vs-user" && (
+          {actualMode === "user-vs-user" && (
             <>
-              {!userVsUserSide && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <label>
-                    Who goes first? 
-                  </label>
-                  <br />
-                  <button onClick={() => handleChooseUserVsUserSide("pro")} style={{ marginRight: "0.5rem" }}>
-                    Pro
-                  </button>
-                  <button onClick={() => handleChooseUserVsUserSide("con")}>
-                    Con
-                  </button>
+              {!userVsUserSetup.confirmed && (
+                <div className="ai-vs-user-setup">
+                  <h3>Setup User vs User Debate</h3>
+                  
+                  <div className="user-name-inputs">
+                    <div className="name-input-group">
+                      <label>Pro Debater Name:</label>
+                      <input
+                        type="text"
+                        placeholder="Enter Pro debater's name"
+                        value={userVsUserSetup.proUser}
+                        onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, proUser: e.target.value }))}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          borderRadius: "6px",
+                          border: "2px solid #e0e7ee",
+                          fontSize: "1rem",
+                          marginBottom: "1rem"
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="name-input-group">
+                      <label>Con Debater Name:</label>
+                      <input
+                        type="text"
+                        placeholder="Enter Con debater's name"
+                        value={userVsUserSetup.conUser}
+                        onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, conUser: e.target.value }))}
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem",
+                          borderRadius: "6px",
+                          border: "2px solid #e0e7ee",
+                          fontSize: "1rem",
+                          marginBottom: "1rem"
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="order-selection">
+                    <label>Who speaks first?</label>
+                    <div className="order-buttons">
+                      <button 
+                        className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
+                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
+                      >
+                        {userVsUserSetup.proUser || 'Pro'} speaks first
+                      </button>
+                      <button 
+                        className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
+                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
+                      >
+                        {userVsUserSetup.conUser || 'Con'} speaks first
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="model-selection" style={{ marginBottom: "1.5rem" }}>
+                    <label>
+                      Judge Model:
+                      <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                        {modelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  
+                  <div className="confirm-section">
+                    <button 
+                      className="confirm-button"
+                      disabled={!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()}
+                      onClick={handleUserVsUserConfirm}
+                    >
+                      {userVsUserSetup.proUser.trim() && userVsUserSetup.conUser.trim() 
+                        ? 'Start Debate' 
+                        : 'Enter both debater names first'
+                      }
+                    </button>
+                  </div>
                 </div>
               )}
-              {userVsUserSide && (
-                <div style={{ marginTop: "1rem" }}>
-                  <p style={{ fontStyle: "italic" }}>
-                    {userVsUserSide === "pro" ? "It's Pro's turn." : "It's Con's turn."}
+              
+              {userVsUserSetup.confirmed && (
+                <div className="ai-vs-user-setup">
+                  <h3>User vs User Debate</h3>
+                  <p style={{ marginBottom: "1rem", color: "#666" }}>
+                    Current turn: <strong>
+                      {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                    </strong> ({userVsUserSide.toUpperCase()})
                   </p>
+                  
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
-                    style={{ width: "100%", resize: "vertical" }}
+                    style={{ 
+                      width: "100%", 
+                      resize: "vertical", 
+                      marginBottom: "1rem",
+                      padding: "0.75rem",
+                      borderRadius: "6px",
+                      border: "2px solid #e0e7ee",
+                      fontSize: "1rem"
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
                         e.preventDefault();
@@ -524,9 +669,40 @@ function Debate() {
                       }
                     }}
                   />
-                  <button onClick={handleUserVsUser} disabled={loading || !userInput.trim()}>
-                    Send ({userVsUserSide === "pro" ? "Pro" : "Con"})
-                  </button>
+                  
+                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button 
+                      onClick={handleUserVsUser} 
+                      disabled={loading || !userInput.trim()}
+                      style={{
+                        background: "#4a90e2",
+                        color: "white",
+                        border: "none",
+                        padding: "0.75rem 1.5rem",
+                        borderRadius: "6px",
+                        cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
+                        opacity: loading || !userInput.trim() ? 0.6 : 1,
+                        fontSize: "1rem"
+                      }}
+                    >
+                      Send as {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                    </button>
+                    
+                    <button 
+                      onClick={() => setUserVsUserSetup(prev => ({ ...prev, confirmed: false }))}
+                      style={{
+                        background: "rgba(255,255,255,0.1)",
+                        color: "white",
+                        border: "1px solid #4a90e2",
+                        padding: "0.75rem 1.5rem",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "1rem"
+                      }}
+                    >
+                      Restart Setup
+                    </button>
+                  </div>
                 </div>
               )}
             </>
