@@ -134,6 +134,13 @@ async def generate_response(request: GenerateResponseRequest):
         # Use provided bill description or fallback to topic
         bill_description = request.bill_description if request.bill_description.strip() else topic
         
+        # Handle large bill texts for debates - truncate to avoid token limits
+        if len(bill_description) > 30000:  # Conservative limit for debates
+            logger.info(f"Bill text too long for debate ({len(bill_description)} chars), truncating for debate context")
+            # Extract key portions for debate context
+            bill_description = extract_key_bill_sections(bill_description, 25000)
+            logger.info(f"Truncated bill text for debate: {len(bill_description)} chars")
+        
         # Get a debater chain with the specified model
         model_specific_debater_chain = get_debater_chain(request.model)
         
