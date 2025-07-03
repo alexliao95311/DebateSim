@@ -28,7 +28,12 @@ function Debate() {
   const navigate = useNavigate();
   
   // For bill debates, use billText as description if available
-  const actualDescription = billText || description;
+  // Truncate very large bill texts on frontend to prevent API errors
+  let actualDescription = billText || description;
+  if (actualDescription && actualDescription.length > 100000) {
+    console.log(`Bill text very long (${actualDescription.length} chars), truncating for API safety`);
+    actualDescription = actualDescription.substring(0, 90000) + "\n\n[NOTE: Bill text truncated due to length. Key sections preserved for debate context.]";
+  }
   
   // Debug logging
   console.log('Debate component received:', { 
@@ -388,22 +393,24 @@ function Debate() {
       />
       <div className="debate-wrapper">
         <div className="debate-content">
-          <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
-          {actualDescription && (
-            <div className="bill-description">
+          <div className="topic-header-section">
+            <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
+            {actualDescription && (
               <button
                 className="toggle-description"
                 onClick={() => setDescriptionExpanded(!descriptionExpanded)}
               >
                 {descriptionExpanded ? "Hide Bill Text" : "Show Bill Text"}
               </button>
-              {descriptionExpanded && (
-                <div className="description-content scrollable">
-                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                    {actualDescription}
-                  </ReactMarkdown>
-                </div>
-              )}
+            )}
+          </div>
+          {actualDescription && descriptionExpanded && (
+            <div className="bill-description">
+              <div className="description-content scrollable">
+                <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+                  {actualDescription}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
           <div className="model-selection">
@@ -792,13 +799,15 @@ function Debate() {
               estimatedTime={45000}
             />
           )}
-          <button
-            onClick={() => handleEndDebate()}
-            style={{ marginTop: "1rem" }}
-            disabled={loading || messageList.length === 0}
-          >
-            End Debate
-          </button>
+          <div className="end-debate-section">
+            <button
+              className="end-debate-btn"
+              onClick={() => handleEndDebate()}
+              disabled={loading || messageList.length === 0}
+            >
+              End Debate & Get Judgment
+            </button>
+          </div>
         </div>
       </div>
     </div>

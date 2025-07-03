@@ -179,6 +179,11 @@ You are **{debater_role}**, engaged in a 5‑round public‑forum style debate o
 BILL CONTEXT (for reference):
 {bill_description}
 
+IMPORTANT NOTES:
+• **IMPORTANT**: Support your arguments with specific textual evidence from the bill whenever possible. Quote relevant sections to strengthen your position.
+• When referencing the bill, use phrases like "The bill states..." or "Section X clearly indicates..." followed by brief quotes.
+• If the bill text appears truncated (marked with [Content truncated] or similar), focus on the available sections and note when referencing limitations.
+
 CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
 
 ------------------------------------------------------------------
@@ -201,8 +206,6 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 Content Guidelines
 • If there are previous arguments, start with a **concise rebuttal** (≤ 2 sentences).
 • Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
-• **IMPORTANT**: Support your arguments with specific textual evidence from the bill whenever possible. Quote relevant sections to strengthen your position.
-• When referencing the bill, use phrases like "The bill states..." or "Section X clearly indicates..." followed by brief quotes.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
 Previous opponent argument (for context only):  
