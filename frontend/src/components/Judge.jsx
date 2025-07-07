@@ -260,11 +260,101 @@ ${feedback}`;
             wordBreak: "break-word",
             overflowWrap: "break-word",
             whiteSpace: "normal",
-            lineHeight: "1.4",
+            lineHeight: "1.5",
+            background: "#f5f8fa",
+            color: "#222",
+            padding: "32px",
+            borderRadius: "12px",
+            fontFamily: "Segoe UI, Arial, sans-serif"
           }}
         >
           <style>
             {`
+              .pdf-container {
+                background: #f5f8fa !important;
+                color: #222 !important;
+                font-family: 'Segoe UI', Arial, sans-serif !important;
+              }
+              h1, .debate-heading-h1 {
+                color: #1a365d !important;
+                font-size: 2rem !important;
+                font-weight: 700;
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+                text-align: center;
+                border-bottom: 2px solid #4a90e2;
+                padding-bottom: 0.2em;
+              }
+              h2, .debate-heading-h2 {
+                color: #205081 !important;
+                font-size: 1.3rem !important;
+                font-weight: 600;
+                margin-top: 1.2em;
+                margin-bottom: 0.5em;
+                border-bottom: 1px solid #b6c6e3;
+                padding-bottom: 0.15em;
+              }
+              h3, .debate-heading-h3 {
+                color: #2d6cdf !important;
+                font-size: 1.1rem !important;
+                font-weight: 600;
+                margin-top: 1em;
+                margin-bottom: 0.4em;
+              }
+              h4, .debate-heading-h4 {
+                color: #4a90e2 !important;
+                font-size: 1rem !important;
+                font-weight: 600;
+                margin-top: 0.8em;
+                margin-bottom: 0.3em;
+              }
+              .model-info {
+                color: #4a90e2 !important;
+                font-weight: bold;
+                font-size: 0.95rem !important;
+              }
+              .debate-paragraph, p {
+                color: #222 !important;
+                font-size: 1rem !important;
+                margin-bottom: 0.7em;
+              }
+              .debate-list, ul {
+                margin-left: 1.2em;
+                color: #222 !important;
+              }
+              .debate-numbered-list, ol {
+                margin-left: 1.2em;
+                color: #222 !important;
+              }
+              .debate-list-item, li {
+                margin-bottom: 0.3em;
+              }
+              .debate-strong, strong {
+                color: #1a365d !important;
+                font-weight: bold;
+              }
+              .debate-emphasis, em {
+                color: #2d6cdf !important;
+                font-style: italic;
+              }
+              .divider, hr {
+                border: none;
+                border-top: 1.5px solid #b6c6e3;
+                margin: 1.2em 0;
+              }
+              .speech-block {
+                background: #eaf1fb;
+                border-radius: 8px;
+                padding: 16px 18px;
+                margin-bottom: 1.2em;
+                box-shadow: 0 1px 4px rgba(74,144,226,0.07);
+              }
+              .error-text {
+                color: #e53e3e !important;
+              }
+              .page-break {
+                page-break-before: always;
+              }
               li, p, h2, h3 {
                 page-break-inside: avoid;
                 break-inside: avoid-page;
@@ -274,25 +364,25 @@ ${feedback}`;
           <p style={{ fontStyle: "italic", color: "#555", fontSize: "10pt" }}>
             Generated on: {timestamp}
           </p>
-          <h1 style={{ textAlign: "center", marginTop: 0, fontSize: "18pt" }}>
+          <h1 className="debate-heading-h1" style={{ textAlign: "center", marginTop: 0 }}>
             Debate Transcript
           </h1>
-          <hr />
-          <h2 style={{ fontSize: "16pt" }}>Topic: {topic}</h2>
-          <h3 style={{ fontSize: "14pt" }}>Mode: {mode}</h3>
+          <hr className="divider" />
+          <h2 className="debate-heading-h2">Topic: {topic}</h2>
+          <h3 className="debate-heading-h3">Mode: {mode}</h3>
           <div className="page-break" style={{ pageBreakBefore: "always" }} />
-          <h2 style={{ fontSize: "16pt" }}>Debate Content</h2>
-          <ReactMarkdown rehypePlugins={[rehypeRaw]} style={{ fontSize: "12pt" }}>
+          <h2 className="debate-heading-h2">Debate Content</h2>
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>
             {transcript}
           </ReactMarkdown>
           <div className="page-break" style={{ pageBreakBefore: "always" }} />
-          <h2 style={{ fontSize: "16pt" }}>Judge Feedback</h2>
+          <h2 className="debate-heading-h2">Judge Feedback</h2>
           <div className="speech-block">
-            <h3 style={{ fontSize: "14pt" }}>AI Judge:</h3>
-            <p className="model-info" style={{ fontSize: "10pt" }}>
+            <h3 className="debate-heading-h3">AI Judge:</h3>
+            <p className="model-info">
               Model: {judgeModel}
             </p>
-            <ReactMarkdown rehypePlugins={[rehypeRaw]} style={{ fontSize: "12pt" }}>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
               {feedback}
             </ReactMarkdown>
           </div>
