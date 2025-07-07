@@ -16,6 +16,11 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
     throw new Error("User is not logged in!");
   }
 
+  // Check if transcript has required fields - if not, it's likely corrupted/old
+  if (!transcriptData.topic || !transcriptData.transcript) {
+    throw new Error("This transcript is too old or corrupted to be shared. Please try sharing a more recent transcript.");
+  }
+
   try {
     const shareId = generateShareId();
     
@@ -24,9 +29,9 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
       shareId,
       transcript: transcriptData.transcript,
       topic: transcriptData.topic,
-      mode: transcriptData.mode,
-      activityType: transcriptData.activityType,
-      createdAt: transcriptData.createdAt,
+      mode: transcriptData.mode || "Unknown",
+      activityType: transcriptData.activityType || "Unknown",
+      createdAt: transcriptData.createdAt || new Date().toISOString(),
       sharedAt: new Date().toISOString(),
       sharedBy: user.uid,
       isActive: true
