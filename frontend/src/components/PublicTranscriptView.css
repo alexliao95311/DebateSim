@@ -1,0 +1,360 @@
+/* PublicTranscriptView.css - Matches DebateSim styling exactly */
+
+.public-transcript-container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 8rem 2rem 2rem 2rem;
+  background: url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header - Exact match from DebateSim */
+.home-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.header-content {
+  width: 100%;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.header-center h1 {
+  font-size: 2rem;
+  color: #ffffff !important;
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.header-center h1:hover {
+  color: #357abd;
+  text-decoration: underline;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.home-button {
+  height: 36px;
+  line-height: 36px;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #4a90e2;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-button:hover {
+  background-color: #357abd;
+}
+
+/* Main Content */
+.main-content {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Transcript Header */
+.transcript-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.transcript-header h1 {
+  font-size: 2em;
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.transcript-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.transcript-meta .topic {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #4a90e2;
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.transcript-meta .mode {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #28a745;
+  color: white;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.transcript-meta .date {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #6c757d;
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Transcript Viewer */
+.transcript-viewer {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.transcript-content {
+  padding: 2rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Transcript markdown styling - matches speech blocks from Debate.jsx */
+.transcript-heading-h1,
+.transcript-heading-h2 {
+  color: #4a90e2;
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #4a90e2;
+}
+
+.transcript-heading-h1 {
+  font-size: 1.8rem;
+}
+
+.transcript-heading-h2 {
+  font-size: 1.5rem;
+}
+
+.transcript-heading-h3,
+.transcript-heading-h4 {
+  color: #333;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+.transcript-heading-h3 {
+  font-size: 1.3rem;
+}
+
+.transcript-heading-h4 {
+  font-size: 1.1rem;
+}
+
+.transcript-paragraph {
+  margin-bottom: 1rem;
+  text-align: justify;
+  line-height: 1.7;
+}
+
+.transcript-list,
+.transcript-numbered-list {
+  margin: 1rem 0 1rem 2rem;
+  line-height: 1.6;
+}
+
+.transcript-list-item {
+  margin-bottom: 0.5rem;
+}
+
+.transcript-strong {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.transcript-emphasis {
+  font-style: italic;
+  color: #34495e;
+}
+
+.transcript-divider {
+  border: none;
+  border-top: 2px solid #e0e7ee;
+  margin: 2rem 0;
+}
+
+/* Error state */
+.error-container {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 100%;
+  max-width: 600px;
+}
+
+.error-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.error-container p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+.error-container .home-button {
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  height: auto;
+  line-height: normal;
+}
+
+/* Footer */
+.transcript-footer {
+  margin-top: 3rem;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+}
+
+.transcript-footer p {
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.transcript-footer .shared-info {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+.debatesim-link {
+  color: #4a90e2;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.debatesim-link:hover {
+  color: #357abd;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .public-transcript-container {
+    padding: 6rem 1rem 2rem 1rem;
+  }
+  
+  .header-content {
+    padding: 0 1rem;
+  }
+  
+  .header-center h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .transcript-content {
+    padding: 1.5rem;
+  }
+  
+  .transcript-heading-h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-heading-h2 {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-transcript-container {
+    padding: 5rem 0.5rem 2rem 0.5rem;
+  }
+  
+  .header-content {
+    padding: 0 0.5rem;
+  }
+  
+  .header-center h1 {
+    font-size: 1.3rem;
+  }
+  
+  .transcript-content {
+    padding: 1rem;
+  }
+  
+  .transcript-meta {
+    font-size: 0.8rem;
+  }
+  
+  .transcript-meta span {
+    padding: 0.4rem 0.8rem;
+  }
+}
