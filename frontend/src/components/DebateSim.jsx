@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { jsPDF } from "jspdf";
+import ShareModal from "./ShareModal";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {
@@ -15,6 +16,7 @@ function DebateSim({ user }) {
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null); // New state for selected history item
   const [pdfError, setPdfError] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const pdfContentRef = useRef(null);
@@ -255,10 +257,19 @@ function DebateSim({ user }) {
       {selectedHistory && (
         <div className="history-modal">
           <div className="modal-content">
-            <button className="modal-close" onClick={() => setSelectedHistory(null)}>
-              &times;
-            </button>
-            <h2>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
+            <div className="modal-header">
+              <button 
+                className="modal-header-share" 
+                onClick={() => setShowShareModal(true)}
+                title="Share this transcript"
+              >
+                📤
+              </button>
+              <h2>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
+              <button className="modal-header-close" onClick={() => setSelectedHistory(null)}>
+                ❌
+              </button>
+            </div>
             <div className="transcript-viewer">
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
@@ -286,20 +297,36 @@ function DebateSim({ user }) {
             {pdfError && <p className="error-text">{pdfError}</p>}
             <div className="modal-button-group">
               <button 
+                className="share-button" 
+                onClick={() => setShowShareModal(true)}
+              >
+                📤 Share
+              </button>
+              <button 
                 className="download-button" 
                 onClick={handleDownloadPDF}
               >
-                Download as PDF
+                📄 Download PDF
               </button>
               <button 
                 className="close-button" 
                 onClick={() => setSelectedHistory(null)}
               >
-                Close
+                ❌ Close
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {selectedHistory && (
+        <ShareModal 
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          transcript={selectedHistory}
+          transcriptId={selectedHistory.id}
+        />
       )}
 
       {/* Hidden PDF content for export */}

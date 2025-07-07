@@ -39,6 +39,7 @@ html, body {
   margin: 0;
   padding: 0;
   overscroll-behavior: none;
+  background-color: #ededed;
 }
 
 
@@ -124,7 +125,7 @@ textarea {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #ededed;
   }
   a:hover {
     color: #747bff;
@@ -140,15 +141,25 @@ textarea {
   width: 100vw;
 }
 
-.loading-container {
+/* Simple main loading screen for page reloads */
+.main-loading-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   width: 100vw;
+  background-color: #ededed !important;
+  background: #ededed !important;
 }
 
-.loading-spinner {
+.main-loading-text {
   color: #4a90e2;
   font-size: 1.2rem;
+  font-weight: 500;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
