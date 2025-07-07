@@ -24,7 +24,7 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
   try {
     const shareId = generateShareId();
     
-    // Create a public share document
+    // Create a public share document - ensure no undefined values
     const publicShareData = {
       shareId,
       transcript: transcriptData.transcript,
@@ -36,6 +36,13 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
       sharedBy: user.uid,
       isActive: true
     };
+
+    // Remove any undefined values before sending to Firestore
+    Object.keys(publicShareData).forEach(key => {
+      if (publicShareData[key] === undefined) {
+        delete publicShareData[key];
+      }
+    });
 
     // Add to public shares collection
     await addDoc(collection(db, "publicShares"), publicShareData);
