@@ -17,7 +17,11 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
       const result = await shareTranscript(transcriptId, transcript);
       setShareUrl(result.shareUrl);
     } catch (err) {
-      setError("Failed to share transcript. Please try again.");
+      if (err.message && err.message.includes("too old or corrupted")) {
+        setError(err.message);
+      } else {
+        setError("Failed to share transcript. Please try again.");
+      }
       console.error("Share error:", err);
     } finally {
       setIsSharing(false);
