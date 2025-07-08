@@ -4,7 +4,7 @@ import { auth } from "./firebaseConfig"; // Adjust the path if needed
 
 const db = getFirestore();
 
-export const saveTranscriptToUser = async (transcript, topic = null, mode = null, activityType = null) => {
+export const saveTranscriptToUser = async (transcript, topic = null, mode = null, activityType = null, grades = null) => {
   // Get the current logged-in user
   const user = auth.currentUser;
   if (!user) {
@@ -22,10 +22,11 @@ export const saveTranscriptToUser = async (transcript, topic = null, mode = null
       createdAt: new Date().toISOString(),
     };
     
-    // Add topic, mode, and activityType if provided
+    // Add topic, mode, activityType, and grades if provided
     if (topic) documentData.topic = topic;
     if (mode) documentData.mode = mode;
     if (activityType) documentData.activityType = activityType;
+    if (grades) documentData.grades = grades;
 
     await addDoc(transcriptsRef, documentData);
     console.log(`${activityType || mode || 'Activity'} saved successfully!`);

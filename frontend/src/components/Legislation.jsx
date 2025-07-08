@@ -20,6 +20,169 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+// Circular Progress Component
+const CircularProgress = ({ percentage, size = 70, strokeWidth = 6, color = '#4a90e2' }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="circular-progress" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle
+          className="progress-bg"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          className="progress-fill"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          style={{ stroke: color }}
+        />
+      </svg>
+      <div className="progress-text" style={{ color }}>
+        {Math.round(percentage)}%
+      </div>
+    </div>
+  );
+};
+
+// Grade Item Component with Tooltip
+const GradeItem = ({ label, percentage, description, tooltip, icon, category, isOverall = false }) => {
+  const getGradeClass = (score) => {
+    if (score >= 90) return 'grade-excellent';
+    if (score >= 70) return 'grade-good';
+    if (score >= 50) return 'grade-fair';
+    if (score >= 30) return 'grade-poor';
+    return 'grade-very-poor';
+  };
+
+  const getGradeColor = (score) => {
+    if (score >= 90) return '#28a745';
+    if (score >= 70) return '#20c997';
+    if (score >= 50) return '#ffc107';
+    if (score >= 30) return '#fd7e14';
+    return '#dc3545';
+  };
+
+  const gradeClass = getGradeClass(percentage);
+  const gradeColor = getGradeColor(percentage);
+
+  return (
+    <div className={`grade-item ${gradeClass} ${category} ${isOverall ? 'overall' : ''}`}>
+      <div className="grade-header">
+        <span className="grade-icon">{icon}</span>
+        <div className="grade-label">{label}</div>
+      </div>
+      <CircularProgress 
+        percentage={percentage} 
+        size={isOverall ? 90 : 75}
+        strokeWidth={isOverall ? 8 : 6}
+        color={gradeColor}
+      />
+      <div className="grade-description">{description}</div>
+      {tooltip && (
+        <div className="tooltip">
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bill Grading Section Component
+const BillGradingSection = ({ grades }) => {
+  const gradingCriteria = {
+    economicImpact: {
+      label: 'Economic Impact',
+      description: 'Fiscal responsibility & benefits',
+      tooltip: 'Evaluates the bill\'s economic benefits, cost-effectiveness, and fiscal impact on government budgets and the economy.',
+      icon: '💰',
+      category: 'moderate',
+      order: 1
+    },
+    publicBenefit: {
+      label: 'Public Benefit',
+      description: 'Benefits to citizens',
+      tooltip: 'Assesses how much the bill addresses public needs and benefits different segments of the population.',
+      icon: '👥',
+      category: 'positive',
+      order: 2
+    },
+    feasibility: {
+      label: 'Implementation Feasibility',
+      description: 'Practicality of execution',
+      tooltip: 'Examines whether the bill can be realistically implemented with available resources and existing infrastructure.',
+      icon: '🛠',
+      category: 'caution',
+      order: 3
+    },
+    legalSoundness: {
+      label: 'Legal Soundness',
+      description: 'Constitutional compliance',
+      tooltip: 'Reviews the bill\'s compliance with constitutional principles and existing legal frameworks.',
+      icon: '⚖️',
+      category: 'positive',
+      order: 4
+    },
+    effectiveness: {
+      label: 'Goal Effectiveness',
+      description: 'Achievement of stated objectives',
+      tooltip: 'Measures how well the bill addresses its stated problems and achieves its intended objectives.',
+      icon: '🎯',
+      category: 'moderate',
+      order: 5
+    },
+    overall: {
+      label: 'Overall Rating',
+      description: 'Comprehensive assessment',
+      tooltip: 'A weighted average of all criteria with emphasis on effectiveness and public benefit.',
+      icon: '📊',
+      category: 'overall',
+      order: 6
+    }
+  };
+
+  return (
+    <div className="grading-section">
+      <div className="grading-header">
+        <h2>Bill Analysis Grades</h2>
+        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+      </div>
+      
+      <div className="grading-grid">
+        {Object.entries(gradingCriteria)
+          .sort(([,a], [,b]) => a.order - b.order)
+          .map(([key, criteria]) => {
+            const isOverall = key === 'overall';
+            const percentage = grades[key] || 0;
+            
+            return (
+              <GradeItem
+                key={key}
+                label={criteria.label}
+                percentage={percentage}
+                description={criteria.description}
+                tooltip={criteria.tooltip}
+                icon={criteria.icon}
+                category={criteria.category}
+                isOverall={isOverall}
+              />
+            );
+          })}
+      </div>
+    </div>
+  );
+};
+
 // BillCard component for better organization
 const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingStage = '' }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -122,6 +285,7 @@ const Legislation = ({ user }) => {
 
   // Analysis state
   const [analysisResult, setAnalysisResult] = useState('');
+  const [analysisGrades, setAnalysisGrades] = useState(null);
   const [selectedModel, setSelectedModel] = useState(modelOptions[0]);
 
   // Debate state
@@ -430,6 +594,11 @@ const Legislation = ({ user }) => {
         const data = await response.json();
         setAnalysisResult(data.analysis);
         
+        // Set grades from API response
+        if (data.grades) {
+          setAnalysisGrades(data.grades);
+        }
+        
         // Save analysis to history
         if (user && !user.isGuest) {
           try {
@@ -437,7 +606,8 @@ const Legislation = ({ user }) => {
               data.analysis,
               `Bill Analysis: ${selectedBill.title}`,
               'analysis',
-              'Analyze Bill'
+              'Analyze Bill',
+              data.grades
             );
             await fetchHistory();
           } catch (err) {
@@ -466,6 +636,11 @@ const Legislation = ({ user }) => {
         const data = await response.json();
         setAnalysisResult(data.analysis);
         
+        // Set grades from API response
+        if (data.grades) {
+          setAnalysisGrades(data.grades);
+        }
+        
         // Save analysis to history
         if (user && !user.isGuest) {
           try {
@@ -473,7 +648,8 @@ const Legislation = ({ user }) => {
               data.analysis,
               `Bill Analysis: ${selectedBill.name}`,
               'analysis',
-              'Analyze Bill'
+              'Analyze Bill',
+              data.grades
             );
             await fetchHistory();
           } catch (err) {
@@ -569,6 +745,7 @@ const Legislation = ({ user }) => {
     setActionType('');
     setExtractedBillData(null);
     setAnalysisResult('');
+    setAnalysisGrades(null);
     setDebateTopic('');
     setDebateMode('');
     setError('');
@@ -641,6 +818,11 @@ const Legislation = ({ user }) => {
                   ❌
                 </button>
               </div>
+              {/* Show grading for historical bill analyses */}
+              {selectedHistory && selectedHistory.grades && (
+                <BillGradingSection grades={selectedHistory.grades} />
+              )}
+              
               <div className="transcript-viewer">
                 <ReactMarkdown
                   rehypePlugins={[rehypeRaw]}
@@ -995,22 +1177,34 @@ const Legislation = ({ user }) => {
                   Start New Analysis
                 </button>
               </div>
-              <div className="analysis-result markdown-content">
-                <ReactMarkdown 
-                  rehypePlugins={[rehypeRaw]} 
-                  className="markdown-renderer"
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                    p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                    ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                    ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                  }}
-                >
-                  {analysisResult}
-                </ReactMarkdown>
+              
+              {/* Grading Infographic Section */}
+              {analysisGrades && (
+                <BillGradingSection grades={analysisGrades} />
+              )}
+              
+              {/* Analysis Text Section */}
+              <div className="analysis-text-section">
+                <div className="analysis-text-header">
+                  <h2>Detailed Analysis & Grade Explanations</h2>
+                </div>
+                <div className="analysis-result markdown-content">
+                  <ReactMarkdown 
+                    rehypePlugins={[rehypeRaw]} 
+                    className="markdown-renderer"
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
+                      p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                      ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                      ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+                    }}
+                  >
+                    {analysisResult}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           )}

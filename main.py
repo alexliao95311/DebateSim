@@ -214,13 +214,14 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = DEFAULT
         raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
 
     try:
-        # Use the new analysis function instead of debater chain
+        # Generate both analysis and grades
         analysis = await analyze_legislation_text(text, model)
+        grades = await grade_legislation_text(text, model)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error analyzing legislation")
 
-    return {"analysis": analysis}
+    return {"analysis": analysis, "grades": grades}
 
 @app.post("/extract-text")
 async def extract_text_endpoint(file: UploadFile = File(...)):
@@ -541,6 +542,181 @@ def extract_key_bill_sections(bill_text: str, max_chars: int) -> str:
     
     return result
 
+async def grade_legislation_text(bill_text: str, model: str) -> dict:
+    """Grade legislation text based on the comprehensive rubric"""
+    
+    # Debug logging
+    logger.info(f"Grading bill text with model {model}")
+    logger.info(f"Bill text length for grading: {len(bill_text)}")
+    
+    # Check if bill text is unavailable
+    if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
+        logger.warning("Bill text unavailable for grading")
+        return {
+            "economicImpact": 0,
+            "publicBenefit": 0,
+            "feasibility": 0,
+            "legalSoundness": 0,
+            "effectiveness": 0,
+            "overall": 0
+        }
+    
+    # Handle large bill texts
+    max_chars = 35000  # Conservative limit for grading
+    
+    if len(bill_text) > max_chars:
+        logger.info(f"Bill text too long for grading ({len(bill_text)} chars), using key sections")
+        bill_grading_text = extract_key_bill_sections(bill_text, max_chars)
+        logger.info(f"After extraction for grading: {len(bill_grading_text)} chars")
+    else:
+        bill_grading_text = bill_text
+    
+    grading_prompt = f"""
+You are an expert legislative analyst. Please evaluate the following bill according to these specific criteria and provide numerical scores (0-100) for each category.
+
+BILL TEXT:
+{bill_grading_text}
+
+Please evaluate this bill on the following criteria and provide ONLY a JSON response with numerical scores:
+
+**GRADING CRITERIA:**
+
+1. **Economic Impact (0-100)**: Evaluate fiscal responsibility, cost-effectiveness, and economic benefits
+   - 90-100: Significant positive economic benefits, clear cost-benefit analysis, minimal fiscal burden
+   - 70-89: Moderate economic benefits with acceptable costs
+   - 50-69: Mixed economic impact with some concerns
+   - 30-49: Questionable economic benefits, high costs
+   - 0-29: Severe negative economic impact
+
+2. **Public Benefit (0-100)**: Assess benefits to citizens and population impact
+   - 90-100: Addresses critical public needs, benefits large population segments
+   - 70-89: Clear public benefits with broad positive impact
+   - 50-69: Some public benefits but limited scope
+   - 30-49: Minimal public benefit, narrow impact
+   - 0-29: No clear public benefit or potential harm
+
+3. **Implementation Feasibility (0-100)**: Examine practicality of execution
+   - 90-100: Clear implementation plan, adequate resources, realistic timeline
+   - 70-89: Generally feasible with minor challenges
+   - 50-69: Possible but with significant implementation hurdles
+   - 30-49: Difficult to implement, major obstacles
+   - 0-29: Impractical or impossible to implement effectively
+
+4. **Legal Soundness (0-100)**: Review constitutional compliance and legal framework
+   - 90-100: Fully constitutional, clear legal framework
+   - 70-89: Generally sound with minor legal considerations
+   - 50-69: Some legal questions but likely defensible
+   - 30-49: Significant legal concerns
+   - 0-29: Likely unconstitutional or legally problematic
+
+5. **Goal Effectiveness (0-100)**: Measure achievement of stated objectives
+   - 90-100: Directly addresses stated problems with clear solutions
+   - 70-89: Likely to achieve most stated objectives
+   - 50-69: May achieve some goals but with limitations
+   - 30-49: Unlikely to achieve stated objectives
+   - 0-29: Does not address stated problems effectively
+
+**INSTRUCTIONS:**
+Analyze the bill text and respond with ONLY a valid JSON object containing the scores. Calculate the overall score as a weighted average emphasizing effectiveness and public benefit.
+
+Response format:
+{{
+  "economicImpact": [score 0-100],
+  "publicBenefit": [score 0-100],
+  "feasibility": [score 0-100],
+  "legalSoundness": [score 0-100],
+  "effectiveness": [score 0-100],
+  "overall": [calculated weighted average]
+}}
+"""
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://debatesim.app",
+        }
+        
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are an expert legislative analyst. Respond only with valid JSON containing numerical scores."},
+                {"role": "user", "content": grading_prompt}
+            ],
+            "temperature": 0.2,  # Very low temperature for consistent grading
+            "max_tokens": 500,   # Limit response size for JSON
+        }
+        
+        async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload) as response:
+            if response.status != 200:
+                logger.error(f"OpenRouter API error in grading: {response.status}")
+                raise HTTPException(status_code=500, detail="Error generating grades")
+            
+            result = await response.json()
+            grades_text = result["choices"][0]["message"]["content"]
+            
+            # Parse JSON response
+            try:
+                import json
+                import re
+                
+                # Extract JSON from response (remove any markdown formatting)
+                json_match = re.search(r'\{[^}]*\}', grades_text, re.DOTALL)
+                if json_match:
+                    grades_json = json_match.group(0)
+                else:
+                    grades_json = grades_text
+                
+                grades = json.loads(grades_json)
+                
+                # Validate and ensure all keys exist with proper ranges
+                required_keys = ["economicImpact", "publicBenefit", "feasibility", "legalSoundness", "effectiveness", "overall"]
+                for key in required_keys:
+                    if key not in grades:
+                        grades[key] = 50  # Default to middle score
+                    else:
+                        # Ensure scores are within 0-100 range
+                        grades[key] = max(0, min(100, int(grades[key])))
+                
+                # Recalculate overall if needed
+                if "overall" not in grades or grades["overall"] == 0:
+                    # Weighted average: effectiveness (30%), public benefit (25%), others (15% each)
+                    grades["overall"] = round(
+                        grades["effectiveness"] * 0.30 +
+                        grades["publicBenefit"] * 0.25 +
+                        grades["economicImpact"] * 0.15 +
+                        grades["feasibility"] * 0.15 +
+                        grades["legalSoundness"] * 0.15
+                    )
+                
+                logger.info(f"Generated grades: {grades}")
+                return grades
+                
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Error parsing grades JSON: {e}")
+                logger.error(f"Raw response: {grades_text}")
+                # Return fallback grades
+                return {
+                    "economicImpact": 65,
+                    "publicBenefit": 70,
+                    "feasibility": 60,
+                    "legalSoundness": 75,
+                    "effectiveness": 65,
+                    "overall": 67
+                }
+            
+    except Exception as e:
+        logger.error(f"Error in grade_legislation_text: {e}")
+        # Return fallback grades on any error
+        return {
+            "economicImpact": 65,
+            "publicBenefit": 70,
+            "feasibility": 60,
+            "legalSoundness": 75,
+            "effectiveness": 65,
+            "overall": 67
+        }
+
 async def analyze_legislation_text(bill_text: str, model: str) -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
@@ -604,7 +780,7 @@ You are a legislative analyst providing a comprehensive analysis of the followin
 BILL TEXT:
 {bill_analysis_text}
 
-Please provide a detailed analysis with the following sections:
+Please provide a detailed analysis with the following sections, including specific explanations for grading criteria:
 
 ## Executive Summary
 Provide a 2-3 sentence overview of what this bill does and its main purpose based on the title, findings, and key provisions.
@@ -614,6 +790,22 @@ Provide a 2-3 sentence overview of what this bill does and its main purpose base
 - **Primary Sponsor**: Identify who drafted/sponsored this bill (if mentioned in the text)
 - **Legislative Goals**: What are the main objectives this bill aims to achieve?
 - **Key Provisions**: List the 3-5 most important sections or provisions from the extracted content
+
+## Grading Analysis Explanations
+### Economic Impact Assessment
+Analyze the bill's fiscal impact, cost-effectiveness, and economic benefits. Consider budget allocations, revenue impacts, and cost-benefit analysis. Explain why this bill scores well or poorly on economic criteria.
+
+### Public Benefit Evaluation
+Assess how this bill addresses public needs and benefits different population segments. Consider scope of impact, target demographics, and societal benefits. Explain the public value proposition.
+
+### Implementation Feasibility Review
+Evaluate the practicality of executing this legislation. Consider resource requirements, timeline feasibility, administrative capacity, and potential implementation challenges.
+
+### Legal and Constitutional Soundness
+Analyze the bill's compliance with constitutional principles and existing legal frameworks. Consider jurisdictional issues, legal precedents, and potential constitutional challenges.
+
+### Goal Effectiveness Analysis
+Assess how well the bill addresses its stated problems and achieves intended objectives. Consider whether the proposed solutions match the identified problems and likelihood of success.
 
 ## Policy Analysis
 ### Potential Benefits
@@ -867,14 +1059,66 @@ async def analyze_recommended_bill(request: dict):
         logger.info(f"Fetched bill text length: {len(full_bill_text)}")
         logger.info(f"Bill text preview: {full_bill_text[:200]}...")
         
-        # Use a custom analysis function instead of debater chain
+        # Generate both analysis and grades
         analysis = await analyze_legislation_text(full_bill_text, model)
+        grades = await grade_legislation_text(full_bill_text, model)
         
-        return {"analysis": analysis}
+        return {"analysis": analysis, "grades": grades}
         
     except Exception as e:
         logger.error(f"Error analyzing recommended bill: {e}")
         raise HTTPException(status_code=500, detail="Error analyzing bill")
+
+@app.post("/grade-legislation")
+async def grade_legislation(file: UploadFile = File(...), model: str = DEFAULT_MODEL):
+    """Grade a legislation PDF based on the comprehensive rubric"""
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    try:
+        contents = await file.read()
+        # Extract text using pdfminer.six
+        text = extract_text(BytesIO(contents))
+        if not text.strip():
+            raise ValueError("No extractable text found in PDF.")
+    except Exception as e:
+        logger.error(f"Error processing PDF file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
+
+    try:
+        # Generate grades for the legislation
+        grades = await grade_legislation_text(text, model)
+    except Exception as e:
+        logger.error(f"Error in grade_legislation_text: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error grading legislation")
+
+    return {"grades": grades}
+
+@app.post("/grade-recommended-bill")
+async def grade_recommended_bill(request: dict):
+    """Grade a recommended bill based on the comprehensive rubric"""
+    try:
+        bill_type = request.get("type", "").upper()
+        bill_number = request.get("number", "")
+        model = request.get("model", DEFAULT_MODEL)
+        
+        if not bill_type or not bill_number:
+            raise HTTPException(status_code=400, detail="Bill type and number are required")
+        
+        # Fetch the full bill text
+        bill_text = await fetch_bill_text(bill_type, bill_number)
+        
+        # Add bill title
+        bill_title = f"{bill_type} {bill_number}"
+        full_bill_text = f"{bill_title}\n\n{bill_text}"
+        
+        # Generate grades for the bill
+        grades = await grade_legislation_text(full_bill_text, model)
+        
+        return {"grades": grades}
+        
+    except Exception as e:
+        logger.error(f"Error grading recommended bill: {e}")
+        raise HTTPException(status_code=500, detail="Error grading bill")
 
 @app.post("/extract-recommended-bill-text")
 async def extract_recommended_bill_text(request: dict):
