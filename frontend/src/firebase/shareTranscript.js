@@ -36,6 +36,11 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
       sharedBy: user.uid,
       isActive: true
     };
+    
+    // Add grades if available
+    if (transcriptData.grades) {
+      publicShareData.grades = transcriptData.grades;
+    }
 
     // Remove any undefined values before sending to Firestore
     Object.keys(publicShareData).forEach(key => {

@@ -1973,3 +1973,397 @@
   color: #333;
 }
 
+/* === Bill Grading Infographic Styles === */
+.grading-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.grading-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.grading-header h2 {
+  color: #333 !important;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.grading-subtitle {
+  color: #666 !important;
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.grading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem;
+}
+
+.grade-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  border: 2px solid rgba(74, 144, 226, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: help;
+  min-height: 200px;
+  backdrop-filter: blur(10px);
+}
+
+.grade-item:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+.grade-item:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-10px);
+}
+
+.circular-progress {
+  position: relative;
+  width: 75px;
+  height: 75px;
+  margin: 1rem 0;
+}
+
+.circular-progress svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-progress .progress-bg {
+  fill: none;
+  stroke: #e9ecef;
+  stroke-width: 8;
+}
+
+.circular-progress .progress-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s ease-in-out;
+}
+
+.circular-progress .progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.grade-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.grade-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.grade-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333 !important;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.grade-description {
+  font-size: 0.8rem;
+  color: #666 !important;
+  line-height: 1.4;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Category-based Styling */
+.grade-item.positive {
+  border-color: rgba(40, 167, 69, 0.3);
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(40, 167, 69, 0.03));
+}
+
+.grade-item.positive:hover {
+  border-color: rgba(40, 167, 69, 0.5);
+  box-shadow: 0 12px 40px rgba(40, 167, 69, 0.2);
+}
+
+.grade-item.moderate {
+  border-color: rgba(255, 193, 7, 0.3);
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 193, 7, 0.03));
+}
+
+.grade-item.moderate:hover {
+  border-color: rgba(255, 193, 7, 0.5);
+  box-shadow: 0 12px 40px rgba(255, 193, 7, 0.2);
+}
+
+.grade-item.caution {
+  border-color: rgba(255, 126, 20, 0.3);
+  background: linear-gradient(135deg, rgba(255, 126, 20, 0.08), rgba(255, 126, 20, 0.03));
+}
+
+.grade-item.caution:hover {
+  border-color: rgba(255, 126, 20, 0.5);
+  box-shadow: 0 12px 40px rgba(255, 126, 20, 0.2);
+}
+
+/* Overall Grade Special Styling */
+.grade-item.overall {
+  grid-column: 3;
+  grid-row: 2;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(74, 144, 226, 0.08));
+  border: 3px solid rgba(74, 144, 226, 0.4);
+  min-height: 220px;
+  position: relative;
+}
+
+.grade-item.overall::before {
+  content: '⭐';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 1.5rem;
+  background: #4a90e2;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.grade-item.overall .circular-progress {
+  width: 90px;
+  height: 90px;
+}
+
+.grade-item.overall .progress-text {
+  font-size: 1.2rem;
+}
+
+.grade-item.overall .grade-label {
+  font-size: 1.1rem;
+  color: #4a90e2 !important;
+  font-weight: 700;
+}
+
+.grade-item.overall .grade-icon {
+  font-size: 1.8rem;
+}
+
+.grade-item.overall:hover {
+  border-color: rgba(74, 144, 226, 0.6);
+  box-shadow: 0 16px 50px rgba(74, 144, 226, 0.25);
+  transform: translateY(-10px) scale(1.03);
+}
+
+/* Tooltip Styles */
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 280px;
+  white-space: normal;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+/* Grade Color Classes */
+.grade-excellent .progress-fill { stroke: #28a745; }
+.grade-good .progress-fill { stroke: #20c997; }
+.grade-fair .progress-fill { stroke: #ffc107; }
+.grade-poor .progress-fill { stroke: #fd7e14; }
+.grade-very-poor .progress-fill { stroke: #dc3545; }
+
+.grade-excellent .progress-text { color: #28a745; }
+.grade-good .progress-text { color: #20c997; }
+.grade-fair .progress-text { color: #ffc107; }
+.grade-poor .progress-text { color: #fd7e14; }
+.grade-very-poor .progress-text { color: #dc3545; }
+
+/* Analysis Text Section */
+.analysis-text-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-text-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.analysis-text-header h2 {
+  color: #333 !important;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Animation for progress rings */
+@keyframes fillProgress {
+  from {
+    stroke-dasharray: 0 1000;
+  }
+}
+
+.circular-progress .progress-fill {
+  animation: fillProgress 1.5s ease-out;
+}
+
+/* Mobile Responsiveness for Grading */
+@media (max-width: 768px) {
+  .grading-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+  
+  .grade-item.overall {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  
+  .grade-item {
+    min-height: 180px;
+    padding: 1rem;
+  }
+  
+  .circular-progress {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .grade-item.overall .circular-progress {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .circular-progress .progress-text {
+    font-size: 0.9rem;
+  }
+  
+  .grade-item.overall .progress-text {
+    font-size: 1.1rem;
+  }
+  
+  .grade-label {
+    font-size: 0.85rem;
+  }
+  
+  .grade-description {
+    font-size: 0.75rem;
+  }
+  
+  .grade-icon {
+    font-size: 1.3rem;
+  }
+  
+  .grade-item.overall .grade-icon {
+    font-size: 1.6rem;
+  }
+  
+  .tooltip {
+    max-width: 200px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grading-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 1rem;
+  }
+  
+  .grade-item {
+    min-height: 160px;
+    padding: 1rem;
+  }
+  
+  .grade-item.overall {
+    grid-column: 1;
+    grid-row: 6;
+    min-height: 180px;
+  }
+  
+  .circular-progress {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .grade-item.overall .circular-progress {
+    width: 85px;
+    height: 85px;
+  }
+  
+  .grading-section {
+    padding: 1.5rem;
+  }
+  
+  .analysis-text-section {
+    padding: 1.5rem;
+  }
+}
+
