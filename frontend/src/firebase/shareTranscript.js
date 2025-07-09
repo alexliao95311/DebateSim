@@ -52,19 +52,34 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
     // Add to public shares collection
     await addDoc(collection(db, "publicShares"), publicShareData);
     
-    // Update the original transcript to mark it as shared
-    const transcriptRef = doc(db, "users", user.uid, "transcripts", transcriptId);
-    await updateDoc(transcriptRef, {
-      isShared: true,
-      shareId: shareId,
-      sharedAt: new Date().toISOString()
-    });
+    // Update the original transcript to mark it as shared (only if it exists in database)
+    if (transcriptId) {
+      try {
+        const transcriptRef = doc(db, "users", user.uid, "transcripts", transcriptId);
+        await updateDoc(transcriptRef, {
+          isShared: true,
+          shareId: shareId,
+          sharedAt: new Date().toISOString()
+        });
+      } catch (error) {
+        console.warn("Could not update original transcript (might be unsaved):", error);
+        // Continue anyway - the share will still work
+      }
+    } else {
+      console.log("Sharing unsaved transcript - skipping original transcript update");
+    }
 
     // Return the share URL
     const shareUrl = `${window.location.origin}/shared/${shareId}`;
     return { shareId, shareUrl };
   } catch (error) {
     console.error("Error sharing transcript:", error);
+    
+    // Provide more user-friendly error messages
+    if (error.message && error.message.includes("Cannot read properties of null")) {
+      throw new Error("Unable to share transcript. Please try again after the transcript has been saved.");
+    }
+    
     throw error;
   }
 };

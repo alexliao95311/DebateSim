@@ -3,7 +3,8 @@ import time
 import asyncio
 import logging
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ from cachetools.keys import hashkey
 from io import BytesIO
 from pdfminer.high_level import extract_text
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, AsyncGenerator
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
@@ -79,6 +80,10 @@ class JudgeFeedbackRequest(BaseModel):
     transcript: str
     model: str = DEFAULT_MODEL  # Use the global default model
 
+class AnalysisRequest(BaseModel):
+    text: str
+    model: str = DEFAULT_MODEL  # Use the global default model
+
 # Connection pooling with optimizations
 connector = aiohttp.TCPConnector(
     limit=30,
@@ -131,18 +136,25 @@ async def generate_response(request: GenerateResponseRequest):
             topic = request.prompt.strip()
             opponent_arg = ""
         
-        # Use provided bill description or fallback to topic
-        bill_description = request.bill_description if request.bill_description.strip() else topic
+        # Determine debate type based on bill_description content
+        has_bill_text = bool(request.bill_description.strip())
+        bill_description = request.bill_description if has_bill_text else topic
         
-        # Handle large bill texts for debates - truncate to avoid token limits
-        if len(bill_description) > 30000:  # Conservative limit for debates
-            logger.info(f"Bill text too long for debate ({len(bill_description)} chars), truncating for debate context")
-            # Extract key portions for debate context
+        # Determine debate type: if we have actual bill text, it's a bill debate
+        debate_type = "bill" if has_bill_text else "topic"
+        logger.info(f"Debate type determined: {debate_type} (bill_description length: {len(bill_description)} chars)")
+        
+        # Handle large bill texts for debates - extract key sections to avoid token limits
+        if has_bill_text and len(bill_description) > 30000:  # Conservative limit for debates
+            logger.info(f"Bill text too long for debate ({len(bill_description)} chars), extracting key sections for debate context")
+            # Extract key portions for debate context using intelligent extraction
+            original_length = len(bill_description)
             bill_description = extract_key_bill_sections(bill_description, 25000)
-            logger.info(f"Truncated bill text for debate: {len(bill_description)} chars")
+            logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
+            logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model
-        model_specific_debater_chain = get_debater_chain(request.model)
+        # Get a debater chain with the specified model and debate type
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type)
         
         # Call the run method
         ai_output = model_specific_debater_chain.run(
@@ -200,13 +212,41 @@ class AnalyzeLegislationRequest(BaseModel):
     model: str = DEFAULT_MODEL
 
 @app.post("/analyze-legislation")
-async def analyze_legislation(file: UploadFile = File(...), model: str = DEFAULT_MODEL):
+async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DEFAULT_MODEL)):
+    logger.info(f"Received analyze-legislation request with model: {model}")
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
     try:
+        logger.info(f"Starting PDF processing for file: {file.filename}")
         contents = await file.read()
-        # Extract text using pdfminer.six
-        text = extract_text(BytesIO(contents))
+        logger.info(f"PDF file read complete, size: {len(contents)} bytes")
+        
+        # Extract text using pdfminer.six with optimized settings
+        from pdfminer.high_level import extract_text
+        from pdfminer.layout import LAParams
+        
+        # Optimize pdfminer settings for speed
+        laparams = LAParams(
+            char_margin=2.0,
+            line_margin=0.5,
+            word_margin=0.1,
+            boxes_flow=0.5,
+            detect_vertical=False,  # Disable vertical text detection for speed
+            all_texts=False,  # Skip non-text elements
+            strip_control=True  # Strip control characters
+        )
+        
+        logger.info("Starting text extraction from PDF...")
+        start_time = time.time()
+        text = extract_text(
+            BytesIO(contents), 
+            laparams=laparams, 
+            caching=True,
+            codec='utf-8'
+        )
+        extraction_time = time.time() - start_time
+        logger.info(f"Text extraction complete in {extraction_time:.2f}s, extracted {len(text)} characters")
+        
         if not text.strip():
             raise ValueError("No extractable text found in PDF.")
     except Exception as e:
@@ -214,9 +254,29 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = DEFAULT
         raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
 
     try:
+        # Optimize large bill processing by extracting key sections once
+        processed_text = text
+        if len(text) > 40000:  # Same threshold as analyze_legislation_text
+            logger.info(f"Large bill detected ({len(text)} chars), extracting key sections once for both analysis and grading")
+            processed_text = extract_key_bill_sections(text, 40000)
+            logger.info(f"Key sections extracted: {len(processed_text)} chars")
+        
+        # Generate both analysis and grades using the processed text
+        analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+        grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
+    except Exception as e:
+        logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error analyzing legislation")
+
+    return {"analysis": analysis, "grades": grades, "extractedText": text}
+
+@app.post("/analyze-legislation-text")
+async def analyze_legislation_text_endpoint(request: AnalysisRequest):
+    """Analyze legislation text directly without PDF extraction."""
+    try:
         # Generate both analysis and grades
-        analysis = await analyze_legislation_text(text, model)
-        grades = await grade_legislation_text(text, model)
+        analysis = await analyze_legislation_text(request.text, request.model)
+        grades = await grade_legislation_text(request.text, request.model)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error analyzing legislation")
@@ -228,9 +288,35 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
     try:
+        logger.info(f"Starting PDF text extraction for file: {file.filename}")
         contents = await file.read()
-        # Extract text using pdfminer.six
-        text = extract_text(BytesIO(contents))
+        logger.info(f"PDF file read complete, size: {len(contents)} bytes")
+        
+        # Extract text using pdfminer.six with optimized settings
+        from pdfminer.high_level import extract_text
+        from pdfminer.layout import LAParams
+        
+        # Optimize pdfminer settings for speed
+        laparams = LAParams(
+            char_margin=2.0,
+            line_margin=0.5,
+            word_margin=0.1,
+            boxes_flow=0.5,
+            detect_vertical=False,  # Disable vertical text detection for speed
+            all_texts=False  # Skip non-text elements
+        )
+        
+        logger.info("Starting text extraction from PDF...")
+        start_time = time.time()
+        text = extract_text(
+            BytesIO(contents), 
+            laparams=laparams, 
+            caching=True,
+            codec='utf-8'
+        )
+        extraction_time = time.time() - start_time
+        logger.info(f"Text extraction complete in {extraction_time:.2f}s, extracted {len(text)} characters")
+        
         if not text.strip():
             raise ValueError("No extractable text found in PDF.")
     except Exception as e:
@@ -542,7 +628,7 @@ def extract_key_bill_sections(bill_text: str, max_chars: int) -> str:
     
     return result
 
-async def grade_legislation_text(bill_text: str, model: str) -> dict:
+async def grade_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> dict:
     """Grade legislation text based on the comprehensive rubric"""
     
     # Debug logging
@@ -564,7 +650,7 @@ async def grade_legislation_text(bill_text: str, model: str) -> dict:
     # Handle large bill texts
     max_chars = 35000  # Conservative limit for grading
     
-    if len(bill_text) > max_chars:
+    if not skip_extraction and len(bill_text) > max_chars:
         logger.info(f"Bill text too long for grading ({len(bill_text)} chars), using key sections")
         bill_grading_text = extract_key_bill_sections(bill_text, max_chars)
         logger.info(f"After extraction for grading: {len(bill_grading_text)} chars")
@@ -572,54 +658,29 @@ async def grade_legislation_text(bill_text: str, model: str) -> dict:
         bill_grading_text = bill_text
     
     grading_prompt = f"""
-You are an expert legislative analyst. Please evaluate the following bill according to these specific criteria and provide numerical scores (0-100) for each category.
+Rate this bill on 5 criteria (0-100 scale). Respond with ONLY valid JSON:
 
 BILL TEXT:
 {bill_grading_text}
 
-Please evaluate this bill on the following criteria and provide ONLY a JSON response with numerical scores:
+Evaluate on:
+1. Economic Impact (fiscal responsibility, cost-effectiveness)
+2. Public Benefit (benefits to citizens)
+3. Implementation Feasibility (practicality)
+4. Legal Soundness (constitutional compliance)
+5. Goal Effectiveness (achieves stated objectives)
 
-**GRADING CRITERIA:**
+Example response:
+{{
+  "economicImpact": 75,
+  "publicBenefit": 80,
+  "feasibility": 65,
+  "legalSoundness": 85,
+  "effectiveness": 70,
+  "overall": 75
+}}
 
-1. **Economic Impact (0-100)**: Evaluate fiscal responsibility, cost-effectiveness, and economic benefits
-   - 90-100: Significant positive economic benefits, clear cost-benefit analysis, minimal fiscal burden
-   - 70-89: Moderate economic benefits with acceptable costs
-   - 50-69: Mixed economic impact with some concerns
-   - 30-49: Questionable economic benefits, high costs
-   - 0-29: Severe negative economic impact
-
-2. **Public Benefit (0-100)**: Assess benefits to citizens and population impact
-   - 90-100: Addresses critical public needs, benefits large population segments
-   - 70-89: Clear public benefits with broad positive impact
-   - 50-69: Some public benefits but limited scope
-   - 30-49: Minimal public benefit, narrow impact
-   - 0-29: No clear public benefit or potential harm
-
-3. **Implementation Feasibility (0-100)**: Examine practicality of execution
-   - 90-100: Clear implementation plan, adequate resources, realistic timeline
-   - 70-89: Generally feasible with minor challenges
-   - 50-69: Possible but with significant implementation hurdles
-   - 30-49: Difficult to implement, major obstacles
-   - 0-29: Impractical or impossible to implement effectively
-
-4. **Legal Soundness (0-100)**: Review constitutional compliance and legal framework
-   - 90-100: Fully constitutional, clear legal framework
-   - 70-89: Generally sound with minor legal considerations
-   - 50-69: Some legal questions but likely defensible
-   - 30-49: Significant legal concerns
-   - 0-29: Likely unconstitutional or legally problematic
-
-5. **Goal Effectiveness (0-100)**: Measure achievement of stated objectives
-   - 90-100: Directly addresses stated problems with clear solutions
-   - 70-89: Likely to achieve most stated objectives
-   - 50-69: May achieve some goals but with limitations
-   - 30-49: Unlikely to achieve stated objectives
-   - 0-29: Does not address stated problems effectively
-
-**INSTRUCTIONS:**
-Analyze the bill text and respond with ONLY a valid JSON object containing the scores. Calculate the overall score as a weighted average emphasizing effectiveness and public benefit.
-
-Response format:
+Respond with JSON only - no explanation needed:
 {{
   "economicImpact": [score 0-100],
   "publicBenefit": [score 0-100],
@@ -640,11 +701,11 @@ Response format:
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": "You are an expert legislative analyst. Respond only with valid JSON containing numerical scores."},
+                {"role": "system", "content": "You are a legislative grader. Respond with JSON only."},
                 {"role": "user", "content": grading_prompt}
             ],
             "temperature": 0.2,  # Very low temperature for consistent grading
-            "max_tokens": 500,   # Limit response size for JSON
+            "max_tokens": 300,   # Reduced to force concise response
         }
         
         async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload) as response:
@@ -654,6 +715,13 @@ Response format:
             
             result = await response.json()
             grades_text = result["choices"][0]["message"]["content"]
+            
+            # Check if response is empty
+            if not grades_text or grades_text.strip() == "":
+                logger.error("Empty response from grading API")
+                raise ValueError("Empty response from API")
+            
+            logger.info(f"Raw grading response: {grades_text[:200]}...")
             
             # Parse JSON response
             try:
@@ -717,12 +785,16 @@ Response format:
             "overall": 67
         }
 
-async def analyze_legislation_text(bill_text: str, model: str) -> str:
+async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
     # Debug logging
     logger.info(f"Analyzing bill text with model {model}")
     logger.info(f"Bill text length for analysis: {len(bill_text)}")
+    
+    # Add progress information for large bill processing
+    if len(bill_text) > 40000:
+        logger.info(f"Bill text is large ({len(bill_text)} chars), will use intelligent extraction")
     
     # Check if bill text is unavailable from Congress.gov
     if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
@@ -752,18 +824,26 @@ Based on the bill information available:
 - **Status**: Text retrieval from official sources currently unavailable
 - **Recommendation**: Check back later or use alternative methods mentioned above
 
+---
+
+## Analysis Information
+
+**Model Used:** {model}
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Status:** Bill text unavailable
+
 *This is an automated message when official bill text cannot be retrieved from Congress.gov.*
         """.strip()
     
     # Handle large bill texts by creating a smart summary approach
     max_chars = 40000  # Conservative limit to avoid API token limits
     
-    if len(bill_text) > max_chars:
+    if not skip_extraction and len(bill_text) > max_chars:
         logger.info(f"Bill text too long ({len(bill_text)} chars), using intelligent summarization approach")
         
         # Extract key sections for analysis
         bill_analysis_text = extract_key_bill_sections(bill_text, max_chars)
-        logger.info(f"After extraction: {len(bill_analysis_text)} chars")
+        logger.info(f"After key section extraction: {len(bill_analysis_text)} chars")
         
         # Double-check: if still too long, do emergency truncation
         if len(bill_analysis_text) > max_chars:
@@ -856,7 +936,10 @@ Please ensure your analysis is objective, evidence-based, and draws directly fro
             result = await response.json()
             analysis = result["choices"][0]["message"]["content"]
             
-            return analysis
+            # Add model information to the analysis
+            analysis_with_model = f"{analysis}\n\n---\n\n## Analysis Information\n\n**Model Used:** {model}\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            
+            return analysis_with_model
             
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}")
@@ -894,12 +977,17 @@ Keep response concise and focused.
                 async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload_emergency) as response:
                     if response.status == 200:
                         result = await response.json()
-                        return result["choices"][0]["message"]["content"]
+                        emergency_analysis = result["choices"][0]["message"]["content"]
+                        
+                        # Add model information to emergency analysis
+                        emergency_analysis_with_model = f"{emergency_analysis}\n\n---\n\n## Analysis Information\n\n**Model Used:** {model}\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n**Note:** Emergency reduced analysis due to content length"
+                        
+                        return emergency_analysis_with_model
                         
             except Exception as emergency_error:
                 logger.error(f"Emergency analysis also failed: {emergency_error}")
         
-        # Return a basic fallback analysis
+        # Return a basic fallback analysis with model info
         return f"""
 # Legislative Analysis - Processing Error
 
@@ -918,6 +1006,14 @@ For a complete analysis of this large bill, consider:
 
 ## Alternative
 You can try uploading a PDF of specific sections you're most interested in analyzing, or use the debate feature to discuss particular aspects of the legislation.
+
+---
+
+## Analysis Information
+
+**Model Used:** {model}
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+**Status:** Processing error fallback
 
 *Note: This is an automated response due to processing limitations with very large bills.*
         """.strip()

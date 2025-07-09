@@ -20,6 +20,26 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+// Progress Bar Component for Streaming
+const ProgressBar = ({ step, total, message }) => {
+  const percentage = total > 0 ? (step / total) * 100 : 0;
+  
+  return (
+    <div className="progress-container">
+      <div className="progress-message">{message}</div>
+      <div className="progress-bar">
+        <div 
+          className="progress-fill" 
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+      <div className="progress-text">
+        Step {step} of {total}
+      </div>
+    </div>
+  );
+};
+
 // Circular Progress Component
 const CircularProgress = ({ percentage, size = 70, strokeWidth = 6, color = '#4a90e2' }) => {
   const radius = (size - strokeWidth) / 2;
@@ -277,11 +297,14 @@ const Legislation = ({ user }) => {
   const [billSource, setBillSource] = useState(''); // 'recommended' or 'upload'
   const [actionType, setActionType] = useState(''); // 'analyze' or 'debate'
   const [extractedBillData, setExtractedBillData] = useState(null);
+  const [extractedPdfText, setExtractedPdfText] = useState(null); // Cache for PDF text
 
   // Common states
   const [error, setError] = useState('');
   const [loadingState, setLoadingState] = useState(false);
   const [processingStage, setProcessingStage] = useState('');
+  const [progressStep, setProgressStep] = useState(0);
+  const [totalSteps, setTotalSteps] = useState(4);
 
   // Analysis state
   const [analysisResult, setAnalysisResult] = useState('');
@@ -298,6 +321,7 @@ const Legislation = ({ user }) => {
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [pdfError, setPdfError] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
 
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
@@ -454,62 +478,83 @@ const Legislation = ({ user }) => {
       .catch(err => console.error("Logout error:", err));
   };
 
-  // Step 1: Handle bill selection from recommended bills
-  const handleSelectRecommendedBill = async (bill) => {
+  // Step 1: Handle bill selection from recommended bills (lazy loading)
+  const handleSelectRecommendedBill = (bill) => {
     setSelectedBill(bill);
     setBillSource('recommended');
-    setLoadingState(true);
+    setExtractedBillData(null); // Clear previous data
+    setCurrentStep(2);
     setError('');
-    
-    try {
-      // Extract the bill text immediately when selected
-      setProcessingStage('Extracting bill text from Congress.gov...');
-      
-      const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: bill.type,
-          number: bill.number,
-          title: bill.title
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Check if bill text is unavailable
-      if (data.text && data.text.includes('Bill Text Unavailable')) {
-        setError('This bill\'s text is not yet available from Congress.gov. You can try again later or upload a PDF version if available.');
-        return;
-      }
-      
-      // Store the extracted bill data
-      setExtractedBillData({
-        text: data.text,
-        title: data.title || bill.title,
-        billCode: `${bill.type} ${bill.number}`
-      });
-      
-      setProcessingStage('Bill text extracted successfully!');
-      
-      // Move to step 2
-      setTimeout(() => {
-        setCurrentStep(2);
-      }, 1000);
-      
-    } catch (err) {
-      setError(`Error extracting bill text: ${err.message}`);
-    } finally {
-      setLoadingState(false);
-      setProcessingStage('');
+  };
+  
+  // Extract recommended bill text when needed
+  const extractRecommendedBillText = async (bill) => {
+    if (extractedBillData) {
+      return extractedBillData; // Return cached data
     }
+    
+    setProcessingStage('Extracting bill text from Congress.gov...');
+    
+    const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: bill.type,
+        number: bill.number,
+        title: bill.title
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Check if bill text is unavailable
+    if (data.text && data.text.includes('Bill Text Unavailable')) {
+      throw new Error('This bill\'s text is not yet available from Congress.gov. You can try again later or upload a PDF version if available.');
+    }
+    
+    // Cache the extracted bill data
+    const billData = {
+      text: data.text,
+      title: data.title || bill.title,
+      billCode: `${bill.type} ${bill.number}`
+    };
+    
+    setExtractedBillData(billData);
+    return billData;
+  };
+  
+  // Extract PDF text when needed
+  const extractPdfText = async (file) => {
+    if (extractedPdfText) {
+      return extractedPdfText; // Return cached text
+    }
+    
+    setProcessingStage('Extracting text from PDF...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch(`${API_URL}/extract-text`, {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to extract text from PDF');
+    }
+    
+    const data = await response.json();
+    
+    // Cache the extracted text
+    setExtractedPdfText(data.text);
+    return data.text;
   };
 
   const getActivityTypeDisplay = (item) => {
@@ -537,8 +582,15 @@ const Legislation = ({ user }) => {
   const handlePdfUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('PDF file size must be less than 10MB.');
+        return;
+      }
+      
       setSelectedBill(file);
       setBillSource('upload');
+      setExtractedPdfText(null); // Clear previous cached text
       setCurrentStep(2);
       setError('');
     } else {
@@ -564,15 +616,24 @@ const Legislation = ({ user }) => {
     setCurrentStep(3);
   };
 
-  // Step 3: Handle analysis execution
+  // Step 3: Handle analysis execution with progress updates
   const handleAnalyzeExecution = async () => {
     setLoadingState(true);
     setError('');
+    setProgressStep(0);
+    setTotalSteps(3);
     
     try {
       if (billSource === 'recommended') {
-        // Use the extracted bill data for recommended bills
+        // Step 1: Extract bill text if not already cached
+        setProcessingStage('Fetching bill text from Congress.gov...');
+        setProgressStep(1);
+        
+        const billData = await extractRecommendedBillText(selectedBill);
+        
+        // Step 2: Analyze legislation
         setProcessingStage('Analyzing legislation with AI...');
+        setProgressStep(2);
         
         const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
           method: "POST",
@@ -592,6 +653,11 @@ const Legislation = ({ user }) => {
         }
         
         const data = await response.json();
+        
+        // Step 3: Finalizing
+        setProcessingStage('Finalizing analysis and grades...');
+        setProgressStep(3);
+        
         setAnalysisResult(data.analysis);
         
         // Set grades from API response
@@ -599,7 +665,7 @@ const Legislation = ({ user }) => {
           setAnalysisGrades(data.grades);
         }
         
-        // Save analysis to history
+        // Save analysis to history with model info
         if (user && !user.isGuest) {
           try {
             await saveTranscriptToUser(
@@ -607,7 +673,8 @@ const Legislation = ({ user }) => {
               `Bill Analysis: ${selectedBill.title}`,
               'analysis',
               'Analyze Bill',
-              data.grades
+              data.grades,
+              selectedModel
             );
             await fetchHistory();
           } catch (err) {
@@ -616,40 +683,88 @@ const Legislation = ({ user }) => {
         }
         
       } else {
-        // Handle uploaded PDF analysis
-        const formData = new FormData();
-        formData.append('file', selectedBill);
-        formData.append('model', selectedModel);
+        // Handle uploaded PDF analysis - use cached text if available
+        let analysisData;
         
-        setProcessingStage('Extracting text from PDF...');
-        
-        const response = await fetch(`${API_URL}/analyze-legislation`, {
-          method: "POST",
-          body: formData,
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+        if (extractedPdfText) {
+          // Use cached text
+          setProcessingStage('Using cached PDF text...');
+          setProgressStep(1);
+          
+          setProcessingStage('Analyzing legislation with AI...');
+          setProgressStep(2);
+          
+          const response = await fetch(`${API_URL}/analyze-legislation-text`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text: extractedPdfText,
+              model: selectedModel
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+          
+          analysisData = await response.json();
+          
+          setProcessingStage('Finalizing results...');
+          setProgressStep(3);
+          
+        } else {
+          // Extract and analyze PDF
+          setProcessingStage('Processing PDF file...');
+          setProgressStep(1);
+          
+          const formData = new FormData();
+          formData.append('file', selectedBill);
+          formData.append('model', selectedModel);
+          
+          setProcessingStage('Analyzing legislation with AI...');
+          setProgressStep(2);
+          
+          const response = await fetch(`${API_URL}/analyze-legislation`, {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+          
+          analysisData = await response.json();
+          
+          setProcessingStage('Finalizing results...');
+          setProgressStep(3);
+          
+          // Cache extracted text for future use
+          if (analysisData.extractedText) {
+            setExtractedPdfText(analysisData.extractedText);
+          }
         }
         
-        const data = await response.json();
-        setAnalysisResult(data.analysis);
+        setAnalysisResult(analysisData.analysis);
         
         // Set grades from API response
-        if (data.grades) {
-          setAnalysisGrades(data.grades);
+        if (analysisData.grades) {
+          setAnalysisGrades(analysisData.grades);
         }
         
-        // Save analysis to history
+        // Save analysis to history with model info
         if (user && !user.isGuest) {
           try {
             await saveTranscriptToUser(
-              data.analysis,
+              analysisData.analysis,
               `Bill Analysis: ${selectedBill.name}`,
               'analysis',
               'Analyze Bill',
-              data.grades
+              analysisData.grades,
+              selectedModel
             );
             await fetchHistory();
           } catch (err) {
@@ -663,6 +778,7 @@ const Legislation = ({ user }) => {
     } finally {
       setLoadingState(false);
       setProcessingStage('');
+      setProgressStep(0);
     }
   };
 
@@ -744,11 +860,36 @@ const Legislation = ({ user }) => {
     setBillSource('');
     setActionType('');
     setExtractedBillData(null);
+    setExtractedPdfText(null); // Clear cached PDF text
     setAnalysisResult('');
     setAnalysisGrades(null);
     setDebateTopic('');
     setDebateMode('');
     setError('');
+    setLoadingState(false);
+    setProcessingStage('');
+    setProgressStep(0);
+  };
+
+  // Handle sharing current analysis
+  const handleShareAnalysis = () => {
+    if (!analysisResult) return;
+    
+    // Create a transcript-like object for sharing
+    const analysisTranscript = {
+      transcript: analysisResult,
+      topic: billSource === 'recommended' ? 
+        `Bill Analysis: ${selectedBill.title}` : 
+        `Bill Analysis: ${selectedBill.name}`,
+      mode: 'analysis',
+      activityType: 'Analyze Bill',
+      grades: analysisGrades,
+      model: selectedModel,
+      createdAt: new Date().toISOString()
+    };
+    
+    setSelectedHistory(analysisTranscript);
+    setShowAnalysisShareModal(true);
   };
 
   return (
@@ -813,7 +954,14 @@ const Legislation = ({ user }) => {
                 >
                   📤
                 </button>
-                <h2>{selectedHistory.topic || "Untitled Activity"}</h2>
+                <div className="modal-header-content">
+                  <h2>{selectedHistory.topic || "Untitled Activity"}</h2>
+                  {selectedHistory.model && (
+                    <div className="modal-model-info">
+                      Model: {selectedHistory.model}
+                    </div>
+                  )}
+                </div>
                 <button className="modal-header-close" onClick={() => setSelectedHistory(null)}>
                   ❌
                 </button>
@@ -877,6 +1025,16 @@ const Legislation = ({ user }) => {
             onClose={() => setShowShareModal(false)}
             transcript={selectedHistory}
             transcriptId={selectedHistory.id}
+          />
+        )}
+        
+        {/* Share Modal for Current Analysis */}
+        {selectedHistory && (
+          <ShareModal 
+            isOpen={showAnalysisShareModal}
+            onClose={() => setShowAnalysisShareModal(false)}
+            transcript={selectedHistory}
+            transcriptId={null} // No ID for current analysis
           />
         )}
       </header>
@@ -968,7 +1126,13 @@ const Legislation = ({ user }) => {
                   <div className="loading-text">
                     <div className="loading-main">Processing bill...</div>
                     {processingStage && (
-                      <div className="loading-stage">{processingStage}</div>
+                      <div className="loading-stage">
+                        <ProgressBar 
+                          step={progressStep} 
+                          total={totalSteps} 
+                          message={processingStage} 
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1159,7 +1323,13 @@ const Legislation = ({ user }) => {
                       {actionType === 'analyze' ? 'Analyzing bill...' : 'Processing bill...'}
                     </div>
                     {processingStage && (
-                      <div className="loading-stage">{processingStage}</div>
+                      <div className="loading-stage">
+                        <ProgressBar 
+                          step={progressStep} 
+                          total={totalSteps} 
+                          message={processingStage} 
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1173,9 +1343,14 @@ const Legislation = ({ user }) => {
             <div className="results-section">
               <div className="results-header">
                 <h2>Analysis Results</h2>
-                <button className="new-analysis-btn" onClick={resetFlow}>
-                  Start New Analysis
-                </button>
+                <div className="results-actions">
+                  <button className="share-analysis-btn" onClick={handleShareAnalysis}>
+                    📤 Share Analysis
+                  </button>
+                  <button className="new-analysis-btn" onClick={resetFlow}>
+                    Start New Analysis
+                  </button>
+                </div>
               </div>
               
               {/* Grading Infographic Section */}
@@ -1205,6 +1380,13 @@ const Legislation = ({ user }) => {
                     {analysisResult}
                   </ReactMarkdown>
                 </div>
+              </div>
+              
+              {/* Share button at the bottom */}
+              <div className="analysis-bottom-actions">
+                <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
+                  📤 Share This Analysis
+                </button>
               </div>
             </div>
           )}
@@ -1251,6 +1433,11 @@ const Legislation = ({ user }) => {
             {selectedHistory.activityType && (
               <p style={{ fontSize: "12pt", color: "#666" }}>
                 Activity Type: {selectedHistory.activityType}
+              </p>
+            )}
+            {selectedHistory.model && (
+              <p style={{ fontSize: "12pt", color: "#666" }}>
+                Model: {selectedHistory.model}
               </p>
             )}
             <p style={{ fontSize: "10pt", color: "#999" }}>

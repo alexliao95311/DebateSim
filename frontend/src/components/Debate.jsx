@@ -24,7 +24,7 @@ function sanitizeUserInput(str) {
 
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, debateMode, topic, description, billText, billTitle } = useLocation().state || {};
+  const { mode, debateMode, topic, description, billText, billTitle, selectedModel } = useLocation().state || {};
   const navigate = useNavigate();
   
   // For bill debates, use billText as description if available
