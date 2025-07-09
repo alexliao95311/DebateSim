@@ -548,6 +548,32 @@ const Legislation = ({ user }) => {
     return 'type-default';
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredBills, setFilteredBills] = useState([]);
+
+  useEffect(() => {
+    setFilteredBills(recommendedBills);
+  }, [recommendedBills]);
+
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) {
+      setFilteredBills(recommendedBills);
+      return;
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+
+    const filtered = recommendedBills.filter((bill) => {
+      return (
+        (bill.title && bill.title.toLowerCase().includes(query)) ||
+        (bill.type && bill.type.toLowerCase().includes(query)) ||
+        (bill.number && bill.number.toLowerCase().includes(query)) ||
+        (bill.sponsor && bill.sponsor.toLowerCase().includes(query))
+      );
+    });
+    setFilteredBills(filtered);
+  };
+
   return (
     <div className="legislation-container">
       <header className="home-header">
@@ -773,6 +799,29 @@ const Legislation = ({ user }) => {
           <button type="submit">
             {viewMode === "analyze" ? "Submit Analysis" : "Extract Bill Text"}
           </button>
+          <div className="search-bar-container" style={{ marginTop: "1rem" }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for a bill by title, topic, or number..."
+              className="search-bar"
+              style={{
+                width: "100%",
+                padding: "0.75rem 1rem",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                fontSize: "1rem",
+                marginTop: "0.5rem",
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearchSubmit();
+                }
+              }}
+            />
+          </div>
         </form>
         {loadingState && (
           <div className="loading-container">
