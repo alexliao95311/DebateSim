@@ -262,6 +262,9 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
             processed_text = extract_key_bill_sections(text, 40000)
             logger.info(f"Key sections extracted: {len(processed_text)} chars")
         
+        # Log consolidated processing info
+        logger.info(f"Processing bill with model {model} - text length: {len(processed_text)} chars")
+        
         # Generate both analysis and grades using the processed text
         analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
         grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
@@ -275,9 +278,12 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
 async def analyze_legislation_text_endpoint(request: AnalysisRequest):
     """Analyze legislation text directly without PDF extraction."""
     try:
-        # Generate both analysis and grades
-        analysis = await analyze_legislation_text(request.text, request.model)
-        grades = await grade_legislation_text(request.text, request.model)
+        # Log consolidated processing info
+        logger.info(f"Processing text input with model {request.model} - text length: {len(request.text)} chars")
+        
+        # Generate both analysis and grades (skip redundant logging since this is direct text input)
+        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True)
+        grades = await grade_legislation_text(request.text, request.model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error analyzing legislation")
@@ -632,9 +638,10 @@ def extract_key_bill_sections(bill_text: str, max_chars: int) -> str:
 async def grade_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> dict:
     """Grade legislation text based on the comprehensive rubric"""
     
-    # Debug logging
-    logger.info(f"Grading bill text with model {model}")
-    logger.info(f"Bill text length for grading: {len(bill_text)}")
+    # Debug logging (reduced when called together with analysis)
+    if not skip_extraction:
+        logger.info(f"Grading bill text with model {model}")
+        logger.info(f"Bill text length for grading: {len(bill_text)}")
     
     # Check if bill text is unavailable
     if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
@@ -720,7 +727,7 @@ IMPORTANT:
                 logger.error("Empty response from grading API")
                 raise ValueError("Empty response from API")
             
-            logger.info(f"Raw grading response: {grades_text[:500]}...")
+            logger.info(f"Raw grading response: {grades_text[:200]}...")
             
             # Parse JSON response
             try:
@@ -740,7 +747,7 @@ IMPORTANT:
                     match = re.search(pattern, grades_text, re.DOTALL | re.IGNORECASE)
                     if match:
                         grades_json = match.group(0)
-                        logger.info(f"Found JSON with pattern: {pattern}")
+                        logger.debug(f"Found JSON with pattern: {pattern}")
                         break
                 
                 if not grades_json:
@@ -753,7 +760,7 @@ IMPORTANT:
                 grades_json = re.sub(r'^[^{]*', '', grades_json)  # Remove text before first {
                 grades_json = re.sub(r'}[^}]*$', '}', grades_json)  # Remove text after last }
                 
-                logger.info(f"Attempting to parse JSON: {grades_json}")
+                logger.debug(f"Attempting to parse JSON: {grades_json}")
                 grades = json.loads(grades_json)
                 
                 # Validate and ensure all keys exist with proper ranges
@@ -821,13 +828,14 @@ IMPORTANT:
 async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
-    # Debug logging
-    logger.info(f"Analyzing bill text with model {model}")
-    logger.info(f"Bill text length for analysis: {len(bill_text)}")
-    
-    # Add progress information for large bill processing
-    if len(bill_text) > 40000:
-        logger.info(f"Bill text is large ({len(bill_text)} chars), will use intelligent extraction")
+    # Debug logging (reduced when called together with grading)
+    if not skip_extraction:
+        logger.info(f"Analyzing bill text with model {model}")
+        logger.info(f"Bill text length for analysis: {len(bill_text)}")
+        
+        # Add progress information for large bill processing
+        if len(bill_text) > 40000:
+            logger.info(f"Bill text is large ({len(bill_text)} chars), will use intelligent extraction")
     
     # Check if bill text is unavailable from Congress.gov
     if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
@@ -1188,9 +1196,12 @@ async def analyze_recommended_bill(request: dict):
         logger.info(f"Fetched bill text length: {len(full_bill_text)}")
         logger.info(f"Bill text preview: {full_bill_text[:200]}...")
         
-        # Generate both analysis and grades
-        analysis = await analyze_legislation_text(full_bill_text, model)
-        grades = await grade_legislation_text(full_bill_text, model)
+        # Log consolidated processing info
+        logger.info(f"Processing recommended bill {bill_title} with model {model}")
+        
+        # Generate both analysis and grades (skip redundant extraction since we have full text)
+        analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True)
+        grades = await grade_legislation_text(full_bill_text, model, skip_extraction=True)
         
         return {"analysis": analysis, "grades": grades}
         

@@ -833,20 +833,60 @@ const Legislation = ({ user }) => {
         setLoadingState(false);
         return;
       }
+    } else if (billSource === 'recommended' && selectedBill) {
+      // For recommended bills, extract text first
+      setLoadingState(true);
+      try {
+        setProcessingStage('Extracting bill text from Congress.gov...');
+        
+        const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: selectedBill.type,
+            number: selectedBill.number,
+            title: selectedBill.title
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to extract bill text');
+        }
+        
+        const data = await response.json();
+        
+        console.log('Navigating to debate with recommended bill text length:', data.text.length);
+        console.log('Bill title:', data.title);
+        
+        navigate('/debate', {
+          state: {
+            mode: 'bill-debate',
+            topic: debateTopic,
+            billText: data.text,
+            billTitle: data.title,
+            debateMode: debateMode
+          }
+        });
+        
+        setLoadingState(false);
+        
+      } catch (err) {
+        setError(`Error extracting bill text: ${err.message}`);
+        setLoadingState(false);
+        return;
+      }
     } else {
-      // For recommended bills, use pre-extracted text
-      const billText = extractedBillData?.text || '';
-      const billTitle = extractedBillData?.title || debateTopic;
-      
-      console.log('Navigating to debate with bill text length:', billText.length);
-      console.log('Bill title:', billTitle);
+      // For other cases or if no bill is selected, treat as topic debate
+      console.log('Navigating to topic debate mode');
       
       navigate('/debate', {
         state: {
           mode: 'bill-debate',
           topic: debateTopic,
-          billText: billText,
-          billTitle: billTitle,
+          billText: '',
+          billTitle: debateTopic,
           debateMode: debateMode
         }
       });
