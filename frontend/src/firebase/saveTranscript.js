@@ -4,13 +4,16 @@ import { auth } from "./firebaseConfig"; // Adjust the path if needed
 
 const db = getFirestore();
 
-export const saveTranscriptToUser = async (transcript, topic = null, mode = null, activityType = null) => {
+export const saveTranscriptToUser = async (transcript, topic = null, mode = null, activityType = null, grades = null, model = null) => {
   // Get the current logged-in user
   const user = auth.currentUser;
   if (!user) {
     console.error("User is not logged in!");
     return;
   }
+  
+  // Debug logging
+  console.log("Saving transcript with model:", model);
   
   try {
     // Create a reference to the user's transcripts subcollection
@@ -22,10 +25,15 @@ export const saveTranscriptToUser = async (transcript, topic = null, mode = null
       createdAt: new Date().toISOString(),
     };
     
-    // Add topic, mode, and activityType if provided
+    // Add topic, mode, activityType, grades, and model if provided
     if (topic) documentData.topic = topic;
     if (mode) documentData.mode = mode;
     if (activityType) documentData.activityType = activityType;
+    if (grades) documentData.grades = grades;
+    if (model) documentData.model = model;
+    
+    // Debug logging
+    console.log("Document data to save:", documentData);
 
     await addDoc(transcriptsRef, documentData);
     console.log(`${activityType || mode || 'Activity'} saved successfully!`);

@@ -7,6 +7,7 @@ import DebateSim from "./components/DebateSim";
 import Debate from "./components/Debate";
 import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
+import PublicTranscriptView from "./components/PublicTranscriptView";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -42,8 +43,22 @@ function App() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading...</div>
+      <div 
+        className="main-loading-container"
+        style={{
+          backgroundColor: '#ededed',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}
+      >
+        <div className="main-loading-text">Loading...</div>
       </div>
     );
   }
@@ -51,6 +66,9 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public route for shared transcripts - accessible without login */}
+        <Route path="/shared/:shareId" element={<PublicTranscriptView />} />
+        
         {!user ? (
           <Route path="*" element={<Login onLogin={setUser} />} />
         ) : (

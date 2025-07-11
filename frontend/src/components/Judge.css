@@ -239,6 +239,8 @@ hr.divider {
   display: flex;
   gap: 1rem;
   margin-top: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .button-group button {
@@ -260,6 +262,23 @@ hr.divider {
 }
 
 .download-button:disabled {
+  background-color: #a3c5e9;
+  cursor: not-allowed;
+}
+
+.share-button {
+  background-color: #28a745;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.share-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.share-button:disabled {
   background-color: #a3c5e9;
   cursor: not-allowed;
 }

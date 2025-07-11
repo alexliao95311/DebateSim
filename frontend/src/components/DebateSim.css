@@ -284,6 +284,7 @@
     background-color: #f9f9f9;
 }
 
+
 .history-sidebar button {
     margin-top: 1rem;
     width: 100%;
@@ -334,14 +335,14 @@
     margin-top: 1rem;
     padding: 0.5rem 1rem;
     border: none;
-    background-color: #4a90e2;
+    background-color: #ffffff;
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
 }
 
 .modal-content button:hover {
-    background-color: #357abd;
+    background-color: #d9dde2;
 }
 
 .transcript-viewer {
@@ -488,15 +489,44 @@
     color: #333;
 }
 
-/* Modal Close Button */
-.modal-close {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: transparent;
-    border: none;
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.modal-header h2 {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+    color: #000 !important;
     font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal-header-share,
+.modal-header-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
     cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+.modal-header-share:hover,
+.modal-header-close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
     color: #333;
 }
 
@@ -517,6 +547,15 @@
     transition: all 0.2s ease;
 }
 
+.modal-button-group .share-button {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.modal-button-group .share-button:hover {
+    background-color: #357abd;
+}
+
 .modal-button-group .download-button {
     background-color: #4a90e2;
     color: white;
@@ -527,12 +566,13 @@
 }
 
 .modal-button-group .close-button {
-    background-color: #6c757d;
+    background-color: #4a90e2;
     color: white;
+    font-size: 0.95rem;
 }
 
 .modal-button-group .close-button:hover {
-    background-color: #5a6268;
+    background-color: #357abd;
 }
 
 /* Bottom Text Styles */
@@ -572,4 +612,70 @@
 .selected-mode {
     border: 4px solid #4a90e2 !important;
     background-color: #88afd8 !important;
+}
+
+/* =============================== */
+/*      HISTORY ITEM STYLES        */
+/* =============================== */
+
+.history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.history-title {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.history-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.history-type {
+    color: white;
+    padding: 0.15rem 0.4rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* Color coding for different activity types */
+.history-type.type-analyze {
+    background: #28a745; /* Green for analysis */
+}
+
+.history-type.type-bill-debate {
+    background: #dc3545; /* Red for bill debates */
+}
+
+.history-type.type-topic-debate {
+    background: #6f42c1; /* Purple for topic debates */
+}
+
+.history-type.type-ai-vs-ai {
+    background: #fd7e14; /* Orange for AI vs AI */
+}
+
+.history-type.type-ai-vs-user {
+    background: #20c997; /* Teal for AI vs User */
+}
+
+.history-type.type-user-vs-user {
+    background: #6c757d; /* Gray for User vs User */
+}
+
+.history-type.type-default {
+    background: #4a90e2; /* Blue as fallback */
+}
+
+.history-date {
+    font-size: 0.75rem;
+    color: #666;
 }

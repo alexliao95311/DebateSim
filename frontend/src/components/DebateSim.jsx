@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { jsPDF } from "jspdf";
+import ShareModal from "./ShareModal";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {
@@ -15,6 +16,7 @@ function DebateSim({ user }) {
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null); // New state for selected history item
   const [pdfError, setPdfError] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const pdfContentRef = useRef(null);
@@ -61,6 +63,28 @@ function DebateSim({ user }) {
         navigate("/");
       })
       .catch((err) => console.error("Logout error:", err));
+  };
+
+  // Helper functions for color-coded activity types (matching Legislation.jsx)
+  const getActivityTypeDisplay = (item) => {
+    if (item.activityType === 'Analyze Bill') return 'Analyze Bill';
+    if (item.activityType === 'Debate Bill') return 'Bill Debate';
+    if (item.activityType === 'Debate Topic') return 'Topic Debate';
+    if (item.mode === 'bill-debate') return 'Bill Debate';
+    if (item.mode === 'ai-vs-ai') return 'AI vs AI';
+    if (item.mode === 'ai-vs-user') return 'AI vs User';
+    if (item.mode === 'user-vs-user') return 'User vs User';
+    return 'Debate';
+  };
+
+  const getActivityTypeClass = (item) => {
+    if (item.activityType === 'Analyze Bill') return 'type-analyze';
+    if (item.activityType === 'Debate Bill' || item.mode === 'bill-debate') return 'type-bill-debate';
+    if (item.activityType === 'Debate Topic') return 'type-topic-debate';
+    if (item.mode === 'ai-vs-ai') return 'type-ai-vs-ai';
+    if (item.mode === 'ai-vs-user') return 'type-ai-vs-user';
+    if (item.mode === 'user-vs-user') return 'type-user-vs-user';
+    return 'type-default';
   };
 
   const handleDownloadPDF = () => {
@@ -210,8 +234,15 @@ function DebateSim({ user }) {
                   onClick={() => setSelectedHistory(item)}
                   title="Click to view full transcript"
                 >
-                  {item.topic ? item.topic : "Untitled Topic"} -{" "}
-                  {new Date(item.createdAt).toLocaleDateString()}
+                  <div className="history-item">
+                    <div className="history-title">{item.topic || "Untitled Topic"}</div>
+                    <div className="history-meta">
+                      <span className={`history-type ${getActivityTypeClass(item)}`}>
+                        {getActivityTypeDisplay(item)}
+                      </span>
+                      <span className="history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </li>
               ))
             ) : (
@@ -226,10 +257,19 @@ function DebateSim({ user }) {
       {selectedHistory && (
         <div className="history-modal">
           <div className="modal-content">
-            <button className="modal-close" onClick={() => setSelectedHistory(null)}>
-              &times;
-            </button>
-            <h2>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
+            <div className="modal-header">
+              <button 
+                className="modal-header-share" 
+                onClick={() => setShowShareModal(true)}
+                title="Share this transcript"
+              >
+                📤
+              </button>
+              <h2>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
+              <button className="modal-header-close" onClick={() => setSelectedHistory(null)}>
+                ❌
+              </button>
+            </div>
             <div className="transcript-viewer">
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
@@ -257,20 +297,36 @@ function DebateSim({ user }) {
             {pdfError && <p className="error-text">{pdfError}</p>}
             <div className="modal-button-group">
               <button 
+                className="share-button" 
+                onClick={() => setShowShareModal(true)}
+              >
+                📤 Share
+              </button>
+              <button 
                 className="download-button" 
                 onClick={handleDownloadPDF}
               >
-                Download as PDF
+                📄 Download PDF
               </button>
               <button 
                 className="close-button" 
                 onClick={() => setSelectedHistory(null)}
               >
-                Close
+                ❌ Close
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {selectedHistory && (
+        <ShareModal 
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          transcript={selectedHistory}
+          transcriptId={selectedHistory.id}
+        />
       )}
 
       {/* Hidden PDF content for export */}
