@@ -403,56 +403,7 @@ bills_cache = TTLCache(maxsize=50, ttl=3600)  # Cache for 1 hour
 
 async def fetch_congress_bills() -> List[Dict[str, Any]]:
     """Fetch current bills from Congress.gov API"""
-    if not CONGRESS_API_KEY:
-        # Return mock data if no API key
-        return [
-            {
-                "id": "hr1234-119",
-                "title": "American Innovation and Manufacturing Act of 2025",
-                "type": "HR",
-                "number": "1234",
-                "sponsor": "Rep. Smith (D-CA)",
-                "lastAction": "Passed House",
-                "description": "A bill to promote innovation in American manufacturing, strengthen domestic supply chains, and create jobs in emerging technologies including renewable energy and advanced materials."
-            },
-            {
-                "id": "s5678-119",
-                "title": "Climate Resilience Infrastructure Act of 2025",
-                "type": "S",
-                "number": "5678",
-                "sponsor": "Sen. Johnson (R-TX)",
-                "lastAction": "Committee Review",
-                "description": "Comprehensive legislation to improve infrastructure resilience to climate change impacts, including funding for flood protection, wildfire prevention, and extreme weather preparedness."
-            },
-            {
-                "id": "hr9999-119",
-                "title": "Digital Privacy Protection Act of 2025",
-                "type": "HR",
-                "number": "9999",
-                "sponsor": "Rep. Williams (D-NY)",
-                "lastAction": "Introduced",
-                "description": "A comprehensive bill to protect consumer data privacy, regulate data collection practices by tech companies, and establish a federal data protection agency."
-            },
-            {
-                "id": "s2468-119",
-                "title": "Healthcare Access and Affordability Act",
-                "type": "S",
-                "number": "2468",
-                "sponsor": "Sen. Davis (R-FL)",
-                "lastAction": "Markup Scheduled",
-                "description": "Legislation to expand healthcare access in rural areas, reduce prescription drug costs, and improve mental health services nationwide."
-            },
-            {
-                "id": "hr1357-119",
-                "title": "Education Equity and Innovation Act",
-                "type": "HR",
-                "number": "1357",
-                "sponsor": "Rep. Garcia (D-TX)",
-                "lastAction": "Subcommittee Review",
-                "description": "A bill to improve educational outcomes by increasing funding for underserved schools, expanding STEM programs, and supporting teacher training initiatives."
-            }
-        ]
-    
+   
     # Use cached result if available
     cache_key = "congress_bills_current"
     if cache_key in bills_cache:
