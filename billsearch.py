@@ -89,8 +89,8 @@ class BillSearcher:
         
         results = []
         
-        # Search current and previous Congress (most relevant)
-        congress_sessions = [119, 118]  # Current and previous only
+        # Search current and recent Congress sessions (most relevant first)
+        congress_sessions = [119, 118, 117, 116]  # Current and recent sessions
         
         for congress in congress_sessions:
             if len(results) >= limit:
@@ -120,7 +120,7 @@ class BillSearcher:
                             break
                         
                         if self._is_relevant_match(bill, query):
-                            processed_bill = self._process_bill_fast(bill)
+                            processed_bill = self._process_bill_fast(bill, congress)
                             if processed_bill:
                                 results.append(processed_bill)
                 
@@ -189,7 +189,7 @@ class BillSearcher:
                         break
                     
                     if self._matches_keyword(bill, keyword):
-                        processed_bill = self._process_bill_fast(bill)
+                        processed_bill = self._process_bill_fast(bill, self.current_congress)
                         if processed_bill:
                             results.append(processed_bill)
             
@@ -247,7 +247,7 @@ class BillSearcher:
         
         return False
     
-    def _process_bill_fast(self, bill: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _process_bill_fast(self, bill: Dict[str, Any], congress_num: int = None) -> Optional[Dict[str, Any]]:
         """Fast bill processing - minimal data transformation"""
         try:
             bill_type = bill.get("type", "").upper()
@@ -283,8 +283,8 @@ class BillSearcher:
             if len(description) > 200:
                 description = description[:197] + "..."
             
-            # Get congress info
-            congress = bill.get("congress", self.current_congress)
+            # Get congress info - use provided congress_num or fallback to bill data or current
+            congress = congress_num or bill.get("congress", self.current_congress)
             
             return {
                 "id": f"{bill_type}{bill_number}-{congress}",

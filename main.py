@@ -1012,7 +1012,10 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
         }
         
         async with session.get(url, params=params) as response:
-            if response.status != 200:
+            if response.status == 404:
+                logger.error(f"Bill text not found: {bill_type} {bill_number}")
+                raise ValueError("No text versions available for this bill")
+            elif response.status != 200:
                 logger.error(f"Congress API error fetching bill text: {response.status}")
                 raise HTTPException(status_code=500, detail="Error fetching bill text from Congress API")
             
@@ -1070,6 +1073,9 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
             
             return clean_text
             
+    except HTTPException:
+        # Let HTTPException propagate up without re-raising as RuntimeError
+        raise
     except Exception as e:
         logger.error(f"Error fetching bill text for {bill_type} {bill_number}: {e}")
         raise RuntimeError(f"Failed to fetch bill text for {bill_type} {bill_number}: {str(e)}")
@@ -1080,13 +1086,16 @@ async def analyze_recommended_bill(request: dict):
     try:
         bill_type = request.get("type", "").upper()
         bill_number = request.get("number", "")
+        congress = request.get("congress", 119)  # Default to current congress
         model = request.get("model", DEFAULT_MODEL)
         
         if not bill_type or not bill_number:
             raise HTTPException(status_code=400, detail="Bill type and number are required")
         
+        logger.info(f"Analyzing bill {bill_type} {bill_number} from {congress}th Congress")
+        
         # Fetch the full bill text
-        bill_text = await fetch_bill_text(bill_type, bill_number)
+        bill_text = await fetch_bill_text(bill_type, bill_number, congress)
         
         # Add bill title like the extract endpoint does
         bill_title = f"{bill_type} {bill_number}"
@@ -1115,6 +1124,15 @@ async def analyze_recommended_bill(request: dict):
         
         return {"analysis": analysis, "grades": grades}
         
+    except RuntimeError as e:
+        # Check if this is a "no text versions available" error or 404 error
+        error_str = str(e)
+        if "No text versions available" in error_str or "404 Not Found" in error_str:
+            logger.error(f"No text available for bill {bill_type} {bill_number}")
+            raise HTTPException(status_code=404, detail="No bill text available yet. This bill may not have been published or may still be in draft form.")
+        else:
+            logger.error(f"Error fetching bill text: {e}")
+            raise HTTPException(status_code=500, detail="Error fetching bill text from Congress API")
     except Exception as e:
         logger.error(f"Error analyzing recommended bill: {e}")
         raise HTTPException(status_code=500, detail="Error analyzing bill")
@@ -1164,13 +1182,16 @@ async def grade_recommended_bill(request: dict):
     try:
         bill_type = request.get("type", "").upper()
         bill_number = request.get("number", "")
+        congress = request.get("congress", 119)  # Default to current congress
         model = request.get("model", DEFAULT_MODEL)
         
         if not bill_type or not bill_number:
             raise HTTPException(status_code=400, detail="Bill type and number are required")
         
+        logger.info(f"Grading bill {bill_type} {bill_number} from {congress}th Congress")
+        
         # Fetch the full bill text
-        bill_text = await fetch_bill_text(bill_type, bill_number)
+        bill_text = await fetch_bill_text(bill_type, bill_number, congress)
         
         # Add bill title
         bill_title = f"{bill_type} {bill_number}"
@@ -1181,6 +1202,15 @@ async def grade_recommended_bill(request: dict):
         
         return {"grades": grades}
         
+    except RuntimeError as e:
+        # Check if this is a "no text versions available" error or 404 error
+        error_str = str(e)
+        if "No text versions available" in error_str or "404 Not Found" in error_str:
+            logger.error(f"No text available for bill {bill_type} {bill_number}")
+            raise HTTPException(status_code=404, detail="No bill text available yet. This bill may not have been published or may still be in draft form.")
+        else:
+            logger.error(f"Error fetching bill text: {e}")
+            raise HTTPException(status_code=500, detail="Error fetching bill text from Congress API")
     except Exception as e:
         logger.error(f"Error grading recommended bill: {e}")
         raise HTTPException(status_code=500, detail="Error grading bill")
@@ -1191,19 +1221,31 @@ async def extract_recommended_bill_text(request: dict):
     try:
         bill_type = request.get("type", "").upper()
         bill_number = request.get("number", "")
+        congress = request.get("congress", 119)  # Default to current congress
         bill_title = request.get("title", f"{bill_type} {bill_number}")
         
         if not bill_type or not bill_number:
             raise HTTPException(status_code=400, detail="Bill type and number are required")
         
+        logger.info(f"Extracting text for bill {bill_type} {bill_number} from {congress}th Congress")
+        
         # Fetch the full bill text
-        bill_text = await fetch_bill_text(bill_type, bill_number)
+        bill_text = await fetch_bill_text(bill_type, bill_number, congress)
         
         return {
             "text": f"{bill_title}\n\n{bill_text}",
             "title": bill_title
         }
         
+    except RuntimeError as e:
+        # Check if this is a "no text versions available" error or 404 error
+        error_str = str(e)
+        if "No text versions available" in error_str or "404 Not Found" in error_str:
+            logger.error(f"No text available for bill {bill_type} {bill_number}")
+            raise HTTPException(status_code=404, detail="No bill text available yet. This bill may not have been published or may still be in draft form.")
+        else:
+            logger.error(f"Error fetching bill text: {e}")
+            raise HTTPException(status_code=500, detail="Error fetching bill text from Congress API")
     except Exception as e:
         logger.error(f"Error extracting recommended bill text: {e}")
         raise HTTPException(status_code=500, detail="Error extracting bill text")
@@ -1258,3 +1300,94 @@ async def search_suggestions(request: BillSuggestionsRequest):
     except Exception as e:
         logger.error(f"Error in /search-suggestions endpoint: {e}")
         raise HTTPException(status_code=500, detail="Error getting search suggestions")
+
+# Bill link extraction models
+class BillFromUrlRequest(BaseModel):
+    congress: int
+    type: str
+    number: str
+    url: str
+
+@app.post("/extract-bill-from-url")
+async def extract_bill_from_url(request: BillFromUrlRequest):
+    """Extract bill information from Congress.gov URL"""
+    try:
+        if not CONGRESS_API_KEY:
+            raise HTTPException(status_code=500, detail="Congress API key not available")
+        
+        logger.info(f"Extracting bill info from URL: {request.type} {request.number} from {request.congress}th Congress")
+        logger.debug(f"Request data: congress={request.congress}, type={request.type}, number={request.number}")
+        
+        # Fetch bill information from Congress.gov API
+        url = f"https://api.congress.gov/v3/bill/{request.congress}/{request.type.lower()}/{request.number}"
+        logger.debug(f"Congress API URL: {url}")
+        
+        params = {
+            "api_key": CONGRESS_API_KEY,
+            "format": "json"
+        }
+        
+        async with session.get(url, params=params) as response:
+            logger.debug(f"Congress API response status: {response.status}")
+            
+            if response.status == 404:
+                logger.error(f"Bill not found: {request.type} {request.number} from {request.congress}th Congress")
+                raise HTTPException(status_code=404, detail="Bill not found in Congress.gov")
+            elif response.status != 200:
+                response_text = await response.text()
+                logger.error(f"Congress API error fetching bill info: {response.status}, response: {response_text}")
+                raise HTTPException(status_code=500, detail="Error fetching bill information from Congress API")
+            
+            data = await response.json()
+            logger.debug(f"Congress API response data keys: {data.keys() if data else 'None'}")
+            
+            bill_data = data.get("bill", {})
+            
+            if not bill_data:
+                logger.error(f"No bill data in response: {data}")
+                raise HTTPException(status_code=404, detail="Bill not found")
+            
+            # Extract bill information
+            title = bill_data.get("title", f"{request.type.upper()} {request.number}")
+            
+            # Get sponsor information
+            sponsors = bill_data.get("sponsors", [])
+            sponsor_name = "Unknown Sponsor"
+            if sponsors:
+                sponsor = sponsors[0]
+                first_name = sponsor.get("firstName", "")
+                last_name = sponsor.get("lastName", "")
+                party = sponsor.get("party", "")
+                state = sponsor.get("state", "")
+                if last_name:
+                    title_prefix = "Rep." if sponsor.get("bioguideId", "").startswith("H") else "Sen."
+                    sponsor_name = f"{title_prefix} {first_name} {last_name}"
+                    if party and state:
+                        sponsor_name += f" ({party}-{state})"
+            
+            # Create description from title or summary
+            description = title
+            summaries = bill_data.get("summaries", [])
+            if summaries and isinstance(summaries, list) and len(summaries) > 0:
+                latest_summary = summaries[0]
+                if isinstance(latest_summary, dict):
+                    summary_text = latest_summary.get("text", "")
+                    if summary_text and len(summary_text) > len(title):
+                        description = summary_text[:500] + ("..." if len(summary_text) > 500 else "")
+            else:
+                logger.debug(f"Summaries data type: {type(summaries)}, content: {summaries}")
+            
+            return {
+                "title": title,
+                "description": description,
+                "sponsor": sponsor_name,
+                "congress": request.congress,
+                "type": request.type.upper(),
+                "number": request.number
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")

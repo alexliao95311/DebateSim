@@ -484,6 +484,7 @@ const Legislation = ({ user }) => {
       body: JSON.stringify({
         type: bill.type,
         number: bill.number,
+        congress: bill.congress || 119,
         title: bill.title
       }),
     });
@@ -605,7 +606,7 @@ const Legislation = ({ user }) => {
     setTotalSteps(3);
     
     try {
-      if (billSource === 'recommended') {
+      if (billSource === 'recommended' || billSource === 'link') {
         // Step 1: Extract bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
         setProgressStep(1);
@@ -624,6 +625,7 @@ const Legislation = ({ user }) => {
           body: JSON.stringify({
             type: selectedBill.type,
             number: selectedBill.number,
+            congress: selectedBill.congress || 119,
             model: selectedModel
           }),
         });
@@ -778,8 +780,8 @@ const Legislation = ({ user }) => {
       return;
     }
     
-    const billText = billSource === 'recommended' ? extractedBillData?.text : null;
-    const billTitle = billSource === 'recommended' ? extractedBillData?.title : debateTopic;
+    const billText = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.text : null;
+    const billTitle = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.title : debateTopic;
     
     if (billSource === 'upload') {
       // For uploaded PDFs, extract text first
@@ -822,7 +824,7 @@ const Legislation = ({ user }) => {
         setLoadingState(false);
         return;
       }
-    } else if (billSource === 'recommended' && selectedBill) {
+    } else if ((billSource === 'recommended' || billSource === 'link') && selectedBill) {
       // For recommended bills, extract text first
       setLoadingState(true);
       try {
@@ -836,6 +838,7 @@ const Legislation = ({ user }) => {
           body: JSON.stringify({
             type: selectedBill.type,
             number: selectedBill.number,
+            congress: selectedBill.congress || 119,
             title: selectedBill.title
           }),
         });
@@ -898,6 +901,13 @@ const Legislation = ({ user }) => {
     setLoadingState(false);
     setProcessingStage('');
     setProgressStep(0);
+    
+    // Clear bill link state
+    setBillLink('');
+    setLinkParsedBill(null);
+    setShowLinkConfirmation(false);
+    setLinkLoading(false);
+    setLinkError('');
   };
 
   // Handle sharing current analysis
@@ -929,6 +939,13 @@ const Legislation = ({ user }) => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [isSearchMode, setIsSearchMode] = useState(false);
+
+  // Bill link functionality state
+  const [billLink, setBillLink] = useState("");
+  const [linkParsedBill, setLinkParsedBill] = useState(null);
+  const [showLinkConfirmation, setShowLinkConfirmation] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkError, setLinkError] = useState("");
 
   useEffect(() => {
     setFilteredBills(recommendedBills);
@@ -1105,6 +1122,117 @@ const Legislation = ({ user }) => {
     }, 200);
   };
 
+  // Congress.gov URL parser function
+  const parseCongressUrl = (url) => {
+    try {
+      // Handle various Congress.gov URL formats
+      const patterns = [
+        // Standard format: https://www.congress.gov/bill/119th-congress/house-bill/1234
+        /congress\.gov\/bill\/(\d+)th-congress\/(house-bill|senate-bill)\/(\d+)/i,
+        // Short format: https://www.congress.gov/bill/119th-congress/hr/1234
+        /congress\.gov\/bill\/(\d+)th-congress\/(hr|s|hjres|sjres)\/(\d+)/i,
+        // Alternative format with different ordering
+        /congress\.gov\/(\d+)\/bills?\/(hr|s|hjres|sjres)(\d+)/i
+      ];
+
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+          const congress = parseInt(match[1]);
+          let billType = match[2].toLowerCase();
+          const number = match[3];
+
+          // Normalize bill type
+          if (billType === 'house-bill') billType = 'hr';
+          if (billType === 'senate-bill') billType = 's';
+
+          return {
+            congress,
+            type: billType.toUpperCase(),
+            number,
+            url: url
+          };
+        }
+      }
+
+      throw new Error('Invalid Congress.gov URL format');
+    } catch (error) {
+      throw new Error(`Could not parse URL: ${error.message}`);
+    }
+  };
+
+  // Handle bill link submission
+  const handleBillLinkSubmit = async () => {
+    if (!billLink.trim()) {
+      setLinkError("Please enter a Congress.gov URL");
+      return;
+    }
+
+    setLinkLoading(true);
+    setLinkError("");
+
+    try {
+      // Parse the URL
+      const parsedBill = parseCongressUrl(billLink);
+      
+      // Fetch bill information from backend
+      const response = await fetch(`${API_URL}/extract-bill-from-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          congress: parsedBill.congress,
+          type: parsedBill.type,
+          number: parsedBill.number,
+          url: parsedBill.url
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch bill information: ${response.status} ${response.statusText}`);
+      }
+
+      const billData = await response.json();
+      
+      // Store the parsed bill data and show confirmation
+      setLinkParsedBill({
+        ...parsedBill,
+        title: billData.title,
+        description: billData.description || billData.title,
+        sponsor: billData.sponsor || "Unknown",
+        congress: parsedBill.congress
+      });
+      
+      setShowLinkConfirmation(true);
+      setLinkLoading(false);
+      
+    } catch (error) {
+      console.error("Bill link error:", error);
+      setLinkError(error.message);
+      setLinkLoading(false);
+    }
+  };
+
+  // Handle bill link confirmation
+  const handleBillLinkConfirm = () => {
+    if (linkParsedBill) {
+      setSelectedBill(linkParsedBill);
+      setBillSource('link');
+      setShowLinkConfirmation(false);
+      setBillLink("");
+      setLinkParsedBill(null);
+      setCurrentStep(2); // Move to step 2
+    }
+  };
+
+  // Handle bill link cancellation
+  const handleBillLinkCancel = () => {
+    setShowLinkConfirmation(false);
+    setLinkParsedBill(null);
+    setLinkError("");
+  };
+
   return (
     <div className={`legislation-container ${showHistorySidebar ? 'sidebar-open' : ''}`}>
       <header className="home-header">
@@ -1249,6 +1377,72 @@ const Legislation = ({ user }) => {
             transcript={selectedHistory}
             transcriptId={null} // No ID for current analysis
           />
+        )}
+        
+        {/* Bill Link Confirmation Modal */}
+        {showLinkConfirmation && linkParsedBill && (
+          <div className="history-modal">
+            <div className="modal-content">
+              <div className="modal-header">
+                <div className="modal-header-content">
+                  <h2>Confirm Bill Selection</h2>
+                </div>
+                <button className="modal-header-close" onClick={handleBillLinkCancel}>
+                  ❌
+                </button>
+              </div>
+              
+              <div style={{ padding: "1rem" }}>
+                <p style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>
+                  Is this the bill you want to use?
+                </p>
+                
+                <div style={{ 
+                  backgroundColor: "#f8f9fa", 
+                  border: "1px solid #ddd", 
+                  borderRadius: "8px", 
+                  padding: "1rem", 
+                  marginBottom: "1.5rem" 
+                }}>
+                  <h3 style={{ margin: "0 0 0.5rem 0", color: "#333" }}>
+                    {linkParsedBill.type} {linkParsedBill.number} - {linkParsedBill.congress}th Congress
+                  </h3>
+                  <p style={{ margin: "0 0 0.5rem 0", fontWeight: "bold", color: "#555" }}>
+                    {linkParsedBill.title}
+                  </p>
+                  {linkParsedBill.sponsor && (
+                    <p style={{ margin: "0", color: "#666", fontSize: "0.9rem" }}>
+                      Sponsor: {linkParsedBill.sponsor}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="modal-button-group">
+                  <button 
+                    className="upload-btn"
+                    onClick={handleBillLinkConfirm}
+                    style={{ 
+                      backgroundColor: "#4a90e2", 
+                      color: "white", 
+                      marginRight: "1rem" 
+                    }}
+                  >
+                    ✓ Yes, Use This Bill
+                  </button>
+                  <button 
+                    className="close-button"
+                    onClick={handleBillLinkCancel}
+                    style={{ 
+                      backgroundColor: "#6c757d", 
+                      color: "white" 
+                    }}
+                  >
+                    ❌ Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </header>
 
@@ -1505,11 +1699,51 @@ const Legislation = ({ user }) => {
                   Upload PDF
                 </label>
                 <span className="or-text">or</span>
-                <input
-                  type="url"
-                  placeholder="Enter bill link"
-                  className="link-input"
-                />
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
+                  <input
+                    type="url"
+                    value={billLink}
+                    onChange={(e) => setBillLink(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleBillLinkSubmit();
+                      }
+                    }}
+                    placeholder="Enter Congress.gov bill link (e.g., https://www.congress.gov/bill/119th-congress/house-bill/1234)"
+                    className="link-input"
+                    style={{ flex: 1 }}
+                    disabled={linkLoading}
+                  />
+                  <button
+                    onClick={handleBillLinkSubmit}
+                    disabled={linkLoading || !billLink.trim()}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      backgroundColor: linkLoading || !billLink.trim() ? "#ccc" : "#4a90e2",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: linkLoading || !billLink.trim() ? "not-allowed" : "pointer",
+                      fontSize: "0.9rem",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {linkLoading ? "Loading..." : "Add Bill"}
+                  </button>
+                </div>
+                {linkError && (
+                  <div style={{
+                    color: "#dc3545",
+                    fontSize: "0.9rem",
+                    marginTop: "0.5rem",
+                    padding: "0.5rem",
+                    backgroundColor: "#f8d7da",
+                    border: "1px solid #f5c6cb",
+                    borderRadius: "4px"
+                  }}>
+                    {linkError}
+                  </div>
+                )}
               </div>
               
               <div className="search-container" style={{ position: "relative", marginBottom: "1rem" }}>
@@ -1675,6 +1909,8 @@ const Legislation = ({ user }) => {
                 <h3>
                   {billSource === 'recommended' ? (
                     `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                  ) : billSource === 'link' ? (
+                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                   ) : (
                     `Selected Bill: 📄 ${selectedBill.name}`
                   )}
@@ -1726,6 +1962,8 @@ const Legislation = ({ user }) => {
               <div className="selected-bill-display">
                 <h3>
                   {billSource === 'recommended' ? (
+                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                  ) : billSource === 'link' ? (
                     `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                   ) : (
                     `Selected Bill: 📄 ${selectedBill.name}`
