@@ -45,8 +45,12 @@ client = OpenAI(
     api_key=API_KEY
 )
 
-# FastAPI application
-app = FastAPI()
+# FastAPI application with file size limit
+app = FastAPI(
+    title="DebateSim API",
+    description="Legislative analysis and debate simulation API",
+    version="1.0.0"
+)
 
 @app.get("/")
 async def root():
@@ -217,6 +221,21 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
     logger.info(f"Received analyze-legislation request with model: {model}")
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    
+    # Check file size before processing
+    file_size = 0
+    try:
+        file.file.seek(0, 2)  # Seek to end
+        file_size = file.file.tell()
+        file.file.seek(0)  # Reset to beginning
+        logger.info(f"PDF file size: {file_size} bytes ({file_size / (1024*1024):.1f} MB)")
+        
+        if file_size > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(status_code=413, detail="File too large. Please upload a PDF smaller than 50MB.")
+            
+    except Exception as size_error:
+        logger.warning(f"Could not determine file size: {size_error}")
+    
     try:
         logger.info(f"Starting PDF processing for file: {file.filename}")
         contents = await file.read()
@@ -226,16 +245,25 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
         from pdfminer.high_level import extract_text
         from pdfminer.layout import LAParams
         
-        # Optimize pdfminer settings for speed
-        laparams = LAParams(
-            char_margin=2.0,
-            line_margin=0.5,
-            word_margin=0.1,
-            boxes_flow=0.5,
-            detect_vertical=False,  # Disable vertical text detection for speed
-            all_texts=False,  # Skip non-text elements
-            strip_control=True  # Strip control characters
-        )
+        # Optimize pdfminer settings for speed (compatible across versions)
+        try:
+            # Try with newer parameters first
+            laparams = LAParams(
+                char_margin=2.0,
+                line_margin=0.5,
+                word_margin=0.1,
+                boxes_flow=0.5,
+                detect_vertical=False,  # Disable vertical text detection for speed
+                all_texts=False  # Skip non-text elements
+            )
+        except TypeError:
+            # Fall back to basic parameters for older versions
+            laparams = LAParams(
+                char_margin=2.0,
+                line_margin=0.5,
+                word_margin=0.1,
+                boxes_flow=0.5
+            )
         
         logger.info("Starting text extraction from PDF...")
         start_time = time.time()
@@ -294,6 +322,21 @@ async def analyze_legislation_text_endpoint(request: AnalysisRequest):
 async def extract_text_endpoint(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    
+    # Check file size before processing
+    file_size = 0
+    try:
+        file.file.seek(0, 2)  # Seek to end
+        file_size = file.file.tell()
+        file.file.seek(0)  # Reset to beginning
+        logger.info(f"PDF file size: {file_size} bytes ({file_size / (1024*1024):.1f} MB)")
+        
+        if file_size > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(status_code=413, detail="File too large. Please upload a PDF smaller than 50MB.")
+            
+    except Exception as size_error:
+        logger.warning(f"Could not determine file size: {size_error}")
+    
     try:
         logger.info(f"Starting PDF text extraction for file: {file.filename}")
         contents = await file.read()
@@ -1214,6 +1257,21 @@ async def grade_legislation(file: UploadFile = File(...), model: str = DEFAULT_M
     """Grade a legislation PDF based on the comprehensive rubric"""
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
+    
+    # Check file size before processing
+    file_size = 0
+    try:
+        file.file.seek(0, 2)  # Seek to end
+        file_size = file.file.tell()
+        file.file.seek(0)  # Reset to beginning
+        logger.info(f"PDF file size: {file_size} bytes ({file_size / (1024*1024):.1f} MB)")
+        
+        if file_size > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(status_code=413, detail="File too large. Please upload a PDF smaller than 50MB.")
+            
+    except Exception as size_error:
+        logger.warning(f"Could not determine file size: {size_error}")
+    
     try:
         contents = await file.read()
         # Extract text using pdfminer.six

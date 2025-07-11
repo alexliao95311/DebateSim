@@ -649,7 +649,15 @@ const Legislation = ({ user }) => {
         
         if (!response.ok) {
           const errorData = await response.text();
-          throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          
+          // Handle specific error cases
+          if (response.status === 413) {
+            throw new Error('File too large. Please upload a PDF smaller than 50MB.');
+          } else if (response.status === 400) {
+            throw new Error('Invalid file format. Please upload a valid PDF file.');
+          } else {
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
         }
         
         const data = await response.json();
