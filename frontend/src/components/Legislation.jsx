@@ -940,6 +940,32 @@ const Legislation = ({ user }) => {
     setShowAnalysisShareModal(true);
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredBills, setFilteredBills] = useState([]);
+
+  useEffect(() => {
+    setFilteredBills(recommendedBills);
+  }, [recommendedBills]);
+
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) {
+      setFilteredBills(recommendedBills);
+      return;
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+
+    const filtered = recommendedBills.filter((bill) => {
+      return (
+        (bill.title && bill.title.toLowerCase().includes(query)) ||
+        (bill.type && bill.type.toLowerCase().includes(query)) ||
+        (bill.number && bill.number.toLowerCase().includes(query)) ||
+        (bill.sponsor && bill.sponsor.toLowerCase().includes(query))
+      );
+    });
+    setFilteredBills(filtered);
+  };
+
   return (
     <div className={`legislation-container ${showHistorySidebar ? 'sidebar-open' : ''}`}>
       <header className="home-header">
@@ -1165,6 +1191,30 @@ const Legislation = ({ user }) => {
                   className="link-input"
                 />
               </div>
+              
+              <div className="search-bar-container" style={{ marginTop: "1rem" }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for a bill by title, topic, or number..."
+                  className="search-bar"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    fontSize: "1rem",
+                    marginTop: "0.5rem",
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearchSubmit();
+                    }
+                  }}
+                />
+              </div>
 
               {error && <p className="error-text">{error}</p>}
               
@@ -1238,6 +1288,20 @@ const Legislation = ({ user }) => {
                 </button>
               </div>
             </div>
+          </div>
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit">
+            {viewMode === "analyze" ? "Submit Analysis" : "Extract Bill Text"}
+          </button>
+        </form>
+        {loadingState && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">
+              <div className="loading-main">
+                {viewMode === "analyze"
+                  ? "Analyzing bill, please wait..."
+                  : "Extracting bill text for debate, please wait..."}
           )}
 
           {/* Step 3: Configure & Execute */}
