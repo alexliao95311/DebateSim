@@ -8,6 +8,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import "./Judge.css";
 import { jsPDF } from "jspdf";
 import { useLocation, useNavigate } from "react-router-dom";
+import ShareModal from "./ShareModal";
 
 function Judge() {
   const location = useLocation();
@@ -28,6 +29,7 @@ function Judge() {
   const [error, setError] = useState("");
   const [timestamp] = useState(() => new Date().toLocaleString());
   const [showBillText, setShowBillText] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Extract bill description from transcript
   const [billDescription, setBillDescription] = useState("");
@@ -89,8 +91,8 @@ ${feedback}`;
         activityType = 'Debate Topic';
       }
       
-      // Save using the improved saveTranscriptToUser function
-      await saveTranscriptToUser(combinedTranscript, topic, mode, activityType);
+      // Save using the improved saveTranscriptToUser function with model info
+      await saveTranscriptToUser(combinedTranscript, topic, mode, activityType, null, judgeModel);
       console.log("Complete transcript with judge feedback saved!");
       setSaved(true);
     } catch (err) {
@@ -157,6 +159,36 @@ ${feedback}`;
 
   const handleBackToHome = () => {
     navigate("/");
+  };
+
+  const handleShare = () => {
+    if (!feedback || !transcript) return;
+    
+    // Create a complete transcript with judge feedback
+    const combinedTranscript = `${transcript}\n\n---\n\n## Judge Feedback\n\n${feedback}`;
+    
+    // Determine activity type based on topic content
+    let activityType;
+    if (topic.includes('Bill Analysis:')) {
+      activityType = 'Analyze Bill';
+    } else if (billDescription || topic.toLowerCase().includes('bill') || mode === 'bill-debate') {
+      activityType = 'Debate Bill';
+    } else {
+      activityType = 'Debate Topic';
+    }
+    
+    // Create transcript object for sharing
+    const debateTranscript = {
+      transcript: combinedTranscript,
+      topic: topic,
+      mode: mode,
+      activityType: activityType,
+      model: judgeModel,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Use the same sharing mechanism as the Legislation component
+    setShowShareModal(true);
   };
 
   // Format transcript to hide bill description unless requested
@@ -302,6 +334,13 @@ ${feedback}`;
       {error && <p className="error-text">{error}</p>}
       <div className="button-group">
         <button 
+          className="share-button" 
+          onClick={handleShare} 
+          disabled={!feedback || !saved}
+        >
+          📤 Share Debate
+        </button>
+        <button 
           className="download-button" 
           onClick={handleDownloadPDF} 
           disabled={!feedback}
@@ -312,6 +351,24 @@ ${feedback}`;
           Back to Home
         </button>
       </div>
+      
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal 
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          transcript={{
+            transcript: `${transcript}\n\n---\n\n## Judge Feedback\n\n${feedback}`,
+            topic: topic,
+            mode: mode,
+            activityType: topic.includes('Bill Analysis:') ? 'Analyze Bill' : 
+                         (billDescription || topic.toLowerCase().includes('bill') || mode === 'bill-debate') ? 'Debate Bill' : 'Debate Topic',
+            model: judgeModel,
+            createdAt: new Date().toISOString()
+          }}
+          transcriptId={null}
+        />
+      )}
     </div>
   );
 }

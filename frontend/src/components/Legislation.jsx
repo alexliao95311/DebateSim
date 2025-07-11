@@ -7,10 +7,11 @@ import { jsPDF } from "jspdf";
 import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import ShareModal from "./ShareModal";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
-  "qwen/qwq-32b:free", 
+  "openai/gpt-4o", 
   "meta-llama/llama-3.3-70b-instruct", 
   "google/gemini-2.0-flash-001",
   "deepseek/deepseek-r1-0528:free",
@@ -18,6 +19,189 @@ const modelOptions = [
   "openai/gpt-4o-mini",
   "openai/gpt-4o-mini-search-preview"
 ];
+
+// Progress Bar Component for Streaming
+const ProgressBar = ({ step, total, message }) => {
+  const percentage = total > 0 ? (step / total) * 100 : 0;
+  
+  return (
+    <div className="progress-container">
+      <div className="progress-message">{message}</div>
+      <div className="progress-bar">
+        <div 
+          className="progress-fill" 
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+      <div className="progress-text">
+        Step {step} of {total}
+      </div>
+    </div>
+  );
+};
+
+// Circular Progress Component
+const CircularProgress = ({ percentage, size = 70, strokeWidth = 6, color = '#4a90e2' }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="circular-progress" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle
+          className="progress-bg"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          className="progress-fill"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          style={{ stroke: color }}
+        />
+      </svg>
+      <div className="progress-text" style={{ color }}>
+        {Math.round(percentage)}%
+      </div>
+    </div>
+  );
+};
+
+// Grade Item Component with Tooltip
+const GradeItem = ({ label, percentage, description, tooltip, icon, category, isOverall = false }) => {
+  const getGradeClass = (score) => {
+    if (score >= 90) return 'grade-excellent';
+    if (score >= 70) return 'grade-good';
+    if (score >= 50) return 'grade-fair';
+    if (score >= 30) return 'grade-poor';
+    return 'grade-very-poor';
+  };
+
+  const getGradeColor = (score) => {
+    if (score >= 90) return '#28a745';
+    if (score >= 70) return '#20c997';
+    if (score >= 50) return '#ffc107';
+    if (score >= 30) return '#fd7e14';
+    return '#dc3545';
+  };
+
+  const gradeClass = getGradeClass(percentage);
+  const gradeColor = getGradeColor(percentage);
+
+  return (
+    <div className={`grade-item ${gradeClass} ${category} ${isOverall ? 'overall' : ''}`}>
+      <div className="grade-header">
+        <span className="grade-icon">{icon}</span>
+        <div className="grade-label">{label}</div>
+      </div>
+      <CircularProgress 
+        percentage={percentage} 
+        size={isOverall ? 90 : 75}
+        strokeWidth={isOverall ? 8 : 6}
+        color={gradeColor}
+      />
+      <div className="grade-description">{description}</div>
+      {tooltip && (
+        <div className="tooltip">
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bill Grading Section Component
+const BillGradingSection = ({ grades }) => {
+  const gradingCriteria = {
+    economicImpact: {
+      label: 'Economic Impact',
+      description: 'Fiscal responsibility & benefits',
+      tooltip: 'Evaluates the bill\'s economic benefits, cost-effectiveness, and fiscal impact on government budgets and the economy.',
+      icon: '💰',
+      category: 'moderate',
+      order: 1
+    },
+    publicBenefit: {
+      label: 'Public Benefit',
+      description: 'Benefits to citizens',
+      tooltip: 'Assesses how much the bill addresses public needs and benefits different segments of the population.',
+      icon: '👥',
+      category: 'positive',
+      order: 2
+    },
+    feasibility: {
+      label: 'Implementation Feasibility',
+      description: 'Practicality of execution',
+      tooltip: 'Examines whether the bill can be realistically implemented with available resources and existing infrastructure.',
+      icon: '🛠',
+      category: 'caution',
+      order: 3
+    },
+    legalSoundness: {
+      label: 'Legal Soundness',
+      description: 'Constitutional compliance',
+      tooltip: 'Reviews the bill\'s compliance with constitutional principles and existing legal frameworks.',
+      icon: '⚖️',
+      category: 'positive',
+      order: 4
+    },
+    effectiveness: {
+      label: 'Goal Effectiveness',
+      description: 'Achievement of stated objectives',
+      tooltip: 'Measures how well the bill addresses its stated problems and achieves its intended objectives.',
+      icon: '🎯',
+      category: 'moderate',
+      order: 5
+    },
+    overall: {
+      label: 'Overall Rating',
+      description: 'Comprehensive assessment',
+      tooltip: 'A weighted average of all criteria with emphasis on effectiveness and public benefit.',
+      icon: '📊',
+      category: 'overall',
+      order: 6
+    }
+  };
+
+  return (
+    <div className="grading-section">
+      <div className="grading-header">
+        <h2>Bill Analysis Grades</h2>
+        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+      </div>
+      
+      <div className="grading-grid">
+        {Object.entries(gradingCriteria)
+          .sort(([,a], [,b]) => a.order - b.order)
+          .map(([key, criteria]) => {
+            const isOverall = key === 'overall';
+            const percentage = grades[key] || 0;
+            
+            return (
+              <GradeItem
+                key={key}
+                label={criteria.label}
+                percentage={percentage}
+                description={criteria.description}
+                tooltip={criteria.tooltip}
+                icon={criteria.icon}
+                category={criteria.category}
+                isOverall={isOverall}
+              />
+            );
+          })}
+      </div>
+    </div>
+  );
+};
 
 // BillCard component for better organization
 const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingStage = '' }) => {
@@ -100,42 +284,49 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
             </div>
           </div>
         ) : (
-          viewMode === "analyze" ? "Analyze" : "Debate"
+          "Select"
         )}
       </button>
     </div>
   );
 };
 const Legislation = ({ user }) => {
-  // View mode: "analyze" or "debate"
-  const [viewMode, setViewMode] = useState("analyze");
+  // 3-Step Process State
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [billSource, setBillSource] = useState(''); // 'recommended' or 'upload'
+  const [actionType, setActionType] = useState(''); // 'analyze' or 'debate'
+  const [extractedBillData, setExtractedBillData] = useState(null);
+  const [extractedPdfText, setExtractedPdfText] = useState(null); // Cache for PDF text
 
-  // Common states for file upload/link input
-  const [pdfFile, setPdfFile] = useState(null);
-  const [articleLink, setArticleLink] = useState('');
+  // Common states
   const [error, setError] = useState('');
   const [loadingState, setLoadingState] = useState(false);
+  const [processingStage, setProcessingStage] = useState('');
+  const [progressStep, setProgressStep] = useState(0);
+  const [totalSteps, setTotalSteps] = useState(4);
 
-  // Analyze mode state
+  // Analysis state
   const [analysisResult, setAnalysisResult] = useState('');
+  const [analysisGrades, setAnalysisGrades] = useState(null);
   const [selectedModel, setSelectedModel] = useState(modelOptions[0]);
 
-  // Debate mode state
+  // Debate state
   const [debateTopic, setDebateTopic] = useState('');
-  const [extractedText, setExtractedText] = useState('');
-  const [debateMode, setDebateMode] = useState(''); // "ai-vs-ai", "ai-vs-user", "user-vs-user"
+  const [debateMode, setDebateMode] = useState('');
+  
+  // History state
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [pdfError, setPdfError] = useState("");
-  const [extractionSuccess, setExtractionSuccess] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
 
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
   const [billsLoading, setBillsLoading] = useState(false);
   const [billsError, setBillsError] = useState('');
-  const [processingBillId, setProcessingBillId] = useState(null);
-  const [processingStage, setProcessingStage] = useState('');
 
   const billNameInputRef = useRef(null);
   const pdfContentRef = useRef(null);
@@ -280,126 +471,6 @@ const Legislation = ({ user }) => {
     fetchRecommendedBills();
   }, []);
 
-  const handlePdfUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      setPdfFile(file);
-      setError('');
-    } else {
-      setError('Please upload a valid PDF file.');
-    }
-  };
-
-  const handleLinkChange = (e) => {
-    setArticleLink(e.target.value);
-  };
-
-  const handleDebateSubmit = async (e) => {
-    e.preventDefault();
-    if (!pdfFile && !articleLink) {
-      setError('Please upload a PDF or provide a link to a legislative article.');
-      return;
-    }
-    setError('');
-    setLoadingState(true);
-
-    const formData = new FormData();
-    if (pdfFile) formData.append('file', pdfFile);
-
-    try {
-      if (viewMode === "analyze") {
-        // Stage 1: Extracting text from PDF
-        setProcessingStage('Extracting text from PDF...');
-        
-        formData.append('model', selectedModel);
-        const res = await fetch(`${API_URL}/analyze-legislation`, {
-          method: "POST",
-          body: formData,
-        });
-        
-        // Stage 2: AI analyzing
-        setProcessingStage('Analyzing legislation with AI...');
-        
-        const data = await res.json();
-        
-        // Stage 3: Finalizing
-        setProcessingStage('Finalizing analysis...');
-        
-        setAnalysisResult(data.analysis);
-        
-        // Save analysis to history
-        if (user && !user.isGuest) {
-          try {
-            const billName = pdfFile?.name || 'Uploaded Bill';
-            await saveTranscriptToUser(
-              data.analysis,
-              `Bill Analysis: ${billName}`,
-              'analysis',
-              'Analyze Bill'
-            );
-            // Refresh history after saving
-            await fetchHistory();
-          } catch (err) {
-            console.error("Error saving analysis to history:", err);
-          }
-        }
-      } else {
-        // Stage 1: Extracting text
-        setProcessingStage('Extracting text from PDF...');
-        
-        const res = await fetch(`${API_URL}/extract-text`, {
-          method: "POST",
-          body: formData,
-        });
-        
-        // Stage 2: Processing
-        setProcessingStage('Processing bill text for debate...');
-        
-        const data = await res.json();
-        const text = data.text || '';
-        const lines = text.trim().split('\n');
-        // Find first non-empty line, or use default if all lines are empty
-        let billName = "Unnamed Bill";
-        for (const line of lines) {
-          if (line.trim()) {
-            billName = line.trim();
-            break;
-          }
-        }
-        
-        // Stage 3: Setting up
-        setProcessingStage('Setting up debate environment...');
-        
-        setDebateTopic(billName);
-        setExtractedText(text);
-        setExtractionSuccess(true);
-      }
-    } catch (err) {
-      setError(`Error ${viewMode === "analyze" ? "analyzing" : "extracting"} the bill.`);
-    }
-
-    setLoadingState(false);
-    setProcessingStage('');
-  };
-
-  const handleStartDebate = () => {
-    if (!debateMode) {
-      alert("Please select a debate mode before starting.");
-      return;
-    }
-    
-    // Check if bill name is empty and set a default if needed
-    const finalBillName = debateTopic.trim() ? debateTopic : "Unnamed Bill";
-    
-    navigate("/debate", { 
-      state: { 
-        mode: 'bill-debate', 
-        debateMode: debateMode,
-        topic: finalBillName,
-        description: extractedText 
-      } 
-    });
-  };
 
   const handleLogout = () => {
     signOut(getAuth())
@@ -407,124 +478,83 @@ const Legislation = ({ user }) => {
       .catch(err => console.error("Logout error:", err));
   };
 
-  const handleBillNameChange = (e) => {
-    e.stopPropagation();
-    setDebateTopic(e.target.value);
-    // Make sure we don't lose the extracted text when bill name is emptied
-    if (!e.target.value) {
-      e.preventDefault(); // Prevent any default behavior
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') e.preventDefault();
-  };
-
-  const handleSelectRecommendedBill = async (bill) => {
-    setProcessingBillId(bill.id);
+  // Step 1: Handle bill selection from recommended bills (lazy loading)
+  const handleSelectRecommendedBill = (bill) => {
+    setSelectedBill(bill);
+    setBillSource('recommended');
+    setExtractedBillData(null); // Clear previous data
+    setCurrentStep(2);
     setError('');
-    
-    try {
-      if (viewMode === "analyze") {
-        // Stage 1: Extracting bill text
-        setProcessingStage('Fetching full bill text from Congress.gov...');
-        
-        const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: bill.type,
-            number: bill.number,
-            model: selectedModel
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to analyze bill');
-        }
-        
-        // Stage 2: AI is analyzing
-        setProcessingStage('Analyzing legislation with AI...');
-        
-        const data = await response.json();
-        
-        // Stage 3: Completing
-        setProcessingStage('Finalizing analysis...');
-        
-        setAnalysisResult(data.analysis);
-        
-        // Save analysis to history
-        if (user && !user.isGuest) {
-          try {
-            await saveTranscriptToUser(
-              data.analysis,
-              `Bill Analysis: ${bill.title}`,
-              'analysis',
-              'Analyze Bill'
-            );
-            // Refresh history after saving
-            await fetchHistory();
-          } catch (err) {
-            console.error("Error saving analysis to history:", err);
-          }
-        }
-        
-        // Scroll to analysis result
-        setTimeout(() => {
-          const analysisSection = document.querySelector('.analysis-result');
-          if (analysisSection) {
-            analysisSection.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 100);
-        
-      } else {
-        // Stage 1: Extracting bill text for debate
-        setProcessingStage('Fetching full bill text from Congress.gov...');
-        
-        const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: bill.type,
-            number: bill.number,
-            title: bill.title
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to extract bill text');
-        }
-        
-        // Stage 2: Processing text
-        setProcessingStage('Processing bill text for debate...');
-        
-        const data = await response.json();
-        
-        // Stage 3: Setting up debate
-        setProcessingStage('Setting up debate environment...');
-        
-        setDebateTopic(data.title);
-        setExtractedText(data.text);
-        setExtractionSuccess(true);
-        
-        // Scroll to the debate setup section
-        setTimeout(() => {
-          const debateSection = document.querySelector('.input-container');
-          if (debateSection) {
-            debateSection.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 100);
-      }
-    } catch (err) {
-      setError(`Error processing bill: ${err.message}`);
-    } finally {
-      setProcessingBillId(null);
-      setProcessingStage('');
+  };
+  
+  // Extract recommended bill text when needed
+  const extractRecommendedBillText = async (bill) => {
+    if (extractedBillData) {
+      return extractedBillData; // Return cached data
     }
+    
+    setProcessingStage('Extracting bill text from Congress.gov...');
+    
+    const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: bill.type,
+        number: bill.number,
+        title: bill.title
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Check if bill text is unavailable
+    if (data.text && data.text.includes('Bill Text Unavailable')) {
+      throw new Error('This bill\'s text is not yet available from Congress.gov. You can try again later or upload a PDF version if available.');
+    }
+    
+    // Cache the extracted bill data
+    const billData = {
+      text: data.text,
+      title: data.title || bill.title,
+      billCode: `${bill.type} ${bill.number}`
+    };
+    
+    setExtractedBillData(billData);
+    return billData;
+  };
+  
+  // Extract PDF text when needed
+  const extractPdfText = async (file) => {
+    if (extractedPdfText) {
+      return extractedPdfText; // Return cached text
+    }
+    
+    setProcessingStage('Extracting text from PDF...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch(`${API_URL}/extract-text`, {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to extract text from PDF');
+    }
+    
+    const data = await response.json();
+    
+    // Cache the extracted text
+    setExtractedPdfText(data.text);
+    return data.text;
   };
 
   const getActivityTypeDisplay = (item) => {
@@ -546,6 +576,368 @@ const Legislation = ({ user }) => {
     if (item.mode === 'ai-vs-user') return 'type-ai-vs-user';
     if (item.mode === 'user-vs-user') return 'type-user-vs-user';
     return 'type-default';
+  };
+
+  // Handle PDF upload for Step 1
+  const handlePdfUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('PDF file size must be less than 10MB.');
+        return;
+      }
+      
+      setSelectedBill(file);
+      setBillSource('upload');
+      setExtractedPdfText(null); // Clear previous cached text
+      setCurrentStep(2);
+      setError('');
+    } else {
+      setError('Please upload a valid PDF file.');
+    }
+  };
+
+  // Step 2: Handle action selection
+  const handleActionSelection = (action) => {
+    setActionType(action);
+    
+    // Auto-fill debate topic when entering debate mode
+    if (action === 'debate' && selectedBill) {
+      let billName = '';
+      if (billSource === 'recommended') {
+        billName = `${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`;
+      } else {
+        billName = selectedBill.name.replace('.pdf', '');
+      }
+      setDebateTopic(billName);
+    }
+    
+    setCurrentStep(3);
+  };
+
+  // Step 3: Handle analysis execution with progress updates
+  const handleAnalyzeExecution = async () => {
+    setLoadingState(true);
+    setError('');
+    setProgressStep(0);
+    setTotalSteps(3);
+    
+    try {
+      if (billSource === 'recommended') {
+        // Step 1: Extract bill text if not already cached
+        setProcessingStage('Fetching bill text from Congress.gov...');
+        setProgressStep(1);
+        
+        const billData = await extractRecommendedBillText(selectedBill);
+        
+        // Step 2: Analyze legislation
+        setProcessingStage('Analyzing legislation with AI...');
+        setProgressStep(2);
+        
+        const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: selectedBill.type,
+            number: selectedBill.number,
+            model: selectedModel
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          
+          // Handle specific error cases
+          if (response.status === 413) {
+            throw new Error('File too large. Please upload a PDF smaller than 50MB.');
+          } else if (response.status === 400) {
+            throw new Error('Invalid file format. Please upload a valid PDF file.');
+          } else {
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+        }
+        
+        const data = await response.json();
+        
+        // Step 3: Finalizing
+        setProcessingStage('Finalizing analysis and grades...');
+        setProgressStep(3);
+        
+        setAnalysisResult(data.analysis);
+        
+        // Set grades from API response
+        if (data.grades) {
+          setAnalysisGrades(data.grades);
+        }
+        
+        // Save analysis to history with model info
+        if (user && !user.isGuest) {
+          try {
+            await saveTranscriptToUser(
+              data.analysis,
+              `Bill Analysis: ${selectedBill.title}`,
+              'analysis',
+              'Analyze Bill',
+              data.grades,
+              selectedModel
+            );
+            await fetchHistory();
+          } catch (err) {
+            console.error("Error saving analysis to history:", err);
+          }
+        }
+        
+      } else {
+        // Handle uploaded PDF analysis - use cached text if available
+        let analysisData;
+        
+        if (extractedPdfText) {
+          // Use cached text
+          setProcessingStage('Using cached PDF text...');
+          setProgressStep(1);
+          
+          setProcessingStage('Analyzing legislation with AI...');
+          setProgressStep(2);
+          
+          const response = await fetch(`${API_URL}/analyze-legislation-text`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text: extractedPdfText,
+              model: selectedModel
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+          
+          analysisData = await response.json();
+          
+          setProcessingStage('Finalizing results...');
+          setProgressStep(3);
+          
+        } else {
+          // Extract and analyze PDF
+          setProcessingStage('Processing PDF file...');
+          setProgressStep(1);
+          
+          const formData = new FormData();
+          formData.append('file', selectedBill);
+          formData.append('model', selectedModel);
+          
+          setProcessingStage('Analyzing legislation with AI...');
+          setProgressStep(2);
+          
+          const response = await fetch(`${API_URL}/analyze-legislation`, {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+          
+          analysisData = await response.json();
+          
+          setProcessingStage('Finalizing results...');
+          setProgressStep(3);
+          
+          // Cache extracted text for future use
+          if (analysisData.extractedText) {
+            setExtractedPdfText(analysisData.extractedText);
+          }
+        }
+        
+        setAnalysisResult(analysisData.analysis);
+        
+        // Set grades from API response
+        if (analysisData.grades) {
+          setAnalysisGrades(analysisData.grades);
+        }
+        
+        // Save analysis to history with model info
+        if (user && !user.isGuest) {
+          try {
+            await saveTranscriptToUser(
+              analysisData.analysis,
+              `Bill Analysis: ${selectedBill.name}`,
+              'analysis',
+              'Analyze Bill',
+              analysisData.grades,
+              selectedModel
+            );
+            await fetchHistory();
+          } catch (err) {
+            console.error("Error saving analysis to history:", err);
+          }
+        }
+      }
+      
+    } catch (err) {
+      setError(`Error analyzing bill: ${err.message}`);
+    } finally {
+      setLoadingState(false);
+      setProcessingStage('');
+      setProgressStep(0);
+    }
+  };
+
+  // Step 3: Handle debate setup
+  const handleDebateExecution = async () => {
+    if (!debateTopic.trim() || !debateMode) {
+      setError('Please enter a debate topic and select a debate mode.');
+      return;
+    }
+    
+    const billText = billSource === 'recommended' ? extractedBillData?.text : null;
+    const billTitle = billSource === 'recommended' ? extractedBillData?.title : debateTopic;
+    
+    if (billSource === 'upload') {
+      // For uploaded PDFs, extract text first
+      setLoadingState(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedBill);
+        
+        setProcessingStage('Extracting text from PDF...');
+        
+        const response = await fetch(`${API_URL}/extract-text`, {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to extract text');
+        }
+        
+        const data = await response.json();
+        
+        // Navigate to debate with extracted text
+        const billTitle = selectedBill.name || debateTopic;
+        
+        console.log('Navigating to debate with PDF bill text length:', data.text.length);
+        console.log('Bill title:', billTitle);
+        
+        navigate('/debate', {
+          state: {
+            mode: 'bill-debate',
+            topic: debateTopic,
+            billText: data.text,
+            billTitle: billTitle,
+            debateMode: debateMode
+          }
+        });
+        
+      } catch (err) {
+        setError(`Error extracting text: ${err.message}`);
+        setLoadingState(false);
+        return;
+      }
+    } else if (billSource === 'recommended' && selectedBill) {
+      // For recommended bills, extract text first
+      setLoadingState(true);
+      try {
+        setProcessingStage('Extracting bill text from Congress.gov...');
+        
+        const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: selectedBill.type,
+            number: selectedBill.number,
+            title: selectedBill.title
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to extract bill text');
+        }
+        
+        const data = await response.json();
+        
+        console.log('Navigating to debate with recommended bill text length:', data.text.length);
+        console.log('Bill title:', data.title);
+        
+        navigate('/debate', {
+          state: {
+            mode: 'bill-debate',
+            topic: debateTopic,
+            billText: data.text,
+            billTitle: data.title,
+            debateMode: debateMode
+          }
+        });
+        
+        setLoadingState(false);
+        
+      } catch (err) {
+        setError(`Error extracting bill text: ${err.message}`);
+        setLoadingState(false);
+        return;
+      }
+    } else {
+      // For other cases or if no bill is selected, treat as topic debate
+      console.log('Navigating to topic debate mode');
+      
+      navigate('/debate', {
+        state: {
+          mode: 'bill-debate',
+          topic: debateTopic,
+          billText: '',
+          billTitle: debateTopic,
+          debateMode: debateMode
+        }
+      });
+    }
+  };
+
+  // Reset the entire flow
+  const resetFlow = () => {
+    setCurrentStep(1);
+    setSelectedBill(null);
+    setBillSource('');
+    setActionType('');
+    setExtractedBillData(null);
+    setExtractedPdfText(null); // Clear cached PDF text
+    setAnalysisResult('');
+    setAnalysisGrades(null);
+    setDebateTopic('');
+    setDebateMode('');
+    setError('');
+    setLoadingState(false);
+    setProcessingStage('');
+    setProgressStep(0);
+  };
+
+  // Handle sharing current analysis
+  const handleShareAnalysis = () => {
+    if (!analysisResult) return;
+    
+    // Create a transcript-like object for sharing
+    const analysisTranscript = {
+      transcript: analysisResult,
+      topic: billSource === 'recommended' ? 
+        `Bill Analysis: ${selectedBill.title}` : 
+        `Bill Analysis: ${selectedBill.name}`,
+      mode: 'analysis',
+      activityType: 'Analyze Bill',
+      grades: analysisGrades,
+      model: selectedModel,
+      createdAt: new Date().toISOString()
+    };
+    
+    setSelectedHistory(analysisTranscript);
+    setShowAnalysisShareModal(true);
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -575,7 +967,7 @@ const Legislation = ({ user }) => {
   };
 
   return (
-    <div className="legislation-container">
+    <div className={`legislation-container ${showHistorySidebar ? 'sidebar-open' : ''}`}>
       <header className="home-header">
         <div className="header-content">
           <div className="header-left">
@@ -628,10 +1020,31 @@ const Legislation = ({ user }) => {
         {selectedHistory && (
           <div className="history-modal">
             <div className="modal-content">
-              <button className="modal-close" onClick={() => setSelectedHistory(null)}>
-                &times;
-              </button>
-              <h2>{selectedHistory.topic || "Untitled Activity"}</h2>
+              <div className="modal-header">
+                <button 
+                  className="modal-header-share" 
+                  onClick={() => setShowShareModal(true)}
+                  title="Share this transcript"
+                >
+                  📤
+                </button>
+                <div className="modal-header-content">
+                  <h2>{selectedHistory.topic || "Untitled Activity"}</h2>
+                  {selectedHistory.model && (
+                    <div className="modal-model-info">
+                      Model: {selectedHistory.model}
+                    </div>
+                  )}
+                </div>
+                <button className="modal-header-close" onClick={() => setSelectedHistory(null)}>
+                  ❌
+                </button>
+              </div>
+              {/* Show grading for historical bill analyses */}
+              {selectedHistory && selectedHistory.grades && (
+                <BillGradingSection grades={selectedHistory.grades} />
+              )}
+              
               <div className="transcript-viewer">
                 <ReactMarkdown
                   rehypePlugins={[rehypeRaw]}
@@ -657,171 +1070,229 @@ const Legislation = ({ user }) => {
               {pdfError && <p className="error-text">{pdfError}</p>}
               <div className="modal-button-group">
                 <button 
+                  className="share-button" 
+                  onClick={() => setShowShareModal(true)}
+                >
+                  📤 Share
+                </button>
+                <button 
                   className="download-button" 
                   onClick={handleDownloadPDF}
                 >
-                  Download as PDF
+                  📄 Download PDF
                 </button>
                 <button 
                   className="close-button" 
                   onClick={() => setSelectedHistory(null)}
                 >
-                  Close
+                  ❌ Close
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Share Modal */}
+        {selectedHistory && (
+          <ShareModal 
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            transcript={selectedHistory}
+            transcriptId={selectedHistory.id}
+          />
+        )}
+        
+        {/* Share Modal for Current Analysis */}
+        {selectedHistory && (
+          <ShareModal 
+            isOpen={showAnalysisShareModal}
+            onClose={() => setShowAnalysisShareModal(false)}
+            transcript={selectedHistory}
+            transcriptId={null} // No ID for current analysis
+          />
+        )}
       </header>
 
-      {/* Recommended Bills Section - Moved to top */}
-      <div className="recommended-bills-section compact">
-        <h2>Trending Congressional Bills</h2>
-        
-        {billsLoading && (
-          <div className="bills-loading">
-            <div className="loading-spinner"></div>
-            <p>Loading current bills from Congress...</p>
+      {/* 3-Step Process UI */}
+      <div className="step-by-step-container">
+        {/* Progress Indicator */}
+        <div className="progress-steps">
+          <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
+            <div className="step-number">1</div>
+            <div className="step-label">Select Bill</div>
           </div>
-        )}
-        
-        {billsError && (
-          <div className="bills-error">
-            <p>{billsError}</p>
+          <div className="step-arrow">→</div>
+          <div className={`step ${currentStep >= 2 ? 'active' : ''}`}>
+            <div className="step-number">2</div>
+            <div className="step-label">Choose Action</div>
           </div>
-        )}
-        
-        {!billsLoading && !billsError && recommendedBills.length > 0 && (
-          <div className="bills-horizontal-scroll">
-            {recommendedBills.map((bill) => (
-              <BillCard 
-                key={bill.id} 
-                bill={bill} 
-                viewMode={viewMode}
-                onSelect={handleSelectRecommendedBill}
-                isProcessing={processingBillId === bill.id}
-                processingStage={processingBillId === bill.id ? processingStage : ''}
-              />
-            ))}
+          <div className="step-arrow">→</div>
+          <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
+            <div className="step-number">3</div>
+            <div className="step-label">Configure & Execute</div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Mode Toggle - Moved below recommended bills */}
-      <div className="mode-toggle">
-        <button
-          type="button"
-          className={`mode-button ${viewMode === "analyze" ? "active" : ""}`}
-          onClick={() => setViewMode("analyze")}
-        >
-          Analyze Bill
-        </button>
-        <button
-          type="button"
-          className={`mode-button ${viewMode === "debate" ? "active" : ""}`}
-          onClick={() => setViewMode("debate")}
-        >
-          Debate Bill
-        </button>
-      </div>
-
-      {/* Unified Upload Form */}
-      <div className="upload-container">
-        <h2>
-          {viewMode === "analyze"
-            ? "Upload Legislative Article for Analysis"
-            : "Upload Legislative Article for Debate"}
-        </h2>
-        <form onSubmit={handleDebateSubmit}>
-          {viewMode === "analyze" && (
-            <div className="form-group model-selection">
-              <label htmlFor="modelSelect">Select AI Model for Analysis:</label>
-              <div className="select-wrapper">
-                <select
-                  id="modelSelect"
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                >
-                  {modelOptions.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+        {/* Step Content */}
+        <div className="step-content">
+          {/* Step 1: Select Bill */}
+          {currentStep === 1 && (
+            <div className="step-one">
+              <h2>Step 1: Choose a Bill</h2>
+              
+              {/* Recommended Bills Section */}
+              <div className="recommended-bills-section">
+                <h3>📋 Trending Congressional Bills</h3>
+                
+                {billsLoading && (
+                  <div className="bills-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading current bills from Congress...</p>
+                  </div>
+                )}
+                
+                {billsError && (
+                  <div className="bills-error">
+                    <p>{billsError}</p>
+                  </div>
+                )}
+                
+                {!billsLoading && !billsError && recommendedBills.length > 0 && (
+                  <div className="bills-horizontal-scroll">
+                    {recommendedBills.map((bill) => (
+                      <BillCard 
+                        key={bill.id} 
+                        bill={bill} 
+                        onSelect={handleSelectRecommendedBill}
+                        isProcessing={loadingState && selectedBill?.id === bill.id}
+                        processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-          <div className="upload-row">
-            <div className="upload-section">
-              <input
-                type="file"
-                id="pdfUpload"
-                accept="application/pdf"
-                onChange={handlePdfUpload}
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="pdfUpload" className="upload-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Choose PDF file
-              </label>
-              {pdfFile && (
-                <div className="selected-file">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg>
-                  {pdfFile.name}
+
+              {/* Upload Section */}
+              <div className="upload-section">
+                <input
+                  type="file"
+                  id="pdfUpload"
+                  accept="application/pdf"
+                  onChange={handlePdfUpload}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="pdfUpload" className="upload-btn">
+                  Upload PDF
+                </label>
+                <span className="or-text">or</span>
+                <input
+                  type="url"
+                  placeholder="Enter bill link"
+                  className="link-input"
+                />
+              </div>
+              
+              <div className="search-bar-container" style={{ marginTop: "1rem" }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for a bill by title, topic, or number..."
+                  className="search-bar"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    border: "1px solid #ccc",
+                    borderRadius: "6px",
+                    fontSize: "1rem",
+                    marginTop: "0.5rem",
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearchSubmit();
+                    }
+                  }}
+                />
+              </div>
+
+              {error && <p className="error-text">{error}</p>}
+              
+              {loadingState && (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <div className="loading-text">
+                    <div className="loading-main">Processing bill...</div>
+                    {processingStage && (
+                      <div className="loading-stage">
+                        <ProgressBar 
+                          step={progressStep} 
+                          total={totalSteps} 
+                          message={processingStage} 
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-            
-            <div className="or-divider">or</div>
-            
-            <div className="link-section">
-              <input
-                type="url"
-                id="articleLink"
-                value={articleLink}
-                onChange={handleLinkChange}
-                placeholder="https://example.com/article"
-                className="link-input"
-              />
+          )}
+
+          {/* Step 2: Choose Action */}
+          {currentStep === 2 && (
+            <div className="step-two">
+              {/* Selected Bill Display */}
+              <div className="selected-bill-display">
+                <h3>
+                  {billSource === 'recommended' ? (
+                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                  ) : (
+                    `Selected Bill: 📄 ${selectedBill.name}`
+                  )}
+                </h3>
+              </div>
+
+              <h2>Step 2: What would you like to do?</h2>
+              <p className="step-description">Choose how you want to work with the selected bill</p>
+              
+              <div className="action-cards">
+                <div 
+                  className={`action-card ${actionType === 'analyze' ? 'selected' : ''}`}
+                  onClick={() => handleActionSelection('analyze')}
+                >
+                  <div className="action-icon">🔍</div>
+                  <h3>Analyze Bill</h3>
+                  <p>Get AI-powered analysis of the bill's content, implications, and key provisions</p>
+                </div>
+                
+                <div 
+                  className={`action-card ${actionType === 'debate' ? 'selected' : ''}`}
+                  onClick={() => handleActionSelection('debate')}
+                >
+                  <div className="action-icon">⚖️</div>
+                  <h3>Debate Bill</h3>
+                  <p>Set up a structured debate about the bill with AI opponents or other users</p>
+                </div>
+              </div>
+
+              <div className="step-navigation">
+                <button className="nav-button back" onClick={() => setCurrentStep(1)}>
+                  ← Back
+                </button>
+                <button 
+                  className="nav-button next" 
+                  onClick={() => setCurrentStep(3)}
+                  disabled={!actionType}
+                >
+                  Next →
+                </button>
+              </div>
             </div>
           </div>
           {error && <p className="error-text">{error}</p>}
           <button type="submit">
             {viewMode === "analyze" ? "Submit Analysis" : "Extract Bill Text"}
           </button>
-          <div className="search-bar-container" style={{ marginTop: "1rem" }}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for a bill by title, topic, or number..."
-              className="search-bar"
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                border: "1px solid #ccc",
-                borderRadius: "6px",
-                fontSize: "1rem",
-                marginTop: "0.5rem",
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSearchSubmit();
-                }
-              }}
-            />
-          </div>
         </form>
         {loadingState && (
           <div className="loading-container">
@@ -831,96 +1302,207 @@ const Legislation = ({ user }) => {
                 {viewMode === "analyze"
                   ? "Analyzing bill, please wait..."
                   : "Extracting bill text for debate, please wait..."}
+          )}
+
+          {/* Step 3: Configure & Execute */}
+          {currentStep === 3 && (
+            <div className="step-three">
+              {/* Selected Bill Display */}
+              <div className="selected-bill-display">
+                <h3>
+                  {billSource === 'recommended' ? (
+                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                  ) : (
+                    `Selected Bill: 📄 ${selectedBill.name}`
+                  )}
+                </h3>
               </div>
-              {processingStage && (
-                <div className="loading-stage">{processingStage}</div>
+              
+              <div className="action-display">
+                <h3>Action: {actionType === 'analyze' ? 'Analyze Bill' : 'Debate Bill'}</h3>
+              </div>
+
+              {actionType === 'analyze' && (
+                <div className="analyze-config">
+                  <h2>Step 3: Configure Analysis</h2>
+                  <div className="config-section">
+                    <div className="model-selection">
+                      <label className="model-label">
+                        <span className="label-icon">🤖</span>
+                        Select AI Model
+                      </label>
+                      <select 
+                        className="model-dropdown"
+                        value={selectedModel} 
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                      >
+                        {modelOptions.map((model) => (
+                          <option key={model} value={model}>{model}</option>
+                        ))}
+                      </select>
+                      <p className="model-description">
+                        Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="button-group">
+                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                      ← Back
+                    </button>
+                    <button 
+                      className="nav-button execute"
+                      onClick={handleAnalyzeExecution}
+                      disabled={loadingState}
+                    >
+                      {loadingState ? 'Analyzing...' : 'Start Analysis'}
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
-        )}
-        {viewMode === "debate" && extractionSuccess && (
-          <div className="success-message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <span>Text successfully extracted! You can now set up your debate.</span>
-          </div>
-        )}
-      </div>
 
-      <div className="main-content">
-        {viewMode === "analyze" && analysisResult && (
-          <div className="analysis-result markdown-content">
-            <h3>Bill Analysis</h3>
-            <ReactMarkdown 
-              rehypePlugins={[rehypeRaw]} 
-              className="markdown-renderer"
-              components={{
-                h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-              }}
-            >
-              {analysisResult}
-            </ReactMarkdown>
-          </div>
-        )}
+              {actionType === 'debate' && (
+                <div className="debate-config">
+                  <h2>Step 3: Configure Debate</h2>
+                  <div className="config-section">
+                    <div className="debate-topic-section">
+                      <label className="debate-label">
+                        <span className="label-icon">📝</span>
+                        Bill Name for Debate
+                      </label>
+                      <input
+                        type="text"
+                        className="debate-topic-input"
+                        value={debateTopic}
+                        onChange={(e) => setDebateTopic(e.target.value)}
+                        placeholder="Enter debate topic name"
+                      />
+                      <p className="input-description">
+                        This will be the topic displayed during the debate session.
+                      </p>
+                    </div>
+                    
+                    <div className="debate-mode-section">
+                      <label className="debate-label">
+                        <span className="label-icon">⚔️</span>
+                        Select Debate Mode
+                      </label>
+                      <div className="debate-mode-cards">
+                        {[
+                          { mode: 'ai-vs-ai', label: 'AI vs AI', desc: 'Watch two AIs debate', icon: '🤖' },
+                          { mode: 'ai-vs-user', label: 'AI vs User', desc: 'Debate against AI', icon: '🧠' },
+                          { mode: 'user-vs-user', label: 'User vs User', desc: 'Debate with friend', icon: '👥' }
+                        ].map(({ mode, label, desc, icon }) => (
+                          <div 
+                            key={mode}
+                            className={`debate-mode-card ${debateMode === mode ? 'selected' : ''}`}
+                            onClick={() => setDebateMode(mode)}
+                          >
+                            <div className="mode-icon">{icon}</div>
+                            <div className="mode-content">
+                              <strong className="mode-title">{label}</strong>
+                              <span className="mode-description">{desc}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mode-description-text">
+                        Choose how you want to conduct the debate about this bill.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="button-group">
+                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                      ← Back
+                    </button>
+                    <button 
+                      className="nav-button execute"
+                      onClick={handleDebateExecution}
+                      disabled={!debateTopic.trim() || !debateMode}
+                    >
+                      Start Debate
+                    </button>
+                  </div>
+                </div>
+              )}
 
-        {(viewMode === "debate" && extractionSuccess) && (
-          <>
-            <h2>Debate Simulator</h2>
-            <div className="input-container">
-              <label htmlFor="billName">Bill Name:</label>
-              <input
-                type="text"
-                id="billName"
-                ref={billNameInputRef}
-                value={debateTopic}
-                onChange={handleBillNameChange}
-                onKeyDown={handleKeyDown}
-                onFocus={(e) => e.target.select()}
-                style={{ width: "100%", padding: "0.8rem", fontSize: "1rem" }}
-              />
+              {loadingState && (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <div className="loading-text">
+                    <div className="loading-main">
+                      {actionType === 'analyze' ? 'Analyzing bill...' : 'Processing bill...'}
+                    </div>
+                    {processingStage && (
+                      <div className="loading-stage">
+                        <ProgressBar 
+                          step={progressStep} 
+                          total={totalSteps} 
+                          message={processingStage} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {error && <p className="error-text">{error}</p>}
             </div>
-            <h2>Select a Debate Mode</h2>
-            <div className="mode-buttons">
-              <button
-                type="button"
-                className={debateMode === "ai-vs-ai" ? "selected-mode" : ""}
-                onClick={() => setDebateMode("ai-vs-ai")}
-              >
-                AI vs AI
-              </button>
-              <button
-                type="button"
-                className={debateMode === "ai-vs-user" ? "selected-mode" : ""}
-                onClick={() => setDebateMode("ai-vs-user")}
-              >
-                AI vs User
-              </button>
-              <button
-                type="button"
-                className={debateMode === "user-vs-user" ? "selected-mode" : ""}
-                onClick={() => setDebateMode("user-vs-user")}
-              >
-                User vs User
-              </button>
+          )}
+          {/* Results Section */}
+          {analysisResult && (
+            <div className="results-section">
+              <div className="results-header">
+                <h2>Analysis Results</h2>
+                <div className="results-actions">
+                  <button className="share-analysis-btn" onClick={handleShareAnalysis}>
+                    📤 Share Analysis
+                  </button>
+                  <button className="new-analysis-btn" onClick={resetFlow}>
+                    Start New Analysis
+                  </button>
+                </div>
+              </div>
+              
+              {/* Grading Infographic Section */}
+              {analysisGrades && (
+                <BillGradingSection grades={analysisGrades} />
+              )}
+              
+              {/* Analysis Text Section */}
+              <div className="analysis-text-section">
+                <div className="analysis-text-header">
+                  <h2>Analysis Results</h2>
+                </div>
+                <div className="analysis-result markdown-content">
+                  <ReactMarkdown 
+                    rehypePlugins={[rehypeRaw]} 
+                    className="markdown-renderer"
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
+                      p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                      ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                      ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+                    }}
+                  >
+                    {analysisResult}
+                  </ReactMarkdown>
+                </div>
+              </div>
+              
+              {/* Share button at the bottom */}
+              <div className="analysis-bottom-actions">
+                <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
+                  📤 Share This Analysis
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className="start-debate-button"
-              onClick={handleStartDebate}
-              disabled={!debateTopic.trim()}
-            >
-              Start Debate
-            </button>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Hidden PDF content for export */}
@@ -963,6 +1545,11 @@ const Legislation = ({ user }) => {
             {selectedHistory.activityType && (
               <p style={{ fontSize: "12pt", color: "#666" }}>
                 Activity Type: {selectedHistory.activityType}
+              </p>
+            )}
+            {selectedHistory.model && (
+              <p style={{ fontSize: "12pt", color: "#666" }}>
+                Model: {selectedHistory.model}
               </p>
             )}
             <p style={{ fontSize: "10pt", color: "#999" }}>

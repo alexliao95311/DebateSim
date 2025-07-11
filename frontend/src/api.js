@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const generateAIResponse = async (debater, prompt, model) => {
+export const generateAIResponse = async (debater, prompt, model, billDescription = '') => {
   try {
     console.log(`🚀 Generating AI response for ${debater} using ${model}`);
     const startTime = Date.now();
@@ -42,6 +42,7 @@ export const generateAIResponse = async (debater, prompt, model) => {
       debater,
       prompt,
       model, // Pass along the chosen model
+      bill_description: billDescription, // Pass bill text for evidence-based arguments
     });
     
     const duration = Date.now() - startTime;

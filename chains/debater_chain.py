@@ -9,12 +9,15 @@ from pydantic import Field
 import os
 import json
 import aiohttp
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
+
+# No response cleaning needed for standard models
 
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
@@ -50,7 +53,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="qwen/qwq-32b:free")
+    model_name: str = Field(default="openai/gpt-4o")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -99,7 +102,7 @@ class OpenRouterChat(BaseChatModel):
         result = response.json()
         assistant_message = result["choices"][0]["message"]["content"]
         
-        # Convert the raw assistant text into LangChain's ChatResult/ChatGeneration structure
+        # Convert the assistant text into LangChain's ChatResult/ChatGeneration structure
         return ChatResult(
             generations=[
                 ChatGeneration(
@@ -172,9 +175,23 @@ class OpenRouterChat(BaseChatModel):
             "temperature": self.temperature,
         }
 
-# --- Prompt template ----------------------------------------------------
-template = """
+# --- Prompt templates ----------------------------------------------------
+
+# Template for bill debates - includes evidence requirements
+bill_debate_template = """
 You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+
+BILL CONTEXT (for reference):
+{bill_description}
+
+EVIDENCE AND CITATION REQUIREMENTS:
+• **MANDATORY**: Support every argument with specific textual evidence from the bill. Quote relevant sections directly to strengthen your position.
+• **Citation format**: When referencing the bill, use phrases like "The bill states..." or "Section X clearly indicates..." or "According to [specific section/paragraph]..." followed by brief, accurate quotes.
+• **Evidence integration**: Don't just quote - explain how the evidence supports your argument. Connect the bill's language to your position.
+• **Multiple sources**: Use evidence from different sections of the bill to build a comprehensive argument.
+• **Accuracy**: Ensure all quotes are accurate. If paraphrasing, clearly indicate this with phrases like "The bill essentially argues that..."
+• **Context**: When citing, provide enough context so readers understand the relevance of the quoted material.
+• **Limitations**: If the bill text appears truncated (marked with [Content truncated] or similar), focus on the available sections and note when referencing limitations.
 
 CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
 
@@ -196,24 +213,67 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 
 ------------------------------------------------------------------
 Content Guidelines
-• If there are previous arguments, start with a **concise rebuttal** (≤ 2 sentences).
+• **REBUTTAL RULES**: Only include a rebuttal if the history section below contains actual opponent arguments. If the history is empty or contains no opponent arguments, start directly with your main arguments.
 • Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
 Previous opponent argument (for context only):  
 {history}
 
-Remember: Respond ONLY with the formatted debate content. No technical information or parameter details.
+IMPORTANT: If the history section above is empty or contains no opponent arguments, do NOT include any rebuttal. Start directly with your main arguments. Only rebut if there are actual opponent arguments to respond to.
 """
 
-# Create the chat prompt template
-chat_prompt = ChatPromptTemplate.from_template(template)
+# Template for topic debates - focuses on general argumentation without bill requirements
+topic_debate_template = """
+You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+
+ARGUMENTATION REQUIREMENTS:
+• **FOCUS**: Present logical, well-reasoned arguments that address the topic directly.
+• **EVIDENCE**: Support your arguments with relevant facts, statistics, examples, and logical reasoning.
+• **SOURCES**: When referencing information, use credible sources and real-world examples.
+• **ANALYSIS**: Explain how your evidence supports your position and why it matters.
+• **REBUTTALS**: Address opponent arguments directly and explain why your position is stronger.
+• **CONTEXT**: Consider multiple perspectives and acknowledge the complexity of the issue when appropriate.
+
+CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
+
+------------------------------------------------------------------
+Formatting Rules  **(STRICT — the UI parses your markdown)**
+1. **Title line (exact format):**
+   `# {debater_role} – Round {round_num}/5`
+   
+2. After the title, produce *at most* **200 words** total.
+
+3. Use only *level‑3* markdown headings (`###`) for your main points.
+   – No other markdown syntax (no lists, tables, code blocks, or images).
+   
+4. Keep paragraphs short (≤ 3 sentences).
+
+5. Do not add extra blank lines at the end of the message.
+
+6. **NEVER include parameter names, variable information, or any technical details in your response.**
+
+------------------------------------------------------------------
+Content Guidelines
+• **REBUTTAL RULES**: Only include a rebuttal if the history section below contains actual opponent arguments. If the history is empty or contains no opponent arguments, start directly with your main arguments.
+• Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
+• Close with a **one‑sentence** summary that clearly states why your side is ahead.
+
+Previous opponent argument (for context only):  
+{history}
+
+IMPORTANT: If the history section above is empty or contains no opponent arguments, do NOT include any rebuttal. Start directly with your main arguments. Only rebut if there are actual opponent arguments to respond to.
+"""
+
+# Create chat prompt templates for both types
+bill_debate_prompt = ChatPromptTemplate.from_template(bill_debate_template)
+topic_debate_prompt = ChatPromptTemplate.from_template(topic_debate_template)
 
 # Create a memory instance
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
+def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_type: str = "topic"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -242,6 +302,9 @@ def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
         
         return history_str
 
+    # Select the appropriate prompt template based on debate type
+    selected_prompt = bill_debate_prompt if debate_type == "bill" else topic_debate_prompt
+    
     # Build the runnable chain using LCEL
     chain = (
         {
@@ -251,7 +314,7 @@ def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
             "history": lambda inputs: inputs.get("history", ""),
             "round_num": lambda inputs: inputs.get("round_num", round_num),
         }
-        | chat_prompt
+        | selected_prompt
         | llm
         | StrOutputParser()
     )
@@ -287,4 +350,4 @@ def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1):
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(model_name="qwen/qwq-32b:free", round_num=1)
+debater_chain = get_debater_chain(model_name="openai/gpt-4o", round_num=1, debate_type="topic")

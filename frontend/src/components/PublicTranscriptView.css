@@ -1,0 +1,710 @@
+/* PublicTranscriptView.css - Matches DebateSim styling exactly */
+
+.public-transcript-container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 8rem 2rem 2rem 2rem;
+  background: url("/images/background4.png") center center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header - Exact match from DebateSim */
+.home-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.header-content {
+  width: 100%;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.header-center h1 {
+  font-size: 2rem;
+  color: #ffffff !important;
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.header-center h1:hover {
+  color: #357abd;
+  text-decoration: underline;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.home-button {
+  height: 36px;
+  line-height: 36px;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #4a90e2;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-button:hover {
+  background-color: #357abd;
+}
+
+/* Main Content */
+.main-content {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Transcript Header */
+.transcript-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.transcript-header h1 {
+  font-size: 2em;
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.transcript-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.transcript-meta .topic {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #4a90e2;
+  color: white;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.transcript-meta .mode {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #28a745;
+  color: white;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.transcript-meta .date {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  background: #6c757d;
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Transcript Viewer */
+.transcript-viewer {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.transcript-content {
+  padding: 2rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Transcript markdown styling - matches speech blocks from Debate.jsx */
+.transcript-heading-h1,
+.transcript-heading-h2 {
+  color: #4a90e2;
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #4a90e2;
+}
+
+.transcript-heading-h1 {
+  font-size: 1.8rem;
+}
+
+.transcript-heading-h2 {
+  font-size: 1.5rem;
+}
+
+.transcript-heading-h3,
+.transcript-heading-h4 {
+  color: #333;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+.transcript-heading-h3 {
+  font-size: 1.3rem;
+}
+
+.transcript-heading-h4 {
+  font-size: 1.1rem;
+}
+
+.transcript-paragraph {
+  margin-bottom: 1rem;
+  text-align: justify;
+  line-height: 1.7;
+}
+
+.transcript-list,
+.transcript-numbered-list {
+  margin: 1rem 0 1rem 2rem;
+  line-height: 1.6;
+}
+
+.transcript-list-item {
+  margin-bottom: 0.5rem;
+}
+
+.transcript-strong {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.transcript-emphasis {
+  font-style: italic;
+  color: #34495e;
+}
+
+.transcript-divider {
+  border: none;
+  border-top: 2px solid #e0e7ee;
+  margin: 2rem 0;
+}
+
+/* Error state */
+.error-container {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 100%;
+  max-width: 600px;
+}
+
+.error-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.error-container p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+.error-container .home-button {
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  height: auto;
+  line-height: normal;
+}
+
+/* Footer */
+.transcript-footer {
+  margin-top: 3rem;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+}
+
+.transcript-footer p {
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.transcript-footer .shared-info {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+.debatesim-link {
+  color: #4a90e2;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.debatesim-link:hover {
+  color: #357abd;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .public-transcript-container {
+    padding: 6rem 1rem 2rem 1rem;
+  }
+  
+  .header-content {
+    padding: 0 1rem;
+  }
+  
+  .header-center h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .transcript-content {
+    padding: 1.5rem;
+  }
+  
+  .transcript-heading-h1 {
+    font-size: 1.5rem;
+  }
+  
+  .transcript-heading-h2 {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-transcript-container {
+    padding: 5rem 0.5rem 2rem 0.5rem;
+  }
+  
+  .header-content {
+    padding: 0 0.5rem;
+  }
+  
+  .header-center h1 {
+    font-size: 1.3rem;
+  }
+  
+  .transcript-content {
+    padding: 1rem;
+  }
+  
+  .transcript-meta {
+    font-size: 0.8rem;
+  }
+  
+  .transcript-meta span {
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* === Bill Grading Styles for Shared Transcripts === */
+.grading-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.grading-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.grading-header h2 {
+  color: #333 !important;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.grading-subtitle {
+  color: #666 !important;
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.grading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem;
+}
+
+.grade-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  border: 2px solid rgba(74, 144, 226, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: help;
+  min-height: 200px;
+  backdrop-filter: blur(10px);
+}
+
+.grade-item:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+.grade-item:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-10px);
+}
+
+.circular-progress {
+  position: relative;
+  width: 75px;
+  height: 75px;
+  margin: 1rem 0;
+}
+
+.circular-progress svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-progress .progress-bg {
+  fill: none;
+  stroke: #e9ecef;
+  stroke-width: 6;
+}
+
+.circular-progress .progress-fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s ease-in-out;
+}
+
+.circular-progress .progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.grade-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.grade-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.grade-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333 !important;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.grade-description {
+  font-size: 0.8rem;
+  color: #666 !important;
+  line-height: 1.4;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Category-based Styling */
+.grade-item.positive {
+  border-color: rgba(40, 167, 69, 0.3);
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.08), rgba(40, 167, 69, 0.03));
+}
+
+.grade-item.positive:hover {
+  border-color: rgba(40, 167, 69, 0.5);
+  box-shadow: 0 12px 40px rgba(40, 167, 69, 0.2);
+}
+
+.grade-item.moderate {
+  border-color: rgba(255, 193, 7, 0.3);
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.08), rgba(255, 193, 7, 0.03));
+}
+
+.grade-item.moderate:hover {
+  border-color: rgba(255, 193, 7, 0.5);
+  box-shadow: 0 12px 40px rgba(255, 193, 7, 0.2);
+}
+
+.grade-item.caution {
+  border-color: rgba(255, 126, 20, 0.3);
+  background: linear-gradient(135deg, rgba(255, 126, 20, 0.08), rgba(255, 126, 20, 0.03));
+}
+
+.grade-item.caution:hover {
+  border-color: rgba(255, 126, 20, 0.5);
+  box-shadow: 0 12px 40px rgba(255, 126, 20, 0.2);
+}
+
+/* Overall Grade Special Styling */
+.grade-item.overall {
+  grid-column: 3;
+  grid-row: 2;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(74, 144, 226, 0.08));
+  border: 3px solid rgba(74, 144, 226, 0.4);
+  min-height: 220px;
+  position: relative;
+}
+
+.grade-item.overall::before {
+  content: '⭐';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 1.5rem;
+  background: #4a90e2;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.grade-item.overall .circular-progress {
+  width: 90px;
+  height: 90px;
+}
+
+.grade-item.overall .progress-text {
+  font-size: 1.2rem;
+}
+
+.grade-item.overall .grade-label {
+  font-size: 1.1rem;
+  color: #4a90e2 !important;
+  font-weight: 700;
+}
+
+.grade-item.overall .grade-icon {
+  font-size: 1.8rem;
+}
+
+.grade-item.overall:hover {
+  border-color: rgba(74, 144, 226, 0.6);
+  box-shadow: 0 16px 50px rgba(74, 144, 226, 0.25);
+  transform: translateY(-10px) scale(1.03);
+}
+
+/* Tooltip Styles */
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 280px;
+  white-space: normal;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+/* Animation for progress rings */
+@keyframes fillProgress {
+  from {
+    stroke-dasharray: 0 1000;
+  }
+}
+
+.circular-progress .progress-fill {
+  animation: fillProgress 1.5s ease-out;
+}
+
+/* Mobile Responsiveness for Grading */
+@media (max-width: 768px) {
+  .grading-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+  
+  .grade-item.overall {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  
+  .grade-item {
+    min-height: 180px;
+    padding: 1rem;
+  }
+  
+  .circular-progress {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .grade-item.overall .circular-progress {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .circular-progress .progress-text {
+    font-size: 0.9rem;
+  }
+  
+  .grade-item.overall .progress-text {
+    font-size: 1.1rem;
+  }
+  
+  .grade-label {
+    font-size: 0.85rem;
+  }
+  
+  .grade-description {
+    font-size: 0.75rem;
+  }
+  
+  .grade-icon {
+    font-size: 1.3rem;
+  }
+  
+  .grade-item.overall .grade-icon {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .grading-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 1rem;
+  }
+  
+  .grade-item {
+    min-height: 160px;
+    padding: 1rem;
+  }
+  
+  .grade-item.overall {
+    grid-column: 1;
+    grid-row: 6;
+    min-height: 180px;
+  }
+  
+  .circular-progress {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .grade-item.overall .circular-progress {
+    width: 85px;
+    height: 85px;
+  }
+  
+  .grading-section {
+    padding: 1.5rem;
+  }
+}
