@@ -433,37 +433,18 @@ const Legislation = ({ user }) => {
         setRecommendedBills(data.bills || []);
       } catch (err) {
         console.error("Error fetching recommended bills:", err);
-        setBillsError('Unable to load recommended bills. Please try again later.');
-        // Set mock data for development
-        setRecommendedBills([
-          {
-            id: 'hr1234',
-            title: 'American Innovation and Manufacturing Act',
-            type: 'HR',
-            number: '1234',
-            sponsor: 'Rep. Smith (D-CA)',
-            lastAction: 'Passed House',
-            description: 'A bill to promote innovation in American manufacturing and strengthen domestic supply chains.'
-          },
-          {
-            id: 's5678',
-            title: 'Climate Resilience Infrastructure Act',
-            type: 'S',
-            number: '5678',
-            sponsor: 'Sen. Johnson (R-TX)',
-            lastAction: 'Committee Review',
-            description: 'Legislation to improve infrastructure resilience to climate change impacts.'
-          },
-          {
-            id: 'hr9999',
-            title: 'Digital Privacy Protection Act',
-            type: 'HR',
-            number: '9999',
-            sponsor: 'Rep. Williams (D-NY)',
-            lastAction: 'Introduced',
-            description: 'A comprehensive bill to protect consumer data privacy and regulate data collection practices.'
-          }
-        ]);
+        let errorMessage = "Unable to load recommended bills";
+        
+        if (err.message.includes("CONGRESS_API_KEY")) {
+          errorMessage = "Congress.gov API key is required. Please check your configuration.";
+        } else if (err.message.includes("500")) {
+          errorMessage = "Congress.gov API is currently unavailable. Please try again later.";
+        } else {
+          errorMessage = `Failed to load bills: ${err.message}`;
+        }
+        
+        setBillsError(errorMessage);
+        setRecommendedBills([]);
       } finally {
         setBillsLoading(false);
       }
@@ -942,28 +923,186 @@ const Legislation = ({ user }) => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBills, setFilteredBills] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [isSearchMode, setIsSearchMode] = useState(false);
 
   useEffect(() => {
     setFilteredBills(recommendedBills);
   }, [recommendedBills]);
 
-  const handleSearchSubmit = () => {
-    if (!searchQuery.trim()) {
+  // Real-time search suggestions with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim() && searchQuery.trim().length >= 2) {
+        generateSuggestions(searchQuery);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const performSearch = async (query) => {
+    if (!query.trim()) {
+      setIsSearchMode(false);
+      setSearchResults([]);
       setFilteredBills(recommendedBills);
+      setShowSuggestions(false);
       return;
     }
 
-    const query = searchQuery.trim().toLowerCase();
+    setSearchLoading(true);
+    setSearchError("");
+    setIsSearchMode(true);
+    setShowSuggestions(false);
+    
+    try {
+      const response = await fetch(`${API_URL}/search-bills`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          limit: 15 // Reduced limit for faster search
+        }),
+      });
 
-    const filtered = recommendedBills.filter((bill) => {
-      return (
-        (bill.title && bill.title.toLowerCase().includes(query)) ||
-        (bill.type && bill.type.toLowerCase().includes(query)) ||
-        (bill.number && bill.number.toLowerCase().includes(query)) ||
-        (bill.sponsor && bill.sponsor.toLowerCase().includes(query))
-      );
-    });
-    setFilteredBills(filtered);
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.bills && Array.isArray(data.bills)) {
+        setSearchResults(data.bills);
+        setFilteredBills(data.bills);
+        
+        // Log search success
+        console.log(`Found ${data.bills.length} bills for query: "${query}"`);
+      } else {
+        setSearchResults([]);
+        setFilteredBills([]);
+        console.log(`No bills found for query: "${query}"`);
+      }
+      
+    } catch (err) {
+      console.error("Search error:", err);
+      let errorMessage = "Search failed";
+      
+      if (err.message.includes("CONGRESS_API_KEY")) {
+        errorMessage = "Congress.gov API key is required for bill search. Please check your configuration.";
+      } else if (err.message.includes("500")) {
+        errorMessage = "Congress.gov API is currently unavailable. Please try again later.";
+      } else if (err.message.includes("404")) {
+        errorMessage = "No bills found for your search query.";
+      } else {
+        errorMessage = `Search failed: ${err.message}`;
+      }
+      
+      setSearchError(errorMessage);
+      setSearchResults([]);
+      setFilteredBills([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const generateSuggestions = async (query) => {
+    if (!query.trim() || query.trim().length < 2) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/search-suggestions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: query.trim(),
+          limit: 5
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.suggestions && Array.isArray(data.suggestions)) {
+          setSearchSuggestions(data.suggestions);
+          setShowSuggestions(data.suggestions.length > 0);
+        }
+      }
+    } catch (err) {
+      console.error("Suggestions error:", err);
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      performSearch(searchQuery);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    performSearch(suggestion);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setIsSearchMode(false);
+    setFilteredBills(recommendedBills);
+    setShowSuggestions(false);
+    setSearchError("");
+  };
+
+  // Keyboard navigation for suggestions
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearchSubmit();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // Show suggestions when typing
+    if (value.trim().length >= 2) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSearchInputFocus = () => {
+    if (searchQuery.trim().length >= 2 && searchSuggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSearchInputBlur = () => {
+    // Delay hiding suggestions to allow clicking on them
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
   };
 
   return (
@@ -1140,35 +1279,216 @@ const Legislation = ({ user }) => {
             <div className="step-one">
               <h2>Step 1: Choose a Bill</h2>
               
-              {/* Recommended Bills Section */}
-              <div className="recommended-bills-section">
-                <h3>📋 Trending Congressional Bills</h3>
-                
-                {billsLoading && (
-                  <div className="bills-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading current bills from Congress...</p>
-                  </div>
+              {/* Bills Section */}
+              <div className="bills-section">
+                {!isSearchMode && (
+                  <>
+                    <h3>📋 Trending Congressional Bills</h3>
+                    
+                    {billsLoading && (
+                      <div className="bills-loading">
+                        <div className="loading-spinner"></div>
+                        <p>Loading current bills from Congress...</p>
+                      </div>
+                    )}
+                    
+                    {billsError && (
+                      <div className="bills-error">
+                        <p>{billsError}</p>
+                      </div>
+                    )}
+                    
+                    {!billsLoading && !billsError && recommendedBills.length > 0 && (
+                      <div className="bills-horizontal-scroll">
+                        {recommendedBills.map((bill) => (
+                          <BillCard 
+                            key={bill.id} 
+                            bill={bill} 
+                            onSelect={handleSelectRecommendedBill}
+                            isProcessing={loadingState && selectedBill?.id === bill.id}
+                            processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
                 
-                {billsError && (
-                  <div className="bills-error">
-                    <p>{billsError}</p>
-                  </div>
-                )}
-                
-                {!billsLoading && !billsError && recommendedBills.length > 0 && (
-                  <div className="bills-horizontal-scroll">
-                    {recommendedBills.map((bill) => (
-                      <BillCard 
-                        key={bill.id} 
-                        bill={bill} 
-                        onSelect={handleSelectRecommendedBill}
-                        isProcessing={loadingState && selectedBill?.id === bill.id}
-                        processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                      />
-                    ))}
-                  </div>
+                {isSearchMode && (
+                  <>
+                    <h3>🔍 Search Results</h3>
+                    
+                    {searchLoading && (
+                      <div className="search-loading" style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        padding: "2rem",
+                        backgroundColor: "#f8f9fa",
+                        borderRadius: "8px",
+                        margin: "1rem 0"
+                      }}>
+                        <div className="loading-spinner" style={{
+                          width: "2rem",
+                          height: "2rem",
+                          border: "3px solid #e9ecef",
+                          borderTop: "3px solid #007bff",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite",
+                          marginBottom: "1rem"
+                        }}></div>
+                        <p style={{ margin: 0, color: "#6c757d" }}>Searching Congress.gov for bills...</p>
+                        <small style={{ color: "#8a8a8a", marginTop: "0.5rem" }}>
+                          This may take a few seconds
+                        </small>
+                      </div>
+                    )}
+                    
+                    {searchError && (
+                      <div className="search-error" style={{
+                        padding: "1rem",
+                        backgroundColor: "#f8d7da",
+                        border: "1px solid #f5c6cb",
+                        borderRadius: "8px",
+                        margin: "1rem 0"
+                      }}>
+                        <div style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "0.5rem",
+                          marginBottom: "0.5rem"
+                        }}>
+                          <span style={{ color: "#721c24", fontSize: "1.2rem" }}>⚠️</span>
+                          <strong style={{ color: "#721c24" }}>Search Error</strong>
+                        </div>
+                        <p style={{ margin: 0, color: "#721c24" }}>{searchError}</p>
+                        <button 
+                          onClick={() => performSearch(searchQuery)}
+                          style={{
+                            marginTop: "0.75rem",
+                            padding: "0.5rem 1rem",
+                            backgroundColor: "#dc3545",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "0.9rem",
+                            transition: "background-color 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = "#c82333";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "#dc3545";
+                          }}
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    )}
+                    
+                    {!searchLoading && !searchError && filteredBills.length > 0 && (
+                      <>
+                        <div style={{
+                          backgroundColor: "#d1ecf1",
+                          border: "1px solid #bee5eb",
+                          borderRadius: "4px",
+                          padding: "0.75rem",
+                          marginBottom: "1rem",
+                          fontSize: "0.9rem",
+                          color: "#0c5460"
+                        }}>
+                          💡 <strong>Search Tips:</strong> Try bill numbers (e.g., "HR 1234"), topics (e.g., "healthcare"), 
+                          or sponsor names for better results.
+                        </div>
+                        
+                        <div className="bills-horizontal-scroll">
+                          {filteredBills.map((bill) => (
+                            <BillCard 
+                              key={bill.id} 
+                              bill={bill} 
+                              onSelect={handleSelectRecommendedBill}
+                              isProcessing={loadingState && selectedBill?.id === bill.id}
+                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    
+                    {!searchLoading && !searchError && filteredBills.length === 0 && searchQuery && (
+                      <div style={{
+                        textAlign: "center",
+                        padding: "2rem",
+                        backgroundColor: "#f8f9fa",
+                        borderRadius: "8px",
+                        border: "2px dashed #dee2e6"
+                      }}>
+                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔍</div>
+                        <h4 style={{ margin: "0 0 0.5rem 0", color: "#495057" }}>
+                          No bills found for "{searchQuery}"
+                        </h4>
+                        <p style={{ margin: "0 0 1rem 0", color: "#6c757d" }}>
+                          Try different keywords, check spelling, or browse trending bills below.
+                        </p>
+                        <div style={{ 
+                          display: "flex", 
+                          gap: "0.5rem", 
+                          justifyContent: "center",
+                          flexWrap: "wrap"
+                        }}>
+                          <button
+                            onClick={handleClearSearch}
+                            style={{
+                              padding: "0.5rem 1rem",
+                              backgroundColor: "#007bff",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9rem"
+                            }}
+                          >
+                            Browse Trending Bills
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSearchQuery("healthcare");
+                              performSearch("healthcare");
+                            }}
+                            style={{
+                              padding: "0.5rem 1rem",
+                              backgroundColor: "#28a745",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9rem"
+                            }}
+                          >
+                            Try "Healthcare"
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSearchQuery("infrastructure");
+                              performSearch("infrastructure");
+                            }}
+                            style={{
+                              padding: "0.5rem 1rem",
+                              backgroundColor: "#17a2b8",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9rem"
+                            }}
+                          >
+                            Try "Infrastructure"
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1192,29 +1512,138 @@ const Legislation = ({ user }) => {
                 />
               </div>
               
-              <div className="search-bar-container" style={{ marginTop: "1rem" }}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for a bill by title, topic, or number..."
-                  className="search-bar"
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem 1rem",
-                    border: "1px solid #ccc",
-                    borderRadius: "6px",
-                    fontSize: "1rem",
-                    marginTop: "0.5rem",
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleSearchSubmit();
-                    }
-                  }}
-                />
-              </div>
+              <div className="search-container" style={{ position: "relative", marginBottom: "1rem" }}>
+                  <div className="search-wrapper" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearchInputChange}
+                        onFocus={handleSearchInputFocus}
+                        onBlur={handleSearchInputBlur}
+                        onKeyDown={handleSearchKeyDown}
+                        placeholder="Search for a bill by title, topic, number (e.g., 'HR 1234', 'healthcare', 'climate')..."
+                        className="search-bar"
+                        style={{
+                          width: "100%",
+                          padding: "0.75rem 2.5rem 0.75rem 1rem",
+                          border: "1px solid #ddd",
+                          borderRadius: "8px",
+                          fontSize: "1rem",
+                          outline: "none",
+                          transition: "border-color 0.2s, box-shadow 0.2s",
+                        }}
+                      />
+                      
+                      {/* Search Icon */}
+                      <div style={{
+                        position: "absolute",
+                        right: "0.75rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#666",
+                        pointerEvents: "none"
+                      }}>
+                        🔍
+                      </div>
+                      
+                      {/* Search Suggestions Dropdown */}
+                      {showSuggestions && searchSuggestions.length > 0 && (
+                        <div className="suggestions-dropdown" style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          backgroundColor: "white",
+                          border: "1px solid #ddd",
+                          borderTop: "none",
+                          borderRadius: "0 0 8px 8px",
+                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                          zIndex: 1000,
+                          maxHeight: "200px",
+                          overflowY: "auto"
+                        }}>
+                          {searchSuggestions.map((suggestion, index) => (
+                            <div
+                              key={index}
+                              onClick={() => handleSuggestionClick(suggestion)}
+                              style={{
+                                padding: "0.75rem 1rem",
+                                cursor: "pointer",
+                                borderBottom: index < searchSuggestions.length - 1 ? "1px solid #eee" : "none",
+                                transition: "background-color 0.2s"
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = "#f8f9fa";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = "white";
+                              }}
+                            >
+                              <span style={{ color: "#495057" }}>{suggestion}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={handleSearchSubmit}
+                      disabled={searchLoading || !searchQuery.trim()}
+                      style={{
+                        padding: "0.75rem 1.5rem",
+                        backgroundColor: searchLoading || !searchQuery.trim() ? "#ccc" : "#007bff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: searchLoading || !searchQuery.trim() ? "not-allowed" : "pointer",
+                        fontSize: "1rem",
+                        fontWeight: "500",
+                        minWidth: "80px",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {searchLoading ? "..." : "Search"}
+                    </button>
+                    
+                    {(isSearchMode || searchQuery) && (
+                      <button
+                        onClick={handleClearSearch}
+                        style={{
+                          padding: "0.75rem",
+                          backgroundColor: "#6c757d",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          fontSize: "1rem",
+                          transition: "all 0.2s"
+                        }}
+                        title="Clear search"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Search Status */}
+                  {isSearchMode && !searchLoading && !searchError && (
+                    <div style={{
+                      marginTop: "0.5rem",
+                      padding: "0.5rem",
+                      backgroundColor: "#e7f3ff",
+                      border: "1px solid #b8daff",
+                      borderRadius: "4px",
+                      fontSize: "0.9rem",
+                      color: "#004085"
+                    }}>
+                      {filteredBills.length === 0 
+                        ? `No bills found for "${searchQuery}". Try different keywords or check spelling.`
+                        : `Found ${filteredBills.length} bill${filteredBills.length === 1 ? '' : 's'} for "${searchQuery}"`
+                      }
+                    </div>
+                  )}
+                </div>
 
               {error && <p className="error-text">{error}</p>}
               

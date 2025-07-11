@@ -20,6 +20,7 @@ from typing import List, Dict, Any, AsyncGenerator
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
+from billsearch import BillSearcher
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
@@ -104,11 +105,13 @@ cache = TTLCache(maxsize=200, ttl=600)  # Cache up to 200 items for 10 minutes
 
 # Global session variable
 session = None
+bill_searcher = None
 
 @app.on_event("startup")
 async def startup_event():
-    global session
+    global session, bill_searcher
     session = aiohttp.ClientSession(connector=connector)
+    bill_searcher = BillSearcher(session)
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -404,6 +407,9 @@ bills_cache = TTLCache(maxsize=50, ttl=3600)  # Cache for 1 hour
 async def fetch_congress_bills() -> List[Dict[str, Any]]:
     """Fetch current bills from Congress.gov API"""
    
+    if not CONGRESS_API_KEY:
+        raise ValueError("CONGRESS_API_KEY is required for fetching bills from Congress.gov")
+    
     # Use cached result if available
     cache_key = "congress_bills_current"
     if cache_key in bills_cache:
@@ -500,31 +506,7 @@ async def fetch_congress_bills() -> List[Dict[str, Any]]:
             
     except Exception as e:
         logger.error(f"Error fetching Congress bills: {e}")
-        # Return mock data as fallback by calling the function with temporarily disabled API key
-        original_key = CONGRESS_API_KEY
-        globals()['CONGRESS_API_KEY'] = None
-        mock_data = [
-            {
-                "id": "hr1234-119",
-                "title": "American Innovation and Manufacturing Act of 2025",
-                "type": "HR",
-                "number": "1234",
-                "sponsor": "Rep. Smith (D-CA)",
-                "lastAction": "Passed House",
-                "description": "A bill to promote innovation in American manufacturing, strengthen domestic supply chains, and create jobs in emerging technologies including renewable energy and advanced materials."
-            },
-            {
-                "id": "s5678-119",
-                "title": "Climate Resilience Infrastructure Act of 2025",
-                "type": "S",
-                "number": "5678",
-                "sponsor": "Sen. Johnson (R-TX)",
-                "lastAction": "Committee Review",
-                "description": "Comprehensive legislation to improve infrastructure resilience to climate change impacts, including funding for flood protection, wildfire prevention, and extreme weather preparedness."
-            }
-        ]
-        globals()['CONGRESS_API_KEY'] = original_key
-        return mock_data
+        raise HTTPException(status_code=500, detail=f"Failed to fetch bills from Congress.gov: {str(e)}")
 
 @app.get("/recommended-bills")
 async def get_recommended_bills():
@@ -639,15 +621,8 @@ async def grade_legislation_text(bill_text: str, model: str, skip_extraction: bo
     
     # Check if bill text is unavailable
     if "Bill Text Unavailable" in bill_text or "could not be retrieved from Congress.gov" in bill_text:
-        logger.warning("Bill text unavailable for grading")
-        return {
-            "economicImpact": 0,
-            "publicBenefit": 0,
-            "feasibility": 0,
-            "legalSoundness": 0,
-            "effectiveness": 0,
-            "overall": 0
-        }
+        logger.error("Bill text unavailable for grading")
+        raise RuntimeError("Cannot grade bill: Bill text is unavailable from Congress.gov")
     
     # Handle large bill texts
     max_chars = 35000  # Conservative limit for grading
@@ -783,41 +758,11 @@ IMPORTANT:
             except (json.JSONDecodeError, ValueError) as e:
                 logger.error(f"Error parsing grades JSON: {e}")
                 logger.error(f"Raw response: {grades_text}")
-                logger.error("Using fallback grades due to JSON parsing failure")
-                # Return varied fallback grades that change based on bill characteristics
-                import hashlib
-                hash_seed = int(hashlib.md5(bill_text[:100].encode()).hexdigest()[:8], 16)
-                import random
-                random.seed(hash_seed)
-                
-                # Generate somewhat varied fallback scores
-                return {
-                    "economicImpact": random.randint(50, 80),
-                    "publicBenefit": random.randint(55, 85),
-                    "feasibility": random.randint(45, 75),
-                    "legalSoundness": random.randint(60, 90),
-                    "effectiveness": random.randint(50, 80),
-                    "overall": random.randint(55, 80)
-                }
+                raise RuntimeError(f"Failed to parse grading response: {e}")
             
     except Exception as e:
         logger.error(f"Error in grade_legislation_text: {e}")
-        logger.error("Using fallback grades due to general error")
-        # Return varied fallback grades on any error
-        import hashlib
-        hash_seed = int(hashlib.md5(bill_text[:100].encode()).hexdigest()[:8], 16)
-        import random
-        random.seed(hash_seed)
-        
-        # Generate somewhat varied fallback scores
-        return {
-            "economicImpact": random.randint(50, 80),
-            "publicBenefit": random.randint(55, 85), 
-            "feasibility": random.randint(45, 75),
-            "legalSoundness": random.randint(60, 90),
-            "effectiveness": random.randint(50, 80),
-            "overall": random.randint(55, 80)
-        }
+        raise RuntimeError(f"Failed to grade legislation: {e}")
 
 async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> str:
     """Analyze legislation text with a custom analysis prompt"""
@@ -1056,30 +1001,7 @@ You can try uploading a PDF of specific sections you're most interested in analy
 async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119) -> str:
     """Fetch full text of a specific bill from Congress.gov API"""
     if not CONGRESS_API_KEY:
-        # Return mock bill text if no API key
-        return f"""
-{bill_type.upper()} {bill_number} - Mock Bill Text
-
-SECTION 1. SHORT TITLE.
-This Act may be cited as the "Sample {bill_type.upper()} {bill_number} Act".
-
-SECTION 2. FINDINGS.
-Congress finds the following:
-(1) This is a sample bill text for demonstration purposes.
-(2) The actual bill text would be much longer and more detailed.
-(3) Real bills contain specific legislative language, definitions, and implementation details.
-
-SECTION 3. PURPOSES.
-The purposes of this Act are to demonstrate the bill text extraction functionality and provide a template for actual legislative analysis.
-
-SECTION 4. DEFINITIONS.
-In this Act:
-(1) DEMONSTRATION - means showing how the system works with actual bill content.
-(2) SAMPLE - means this is not real legislative text but serves as an example.
-
-SECTION 5. IMPLEMENTATION.
-The provisions of this Act shall take effect 90 days after the date of enactment.
-        """.strip()
+        raise ValueError("CONGRESS_API_KEY is required for bill text retrieval")
     
     try:
         # Get bill text versions from Congress API
@@ -1150,23 +1072,7 @@ The provisions of this Act shall take effect 90 days after the date of enactment
             
     except Exception as e:
         logger.error(f"Error fetching bill text for {bill_type} {bill_number}: {e}")
-        # Return a more informative mock text on error
-        return f"""
-{bill_type.upper()} {bill_number} - Bill Text Unavailable
-
-Note: The full text of this bill could not be retrieved from Congress.gov at this time. 
-This may be because:
-- The bill text is not yet available in the API
-- The bill is still being processed
-- There was a temporary API issue
-
-For the complete and official text of this legislation, please visit:
-https://www.congress.gov/bill/{congress}th-congress/{bill_type.lower()}-bill/{bill_number}
-
-This is a placeholder text for analysis/debate purposes. In a real scenario, 
-this would contain the full legislative text including all sections, 
-subsections, definitions, and implementation details.
-        """.strip()
+        raise RuntimeError(f"Failed to fetch bill text for {bill_type} {bill_number}: {str(e)}")
 
 @app.post("/analyze-recommended-bill")
 async def analyze_recommended_bill(request: dict):
@@ -1193,9 +1099,19 @@ async def analyze_recommended_bill(request: dict):
         # Log consolidated processing info
         logger.info(f"Processing recommended bill {bill_title} with model {model}")
         
-        # Generate both analysis and grades (skip redundant extraction since we have full text)
-        analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True)
-        grades = await grade_legislation_text(full_bill_text, model, skip_extraction=True)
+        # Check if we need to process large bill text
+        if len(full_bill_text) > 40000:
+            logger.info(f"Large bill detected ({len(full_bill_text)} chars), extracting key sections for analysis")
+            processed_text = extract_key_bill_sections(full_bill_text, 40000)
+            logger.info(f"Key sections extracted: {len(processed_text)} chars")
+            
+            # Generate both analysis and grades using processed text
+            analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+            grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
+        else:
+            # Generate both analysis and grades using full text
+            analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True)
+            grades = await grade_legislation_text(full_bill_text, model, skip_extraction=True)
         
         return {"analysis": analysis, "grades": grades}
         
@@ -1293,3 +1209,52 @@ async def extract_recommended_bill_text(request: dict):
         raise HTTPException(status_code=500, detail="Error extracting bill text")
 
 # No response cleaning needed for standard models
+
+# Bill Search Models
+class BillSearchRequest(BaseModel):
+    query: str
+    limit: int = 20
+
+class BillSuggestionsRequest(BaseModel):
+    query: str
+    limit: int = 5
+
+@app.post("/search-bills")
+async def search_bills(request: BillSearchRequest):
+    """Search for bills using the Congress.gov API"""
+    try:
+        if not bill_searcher:
+            raise HTTPException(status_code=500, detail="Bill search service not available")
+        
+        logger.info(f"Searching bills with query: '{request.query}' (limit: {request.limit})")
+        
+        # Use the bill searcher to find matching bills
+        results = await bill_searcher.search_bills(request.query, request.limit)
+        
+        logger.info(f"Found {len(results)} bills matching query: '{request.query}'")
+        
+        return {"bills": results}
+        
+    except Exception as e:
+        logger.error(f"Error in /search-bills endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Error searching bills")
+
+@app.post("/search-suggestions")
+async def search_suggestions(request: BillSuggestionsRequest):
+    """Get search suggestions for bill queries"""
+    try:
+        if not bill_searcher:
+            raise HTTPException(status_code=500, detail="Bill search service not available")
+        
+        logger.info(f"Getting suggestions for query: '{request.query}'")
+        
+        # Use the bill searcher to get suggestions
+        suggestions = await bill_searcher.get_suggestions(request.query, request.limit)
+        
+        logger.info(f"Generated {len(suggestions)} suggestions for query: '{request.query}'")
+        
+        return {"suggestions": suggestions}
+        
+    except Exception as e:
+        logger.error(f"Error in /search-suggestions endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Error getting search suggestions")
