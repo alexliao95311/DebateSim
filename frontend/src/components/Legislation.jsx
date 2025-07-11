@@ -490,8 +490,12 @@ const Legislation = ({ user }) => {
     });
     
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
+      if (response.status === 404) {
+        throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+      } else {
+        const errorData = await response.text();
+        throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
+      }
     }
     
     const data = await response.json();
@@ -634,7 +638,9 @@ const Legislation = ({ user }) => {
           const errorData = await response.text();
           
           // Handle specific error cases
-          if (response.status === 413) {
+          if (response.status === 404) {
+            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+          } else if (response.status === 413) {
             throw new Error('File too large. Please upload a PDF smaller than 50MB.');
           } else if (response.status === 400) {
             throw new Error('Invalid file format. Please upload a valid PDF file.');
@@ -844,7 +850,11 @@ const Legislation = ({ user }) => {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to extract bill text');
+          if (response.status === 404) {
+            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+          } else {
+            throw new Error('Failed to extract bill text');
+          }
         }
         
         const data = await response.json();
