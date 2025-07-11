@@ -1288,20 +1288,6 @@ const Legislation = ({ user }) => {
                 </button>
               </div>
             </div>
-          </div>
-          {error && <p className="error-text">{error}</p>}
-          <button type="submit">
-            {viewMode === "analyze" ? "Submit Analysis" : "Extract Bill Text"}
-          </button>
-        </form>
-        {loadingState && (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <div className="loading-text">
-              <div className="loading-main">
-                {viewMode === "analyze"
-                  ? "Analyzing bill, please wait..."
-                  : "Extracting bill text for debate, please wait..."}
           )}
 
           {/* Step 3: Configure & Execute */}
