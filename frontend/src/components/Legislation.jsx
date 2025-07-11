@@ -11,7 +11,7 @@ import ShareModal from "./ShareModal";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
-  "qwen/qwq-32b:free", 
+  "openai/gpt-4o", 
   "meta-llama/llama-3.3-70b-instruct", 
   "google/gemini-2.0-flash-001",
   "deepseek/deepseek-r1-0528:free",
@@ -1361,7 +1361,7 @@ const Legislation = ({ user }) => {
               {/* Analysis Text Section */}
               <div className="analysis-text-section">
                 <div className="analysis-text-header">
-                  <h2>Detailed Analysis & Grade Explanations</h2>
+                  <h2>Analysis Results</h2>
                 </div>
                 <div className="analysis-result markdown-content">
                   <ReactMarkdown 

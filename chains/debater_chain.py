@@ -9,12 +9,15 @@ from pydantic import Field
 import os
 import json
 import aiohttp
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
+
+# No response cleaning needed for standard models
 
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
@@ -50,7 +53,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="qwen/qwq-32b:free")
+    model_name: str = Field(default="openai/gpt-4o")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -99,7 +102,7 @@ class OpenRouterChat(BaseChatModel):
         result = response.json()
         assistant_message = result["choices"][0]["message"]["content"]
         
-        # Convert the raw assistant text into LangChain's ChatResult/ChatGeneration structure
+        # Convert the assistant text into LangChain's ChatResult/ChatGeneration structure
         return ChatResult(
             generations=[
                 ChatGeneration(
@@ -270,7 +273,7 @@ topic_debate_prompt = ChatPromptTemplate.from_template(topic_debate_template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1, debate_type: str = "topic"):
+def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_type: str = "topic"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -347,4 +350,4 @@ def get_debater_chain(model_name="qwen/qwq-32b:free", *, round_num: int = 1, deb
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(model_name="qwen/qwq-32b:free", round_num=1, debate_type="topic")
+debater_chain = get_debater_chain(model_name="openai/gpt-4o", round_num=1, debate_type="topic")

@@ -9,7 +9,7 @@ import DebateSidebar from "./DebateSidebar";
 import "./Debate.css"; 
 
 const modelOptions = [
-  "qwen/qwq-32b:free",
+  "openai/gpt-4o",
   "meta-llama/llama-3.3-70b-instruct",
   "google/gemini-2.0-flash-001",
   "deepseek/deepseek-r1-0528:free",

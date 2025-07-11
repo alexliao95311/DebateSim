@@ -9,12 +9,15 @@ from pydantic import Field
 import os
 import json
 import aiohttp
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
+
+# No response cleaning needed for standard models
 
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
@@ -44,7 +47,7 @@ class OpenRouterChat(BaseChatModel):
         provider = provider_map.get(root_token)
         return f"{provider}/{name}" if provider else name
 
-    model_name: str = Field(default="qwen/qwq-32b:free")
+    model_name: str = Field(default="openai/gpt-4o")
     temperature: float = Field(default=0.5)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -183,7 +186,7 @@ Format your response with clear headings using markdown (###).
 chat_prompt = ChatPromptTemplate.from_template(template)
 
 # Function to get a judge chain with a specific model
-def get_judge_chain(model_name="qwen/qwq-32b:free"):
+def get_judge_chain(model_name="openai/gpt-4o"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
