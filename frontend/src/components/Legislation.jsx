@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { saveTranscriptToUser } from '../firebase/saveTranscript';
-import { jsPDF } from "jspdf";
 import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -319,7 +318,6 @@ const Legislation = ({ user }) => {
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
-  const [pdfError, setPdfError] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
 
@@ -329,7 +327,6 @@ const Legislation = ({ user }) => {
   const [billsError, setBillsError] = useState('');
 
   const billNameInputRef = useRef(null);
-  const pdfContentRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch debate history function
@@ -359,63 +356,6 @@ const Legislation = ({ user }) => {
     fetchHistory();
   }, [user]);
 
-  const handleDownloadPDF = () => {
-    if (!selectedHistory) return;
-    
-    setPdfError("");
-    try {
-      const element = pdfContentRef.current;
-      if (!element) {
-        throw new Error("PDF content element not found");
-      }
-
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "letter",
-      });
-
-      const margins = [72, 36, 72, 36];
-
-      pdf.setFontSize(12);
-
-      pdf.html(element, {
-        callback: (pdfInstance) => {
-          const totalPages = pdfInstance.internal.getNumberOfPages();
-          for (let i = 1; i <= totalPages; i++) {
-            pdfInstance.setPage(i);
-            pdfInstance.setFontSize(10);
-            pdfInstance.setTextColor(150);
-            const pageWidth = pdfInstance.internal.pageSize.getWidth();
-            const pageHeight = pdfInstance.internal.pageSize.getHeight();
-            pdfInstance.text(
-              `Page ${i} of ${totalPages}`,
-              pageWidth - margins[1],
-              pageHeight - 18,
-              { align: "right" }
-            );
-          }
-          const fileName = selectedHistory.topic 
-            ? `${selectedHistory.topic.replace(/[^a-z0-9]/gi, '_')}_transcript.pdf`
-            : `activity_transcript_${Date.now()}.pdf`;
-          pdfInstance.save(fileName);
-        },
-        margin: margins,
-        autoPaging: "text",
-        break: {
-          avoid: "li, p, h2, h3",
-        },
-        html2canvas: {
-          scale: 0.75,
-          windowWidth: 540,
-          useCORS: true,
-        },
-      });
-    } catch (err) {
-      setPdfError("Failed to generate PDF. Please try again.");
-      console.error("PDF generation error:", err);
-    }
-  };
 
   // Fetch recommended bills from Congress.gov API
   useEffect(() => {
@@ -1353,12 +1293,6 @@ const Legislation = ({ user }) => {
                   📤 Share
                 </button>
                 <button 
-                  className="download-button" 
-                  onClick={handleDownloadPDF}
-                >
-                  📄 Download PDF
-                </button>
-                <button 
                   className="close-button" 
                   onClick={() => setSelectedHistory(null)}
                 >
@@ -2168,61 +2102,6 @@ const Legislation = ({ user }) => {
         </div>
       </div>
 
-      {/* Hidden PDF content for export */}
-      {selectedHistory && (
-        <div style={{ position: "absolute", left: "-9999px" }}>
-          <div
-            ref={pdfContentRef}
-            className="pdf-container"
-            style={{
-              width: "7.5in",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-              whiteSpace: "normal",
-              lineHeight: "1.4",
-            }}
-          >
-            <style>
-              {`
-                li, p, h2, h3 {
-                  page-break-inside: avoid;
-                  break-inside: avoid-page;
-                }
-              `}
-            </style>
-            <p style={{ fontStyle: "italic", color: "#555", fontSize: "10pt" }}>
-              Generated on: {new Date().toLocaleString()}
-            </p>
-            <h1 style={{ textAlign: "center", marginTop: 0, fontSize: "18pt" }}>
-              {selectedHistory.activityType || "Activity"} Transcript
-            </h1>
-            <hr />
-            <h2 style={{ fontSize: "16pt" }}>
-              Topic: {selectedHistory.topic || "Untitled Activity"}
-            </h2>
-            {selectedHistory.mode && (
-              <p style={{ fontSize: "12pt", color: "#666" }}>
-                Mode: {selectedHistory.mode}
-              </p>
-            )}
-            {selectedHistory.activityType && (
-              <p style={{ fontSize: "12pt", color: "#666" }}>
-                Activity Type: {selectedHistory.activityType}
-              </p>
-            )}
-            {selectedHistory.model && (
-              <p style={{ fontSize: "12pt", color: "#666" }}>
-                Model: {selectedHistory.model}
-              </p>
-            )}
-            <p style={{ fontSize: "10pt", color: "#999" }}>
-              Created: {new Date(selectedHistory.createdAt).toLocaleString()}
-            </p>
-            <hr />
-            <div dangerouslySetInnerHTML={{ __html: selectedHistory.transcript || "No content available." }} />
-          </div>
-        </div>
-      )}
 
       <footer className="bottom-text">
         <a
