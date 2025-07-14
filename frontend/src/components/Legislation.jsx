@@ -1284,7 +1284,6 @@ const Legislation = ({ user }) => {
               </div>
               
               {/* Error message and download button */}
-              {pdfError && <p className="error-text">{pdfError}</p>}
               <div className="modal-button-group">
                 <button 
                   className="share-button" 
@@ -1314,7 +1313,7 @@ const Legislation = ({ user }) => {
         )}
         
         {/* Share Modal for Current Analysis */}
-        {selectedHistory && (
+        {showAnalysisShareModal && selectedHistory && (
           <ShareModal 
             isOpen={showAnalysisShareModal}
             onClose={() => setShowAnalysisShareModal(false)}
