@@ -30,3 +30,5 @@ pandas
 
 # Typing and development
 typing-extensions
+
+#UI
