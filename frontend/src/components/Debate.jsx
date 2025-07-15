@@ -6,6 +6,7 @@ import { generateAIResponse } from "../api";
 import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import LoadingSpinner from "./LoadingSpinner";
 import DebateSidebar from "./DebateSidebar";
+import SimpleFileUpload from "./SimpleFileUpload";
 import "./Debate.css"; 
 
 const modelOptions = [
@@ -579,6 +580,11 @@ function Debate() {
                     </label>
                   </div>
                   
+                  <SimpleFileUpload 
+                    onTextExtracted={(text) => setUserInput(text)}
+                    disabled={loading}
+                  />
+                  
                   <textarea
                     placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
@@ -732,6 +738,11 @@ function Debate() {
                       {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </strong> ({userVsUserSide.toUpperCase()})
                   </p>
+                  
+                  <SimpleFileUpload 
+                    onTextExtracted={(text) => setUserInput(text)}
+                    disabled={loading}
+                  />
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
