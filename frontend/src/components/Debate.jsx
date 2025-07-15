@@ -413,12 +413,37 @@ function Debate() {
               </div>
             </div>
           )}
-          <div className="model-selection">
-            {actualMode === "ai-vs-ai" && (
-              <>
+          {/* This model-selection div is now hidden in user-vs-user mode */}
+          {actualMode !== "user-vs-user" && (
+            <div className="model-selection">
+              {actualMode === "ai-vs-ai" && (
+                <>
+                  <label>
+                    Pro Model:
+                    <select value={proModel} onChange={(e) => setProModel(e.target.value)}>
+                      {modelOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Con Model:
+                    <select value={conModel} onChange={(e) => setConModel(e.target.value)}>
+                      {modelOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              )}
+              {actualMode === "ai-vs-user" && (
                 <label>
-                  Pro Model:
-                  <select value={proModel} onChange={(e) => setProModel(e.target.value)}>
+                  AI Model:
+                  <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
                     {modelOptions.map((m) => (
                       <option key={m} value={m}>
                         {m}
@@ -426,31 +451,7 @@ function Debate() {
                     ))}
                   </select>
                 </label>
-                <label>
-                  Con Model:
-                  <select value={conModel} onChange={(e) => setConModel(e.target.value)}>
-                    {modelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            )}
-            {actualMode === "ai-vs-user" && (
-              <label>
-                AI Model:
-                <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
-                  {modelOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {actualMode !== "user-vs-user" && (
+              )}
               <label>
                 Judge Model:
                 <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
@@ -461,8 +462,8 @@ function Debate() {
                   ))}
                 </select>
               </label>
-            )}
-          </div>
+            </div>
+          )}
         {/* Render each speech as its own block */}
         {messageList.map(({ speaker, text, model }, i) => (
           <div key={i} className="speech-block" id={`speech-${i}`}>
@@ -724,14 +725,13 @@ function Debate() {
               )}
               
               {userVsUserSetup.confirmed && (
-                <div className="ai-vs-user-setup">
+                <div className="user-vs-user-setup">
                   <h3>User vs User Debate</h3>
                   <p style={{ marginBottom: "1rem", color: "#666" }}>
                     Current turn: <strong>
                       {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </strong> ({userVsUserSide.toUpperCase()})
                   </p>
-                  
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
