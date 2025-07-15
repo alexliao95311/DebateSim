@@ -79,6 +79,8 @@ html, body {
   width: 100%;
   max-width: 800px;    /* constrain width */
   margin: 0 auto;      /* center within wrapper */
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .topic-header-section {
@@ -614,13 +616,14 @@ button:disabled {
   
   /* Mobile adjustments for setup modals */
   .ai-vs-user-setup {
-    padding: 1.5rem 1rem;
-    margin: 0.5rem 0;
+    margin-top: 0;
+    padding-top: 0;
   }
   
   .ai-vs-user-setup h3 {
     font-size: 1.2rem;
     margin-bottom: 1rem;
+    margin-top: 0;
   }
   
   .side-selection-cards {
@@ -754,6 +757,16 @@ button:disabled {
 }
 
 .ai-vs-user-setup {
+  background: rgba(30, 41, 59, 0.95);
+  padding: 2rem;
+  border-radius: 12px;
+  margin: 1rem 0;
+  text-align: center;
+  border: 1px solid #4a90e2;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.user-vs-user-setup {
   background: rgba(30, 41, 59, 0.95);
   padding: 2rem;
   border-radius: 12px;
