@@ -47,7 +47,10 @@ function Login({ onLogin }) {
   const scrollToNextSection = () => {
     const nextSection = document.getElementById("section-1");
     if (nextSection) {
-      nextSection.scrollIntoView({ behavior: "smooth" });
+      nextSection.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start" 
+      });
     }
   };
 
