@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "lucide-react": "^0.525.0"
+  }
+}

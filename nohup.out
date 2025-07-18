@@ -1,0 +1,24 @@
+INFO:     Will watch for changes in these directories: ['/home/azureuser/DebateSim']
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+INFO:     Started reloader process [28846] using StatReload
+INFO:     Started server process [28848]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     24.130.140.119:54269 - "GET / HTTP/1.1" 200 OK
+INFO:     24.130.140.119:54274 - "GET / HTTP/1.1" 200 OK
+INFO:     24.130.140.119:54274 - "GET / HTTP/1.1" 200 OK
+INFO:     24.130.140.119:54337 - "OPTIONS /generate-response HTTP/1.1" 200 OK
+INFO:main:AI response generated in 3.07 seconds
+INFO:main:Total time for generate-response: 3.07 seconds
+INFO:     24.130.140.119:54337 - "POST /generate-response HTTP/1.1" 200 OK
+INFO:main:AI response generated in 22.73 seconds
+INFO:main:Total time for generate-response: 22.73 seconds
+INFO:     24.130.140.119:54337 - "POST /generate-response HTTP/1.1" 200 OK
+INFO:main:AI response generated in 2.28 seconds
+INFO:main:Total time for generate-response: 2.28 seconds
+INFO:     24.130.140.119:54338 - "POST /generate-response HTTP/1.1" 200 OK
+INFO:main:AI response generated in 2.16 seconds
+INFO:main:Total time for generate-response: 2.16 seconds
+INFO:     24.130.140.119:54338 - "POST /generate-response HTTP/1.1" 200 OK
+INFO:     24.130.140.119:54403 - "GET / HTTP/1.1" 200 OK
+INFO:     24.130.140.119:54426 - "GET / HTTP/1.1" 200 OK

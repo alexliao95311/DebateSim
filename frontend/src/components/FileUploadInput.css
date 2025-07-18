@@ -1,0 +1,246 @@
+/* FileUploadInput.css */
+
+.file-upload-input-container {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* File upload area */
+.file-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-upload-area:hover {
+  border-color: #4a90e2;
+  background: #f0f8ff;
+}
+
+.file-upload-area.processing {
+  border-color: #fbbf24;
+  background: #fffbeb;
+  cursor: not-allowed;
+}
+
+.file-upload-area.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.upload-content {
+  width: 100%;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.upload-text {
+  margin-bottom: 1rem;
+  color: #6b7280;
+}
+
+.upload-text strong {
+  color: #374151;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.upload-button {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.upload-button:hover:not(:disabled) {
+  background: #357abd;
+}
+
+.upload-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Processing indicator */
+.processing-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #d97706;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #fed7aa;
+  border-top: 3px solid #d97706;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Messages */
+.upload-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upload-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Text input container */
+.text-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.text-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  background: white;
+  min-height: 100px;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.text-input:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.text-input.has-content {
+  padding-right: 3rem; /* Make room for clear button */
+}
+
+/* Clear button */
+.clear-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.clear-button:hover:not(:disabled) {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.clear-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Character count */
+.character-count {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 576px) {
+  .file-upload-area {
+    padding: 1rem;
+    min-height: 100px;
+  }
+  
+  .upload-text {
+    font-size: 0.9rem;
+  }
+  
+  .upload-icon {
+    font-size: 1.5rem;
+  }
+  
+  .text-input {
+    font-size: 0.9rem;
+  }
+}
+
+/* Drag and drop states */
+.file-upload-area.drag-over {
+  border-color: #4a90e2;
+  background: #eff6ff;
+  transform: scale(1.02);
+}
+
+/* Animation for successful upload */
+.upload-success {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

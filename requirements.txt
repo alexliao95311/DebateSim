@@ -1,0 +1,34 @@
+# Core dependencies
+fastapi
+uvicorn
+python-dotenv
+pydantic
+
+# PDF processing
+pdfminer.six
+python-multipart
+
+# HTTP and async
+aiohttp
+httpx
+
+# Caching
+cachetools
+
+# LangChain and AI libraries
+langchain
+langchain-core
+langchain-google-genai
+google-generativeai
+openai
+
+# Utility libraries
+gradio
+tenacity
+numpy
+pandas
+
+# Typing and development
+typing-extensions
+
+#UI

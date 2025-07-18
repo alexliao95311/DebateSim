@@ -1,0 +1,165 @@
+:root {
+  /* Softer background and calmer primary/secondary colors */
+  --background-color: #ededed;
+  --primary-color: #7d8c8c;
+  --secondary-color: #9fa7a7;
+  --text-color: #333;
+  --heading-font: 'Montserrat', sans-serif;
+  --body-font: 'Open Sans', sans-serif;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  color: #333;
+  background-color: #ededed;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  background-color: #ededed;
+}
+
+
+h1 {
+  font-size: 2em;
+  line-height: 1.1;
+  font-family: var(--heading-font);
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+h2, h3 {
+  font-family: var(--heading-font);
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+/* Button styling */
+button {
+  background-color: #3469a6; /* Lighter blue */
+  color: #fff;
+  border: none;
+  border-radius: 6px !important;
+  padding: 0.8rem 1.2rem;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: #3a7cd1; /* Slightly darker on hover */
+  transform: scale(1.02);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Inputs: consistent spacing, focus outline, etc. */
+input[type="text"] {
+  background-color: #e0e0e0; /* A slightly darker shade of grey than #ededed */
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+textarea {
+  background-color: #e0e0e0; /* Slightly darker shade of grey */
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 100%;
+  resize: vertical; /* Allow vertical resizing */
+}
+
+.markdown-renderer {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #fff;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Simple error styling */
+.error-text {
+  color: red;
+  margin-top: 1rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ededed;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #666;
+  }
+}
+/* Add to existing CSS */
+.app {
+  padding-top: 64px; /* Height of header */
+  min-height: 100vh;
+  width: 100vw;
+}
+
+/* Simple main loading screen for page reloads */
+.main-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #ededed !important;
+  background: #ededed !important;
+}
+
+.main-loading-text {
+  color: #4a90e2;
+  font-size: 1.2rem;
+  font-weight: 500;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

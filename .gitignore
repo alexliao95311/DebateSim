@@ -1,0 +1,15 @@
+# Ignore .env
+.env
+
+# Ignore local Python environment folder (if not already ignored)
+my-venv/
+venv
+
+# You can add other ignore patterns as needed
+*.pyc
+__pycache__/
+
+# Ignore .gradio
+.gradio/
+
+node_modules/
