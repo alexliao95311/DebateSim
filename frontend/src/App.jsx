@@ -9,6 +9,7 @@ import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
 
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
