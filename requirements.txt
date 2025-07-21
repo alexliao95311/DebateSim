@@ -32,3 +32,6 @@ pandas
 typing-extensions
 
 #UI
+
+# Search
+rapidfuzz
