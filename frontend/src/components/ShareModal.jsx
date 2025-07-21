@@ -86,23 +86,54 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
     
     setPdfError("");
     try {
-      // Convert markdown to clean text
-      const markdownContent = transcript.transcript || "No content available.";
+      // Get the raw markdown content
+      let markdownContent = transcript.transcript || "No content available.";
       
-      // Configure marked to convert markdown to plain text
+      // Decode HTML entities
+      const decodeHtmlEntities = (text) => {
+        const textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+      };
+      
+      // Decode HTML entities in the content
+      markdownContent = decodeHtmlEntities(markdownContent);
+      
+      // Configure marked to convert markdown to clean plain text
       const renderer = new marked.Renderer();
-      renderer.heading = (text, level) => `${'#'.repeat(level)} ${text}\n\n`;
-      renderer.paragraph = (text) => `${text}\n\n`;
-      renderer.strong = (text) => `**${text}**`;
-      renderer.em = (text) => `*${text}*`;
+      renderer.heading = (text, level) => {
+        const cleanText = decodeHtmlEntities(text);
+        return `${'#'.repeat(level)} ${cleanText}\n\n`;
+      };
+      renderer.paragraph = (text) => {
+        const cleanText = decodeHtmlEntities(text);
+        return `${cleanText}\n\n`;
+      };
+      renderer.strong = (text) => {
+        const cleanText = decodeHtmlEntities(text);
+        return cleanText; // Remove bold formatting for cleaner text
+      };
+      renderer.em = (text) => {
+        const cleanText = decodeHtmlEntities(text);
+        return cleanText; // Remove italic formatting for cleaner text
+      };
       renderer.list = (body, ordered) => `${body}\n`;
-      renderer.listitem = (text) => `• ${text}\n`;
-      renderer.code = (code) => `\`${code}\``;
-      renderer.codespan = (code) => `\`${code}\``;
-      renderer.blockquote = (quote) => `"${quote}"\n\n`;
+      renderer.listitem = (text) => {
+        const cleanText = decodeHtmlEntities(text);
+        return `• ${cleanText}\n`;
+      };
+      renderer.code = (code) => decodeHtmlEntities(code);
+      renderer.codespan = (code) => decodeHtmlEntities(code);
+      renderer.blockquote = (quote) => {
+        const cleanText = decodeHtmlEntities(quote);
+        return `"${cleanText}"\n\n`;
+      };
       renderer.hr = () => `${'─'.repeat(50)}\n\n`;
       renderer.br = () => '\n';
-      renderer.link = (href, title, text) => `${text} (${href})`;
+      renderer.link = (href, title, text) => {
+        const cleanText = decodeHtmlEntities(text);
+        return `${cleanText} (${href})`;
+      };
       
       marked.setOptions({
         renderer: renderer,
@@ -110,8 +141,19 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
         gfm: true
       });
 
-      // Convert markdown to formatted text
-      const formattedText = marked(markdownContent);
+      // Convert markdown to formatted text and clean up
+      let formattedText = marked(markdownContent);
+      
+      // Additional cleanup for better formatting
+      formattedText = formattedText
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+        .trim();
       
       // Create PDF with better text handling
       const pdf = new jsPDF({
@@ -152,11 +194,11 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
       pdf.setFontSize(11);
       let currentY = margins.top + 55;
       
-      // Split content into lines and add to PDF
+      // Split content into lines and add to PDF with improved processing
       const lines = formattedText.split('\n');
       
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+        let line = lines[i].trim();
         
         if (!line) {
           currentY += 8; // Add space for empty lines
@@ -191,73 +233,25 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
           continue;
         }
         
-        // Handle bold text (between **)
-        const boldRegex = /\*\*(.*?)\*\*/g;
-        const hasBold = boldRegex.test(line);
+        // Simplified text processing - remove all markdown formatting
+        line = line
+          .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+          .replace(/\*([^*]+)\*/g, '$1') // Remove italic
+          .replace(/`([^`]+)`/g, '$1') // Remove code
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+          .replace(/^[-*+]\s+/g, '• ') // Convert list markers to bullets
+          .replace(/^\d+\.\s+/g, '• '); // Convert numbered lists to bullets
         
-        if (hasBold) {
-          // Handle mixed bold/normal text
-          const parts = line.split(/(\*\*.*?\*\*)/g);
-          let lineY = currentY;
-          let lineX = margins.left;
-          
-          for (const part of parts) {
-            if (part.startsWith('**') && part.endsWith('**')) {
-              const boldText = part.slice(2, -2);
-              pdf.setFont(undefined, 'bold');
-              const textWidth = pdf.getTextWidth(boldText);
-              
-              // Check if text fits on current line
-              if (lineX + textWidth > pageWidth - margins.right) {
-                lineY += 14;
-                lineX = margins.left;
-                
-                // Check if we need a new page
-                if (lineY > pageHeight - margins.bottom) {
-                  pdf.addPage();
-                  lineY = margins.top;
-                }
-              }
-              
-              pdf.text(boldText, lineX, lineY);
-              lineX += textWidth + 4;
-              pdf.setFont(undefined, 'normal');
-            } else if (part.trim()) {
-              const normalText = part.replace(/\*([^*]+)\*/g, '$1'); // Remove * emphasis
-              const wrappedText = pdf.splitTextToSize(normalText, maxWidth - (lineX - margins.left));
-              
-              for (let j = 0; j < wrappedText.length; j++) {
-                if (lineY > pageHeight - margins.bottom) {
-                  pdf.addPage();
-                  lineY = margins.top;
-                }
-                
-                pdf.text(wrappedText[j], lineX, lineY);
-                if (j < wrappedText.length - 1) {
-                  lineY += 14;
-                  lineX = margins.left;
-                } else {
-                  lineX += pdf.getTextWidth(wrappedText[j]) + 4;
-                }
-              }
-            }
-          }
-          currentY = lineY + 14;
-        } else {
-          // Handle normal text
-          let processedLine = line.replace(/\*([^*]+)\*/g, '$1'); // Remove * emphasis
-          processedLine = processedLine.replace(/`([^`]+)`/g, '$1'); // Remove code backticks
-          
-          // Check if we need a new page
-          if (currentY > pageHeight - margins.bottom) {
-            pdf.addPage();
-            currentY = margins.top;
-          }
-          
-          const wrappedLines = pdf.splitTextToSize(processedLine, maxWidth);
-          pdf.text(wrappedLines, margins.left, currentY);
-          currentY += wrappedLines.length * 14 + 4;
+        // Check if we need a new page
+        if (currentY > pageHeight - margins.bottom) {
+          pdf.addPage();
+          currentY = margins.top;
         }
+        
+        // Split long lines and add to PDF
+        const wrappedLines = pdf.splitTextToSize(line, maxWidth);
+        pdf.text(wrappedLines, margins.left, currentY);
+        currentY += wrappedLines.length * 14 + 4;
       }
       
       // Add page numbers
