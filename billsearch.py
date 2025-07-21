@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from cachetools import TTLCache
 import json
 import re
+from rapidfuzz.fuzz import partial_ratio 
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,17 @@ class BillSearcher:
             "defense", "tax", "budget", "privacy", "energy", "environment",
             "social security", "medicare", "medicaid", "veterans", "gun", "voting"
         ]
+        self.synonym_map = {
+        "climate": ["carbon", "emissions", "warming", "environment"],
+        "gun": ["firearm", "weapons", "shooting", "arms"],
+        "healthcare": ["insurance", "medicare", "medicaid", "health"],
+        "education": ["school", "college", "students"],
+        "immigration": ["migrant", "border", "asylum", "visa"],
+        # we can add more as we expand categories
+        }
+        
+    def _fuzzy_match(self, text: str, query: str, threshold: int = 75) -> bool:
+        return partial_ratio(text.lower(), query.lower()) >= threshold
     
     async def search_bills(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
         """Fast bill search using Congress.gov search API directly"""
@@ -199,54 +211,45 @@ class BillSearcher:
         return results
     
     def _is_relevant_match(self, bill: Dict[str, Any], query: str) -> bool:
-        """Fast relevance check - only the most important criteria"""
         query_lower = query.lower()
-        
-        # Check title (most important)
         title = bill.get("title", "").lower()
-        if query_lower in title:
+
+        if self._fuzzy_match(title, query_lower):
             return True
-        
-        # Check bill number (exact match)
+
         bill_type = bill.get("type", "").lower()
         bill_number = str(bill.get("number", ""))
         if bill_type and bill_number:
             bill_code = f"{bill_type} {bill_number}"
             if query_lower in bill_code or bill_code in query_lower:
                 return True
-            
-            # Check for pattern like "HR 1234" or "S 567"
             if re.search(rf"\b{re.escape(bill_type)}\s*{re.escape(bill_number)}\b", query_lower):
                 return True
-        
-        # Check sponsor (simplified)
+
         sponsors = bill.get("sponsors", [])
         if sponsors and isinstance(sponsors[0], dict):
-            sponsor = sponsors[0]
-            last_name = sponsor.get("lastName", "").lower()
-            if last_name and last_name in query_lower:
+            last_name = sponsors[0].get("lastName", "").lower()
+            if self._fuzzy_match(last_name, query_lower):
                 return True
-        
+
+        for keyword in self._expand_keywords([query_lower]):
+            if keyword in title:
+                return True
+
         return False
-    
+
     def _matches_keyword(self, bill: Dict[str, Any], keyword: str) -> bool:
-        """Check if bill matches a single keyword"""
         keyword_lower = keyword.lower()
-        
-        # Check title
         title = bill.get("title", "").lower()
-        if keyword_lower in title:
+        if self._fuzzy_match(title, keyword_lower):
             return True
-        
-        # Check policy area
-        policy_area = bill.get("policyArea", {})
-        if isinstance(policy_area, dict):
-            policy_name = policy_area.get("name", "").lower()
-            if keyword_lower in policy_name:
-                return True
-        
+
+        policy_area = bill.get("policyArea", {}).get("name", "").lower()
+        if self._fuzzy_match(policy_area, keyword_lower):
+            return True
+
         return False
-    
+        
     def _process_bill_fast(self, bill: Dict[str, Any], congress_num: int = None) -> Optional[Dict[str, Any]]:
         """Fast bill processing - minimal data transformation"""
         try:
@@ -340,19 +343,23 @@ class BillSearcher:
             score += 5
         
         return score
-    
     def _extract_keywords(self, query: str) -> List[str]:
         """Extract meaningful keywords from search query"""
-        # Remove common words and split
+        # Split after removing common words
         stop_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "act", "bill"}
         words = re.findall(r'\b\w+\b', query.lower())
         keywords = [word for word in words if word not in stop_words and len(word) >= 3]
-        
-        # Sort by length (longer keywords first)
+        # length-based sort (longer first)
         keywords.sort(key=len, reverse=True)
-        
-        return keywords
-    
+
+        return list(self._expand_keywords(keywords))
+
+    def _expand_keywords(self, keywords: List[str]) -> set:
+        expanded = set(keywords)
+        for word in keywords:
+            expanded.update(self.synonym_map.get(word, []))
+        return expanded
+
     async def get_suggestions(self, query: str, limit: int = 5) -> List[str]:
         """Get search suggestions for autocomplete"""
         
