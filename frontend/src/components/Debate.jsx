@@ -80,10 +80,49 @@ function Debate() {
   });
   const [firstSide, setFirstSide] = useState("pro");
   const [selectedSide, setSelectedSide] = useState(""); // For confirmation step
+  const [autoMode, setAutoMode] = useState(false);
+  const [autoTimer, setAutoTimer] = useState(null);
 
   // Handler for the back to home button
   const handleBackToHome = () => {
     navigate("/debatesim");
+  };
+
+  // Cleanup auto timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoTimer) {
+        clearTimeout(autoTimer);
+      }
+    };
+  }, [autoTimer]);
+
+  // Auto-continue when loading finishes in auto mode
+  useEffect(() => {
+    if (autoMode && !loading && messageList.length > 0 && currentRound <= maxRounds) {
+      // Clear any existing timer
+      if (autoTimer) {
+        clearTimeout(autoTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        handleAIDebate();
+      }, 3000); // 3 second delay for reading
+      setAutoTimer(timer);
+    }
+  }, [loading, autoMode, messageList.length]);
+
+  const startAutoDebate = () => {
+    setAutoMode(true);
+    handleAIDebate();
+  };
+
+  const stopAutoDebate = () => {
+    setAutoMode(false);
+    if (autoTimer) {
+      clearTimeout(autoTimer);
+      setAutoTimer(null);
+    }
   };
 
   // Append a new message object to messageList
@@ -243,6 +282,9 @@ function Debate() {
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
         if (currentRound >= maxRounds) {
+          if (autoMode) {
+            setAutoMode(false);
+          }
           await handleEndDebate();
           return;
         }
@@ -527,16 +569,61 @@ function Debate() {
           </div>
         ))}
           {actualMode === "ai-vs-ai" && (
-            <div style={{ marginTop: "1rem" }}>
-              <button onClick={handleAIDebate} disabled={loading || currentRound > maxRounds}>
-                {loading
-                  ? "Generating Response..."
-                  : currentRound > maxRounds
-                  ? "Debate Finished"
-                  : aiSide === "pro"
-                  ? `Generate Pro Round ${currentRound}/${maxRounds}`
-                  : `Generate Con Round ${currentRound}/${maxRounds}`}
-              </button>
+            <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+              {!autoMode ? (
+                <>
+                  <button 
+                    onClick={handleAIDebate} 
+                    disabled={loading || currentRound > maxRounds}
+                    style={{
+                      background: "#4a90e2",
+                      color: "white",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "6px",
+                      cursor: loading || currentRound > maxRounds ? "not-allowed" : "pointer",
+                      opacity: loading || currentRound > maxRounds ? 0.6 : 1
+                    }}
+                  >
+                    {loading
+                      ? "Generating Response..."
+                      : currentRound > maxRounds
+                      ? "Debate Finished"
+                      : aiSide === "pro"
+                      ? `Generate Pro Round ${currentRound}/${maxRounds}`
+                      : `Generate Con Round ${currentRound}/${maxRounds}`}
+                  </button>
+                  <button 
+                    onClick={startAutoDebate} 
+                    disabled={loading || currentRound > maxRounds}
+                    style={{
+                      background: "#28a745",
+                      color: "white",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "6px",
+                      cursor: loading || currentRound > maxRounds ? "not-allowed" : "pointer",
+                      opacity: loading || currentRound > maxRounds ? 0.6 : 1
+                    }}
+                  >
+                    🚀 Auto-Generate All Rounds
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={stopAutoDebate}
+                  style={{
+                    background: "#dc3545",
+                    color: "white",
+                    border: "none",
+                    padding: "0.75rem 1.5rem",
+                    borderRadius: "6px",
+                    cursor: "pointer"
+                  }}
+                >
+                  ⏸️ Stop Auto-Generation
+                </button>
+              )}
             </div>
           )}
           {actualMode === "ai-vs-user" && (
