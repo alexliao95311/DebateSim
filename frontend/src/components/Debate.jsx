@@ -99,7 +99,12 @@ function Debate() {
 
   // Auto-continue when loading finishes in auto mode
   useEffect(() => {
-    if (autoMode && !loading && messageList.length > 0 && currentRound <= maxRounds) {
+    // Check if we should continue auto-generation
+    // We want 5 complete rounds (10 total speeches: 5 Pro + 5 Con)
+    const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+    const shouldContinue = aiSpeeches < (maxRounds * 2); // 10 speeches total for 5 rounds
+    
+    if (autoMode && !loading && messageList.length > 0 && shouldContinue) {
       // Clear any existing timer
       if (autoTimer) {
         clearTimeout(autoTimer);
@@ -109,6 +114,9 @@ function Debate() {
         handleAIDebate();
       }, 3000); // 3 second delay for reading
       setAutoTimer(timer);
+    } else if (autoMode && !shouldContinue) {
+      // Auto-generation complete, stop auto mode
+      setAutoMode(false);
     }
   }, [loading, autoMode, messageList.length]);
 
@@ -185,7 +193,9 @@ function Debate() {
 
   const maxRounds = 5;
   const handleAIDebate = async () => {
-    if (currentRound > maxRounds) return;
+    // Check if we have completed all speeches (5 rounds = 10 speeches)
+    const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+    if (aiSpeeches >= (maxRounds * 2)) return;
     setLoading(true);
     setError("");
     try {
@@ -281,13 +291,6 @@ function Debate() {
         appendMessage("AI Debater Con", cleanedResponse, conModel);
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
-        if (currentRound >= maxRounds) {
-          if (autoMode) {
-            setAutoMode(false);
-          }
-          await handleEndDebate();
-          return;
-        }
       }
     } catch (err) {
       setError("Failed to fetch AI response for AI vs AI mode.");
@@ -574,36 +577,55 @@ function Debate() {
                 <>
                   <button 
                     onClick={handleAIDebate} 
-                    disabled={loading || currentRound > maxRounds}
+                    disabled={loading || (() => {
+                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      return aiSpeeches >= (maxRounds * 2);
+                    })()}
                     style={{
                       background: "#4a90e2",
                       color: "white",
                       border: "none",
                       padding: "0.75rem 1.5rem",
                       borderRadius: "6px",
-                      cursor: loading || currentRound > maxRounds ? "not-allowed" : "pointer",
-                      opacity: loading || currentRound > maxRounds ? 0.6 : 1
+                      cursor: loading || (() => {
+                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        return aiSpeeches >= (maxRounds * 2);
+                      })() ? "not-allowed" : "pointer",
+                      opacity: loading || (() => {
+                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        return aiSpeeches >= (maxRounds * 2);
+                      })() ? 0.6 : 1
                     }}
                   >
-                    {loading
-                      ? "Generating Response..."
-                      : currentRound > maxRounds
-                      ? "Debate Finished"
-                      : aiSide === "pro"
-                      ? `Generate Pro Round ${currentRound}/${maxRounds}`
-                      : `Generate Con Round ${currentRound}/${maxRounds}`}
+                    {(() => {
+                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      if (loading) return "Generating Response...";
+                      if (aiSpeeches >= (maxRounds * 2)) return "All Rounds Complete";
+                      return aiSide === "pro"
+                        ? `Generate Pro Round ${currentRound}/${maxRounds}`
+                        : `Generate Con Round ${currentRound}/${maxRounds}`;
+                    })()}
                   </button>
                   <button 
                     onClick={startAutoDebate} 
-                    disabled={loading || currentRound > maxRounds}
+                    disabled={loading || (() => {
+                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      return aiSpeeches >= (maxRounds * 2);
+                    })()}
                     style={{
                       background: "#28a745",
                       color: "white",
                       border: "none",
                       padding: "0.75rem 1.5rem",
                       borderRadius: "6px",
-                      cursor: loading || currentRound > maxRounds ? "not-allowed" : "pointer",
-                      opacity: loading || currentRound > maxRounds ? 0.6 : 1
+                      cursor: loading || (() => {
+                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        return aiSpeeches >= (maxRounds * 2);
+                      })() ? "not-allowed" : "pointer",
+                      opacity: loading || (() => {
+                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        return aiSpeeches >= (maxRounds * 2);
+                      })() ? 0.6 : 1
                     }}
                   >
                     🚀 Auto-Generate All Rounds
