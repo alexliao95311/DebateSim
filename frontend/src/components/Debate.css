@@ -395,9 +395,9 @@ hr.divider {
 }
 .speech-block h3 {
   color: var(--primary);
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: bold;
   text-shadow: none;
 }
 .speech-block .model-info {
