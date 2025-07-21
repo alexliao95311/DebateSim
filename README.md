@@ -44,7 +44,7 @@ DebateSim is a sophisticated debate simulation platform that leverages cutting-e
 - Real-time debate progression tracking
 
 ### **Advanced Technical Features**
-- Multiple AI model support (DeepSeek, OpenAI, Meta LLaMA, Google, Mistral)
+- Multiple AI model support (OpenAI, Meta LLaMA, Google, Anthropic)
 - Optimized response caching for improved performance
 - RESTful API architecture with FastAPI backend
 - Modern React frontend with responsive design
@@ -153,7 +153,7 @@ Content-Type: application/json
 {
   "debater": "Pro",
   "prompt": "Topic: Climate change. Opponent's argument: ...",
-  "model": "deepseek/deepseek-r1-0528:free"
+  "model": "openai/gpt-4o"
 }
 ```
 
@@ -164,7 +164,7 @@ Content-Type: application/json
 
 {
   "transcript": "Full debate transcript...",
-  "model": "deepseek/deepseek-r1-0528:free"
+  "model": "openai/gpt-4o"
 }
 ```
 

@@ -19,7 +19,7 @@ client = OpenAI(
 )
 
 # Model name that you have access to via OpenRouter
-MODEL_NAME = "deepseek/deepseek-chat"
+MODEL_NAME = "openai/gpt-4o"
 
 ###############################################################################
 # 2) Helper Functions
