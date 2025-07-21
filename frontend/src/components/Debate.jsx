@@ -187,7 +187,19 @@ function Debate() {
              - End with a strong concluding statement
            `;
         aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
-        appendMessage("AI Debater Pro", aiResponse, proModel);
+        // Remove any headers the AI might have generated (aggressive cleaning)
+        let cleanedResponse = aiResponse
+          .replace(/^AI Debater Pro.*?\n/gi, '')
+          .replace(/^AI Debater Pro.*?–.*?\n/gi, '')
+          .replace(/^AI Debater Pro.*?-.*?\n/gi, '')
+          .replace(/^.*?Round \d+\/\d+.*?\n/gi, '')
+          .replace(/^.*?Round.*?\n/gi, '')
+          .trim();
+        // If response starts with a number (like "1. "), it's likely clean
+        if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
+          cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
+        }
+        appendMessage("AI Debater Pro", cleanedResponse, proModel);
         setAiSide("con");
       } else {
         const isOpening = !lastArgument;
@@ -215,7 +227,19 @@ function Debate() {
              - End with a strong concluding statement
            `;
         aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription);
-        appendMessage("AI Debater Con", aiResponse, conModel);
+        // Remove any headers the AI might have generated (aggressive cleaning)
+        let cleanedResponse = aiResponse
+          .replace(/^AI Debater Con.*?\n/gi, '')
+          .replace(/^AI Debater.*?Con.*?–.*?\n/gi, '')
+          .replace(/^AI Debater.*?Con.*?-.*?\n/gi, '')
+          .replace(/^.*?Round \d+\/\d+.*?\n/gi, '')
+          .replace(/^.*?Round.*?\n/gi, '')
+          .trim();
+        // If response starts with a number (like "1. "), it's likely clean
+        if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
+          cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
+        }
+        appendMessage("AI Debater Con", cleanedResponse, conModel);
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
         if (currentRound >= maxRounds) {
