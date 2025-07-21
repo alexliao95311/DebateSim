@@ -54,9 +54,9 @@ function Debate() {
     return null;
   }
 
-  // Each message: { speaker: string, text: string, model?: string }
+  // Each message: { speaker: string, text: string, model?: string, round?: number }
   const [messageList, setMessageList] = useState([]);
-  const [round, setRound] = useState(1);
+  const [currentRound, setCurrentRound] = useState(1);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -90,7 +90,7 @@ function Debate() {
   const appendMessage = (speaker, text, modelName = null) => {
     setMessageList(prev => [
       ...prev,
-      { speaker, text: text.trim(), model: modelName },
+      { speaker, text: text.trim(), model: modelName, round: currentRound },
     ]);
   };
 
@@ -116,13 +116,7 @@ function Debate() {
       
       // Add round information for AI debaters in AI vs AI mode
       if (actualMode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
-        // Calculate which round this speech belongs to
-        // Count previous AI speeches to determine round
-        const previousAISpeeches = messageList.slice(0, index).filter(m => 
-          m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con"
-        ).length;
-        const speechRound = Math.ceil((previousAISpeeches + 1) / 2);
-        title = `${msg.speaker} - Round ${speechRound}/5`;
+        title = `${msg.speaker} - Round ${msg.round}/5`;
       }
       
       return {
@@ -152,7 +146,7 @@ function Debate() {
 
   const maxRounds = 5;
   const handleAIDebate = async () => {
-    if (round > maxRounds) return;
+    if (currentRound > maxRounds) return;
     setLoading(true);
     setError("");
     try {
@@ -168,45 +162,63 @@ function Debate() {
 
       let aiResponse;
       if (aiSide === "pro") {
+        const isOpening = !lastArgument;
         const proPrompt = `
              Debate topic: "${topic}"
              Bill description: "${truncatedDescription}"
-             Round: ${round} of ${maxRounds}
-             Your role: PRO
-             Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
-             ${lastArgument}
+             Round: ${currentRound} of ${maxRounds}
+             Your role: PRO (supporting the topic)
+             ${isOpening ? "This is your opening statement." : `Previous opponent argument to rebut: "${lastArgument}"`}
 
-             Instructions:
-             1. Directly rebut the opponent's key points if they've spoken
-             2. Strengthen the PRO position with 2-3 clear arguments
-             3. Keep your response concise (max 500 words)
-             4. Be persuasive but respectful
-             5. Conclude with a strong summary statement
+             CRITICAL FORMATTING INSTRUCTIONS:
+             - NEVER write "AI Debater Pro" or any speaker name in your response
+             - NEVER write "Round X/Y" or any round information in your response  
+             - NEVER include headers, titles, or speaker identification
+             - Start your response immediately with argument content (no preamble)
+             - Your response will be displayed under a header that already identifies you
+             ${isOpening ? 
+               "- Present a strong opening argument in favor of the topic" :
+               "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+             }
+             - Present 2-3 strong arguments supporting the PRO position
+             - Use specific evidence, examples, or logical reasoning
+             - Keep your response concise (max 500 words)
+             - Be persuasive but respectful
+             - End with a strong concluding statement
            `;
         aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
         appendMessage("AI Debater Pro", aiResponse, proModel);
         setAiSide("con");
       } else {
+        const isOpening = !lastArgument;
         const conPrompt = `
              Debate topic: "${topic}"
              Bill description: "${truncatedDescription}"
-             Round: ${round} of ${maxRounds}
-             Your role: CON
-             Last argument: ${lastArgument ? "The opponent argued:" : "You're opening the debate."}
-             ${lastArgument}
+             Round: ${currentRound} of ${maxRounds}
+             Your role: CON (opposing the topic)
+             ${isOpening ? "This is your opening statement." : `Previous opponent argument to rebut: "${lastArgument}"`}
 
-             Instructions:
-             1. Directly rebut the opponent's key points if they've spoken
-             2. Strengthen the CON position with 2-3 clear arguments
-             3. Keep your response concise (max 500 words)
-             4. Be persuasive but respectful
-             5. Conclude with a strong summary statement
+             CRITICAL FORMATTING INSTRUCTIONS:
+             - NEVER write "AI Debater Pro" or any speaker name in your response
+             - NEVER write "Round X/Y" or any round information in your response  
+             - NEVER include headers, titles, or speaker identification
+             - Start your response immediately with argument content (no preamble)
+             - Your response will be displayed under a header that already identifies you
+             ${isOpening ? 
+               "- Present a strong opening argument against the topic" :
+               "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+             }
+             - Present 2-3 strong arguments supporting the CON position
+             - Use specific evidence, examples, or logical reasoning
+             - Keep your response concise (max 500 words)
+             - Be persuasive but respectful
+             - End with a strong concluding statement
            `;
-        aiResponse = await generateAIResponse("AI Debater (Con)", conPrompt, conModel, actualDescription);
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription);
         appendMessage("AI Debater Con", aiResponse, conModel);
         setAiSide("pro");
-        setRound(prev => prev + 1);
-        if (round === maxRounds) {
+        setCurrentRound(prev => prev + 1);
+        if (currentRound >= maxRounds) {
           await handleEndDebate();
           return;
         }
@@ -313,7 +325,7 @@ function Debate() {
 
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
-      setRound(prev => prev + 1);
+      setCurrentRound(prev => prev + 1);
     } catch (err) {
       setError("Failed to fetch AI rebuttal.");
     } finally {
@@ -338,7 +350,7 @@ function Debate() {
         userInput
       );
       setUserInput("");
-      setRound(prev => prev + 1);
+      setCurrentRound(prev => prev + 1);
       await handleEndDebate();
     } catch (err) {
       setError("Failed to send final user argument.");
@@ -467,7 +479,7 @@ function Debate() {
         {/* Render each speech as its own block */}
         {messageList.map(({ speaker, text, model }, i) => (
           <div key={i} className="speech-block" id={`speech-${i}`}>
-            <h3>{speaker}</h3>
+            <h3>{speechList[i]?.title || speaker}</h3>
             {model && <div className="model-info">Model: {model}</div>}
             <div className="speech-content">
               <ReactMarkdown
@@ -492,14 +504,14 @@ function Debate() {
         ))}
           {actualMode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem" }}>
-              <button onClick={handleAIDebate} disabled={loading || round > maxRounds}>
+              <button onClick={handleAIDebate} disabled={loading || currentRound > maxRounds}>
                 {loading
                   ? "Generating Response..."
-                  : round > maxRounds
+                  : currentRound > maxRounds
                   ? "Debate Finished"
                   : aiSide === "pro"
-                  ? `Generate Pro Round ${round}/${maxRounds}`
-                  : `Generate Con Round ${round}/${maxRounds}`}
+                  ? `Generate Pro Round ${currentRound}/${maxRounds}`
+                  : `Generate Con Round ${currentRound}/${maxRounds}`}
               </button>
             </div>
           )}
