@@ -574,9 +574,9 @@
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   padding: 2rem;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem auto;
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
 }
 
 .markdown-content {
@@ -1512,13 +1512,14 @@
 
 /* Results Section */
 .results-section {
-  margin: 3rem 0 0 0;
+  margin: 3rem auto 0 auto;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   padding: 2rem;
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   width: 100%;
+  max-width: 1000px;
   text-align: center;
 }
 
@@ -2368,6 +2369,8 @@
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  max-width: 1000px;
 }
 
 .analysis-text-header {
