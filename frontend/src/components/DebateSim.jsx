@@ -328,42 +328,40 @@ function DebateSim({ user }) {
       </div>
 
       {/* History Sidebar */}
-      {showHistorySidebar && (
-        <div className={`debatesim-history-sidebar ${showHistorySidebar ? 'debatesim-expanded' : ''}`}>
-          <h2>Debate History</h2>
-          <ul className="debatesim-history-list">
-            {history.length > 0 ? (
-              history.map((item) => (
-                <li
-                  key={item.id}
-                  className="debatesim-history-item"
-                  onClick={() => setSelectedHistory(item)}
-                  title="Click to view full transcript"
-                >
-                  <div className="debatesim-history-title">{item.topic || "Untitled Topic"}</div>
-                  <div className="debatesim-history-meta">
-                    <span className={`debatesim-history-type ${getActivityTypeClass(item)}`}>
-                      {getActivityTypeDisplay(item)}
-                    </span>
-                    <span className="debatesim-history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="debatesim-history-item" style={{ textAlign: 'center', color: '#94a3b8' }}>
-                <Clock size={24} style={{ margin: '0 auto 0.5rem auto' }} />
-                No history available
+      <div className={`debatesim-history-sidebar ${showHistorySidebar ? 'debatesim-expanded' : ''}`}>
+        <h2>Debate History</h2>
+        <ul className="debatesim-history-list">
+          {history.length > 0 ? (
+            history.map((item) => (
+              <li
+                key={item.id}
+                className="debatesim-history-item"
+                onClick={() => setSelectedHistory(item)}
+                title="Click to view full transcript"
+              >
+                <div className="debatesim-history-title">{item.topic || "Untitled Topic"}</div>
+                <div className="debatesim-history-meta">
+                  <span className={`debatesim-history-type ${getActivityTypeClass(item)}`}>
+                    {getActivityTypeDisplay(item)}
+                  </span>
+                  <span className="debatesim-history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
               </li>
-            )}
-          </ul>
-          <button 
-            className="debatesim-close-sidebar-button"
-            onClick={() => setShowHistorySidebar(false)}
-          >
-            Close History
-          </button>
-        </div>
-      )}
+            ))
+          ) : (
+            <li className="debatesim-history-item" style={{ textAlign: 'center', color: '#94a3b8' }}>
+              <Clock size={24} style={{ margin: '0 auto 0.5rem auto' }} />
+              No history available
+            </li>
+          )}
+        </ul>
+        <button 
+          className="debatesim-close-sidebar-button"
+          onClick={() => setShowHistorySidebar(false)}
+        >
+          Close History
+        </button>
+      </div>
 
       {/* Modal to view selected history transcript */}
       {selectedHistory && (
@@ -438,14 +436,12 @@ function DebateSim({ user }) {
       )}
 
       {/* Share Modal */}
-      {selectedHistory && (
-        <ShareModal 
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          transcript={selectedHistory}
-          transcriptId={selectedHistory.id}
-        />
-      )}
+      <ShareModal 
+        isOpen={showShareModal && !!selectedHistory}
+        onClose={() => setShowShareModal(false)}
+        transcript={selectedHistory}
+        transcriptId={selectedHistory?.id}
+      />
 
       {/* Hidden PDF content for export */}
       {selectedHistory && (
