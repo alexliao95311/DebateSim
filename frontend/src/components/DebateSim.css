@@ -547,6 +547,22 @@
   margin: 0 !important;
 }
 
+.debatesim-modal-header-share {
+  background: none !important;
+  border: none !important;
+  font-size: 1.2rem !important;
+  cursor: pointer !important;
+  color: #4a90e2 !important;
+  padding: 0.5rem !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+.debatesim-modal-header-share:hover {
+  background: rgba(74, 144, 226, 0.2) !important;
+  color: #60a5fa !important;
+}
+
 .debatesim-modal-header-close {
   background: none !important;
   border: none !important;
@@ -569,6 +585,32 @@
   padding: 2rem !important;
   color: #e2e8f0 !important;
   line-height: 1.6 !important;
+}
+
+/* Transcript viewer heading styles - make headers white */
+.debatesim-transcript-viewer .debate-heading-h1,
+.debatesim-transcript-viewer .debate-heading-h2,
+.debatesim-transcript-viewer .debate-heading-h3,
+.debatesim-transcript-viewer .debate-heading-h4 {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  margin: 1.5rem 0 1rem 0 !important;
+}
+
+.debatesim-transcript-viewer .debate-heading-h1 {
+  font-size: 1.5rem !important;
+}
+
+.debatesim-transcript-viewer .debate-heading-h2 {
+  font-size: 1.3rem !important;
+}
+
+.debatesim-transcript-viewer .debate-heading-h3 {
+  font-size: 1.1rem !important;
+}
+
+.debatesim-transcript-viewer .debate-heading-h4 {
+  font-size: 1rem !important;
 }
 
 .debatesim-modal-button-group {
