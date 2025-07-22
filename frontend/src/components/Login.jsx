@@ -25,13 +25,18 @@ function Login({ onLogin }) {
     setLoading(true);
     setError("");
     try {
-      // Configure the provider for better UX
+      // Configure the provider for better UX and consistent popup behavior
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
+        hd: '', // Remove domain restriction
       });
-      
-      // Use popup with optimized settings
+
+      // Configure popup settings for better positioning and size
       const result = await signInWithPopup(auth, provider);
+      
+      // Store user preference to go to DebateSim
+      localStorage.setItem('loginRedirect', 'debatesim');
+      
       onLogin(result.user);
     } catch (err) {
       console.error("Login error:", err);
@@ -64,6 +69,7 @@ function Login({ onLogin }) {
       isGuest: true,
     };
     localStorage.setItem("user", JSON.stringify(guestUser));
+    localStorage.setItem('loginRedirect', 'debatesim');
     onLogin(guestUser);
   };
 
@@ -79,7 +85,6 @@ function Login({ onLogin }) {
 
   // Scroll reset on component mount
   useEffect(() => {
-    // Force scroll reset with slight delay to ensure it works after navigation
     const scrollTimer = setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, 0);
@@ -173,18 +178,10 @@ function Login({ onLogin }) {
       </nav>
 
       <main className="login-main">
-        <section
-          className="hero-section"
-          ref={el => (sectionsRef.current[0] = el)}
-          id="hero"
-        >
+        <section className="hero-section" id="hero">
           <div className="hero-content">
-            {/* <div className="hero-badge">
-              <span className="badge-text">✨ Welcome to the Future of Debate</span>
-            </div> */}
             <h1 className="hero-title">
               <span className="title-main">DebateSim</span>
-              {/* <span className="title-sub">Develop</span> */}
             </h1>
             <div className="dynamic-text-container">
               <p className="dynamic-text">
@@ -192,24 +189,54 @@ function Login({ onLogin }) {
                 <span className="typing-cursor" style={{ opacity: isTyping ? 1 : 0 }}>|</span>
               </p>
             </div>
+
+            {/* Professional Login Section */}
+            <div className="google-login-section">
+              <h2 className="login-title">Start Your Debate Journey</h2>
+              <p className="login-subtitle">
+                Join thousands of users enhancing their debate skills with AI-powered simulations
+              </p>
+              
+              <div className="login-buttons">
+                <button
+                  className="btn-google-large"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="loading-container">
+                      <div className="loading-spinner"></div>
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <img src="/images/google.png" alt="Google logo" />
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  className="btn-guest-large"
+                  onClick={handleGuestLogin}
+                  disabled={loading}
+                >
+                  Try as Guest
+                </button>
+              </div>
+
+              {error && (
+                <div className="error-message" style={{ marginTop: '1rem' }}>
+                  <span className="error-icon">⚠️</span>
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+
             <div className="hero-actions">
               <button className="btn-start primary" onClick={scrollToNextSection}>
-                <span>Start Debating</span>
+                <span>Learn More</span>
                 <div className="btn-arrow">➤</div>
-              </button>
-              <button 
-                className="btn-start secondary" 
-                onClick={handleGoogleLogin}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <span>Get Started Now</span>
-                )}
               </button>
             </div>
           </div>
@@ -290,15 +317,6 @@ function Login({ onLogin }) {
             </div>
           </div>
         </section>
-
-        {error && (
-          <div className="error-section">
-            <div className="error-message">
-              <span className="error-icon">⚠️</span>
-              <span>{error}</span>
-            </div>
-          </div>
-        )}
       </main>
 
       <footer className="footer">

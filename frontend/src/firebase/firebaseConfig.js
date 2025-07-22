@@ -15,12 +15,22 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
+
+// Configure Google Auth Provider for better UX
 const provider = new GoogleAuthProvider();
+provider.addScope('email');
+provider.addScope('profile');
+
+// Set custom parameters for consistent popup behavior
+provider.setCustomParameters({
+  prompt: 'select_account',
+  login_hint: 'user@example.com'
+});
+
 const db = getFirestore(app);
 
 export { auth, provider, db, analytics };
