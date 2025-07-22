@@ -7,6 +7,7 @@ import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
+import { MessageSquare, Code } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -2200,15 +2201,27 @@ const Legislation = ({ user }) => {
 
 
       <footer className="bottom-text">
-        <a
-          href="https://github.com/alexliao95311/DebateSim"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="github-link"
-        >
-          GitHub
-        </a>
-        <span>&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+        <div className="footer-links">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-link"
+          >
+            <MessageSquare size={16} />
+            Give Feedback
+          </a>
+          <a
+            href="https://github.com/alexliao95311/DebateSim"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="github-link"
+          >
+            <Code size={16} />
+            GitHub
+          </a>
+        </div>
+        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
       </footer>
     </div>
   );
