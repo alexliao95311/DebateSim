@@ -88,6 +88,16 @@ function Debate() {
     navigate("/debatesim");
   };
 
+  // Reset scroll position on component mount
+  useEffect(() => {
+    // Force scroll reset with slight delay to ensure it works after navigation
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 0);
+    
+    return () => clearTimeout(scrollTimer);
+  }, []);
+
   // Cleanup auto timer on unmount
   useEffect(() => {
     return () => {
