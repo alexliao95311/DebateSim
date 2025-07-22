@@ -32,6 +32,15 @@ function Judge() {
   // Extract bill description from transcript
   const [billDescription, setBillDescription] = useState("");
   
+  // Reset scroll position on component mount
+  useEffect(() => {
+    // Force scroll reset with slight delay to ensure it works after navigation
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 0);
+    
+    return () => clearTimeout(scrollTimer);
+  }, []);
 
   useEffect(() => {
     // Extract bill description from transcript if it exists
