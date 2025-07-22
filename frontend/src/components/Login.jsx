@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { auth, provider } from "../firebase/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
+import { MessageSquare, Code } from "lucide-react";
 import "./Login.css";
 
 function Login({ onLogin }) {
@@ -301,16 +302,27 @@ function Login({ onLogin }) {
       </main>
 
       <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-left">
-            <img src="/images/logo.png" alt="Logo" className="footer-logo" />
-            <span className="footer-brand">DebateSim</span>
-          </div>
-          <div className="footer-right">
-            <span>© 2025 DebateSim. All rights reserved.</span>
-            <a href="https://github.com" className="footer-link">GitHub</a>
-          </div>
+        <div className="footer-links">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-link"
+          >
+            <MessageSquare size={16} />
+            Give Feedback
+          </a>
+          <a
+            href="https://github.com/alexliao95311/DebateSim"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="github-link"
+          >
+            <Code size={16} />
+            GitHub
+          </a>
         </div>
+        <span className="copyright">© {new Date().getFullYear()} DebateSim. All rights reserved.</span>
       </footer>
     </div>
   );
