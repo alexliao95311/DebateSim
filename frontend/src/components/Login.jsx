@@ -31,7 +31,7 @@ function Login({ onLogin }) {
         hd: '', // Remove domain restriction
       });
 
-      // Configure popup settings for better positioning and size
+      // Use signInWithPopup with better error handling for popup positioning
       const result = await signInWithPopup(auth, provider);
       
       // Store user preference to go to DebateSim
