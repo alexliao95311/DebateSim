@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
@@ -38,10 +38,19 @@ function DebateSim({ user }) {
   const inputRef = useRef(null);
   const pdfContentRef = useRef(null);
 
+  // Immediate scroll reset using useLayoutEffect
+  useLayoutEffect(() => {
+    // Multiple scroll reset methods to ensure it works
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   // Animation trigger
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
+    // Start animations after a brief delay
+    const animationTimer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(animationTimer);
   }, []);
 
   // Fetch history on load

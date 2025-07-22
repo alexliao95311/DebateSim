@@ -26,9 +26,18 @@ function Home({ user, onLogout }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Force scroll reset with slight delay to ensure it works after navigation
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 0);
+    
     // Trigger animations on mount
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
+    const animationTimer = setTimeout(() => setIsVisible(true), 100);
+    
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(animationTimer);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -102,7 +111,12 @@ function Home({ user, onLogout }) {
 
   const handleFeatureClick = (feature) => {
     if (feature.status === "coming-soon") return;
-    navigate(feature.route);
+    
+    // Force immediate scroll reset before navigation
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
+    navigate(feature.route, { replace: false, state: { scrollReset: true } });
   };
 
   return (

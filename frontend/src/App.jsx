@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Login from "./components/Login";
 import Home from "./components/Home";
@@ -9,6 +9,19 @@ import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
 
+// Component to handle scroll reset on route changes
+function ScrollToTop() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Force scroll to top on route change with multiple methods
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname]);
+  
+  return null;
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -65,7 +78,8 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true }}>
+      <ScrollToTop />
       <Routes>
         {/* Public route for shared transcripts - accessible without login */}
         <Route path="/shared/:shareId" element={<PublicTranscriptView />} />
