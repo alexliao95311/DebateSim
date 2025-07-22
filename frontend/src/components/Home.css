@@ -484,13 +484,47 @@
   color: #94a3b8 !important;
   width: 100% !important;
   border-top: 1px solid rgba(51, 65, 85, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.footer-links {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2rem !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+}
+
+.feedback-link {
+  color: #10b981 !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 0.5rem !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.feedback-link:hover {
+  color: #059669 !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
 }
 
 .github-link {
   color: #4a90e2 !important;
   text-decoration: none !important;
   font-weight: 500 !important;
-  margin-right: 1rem !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.5rem !important;
@@ -500,6 +534,12 @@
 .github-link:hover {
   color: #357abd !important;
   transform: translateY(-1px) !important;
+}
+
+.copyright {
+  margin-top: 0.5rem !important;
+  font-size: 0.85rem !important;
+  color: #64748b !important;
 }
 
 /* Responsive design */
@@ -574,6 +614,19 @@
   .main-content {
     padding: 0 1rem !important;
   }
+  
+  .footer-links {
+    gap: 1rem !important;
+  }
+  
+  .feedback-link {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .github-link {
+    font-size: 0.85rem !important;
+  }
 }
 
 @media (max-width: 576px) {
@@ -628,6 +681,20 @@
   .feature-icon {
     width: 20px !important;
     height: 20px !important;
+  }
+  
+  .footer-links {
+    flex-direction: column !important;
+    gap: 0.8rem !important;
+  }
+  
+  .feedback-link,
+  .github-link {
+    font-size: 0.8rem !important;
+  }
+  
+  .feedback-link {
+    padding: 0.35rem 0.7rem !important;
   }
 }
 
