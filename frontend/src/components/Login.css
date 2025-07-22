@@ -117,12 +117,19 @@ html {
   background-color: #ffffff !important;
   color: #0f172a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-google:hover:not(:disabled) {
   background-color: #f8fafc !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.btn-google:disabled {
+  background-color: #f1f5f9 !important;
+  color: #64748b;
 }
 
 .btn-google img {
@@ -563,90 +570,7 @@ html {
   border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
-/* Redirect Loading Overlay */
-.redirect-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(11, 17, 32, 0.95);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease-out;
-}
 
-.redirect-content {
-  text-align: center;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-  padding: 3rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  max-width: 400px;
-  width: 90%;
-}
-
-.redirect-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top: 3px solid #60a5fa;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1.5rem;
-}
-
-.redirect-content h3 {
-  color: #ffffff;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.redirect-content p {
-  color: #94a3b8;
-  font-size: 1rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-
-.google-logo-large {
-  margin-bottom: 1rem;
-}
-
-.google-logo-large img {
-  width: 40px;
-  height: 40px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.security-notice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background-color: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 8px;
-  color: #22c55e;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-top: 1rem;
-}
-
-.security-icon {
-  font-size: 1rem;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 /* Error Section */
 .error-section {
@@ -666,6 +590,20 @@ html {
   color: #fca5a5;
   font-weight: 500;
   backdrop-filter: blur(10px);
+  max-width: 500px;
+  margin: 0 auto;
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .error-icon {
@@ -811,19 +749,5 @@ html {
   .btn-start {
     padding: 0.8rem 1.5rem;
     font-size: 1rem;
-  }
-  
-  .redirect-content {
-    padding: 2rem;
-    margin: 1rem;
-  }
-  
-  .redirect-content h3 {
-    font-size: 1.3rem;
-  }
-  
-  .security-notice {
-    font-size: 0.8rem;
-    padding: 0.5rem 0.75rem;
   }
 }

@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { auth, provider } from "../firebase/firebaseConfig";
-import { signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import "./Login.css";
 
 function Login({ onLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
   const [currentText, setCurrentText] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isTyping, setIsTyping] = useState(true);
@@ -21,42 +20,8 @@ function Login({ onLogin }) {
     "Use a machine trained to win."
   ];
 
-  // Handle redirect result when user returns from Google login
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      setLoading(true);
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // User successfully signed in via redirect
-          onLogin(result.user);
-        }
-      } catch (err) {
-        console.error("Redirect login error:", err);
-        // Handle specific Firebase auth errors
-        let errorMessage = "Failed to complete Google sign in. Please try again.";
-        
-        if (err.code === 'auth/popup-blocked') {
-          errorMessage = "Login popup was blocked. Please allow popups and try again.";
-        } else if (err.code === 'auth/popup-closed-by-user') {
-          errorMessage = "Login was cancelled. Please try again.";
-        } else if (err.code === 'auth/network-request-failed') {
-          errorMessage = "Network error. Please check your connection and try again.";
-        } else if (err.code === 'auth/too-many-requests') {
-          errorMessage = "Too many login attempts. Please wait a moment and try again.";
-        }
-        
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    handleRedirectResult();
-  }, [onLogin]);
-
   const handleGoogleLogin = async () => {
-    setRedirecting(true);
+    setLoading(true);
     setError("");
     try {
       // Configure the provider for better UX
@@ -64,22 +29,30 @@ function Login({ onLogin }) {
         prompt: 'select_account'
       });
       
-      // Redirect to Google login - this provides a full-page professional experience
-      await signInWithRedirect(auth, provider);
+      // Use popup with optimized settings
+      const result = await signInWithPopup(auth, provider);
+      onLogin(result.user);
     } catch (err) {
       console.error("Login error:", err);
       
-      // Handle specific error cases
-      let errorMessage = "Failed to initiate Google sign in. Please try again.";
+      // Handle specific Firebase auth errors with user-friendly messages
+      let errorMessage = "Failed to sign in with Google. Please try again.";
       
-      if (err.code === 'auth/operation-not-supported-in-this-environment') {
-        errorMessage = "Google sign in is not supported in this environment. Please try from a supported browser.";
+      if (err.code === 'auth/popup-blocked') {
+        errorMessage = "Login popup was blocked by your browser. Please allow popups for this site and click 'Sign in with Google' again.";
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Login window was closed. Please try again to complete sign in.";
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = "Too many login attempts. Please wait a moment and try again.";
       } else if (err.code === 'auth/unauthorized-domain') {
         errorMessage = "This domain is not authorized for Google sign in. Please contact support.";
       }
       
       setError(errorMessage);
-      setRedirecting(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -162,35 +135,6 @@ function Login({ onLogin }) {
 
   return (
     <div className="login-container">
-      {/* Loading overlay during redirect */}
-      {redirecting && (
-        <div className="redirect-overlay">
-          <div className="redirect-content">
-            <div className="google-logo-large">
-              <img src="/images/google.png" alt="Google" />
-            </div>
-            <div className="redirect-spinner"></div>
-            <h3>Redirecting to Google</h3>
-            <p>You'll be securely redirected to Google's authentication page.</p>
-            <div className="security-notice">
-              <span className="security-icon">🔒</span>
-              <span>Secured by Google OAuth 2.0</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Loading overlay when processing redirect result */}
-      {loading && (
-        <div className="redirect-overlay">
-          <div className="redirect-content">
-            <div className="redirect-spinner"></div>
-            <h3>Completing Sign In</h3>
-            <p>Please wait while we complete your authentication...</p>
-          </div>
-        </div>
-      )}
-
       <nav className="login-navbar">
         <div className="navbar-left">
           <div className="logo-container">
@@ -202,24 +146,20 @@ function Login({ onLogin }) {
           <button
             className="btn btn-ghost"
             onClick={handleGuestLogin}
-            disabled={loading || redirecting}
+            disabled={loading}
           >
             <span className="btn-text">Continue as Guest</span>
           </button>
           <button
             className="btn btn-google"
             onClick={handleGoogleLogin}
-            disabled={loading || redirecting}
+            disabled={loading}
+            title="Sign in securely with your Google account"
           >
             {loading ? (
               <div className="loading-container">
                 <div className="loading-spinner"></div>
-                <span>Completing sign in...</span>
-              </div>
-            ) : redirecting ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
-                <span>Redirecting to Google...</span>
+                <span>Signing in...</span>
               </div>
             ) : (
               <div className="google-btn-content">
@@ -259,17 +199,12 @@ function Login({ onLogin }) {
               <button 
                 className="btn-start secondary" 
                 onClick={handleGoogleLogin}
-                disabled={loading || redirecting}
+                disabled={loading}
               >
                 {loading ? (
                   <>
                     <div className="loading-spinner"></div>
-                    <span>Completing sign in...</span>
-                  </>
-                ) : redirecting ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    <span>Redirecting to Google...</span>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   <span>Get Started Now</span>
