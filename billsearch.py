@@ -33,15 +33,41 @@ class BillSearcher:
         self.popular_terms = [
             "healthcare", "climate", "infrastructure", "immigration", "education", 
             "defense", "tax", "budget", "privacy", "energy", "environment",
-            "social security", "medicare", "medicaid", "veterans", "gun", "voting"
+            "social security", "medicare", "medicaid", "veterans", "gun", "voting",
+            "agriculture", "transportation", "housing", "labor", "finance",
+            "trade", "technology", "cybersecurity", "small business", "rural",
+            "disaster", "emergency", "coronavirus", "covid", "pandemic"
         ]
+        
+        # Comprehensive synonym mapping for better search
         self.synonym_map = {
-        "climate": ["carbon", "emissions", "warming", "environment"],
-        "gun": ["firearm", "weapons", "shooting", "arms"],
-        "healthcare": ["insurance", "medicare", "medicaid", "health"],
-        "education": ["school", "college", "students"],
-        "immigration": ["migrant", "border", "asylum", "visa"],
-        # we can add more as we expand categories
+            "climate": ["carbon", "emissions", "warming", "environment", "greenhouse", "pollution", "green", "renewable", "solar", "wind"],
+            "gun": ["firearm", "weapons", "shooting", "arms", "rifle", "pistol", "ammunition", "background check"],
+            "healthcare": ["insurance", "medicare", "medicaid", "health", "medical", "hospital", "doctor", "prescription", "drug", "obamacare", "aca"],
+            "education": ["school", "college", "students", "university", "teacher", "loan", "scholarship", "k-12", "elementary", "secondary"],
+            "immigration": ["migrant", "border", "asylum", "visa", "refugee", "deportation", "citizenship", "green card", "naturalization"],
+            "tax": ["taxation", "revenue", "irs", "refund", "deduction", "credit", "income", "corporate", "payroll"],
+            "defense": ["military", "army", "navy", "air force", "marines", "pentagon", "homeland", "national security"],
+            "infrastructure": ["roads", "bridges", "transportation", "public works", "broadband", "water", "sewer", "transit"],
+            "energy": ["oil", "gas", "coal", "nuclear", "solar", "wind", "electric", "power", "grid", "battery"],
+            "agriculture": ["farm", "farmer", "crops", "livestock", "food", "rural", "dairy", "beef", "corn", "wheat"],
+            "veterans": ["va", "military service", "disabled", "benefits", "gi bill", "ptsd"],
+            "technology": ["tech", "internet", "digital", "artificial intelligence", "ai", "data", "privacy", "cybersecurity"],
+            "finance": ["banking", "wall street", "securities", "investment", "market", "federal reserve", "fed"],
+            "housing": ["home", "mortgage", "rent", "affordable", "homeless", "fha", "hud"],
+            "labor": ["worker", "employment", "job", "union", "wage", "overtime", "workplace"],
+            "trade": ["commerce", "tariff", "export", "import", "nafta", "usmca", "china"],
+            "transportation": ["highway", "rail", "airport", "faa", "dot", "amtrak", "public transit"],
+            "social security": ["retirement", "disability", "ssa", "benefits", "seniors"],
+            "medicare": ["seniors", "elderly", "prescription", "part d", "advantage"],
+            "medicaid": ["low income", "poor", "children", "chip"],
+            "voting": ["election", "ballot", "voter", "registration", "polling"],
+            "environment": ["epa", "clean air", "clean water", "conservation", "wilderness", "endangered"],
+            "small business": ["entrepreneur", "startup", "sba", "minority", "women-owned"],
+            "disaster": ["fema", "hurricane", "flood", "wildfire", "earthquake", "recovery"],
+            "covid": ["coronavirus", "pandemic", "vaccine", "mask", "lockdown", "relief"],
+            "budget": ["appropriation", "spending", "debt", "deficit", "fiscal", "omnibus"],
+            "privacy": ["surveillance", "nsa", "fisa", "data protection", "fourth amendment"]
         }
         
     def _fuzzy_match(self, text: str, query: str, threshold: int = 75) -> bool:
@@ -213,10 +239,12 @@ class BillSearcher:
     def _is_relevant_match(self, bill: Dict[str, Any], query: str) -> bool:
         query_lower = query.lower()
         title = bill.get("title", "").lower()
-
+        
+        # Direct title match (high priority)
         if self._fuzzy_match(title, query_lower):
             return True
-
+        
+        # Bill code match (HR 1234, S 567, etc.)
         bill_type = bill.get("type", "").lower()
         bill_number = str(bill.get("number", ""))
         if bill_type and bill_number:
@@ -225,29 +253,61 @@ class BillSearcher:
                 return True
             if re.search(rf"\b{re.escape(bill_type)}\s*{re.escape(bill_number)}\b", query_lower):
                 return True
-
+        
+        # Sponsor match
         sponsors = bill.get("sponsors", [])
         if sponsors and isinstance(sponsors[0], dict):
             last_name = sponsors[0].get("lastName", "").lower()
-            if self._fuzzy_match(last_name, query_lower):
+            first_name = sponsors[0].get("firstName", "").lower()
+            if self._fuzzy_match(last_name, query_lower) or self._fuzzy_match(first_name, query_lower):
                 return True
-
-        for keyword in self._expand_keywords([query_lower]):
-            if keyword in title:
+        
+        # Policy area match
+        policy_area = bill.get("policyArea", {}).get("name", "").lower()
+        if policy_area and self._fuzzy_match(policy_area, query_lower):
+            return True
+        
+        # Keyword and synonym expansion matching
+        query_keywords = self._extract_keywords(query_lower)
+        expanded_keywords = self._expand_keywords(query_keywords)
+        
+        # Check if any expanded keyword matches title or policy area
+        for keyword in expanded_keywords:
+            if keyword in title or (policy_area and keyword in policy_area):
                 return True
-
+            # Check for partial matches with fuzzy matching
+            if len(keyword) > 4 and (self._fuzzy_match(title, keyword, 70) or 
+                                   (policy_area and self._fuzzy_match(policy_area, keyword, 70))):
+                return True
+        
+        # Check latest action for keyword matches
+        latest_action = bill.get("latestAction", {}).get("text", "").lower()
+        if latest_action:
+            for keyword in expanded_keywords:
+                if keyword in latest_action:
+                    return True
+        
         return False
 
     def _matches_keyword(self, bill: Dict[str, Any], keyword: str) -> bool:
         keyword_lower = keyword.lower()
         title = bill.get("title", "").lower()
+        
+        # Direct title match
         if self._fuzzy_match(title, keyword_lower):
             return True
-
+        
+        # Policy area match
         policy_area = bill.get("policyArea", {}).get("name", "").lower()
-        if self._fuzzy_match(policy_area, keyword_lower):
+        if policy_area and self._fuzzy_match(policy_area, keyword_lower):
             return True
-
+        
+        # Synonym expansion
+        expanded_keywords = self._expand_keywords([keyword_lower])
+        for expanded_keyword in expanded_keywords:
+            if expanded_keyword in title or (policy_area and expanded_keyword in policy_area):
+                return True
+        
         return False
         
     def _process_bill_fast(self, bill: Dict[str, Any], congress_num: int = None) -> Optional[Dict[str, Any]]:
@@ -309,50 +369,138 @@ class BillSearcher:
             return None
     
     def _calculate_simple_relevance(self, bill: Dict[str, Any], query: str) -> int:
-        """Simplified relevance scoring for fast sorting"""
+        """Enhanced relevance scoring with synonym matching"""
         query_lower = query.lower()
         score = 0
         
         title = bill.get("title", "").lower()
         bill_code = f"{bill.get('type', '')} {bill.get('number', '')}".lower()
+        policy_area = bill.get("policyArea", {}).get("name", "").lower()
         
-        # Title matches (highest priority)
-        if title.startswith(query_lower):
-            score += 100
-        elif query_lower in title:
-            score += 50
-        
-        # Bill code exact match
+        # Exact matches (highest priority)
         if query_lower == bill_code:
-            score += 90
+            score += 1000  # Exact bill code match
         elif query_lower in bill_code:
-            score += 40
+            score += 500   # Partial bill code match
         
-        # Sponsor match
-        sponsor = bill.get("sponsor", "").lower()
-        if query_lower in sponsor:
-            score += 30
+        # Title matches
+        if title.startswith(query_lower):
+            score += 200
+        elif query_lower in title:
+            score += 100
+        elif self._fuzzy_match(title, query_lower, 80):
+            score += 75
+        
+        # Policy area matches
+        if policy_area:
+            if query_lower == policy_area:
+                score += 150
+            elif query_lower in policy_area:
+                score += 75
+            elif self._fuzzy_match(policy_area, query_lower, 75):
+                score += 50
+        
+        # Sponsor matching
+        sponsors = bill.get("sponsors", [])
+        if sponsors and isinstance(sponsors[0], dict):
+            sponsor = sponsors[0]
+            last_name = sponsor.get("lastName", "").lower()
+            first_name = sponsor.get("firstName", "").lower()
+            full_name = f"{first_name} {last_name}".strip()
+            
+            if query_lower in last_name or query_lower in first_name:
+                score += 80
+            elif self._fuzzy_match(full_name, query_lower, 75):
+                score += 60
+        
+        # Keyword and synonym expansion scoring
+        query_keywords = self._extract_keywords(query_lower)
+        expanded_keywords = self._expand_keywords(query_keywords)
+        
+        # Score for each matching keyword/synonym
+        for keyword in expanded_keywords:
+            keyword_score = 0
+            
+            # Higher score for direct query keywords vs synonyms
+            is_original_keyword = keyword in query_keywords
+            multiplier = 1.5 if is_original_keyword else 1.0
+            
+            # Title keyword matches
+            if keyword in title:
+                keyword_score += 40 * multiplier
+            elif len(keyword) > 4 and self._fuzzy_match(title, keyword, 70):
+                keyword_score += 25 * multiplier
+            
+            # Policy area keyword matches
+            if policy_area and keyword in policy_area:
+                keyword_score += 30 * multiplier
+            elif policy_area and len(keyword) > 4 and self._fuzzy_match(policy_area, keyword, 70):
+                keyword_score += 20 * multiplier
+            
+            # Latest action keyword matches
+            latest_action = bill.get("latestAction", {}).get("text", "").lower()
+            if latest_action and keyword in latest_action:
+                keyword_score += 15 * multiplier
+            
+            score += keyword_score
         
         # Boost for current Congress
         if bill.get("congress") == self.current_congress:
-            score += 10
+            score += 25
+        elif bill.get("congress") == self.current_congress - 1:
+            score += 15
         
         # Boost for recent updates
         update_date = bill.get("updateDate", "")
-        if update_date and "2024" in update_date or "2025" in update_date:
-            score += 5
+        if update_date:
+            if "2025" in update_date:
+                score += 15
+            elif "2024" in update_date:
+                score += 10
+        
+        # Boost for active bills (based on latest action)
+        latest_action = bill.get("latestAction", {}).get("text", "").lower()
+        if latest_action:
+            active_indicators = ["passed", "introduced", "reported", "agreed to"]
+            inactive_indicators = ["died", "withdrawn", "failed"]
+            
+            if any(indicator in latest_action for indicator in active_indicators):
+                score += 10
+            elif any(indicator in latest_action for indicator in inactive_indicators):
+                score -= 5
         
         return score
     def _extract_keywords(self, query: str) -> List[str]:
         """Extract meaningful keywords from search query"""
-        # Split after removing common words
-        stop_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "act", "bill"}
-        words = re.findall(r'\b\w+\b', query.lower())
-        keywords = [word for word in words if word not in stop_words and len(word) >= 3]
-        # length-based sort (longer first)
-        keywords.sort(key=len, reverse=True)
+        # Handle multi-word terms that should stay together
+        multi_word_terms = [
+            "social security", "background check", "climate change", 
+            "gun control", "health care", "national security", "public health",
+            "artificial intelligence", "federal reserve", "supreme court",
+            "small business", "green energy", "mental health", "civil rights"
+        ]
+        
+        # Find multi-word terms first
+        keywords = []
+        remaining_query = query.lower()
+        
+        for term in multi_word_terms:
+            if term in remaining_query:
+                keywords.append(term)
+                remaining_query = remaining_query.replace(term, " ")
+        
+        # Split remaining query into individual words
+        stop_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "act", "bill", "from", "this", "that", "these", "those"}
+        words = re.findall(r'\b\w+\b', remaining_query)
+        individual_keywords = [word for word in words if word not in stop_words and len(word) >= 3]
+        
+        # Combine multi-word terms with individual keywords
+        all_keywords = keywords + individual_keywords
+        
+        # Sort by length (longer terms first) for better matching
+        all_keywords.sort(key=len, reverse=True)
 
-        return list(self._expand_keywords(keywords))
+        return list(self._expand_keywords(all_keywords))
 
     def _expand_keywords(self, keywords: List[str]) -> set:
         expanded = set(keywords)

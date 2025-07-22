@@ -7,6 +7,7 @@ import { saveTranscriptToUser } from "../firebase/saveTranscript";
 import LoadingSpinner from "./LoadingSpinner";
 import DebateSidebar from "./DebateSidebar";
 import SimpleFileUpload from "./SimpleFileUpload";
+import ShareModal from "./ShareModal";
 import { Code, MessageSquare } from "lucide-react";
 import "./Debate.css"; 
 
@@ -65,6 +66,10 @@ function Debate() {
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState(null);
 
   // Debate Models and mode-specific states.
   const [proModel, setProModel] = useState(modelOptions[0]);
@@ -200,6 +205,27 @@ function Debate() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleShareDebate = () => {
+    if (!messageList.length) {
+      setError("No debate content to share yet.");
+      return;
+    }
+    
+    // Create a transcript object similar to what's expected by ShareModal
+    const transcript = {
+      transcript: buildPlainTranscript(),
+      topic: topic,
+      mode: isBillDebate ? 'bill-debate' : actualMode,
+      activityType: isBillDebate ? 'Debate Bill' : 'Debate Topic',
+      createdAt: new Date().toISOString(),
+      // Don't include an ID since this is a current/unsaved transcript
+      shareId: null
+    };
+    
+    setCurrentTranscript(transcript);
+    setShowShareModal(true);
   };
 
   const maxRounds = 5;
@@ -973,9 +999,24 @@ function Debate() {
             >
               End Debate & Get Judgment
             </button>
+            <button
+              className="share-debate-btn"
+              onClick={handleShareDebate}
+              disabled={loading || messageList.length === 0}
+            >
+              📤 Share Debate
+            </button>
           </div>
         </div>
       </div>
+      
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        transcript={currentTranscript}
+        transcriptId={null} // No ID for current debates
+      />
       
       <footer className="bottom-text">
         <div className="footer-links">
