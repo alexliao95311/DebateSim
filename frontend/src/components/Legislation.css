@@ -2514,6 +2514,40 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Live search loading animations */
+.live-search-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e9ecef;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.live-search-status-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #856404;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Live search input visual feedback */
+.search-bar.live-searching {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+}
+
+/* Smooth transitions for search results */
+.bills-horizontal-scroll {
+  transition: opacity 0.3s ease;
+}
+
+.bills-horizontal-scroll.searching {
+  opacity: 0.7;
+}
+
 /* Responsive search improvements */
 @media (max-width: 768px) {
   .search-wrapper {
