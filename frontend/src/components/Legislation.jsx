@@ -1174,7 +1174,6 @@ const Legislation = ({ user }) => {
       setCurrentStep(2); // Move to step 2
     }
   };
-
   // Handle bill link cancellation
   const handleBillLinkCancel = () => {
     setShowLinkConfirmation(false);
