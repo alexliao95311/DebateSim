@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { auth, provider } from "../firebase/firebaseConfig";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import "./Login.css";
 
 function Login({ onLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [currentText, setCurrentText] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isTyping, setIsTyping] = useState(true);
@@ -20,17 +21,65 @@ function Login({ onLogin }) {
     "Use a machine trained to win."
   ];
 
+  // Handle redirect result when user returns from Google login
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      setLoading(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in via redirect
+          onLogin(result.user);
+        }
+      } catch (err) {
+        console.error("Redirect login error:", err);
+        // Handle specific Firebase auth errors
+        let errorMessage = "Failed to complete Google sign in. Please try again.";
+        
+        if (err.code === 'auth/popup-blocked') {
+          errorMessage = "Login popup was blocked. Please allow popups and try again.";
+        } else if (err.code === 'auth/popup-closed-by-user') {
+          errorMessage = "Login was cancelled. Please try again.";
+        } else if (err.code === 'auth/network-request-failed') {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (err.code === 'auth/too-many-requests') {
+          errorMessage = "Too many login attempts. Please wait a moment and try again.";
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    handleRedirectResult();
+  }, [onLogin]);
+
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setRedirecting(true);
     setError("");
     try {
-      const result = await signInWithPopup(auth, provider);
-      onLogin(result.user);
+      // Configure the provider for better UX
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      // Redirect to Google login - this provides a full-page professional experience
+      await signInWithRedirect(auth, provider);
     } catch (err) {
       console.error("Login error:", err);
-      setError("Failed to sign in with Google. Please try again.");
-    } finally {
-      setLoading(false);
+      
+      // Handle specific error cases
+      let errorMessage = "Failed to initiate Google sign in. Please try again.";
+      
+      if (err.code === 'auth/operation-not-supported-in-this-environment') {
+        errorMessage = "Google sign in is not supported in this environment. Please try from a supported browser.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = "This domain is not authorized for Google sign in. Please contact support.";
+      }
+      
+      setError(errorMessage);
+      setRedirecting(false);
     }
   };
 
@@ -113,6 +162,35 @@ function Login({ onLogin }) {
 
   return (
     <div className="login-container">
+      {/* Loading overlay during redirect */}
+      {redirecting && (
+        <div className="redirect-overlay">
+          <div className="redirect-content">
+            <div className="google-logo-large">
+              <img src="/images/google.png" alt="Google" />
+            </div>
+            <div className="redirect-spinner"></div>
+            <h3>Redirecting to Google</h3>
+            <p>You'll be securely redirected to Google's authentication page.</p>
+            <div className="security-notice">
+              <span className="security-icon">🔒</span>
+              <span>Secured by Google OAuth 2.0</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading overlay when processing redirect result */}
+      {loading && (
+        <div className="redirect-overlay">
+          <div className="redirect-content">
+            <div className="redirect-spinner"></div>
+            <h3>Completing Sign In</h3>
+            <p>Please wait while we complete your authentication...</p>
+          </div>
+        </div>
+      )}
+
       <nav className="login-navbar">
         <div className="navbar-left">
           <div className="logo-container">
@@ -124,19 +202,24 @@ function Login({ onLogin }) {
           <button
             className="btn btn-ghost"
             onClick={handleGuestLogin}
-            disabled={loading}
+            disabled={loading || redirecting}
           >
             <span className="btn-text">Continue as Guest</span>
           </button>
           <button
             className="btn btn-google"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || redirecting}
           >
             {loading ? (
               <div className="loading-container">
                 <div className="loading-spinner"></div>
-                <span>Signing in...</span>
+                <span>Completing sign in...</span>
+              </div>
+            ) : redirecting ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <span>Redirecting to Google...</span>
               </div>
             ) : (
               <div className="google-btn-content">
@@ -173,8 +256,24 @@ function Login({ onLogin }) {
                 <span>Start Debating</span>
                 <div className="btn-arrow">➤</div>
               </button>
-              <button className="btn-start secondary" onClick={handleGoogleLogin}>
-                <span>Get Started Now</span>
+              <button 
+                className="btn-start secondary" 
+                onClick={handleGoogleLogin}
+                disabled={loading || redirecting}
+              >
+                {loading ? (
+                  <>
+                    <div className="loading-spinner"></div>
+                    <span>Completing sign in...</span>
+                  </>
+                ) : redirecting ? (
+                  <>
+                    <div className="loading-spinner"></div>
+                    <span>Redirecting to Google...</span>
+                  </>
+                ) : (
+                  <span>Get Started Now</span>
+                )}
               </button>
             </div>
           </div>
