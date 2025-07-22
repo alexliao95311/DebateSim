@@ -888,6 +888,8 @@ const Legislation = ({ user }) => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [liveSearchLoading, setLiveSearchLoading] = useState(false);
+  const [searchAbortController, setSearchAbortController] = useState(null);
 
   // Bill link functionality state
   const [billLink, setBillLink] = useState("");
@@ -914,7 +916,45 @@ const Legislation = ({ user }) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const performSearch = async (query) => {
+  // Live search with debouncing - update bills view as user types
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Cancel previous search if still running
+      if (searchAbortController) {
+        searchAbortController.abort();
+      }
+
+      if (searchQuery.trim() && searchQuery.trim().length >= 2) {
+        const controller = new AbortController();
+        setSearchAbortController(controller);
+        setLiveSearchLoading(true);
+        
+        performSearch(searchQuery, controller.signal)
+          .finally(() => {
+            setLiveSearchLoading(false);
+            setSearchAbortController(null);
+          });
+      } else if (searchQuery.trim().length === 0) {
+        // Clear search when input is empty
+        setIsSearchMode(false);
+        setSearchResults([]);
+        setFilteredBills(recommendedBills);
+        setShowSuggestions(false);
+        setSearchError("");
+        setLiveSearchLoading(false);
+      }
+    }, 500); // 500ms debounce for live search (slightly longer to avoid too many API calls)
+
+    return () => {
+      clearTimeout(timeoutId);
+      // Cancel any pending search when component unmounts or query changes
+      if (searchAbortController) {
+        searchAbortController.abort();
+      }
+    };
+  }, [searchQuery, recommendedBills]);
+
+  const performSearch = async (query, abortSignal = null) => {
     if (!query.trim()) {
       setIsSearchMode(false);
       setSearchResults([]);
@@ -929,7 +969,7 @@ const Legislation = ({ user }) => {
     setShowSuggestions(false);
     
     try {
-      const response = await fetch(`${API_URL}/search-bills`, {
+      const fetchOptions = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -938,7 +978,13 @@ const Legislation = ({ user }) => {
           query: query.trim(),
           limit: 15 // Reduced limit for faster search
         }),
-      });
+      };
+
+      if (abortSignal) {
+        fetchOptions.signal = abortSignal;
+      }
+
+      const response = await fetch(`${API_URL}/search-bills`, fetchOptions);
 
       if (!response.ok) {
         throw new Error(`Search failed: ${response.status} ${response.statusText}`);
@@ -959,6 +1005,12 @@ const Legislation = ({ user }) => {
       }
       
     } catch (err) {
+      // Don't show error for aborted requests
+      if (err.name === 'AbortError') {
+        console.log("Search aborted:", query);
+        return;
+      }
+      
       console.error("Search error:", err);
       let errorMessage = "Search failed";
       
@@ -1016,6 +1068,7 @@ const Legislation = ({ user }) => {
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     if (searchQuery.trim()) {
+      // Clear debounce and search immediately
       performSearch(searchQuery);
       setShowSuggestions(false);
     }
@@ -1055,6 +1108,11 @@ const Legislation = ({ user }) => {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
+    }
+    
+    // Clear search error when user starts typing
+    if (searchError) {
+      setSearchError("");
     }
   };
 
@@ -1434,7 +1492,7 @@ const Legislation = ({ user }) => {
                     )}
                     
                     {!billsLoading && !billsError && recommendedBills.length > 0 && (
-                      <div className="bills-horizontal-scroll">
+                      <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
                         {recommendedBills.map((bill) => (
                           <BillCard 
                             key={bill.id} 
@@ -1537,7 +1595,7 @@ const Legislation = ({ user }) => {
                           or sponsor names for better results.
                         </div>
                         
-                        <div className="bills-horizontal-scroll">
+                        <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
                           {filteredBills.map((bill) => (
                             <BillCard 
                               key={bill.id} 
@@ -1697,8 +1755,8 @@ const Legislation = ({ user }) => {
                         onFocus={handleSearchInputFocus}
                         onBlur={handleSearchInputBlur}
                         onKeyDown={handleSearchKeyDown}
-                        placeholder="Search for a bill by title, topic, number (e.g., 'HR 1234', 'healthcare', 'climate')..."
-                        className="search-bar"
+                        placeholder="Start typing to search bills live (e.g., 'HR 1234', 'healthcare', 'climate')..."
+                        className={`search-bar ${liveSearchLoading ? 'live-searching' : ''}`}
                         style={{
                           width: "100%",
                           padding: "0.75rem 2.5rem 0.75rem 1rem",
@@ -1710,16 +1768,23 @@ const Legislation = ({ user }) => {
                         }}
                       />
                       
-                      {/* Search Icon */}
+                      {/* Search Icon / Loading Indicator */}
                       <div style={{
                         position: "absolute",
                         right: "0.75rem",
                         top: "50%",
                         transform: "translateY(-50%)",
                         color: "#666",
-                        pointerEvents: "none"
+                        pointerEvents: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem"
                       }}>
-                        🔍
+                        {liveSearchLoading ? (
+                          <div className="live-search-spinner"></div>
+                        ) : (
+                          "🔍"
+                        )}
                       </div>
                       
                       {/* Search Suggestions Dropdown */}
@@ -1764,21 +1829,21 @@ const Legislation = ({ user }) => {
                     
                     <button
                       onClick={handleSearchSubmit}
-                      disabled={searchLoading || !searchQuery.trim()}
+                      disabled={searchLoading || liveSearchLoading || !searchQuery.trim()}
                       style={{
                         padding: "0.75rem 1.5rem",
-                        backgroundColor: searchLoading || !searchQuery.trim() ? "#ccc" : "#007bff",
+                        backgroundColor: (searchLoading || liveSearchLoading || !searchQuery.trim()) ? "#ccc" : "#007bff",
                         color: "white",
                         border: "none",
                         borderRadius: "8px",
-                        cursor: searchLoading || !searchQuery.trim() ? "not-allowed" : "pointer",
+                        cursor: (searchLoading || liveSearchLoading || !searchQuery.trim()) ? "not-allowed" : "pointer",
                         fontSize: "1rem",
                         fontWeight: "500",
                         minWidth: "80px",
                         transition: "all 0.2s"
                       }}
                     >
-                      {searchLoading ? "..." : "Search"}
+                      {searchLoading || liveSearchLoading ? "..." : "Search"}
                     </button>
                     
                     {(isSearchMode || searchQuery) && (
@@ -1801,21 +1866,47 @@ const Legislation = ({ user }) => {
                     )}
                   </div>
                   
-                  {/* Search Status */}
-                  {isSearchMode && !searchLoading && !searchError && (
+                  {/* Live Search Help Text */}
+                  {!isSearchMode && !liveSearchLoading && searchQuery.trim().length === 0 && (
                     <div style={{
                       marginTop: "0.5rem",
                       padding: "0.5rem",
                       backgroundColor: "#e7f3ff",
                       border: "1px solid #b8daff",
                       borderRadius: "4px",
-                      fontSize: "0.9rem",
-                      color: "#004085"
+                      fontSize: "0.85rem",
+                      color: "#004085",
+                      textAlign: "center",
+                      fontStyle: "italic"
                     }}>
-                      {filteredBills.length === 0 
-                        ? `No bills found for "${searchQuery}". Try different keywords or check spelling.`
-                        : `Found ${filteredBills.length} bill${filteredBills.length === 1 ? '' : 's'} for "${searchQuery}"`
-                      }
+                      💡 Start typing above to search bills in real-time. Results update automatically as you type!
+                    </div>
+                  )}
+                  
+                  {/* Search Status */}
+                  {(isSearchMode || liveSearchLoading) && !searchLoading && !searchError && (
+                    <div style={{
+                      marginTop: "0.5rem",
+                      padding: "0.5rem",
+                      backgroundColor: liveSearchLoading ? "#fff3cd" : "#e7f3ff",
+                      border: `1px solid ${liveSearchLoading ? "#ffeaa7" : "#b8daff"}`,
+                      borderRadius: "4px",
+                      fontSize: "0.9rem",
+                      color: liveSearchLoading ? "#856404" : "#004085",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem"
+                    }}>
+                      {liveSearchLoading && (
+                        <div className="live-search-status-spinner"></div>
+                      )}
+                      {liveSearchLoading ? (
+                        `Searching for "${searchQuery}"...`
+                      ) : (
+                        filteredBills.length === 0 
+                          ? `No bills found for "${searchQuery}". Try different keywords or check spelling.`
+                          : `Found ${filteredBills.length} bill${filteredBills.length === 1 ? '' : 's'} for "${searchQuery}"`
+                      )}
                     </div>
                   )}
                 </div>
