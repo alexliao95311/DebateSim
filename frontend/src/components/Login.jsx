@@ -54,6 +54,16 @@ function Login({ onLogin }) {
     }
   };
 
+  // Scroll reset on component mount
+  useEffect(() => {
+    // Force scroll reset with slight delay to ensure it works after navigation
+    const scrollTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 0);
+    
+    return () => clearTimeout(scrollTimer);
+  }, []);
+
   // Typing animation effect
   useEffect(() => {
     const typeText = () => {

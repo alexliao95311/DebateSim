@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -349,6 +349,14 @@ const Legislation = ({ user }) => {
       console.error("Error fetching debate history:", err);
     }
   };
+
+  // Immediate scroll reset using useLayoutEffect
+  useLayoutEffect(() => {
+    // Multiple scroll reset methods to ensure it works
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
 
   // Fetch debate history on component mount
   useEffect(() => {
