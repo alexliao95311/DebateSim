@@ -241,7 +241,7 @@ function Login({ onLogin }) {
             </div>
             <div className="login-hero-actions">
               <button className="login-btn-start primary" onClick={scrollToNextSection}>
-                <span>Start Debating</span>
+                <span>Explore</span>
                 <div className="login-btn-arrow">➤</div>
               </button>
               <button 
