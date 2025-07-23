@@ -10,8 +10,11 @@ function Login({ onLogin }) {
   const [currentText, setCurrentText] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isTyping, setIsTyping] = useState(true);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
 
   const sectionsRef = useRef([]);
+  const featureCardsRef = useRef(null);
 
   const dynamicTexts = [
     "AI-powered debate simulation.",
@@ -77,6 +80,29 @@ function Login({ onLogin }) {
     }
   };
 
+  const updateArrowVisibility = () => {
+    const container = featureCardsRef.current;
+    if (!container) return;
+    
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    const isAtStart = scrollLeft <= 5; // Small tolerance for floating point precision
+    const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 5; // Small tolerance
+    
+    setShowLeftArrow(!isAtStart);
+    setShowRightArrow(!isAtEnd);
+  };
+
+  const scrollFeatures = (direction) => {
+    const container = featureCardsRef.current;
+    if (!container) return;
+    
+    const scrollAmount = 370;
+    container.scrollBy({ 
+      left: direction === 'left' ? -scrollAmount : scrollAmount, 
+      behavior: 'smooth' 
+    });
+  };
+
   // Scroll reset on component mount
   useEffect(() => {
     // Force scroll reset with slight delay to ensure it works after navigation
@@ -134,36 +160,57 @@ function Login({ onLogin }) {
     };
   }, []);
 
+  useEffect(() => {
+    const container = featureCardsRef.current;
+    if (!container) return;
+
+    const handleScroll = () => updateArrowVisibility();
+    const handleResize = () => {
+      setTimeout(() => updateArrowVisibility(), 100);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    
+    // Initial check
+    setTimeout(() => updateArrowVisibility(), 100);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
     <div className="login-container">
       <nav className="login-navbar">
-        <div className="navbar-left">
-          <div className="logo-container">
-            <img src="/images/logo.png" alt="Logo" className="logo" />
-            <span className="brand">DebateSim</span>
+        <div className="login-navbar-left">
+          <div className="login-logo-container">
+            <img src="/images/logo.png" alt="Logo" className="login-logo" />
+            <span className="login-brand">DebateSim</span>
           </div>
         </div>
-        <div className="navbar-right">
+        <div className="login-navbar-right">
           <button
-            className="btn btn-ghost"
+            className="login-btn login-btn-ghost"
             onClick={handleGuestLogin}
             disabled={loading}
           >
-            <span className="btn-text">Continue as Guest</span>
+            <span className="login-btn-text">Continue as Guest</span>
           </button>
           <button
-            className="btn btn-google"
+            className="login-btn login-btn-google"
             onClick={handleGoogleLogin}
             disabled={loading}
             title="Sign in securely with your Google account"
           >
             {loading ? (
-              <div className="loading-container">
-                <div className="loading-spinner"></div>
+              <div className="login-loading-container">
+                <div className="login-loading-spinner"></div>
                 <span>Signing in...</span>
               </div>
             ) : (
-              <div className="google-btn-content">
+              <div className="login-google-btn-content">
                 <img src="/images/google.png" alt="Google logo" />
                 <span>Sign in with Google</span>
               </div>
@@ -174,37 +221,37 @@ function Login({ onLogin }) {
 
       <main className="login-main">
         <section
-          className="hero-section"
+          className="login-hero-section"
           ref={el => (sectionsRef.current[0] = el)}
           id="hero"
         >
-          <div className="hero-content">
-            {/* <div className="hero-badge">
-              <span className="badge-text">✨ Welcome to the Future of Debate</span>
+          <div className="login-hero-content">
+            {/* <div className="login-hero-badge">
+              <span className="login-badge-text">✨ Welcome to the Future of Debate</span>
             </div> */}
-            <h1 className="hero-title">
-              <span className="title-main">DebateSim</span>
-              {/* <span className="title-sub">Develop</span> */}
+            <h1 className="login-hero-title">
+              <span className="login-title-main">DebateSim</span>
+              {/* <span className="login-title-sub">Develop</span> */}
             </h1>
-            <div className="dynamic-text-container">
-              <p className="dynamic-text">
+            <div className="login-dynamic-text-container">
+              <p className="login-dynamic-text">
                 {displayText}
-                <span className="typing-cursor" style={{ opacity: isTyping ? 1 : 0 }}>|</span>
+                <span className="login-typing-cursor" style={{ opacity: isTyping ? 1 : 0 }}>|</span>
               </p>
             </div>
-            <div className="hero-actions">
-              <button className="btn-start primary" onClick={scrollToNextSection}>
+            <div className="login-hero-actions">
+              <button className="login-btn-start primary" onClick={scrollToNextSection}>
                 <span>Start Debating</span>
-                <div className="btn-arrow">➤</div>
+                <div className="login-btn-arrow">➤</div>
               </button>
               <button 
-                className="btn-start secondary" 
+                className="login-btn-start secondary" 
                 onClick={handleGoogleLogin}
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <div className="loading-spinner"></div>
+                    <div className="login-loading-spinner"></div>
                     <span>Signing in...</span>
                   </>
                 ) : (
@@ -213,101 +260,115 @@ function Login({ onLogin }) {
               </button>
             </div>
           </div>
-          <div className="hero-scroll-indicator">
-            <div className="scroll-line"></div>
-            <span className="scroll-text">Scroll to explore</span>
+          <div className="login-hero-scroll-indicator">
+            <div className="login-scroll-line"></div>
+            <span className="login-scroll-text">Scroll to explore</span>
           </div>
         </section>
 
         <section
-          className="fade-section intro-section"
+          className="login-fade-section login-intro-section"
           ref={el => (sectionsRef.current[1] = el)}
           id="section-1"
         >
-          <div className="intro-content">
-            <h2 className="section-title">Experience Dynamic Debates</h2>
-            <p className="section-description">
+          <div className="login-intro-content">
+            <h2 className="login-section-title">Experience Dynamic Debates</h2>
+            <p className="login-section-description">
               Challenge your thinking with AI-powered opponents and enhance your speaking skills
             </p>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-number">1000+</span>
-                <span className="stat-label">Debates Simulated</span>
+            <div className="login-stats-grid">
+              <div className="login-stat-item">
+                <span className="login-stat-number">1000+</span>
+                <span className="login-stat-label">Debates Simulated</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-number">50+</span>
-                <span className="stat-label">Topics Available</span>
+              <div className="login-stat-item">
+                <span className="login-stat-number">50+</span>
+                <span className="login-stat-label">Topics Available</span>
               </div>
-              <div className="stat-item">
-                <span className="stat-number">24/7</span>
-                <span className="stat-label">AI Availability</span>
+              <div className="login-stat-item">
+                <span className="login-stat-number">24/7</span>
+                <span className="login-stat-label">AI Availability</span>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="feature-section fade-section" ref={el => (sectionsRef.current[2] = el)}>
-          <div className="features-header">
-            <h2 className="features-title">Features</h2>
-            <p className="features-subtitle">Everything you need to become a master debater</p>
+        <section className="login-feature-section login-fade-section" ref={el => (sectionsRef.current[2] = el)}>
+          <div className="login-features-header">
+            <h2 className="login-features-title">Features</h2>
+            <p className="login-features-subtitle">Everything you need to excel at argumentation</p>
           </div>
-          <div className="feature-cards">
-            <div className="feature-card" onClick={handleGoogleLogin}>
-              <div className="feature-icon">🎯</div>
-              <div className="feature-content">
+          <div className="login-features-container">
+            <button 
+              className={`login-scroll-arrow login-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
+              onClick={() => scrollFeatures('left')}
+            >
+              ←
+            </button>
+            <button 
+              className={`login-scroll-arrow login-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
+              onClick={() => scrollFeatures('right')}
+            >
+              →
+            </button>
+            <div className="login-feature-cards" ref={featureCardsRef}>
+            <div className="login-feature-card" onClick={handleGoogleLogin}>
+              <div className="login-feature-icon">🎯</div>
+              <div className="login-feature-content">
                 <h3>Debate Simulator</h3>
                 <p>
                   Experience dynamic debates with AI. Challenge your thinking by
                   exploring multiple perspectives, enhance your argumentation
                   skills, and deepen your understanding of complex topics.
                 </p>
-                <div className="feature-status available">Available Now</div>
+                <div className="login-feature-status available">Available Now</div>
               </div>
             </div>
-            <div className="feature-card" onClick={handleGoogleLogin}>
-              <div className="feature-icon">⚖️</div>
-              <div className="feature-content">
+            <div className="login-feature-card" onClick={handleGoogleLogin}>
+              <div className="login-feature-icon">⚖️</div>
+              <div className="login-feature-content">
                 <h3>Bill and Legislation Debate</h3>
                 <p>
                   Upload any Congressional bill and engage in thoughtful
                   debates about its merits with friends or AI opponents. Explore
                   legislation from multiple perspectives.
                 </p>
-                <div className="feature-status coming-soon">Coming Soon</div>
+                <div className="login-feature-status available">Available Now</div>
               </div>
             </div>
-            <div className="feature-card" onClick={handleGoogleLogin}>
-              <div className="feature-icon">🔍</div>
-              <div className="feature-content">
+            <div className="login-feature-card" onClick={handleGoogleLogin}>
+              <div className="login-feature-icon">🔍</div>
+              <div className="login-feature-content">
                 <h3>Bias Detector</h3>
                 <p>
                   Evaluate online content for accuracy and bias! Analyze
                   websites, news articles, or any text to identify potential slant
-                  and misinformation.
+                  and misinformation. Perfect for fact-checking and media literacy.
                 </p>
-                <div className="feature-status coming-soon">Coming Soon</div>
+                <div className="login-feature-status coming-soon">Coming Soon</div>
               </div>
+            </div>
             </div>
           </div>
         </section>
 
         {error && (
-          <div className="error-section">
-            <div className="error-message">
-              <span className="error-icon">⚠️</span>
+          <div className="login-error-section">
+            <div className="login-error-message">
+              <span className="login-error-icon">⚠️</span>
               <span>{error}</span>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="footer">
-        <div className="footer-links">
+      <footer className="login-footer">
+        <div className="login-footer-links">
           <a
             href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
             target="_blank"
             rel="noopener noreferrer"
-            className="feedback-link"
+            className="login-feedback-link"
           >
             <MessageSquare size={16} />
             Give Feedback
@@ -316,13 +377,13 @@ function Login({ onLogin }) {
             href="https://github.com/alexliao95311/DebateSim"
             target="_blank"
             rel="noopener noreferrer"
-            className="github-link"
+            className="login-github-link"
           >
             <Code size={16} />
             GitHub
           </a>
         </div>
-        <span className="copyright">© {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+        <span className="login-copyright">© {new Date().getFullYear()} DebateSim. All rights reserved.</span>
       </footer>
     </div>
   );
