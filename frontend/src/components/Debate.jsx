@@ -505,14 +505,14 @@ function Debate() {
               </div>
             </div>
           )}
-          {/* This model-selection div is now hidden in user-vs-user mode */}
+          {/* This debate-model-selection div is now hidden in user-vs-user mode */}
           {actualMode !== "user-vs-user" && (
-            <div className="model-selection">
+            <div className="debate-model-selection">
               {actualMode === "ai-vs-ai" && (
                 <>
-                  <label>
+                  <label className="debate-model-label">
                     Pro Model:
-                    <select value={proModel} onChange={(e) => setProModel(e.target.value)}>
+                    <select className="debate-model-select" value={proModel} onChange={(e) => setProModel(e.target.value)}>
                       {modelOptions.map((m) => (
                         <option key={m} value={m}>
                           {m}
@@ -520,9 +520,9 @@ function Debate() {
                       ))}
                     </select>
                   </label>
-                  <label>
+                  <label className="debate-model-label">
                     Con Model:
-                    <select value={conModel} onChange={(e) => setConModel(e.target.value)}>
+                    <select className="debate-model-select" value={conModel} onChange={(e) => setConModel(e.target.value)}>
                       {modelOptions.map((m) => (
                         <option key={m} value={m}>
                           {m}
@@ -533,9 +533,9 @@ function Debate() {
                 </>
               )}
               {actualMode === "ai-vs-user" && (
-                <label>
+                <label className="debate-model-label">
                   AI Model:
-                  <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                  <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
                     {modelOptions.map((m) => (
                       <option key={m} value={m}>
                         {m}
@@ -544,9 +544,9 @@ function Debate() {
                   </select>
                 </label>
               )}
-              <label>
+              <label className="debate-model-label">
                 Judge Model:
-                <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                   {modelOptions.map((m) => (
                     <option key={m} value={m}>
                       {m}
@@ -558,23 +558,23 @@ function Debate() {
           )}
         {/* Render each speech as its own block */}
         {messageList.map(({ speaker, text, model }, i) => (
-          <div key={i} className="speech-block" id={`speech-${i}`}>
-            <h3>{speechList[i]?.title || speaker}</h3>
-            {model && <div className="model-info">Model: {model}</div>}
-            <div className="speech-content">
+          <div key={i} className="debate-speech-block" id={`speech-${i}`}>
+            <h3 className="debate-speech-title">{speechList[i]?.title || speaker}</h3>
+            {model && <div className="debate-model-info">Model: {model}</div>}
+            <div className="debate-speech-content">
               <ReactMarkdown
                 components={{
-                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
-                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
-                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
-                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
-                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
-                  hr: ({node, ...props}) => <hr className="divider" {...props} />
+                  h1: ({node, ...props}) => <h1 className="debate-markdown-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="debate-markdown-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="debate-markdown-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="debate-markdown-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="debate-markdown-p" {...props} />,
+                  ul: ({node, ...props}) => <ul className="debate-markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="debate-markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="debate-markdown-li" {...props} />,
+                  strong: ({node, ...props}) => <strong className="debate-markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="debate-markdown-em" {...props} />,
+                  hr: ({node, ...props}) => <hr className="debate-markdown-hr" {...props} />
                 }}
               >
                 {text}
@@ -722,10 +722,10 @@ function Debate() {
                 <div className="ai-vs-user-setup">
                   <h3>Debate as {userSide.toUpperCase()} vs AI</h3>
                   
-                  <div className="model-selection" style={{ marginBottom: "1rem" }}>
-                    <label>
+                  <div className="debate-model-selection" style={{ marginBottom: "1rem" }}>
+                    <label className="debate-model-label">
                       AI Opponent Model:
-                      <select value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                      <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
                         {modelOptions.map((m) => (
                           <option key={m} value={m}>
                             {m}
@@ -857,10 +857,10 @@ function Debate() {
                     </div>
                   </div>
                   
-                  <div className="model-selection" style={{ marginBottom: "1.5rem" }}>
-                    <label>
+                  <div className="debate-model-selection" style={{ marginBottom: "1.5rem" }}>
+                    <label className="debate-model-label">
                       Judge Model:
-                      <select value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                      <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                         {modelOptions.map((m) => (
                           <option key={m} value={m}>
                             {m}

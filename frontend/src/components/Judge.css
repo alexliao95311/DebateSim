@@ -1,648 +1,586 @@
-/* Judge.css - Fixed layout with improved responsiveness */
+/* Judge.css - Glass-morphism design with prefixed classes */
 
-/* Base container with background */
+/* Base container with background - same as Debate.jsx */
 .judge-container {
-  width: 100vw;
-  min-height: 100vh;
-  padding: 5rem 1rem 2rem;
-  background: url("/images/background4.png") center center/cover no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100vw !important;
+  min-height: 100vh !important;
+  padding: 5rem 1rem 2rem !important;
+  background: url("/images/background4.png") center center/cover no-repeat !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  position: relative !important;
 }
 
-/* Back to home button */
-.back-to-home {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 110;
-  padding: 0.5rem 1rem;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-weight: 500;
-  height: 36px;
-  line-height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Main heading styles with glass-morphism */
+.judge-main-heading {
+  font-size: 2.5rem !important;
+  color: #f8fafc !important;
+  margin-bottom: 0.5rem !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8) !important;
 }
 
-.back-to-home:hover {
-  background-color: #357abd;
-}
-
-/* Main heading styles */
-.main-heading {
-  font-size: 2rem;
-  color: white;
-  margin-bottom: 0.5rem;
-  text-align: center;
-  position: relative;
-  padding-bottom: 1rem;
-}
-
-.main-heading:after {
-  display: none; /* Remove the blue line entirely */
-}
-
-.sub-heading {
-  font-size: 1.3rem;
-  color: white;
-  margin-bottom: 2rem;
-  text-align: center;
+.judge-sub-heading {
+  font-size: 1.4rem !important;
+  color: #cbd5e1 !important;
+  margin-bottom: 2rem !important;
+  text-align: center !important;
+  font-weight: 300 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6) !important;
 }
 
 /* Container to ensure proper centering */
-.debate-sections-container {
-  width: 100%;
-  max-width: 1800px; /* Increase max-width to allow more space */
-  display: flex;
-  justify-content: center;
-  padding: 0 1rem;
+.judge-sections-container {
+  width: 100% !important;
+  max-width: 1800px !important;
+  display: flex !important;
+  justify-content: center !important;
+  padding: 0 1rem !important;
 }
 
-/* Main layout with two columns - enforce horizontal layout */
-.debate-sections {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  padding: 1rem;
+/* Main layout with two columns - glass-morphism design */
+.judge-sections {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 2rem !important;
+  padding: 1rem !important;
 }
 
-/* Section styling */
-.transcript-section,
-.feedback-section {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: calc(80vh - 2rem);
-  min-width: 0; /* Prevent flex items from overflowing */
+/* Section styling with glass-morphism */
+.judge-transcript-section,
+.judge-feedback-section {
+  background: rgba(30, 41, 59, 0.7) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 2px solid rgba(71, 85, 105, 0.4) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(80vh - 2rem) !important;
+  min-width: 0 !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
 }
 
-/* Section title styling - updated for consistency */
-.transcript-section h2,
-.feedback-section h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: #333;
-  text-align: center;
-  padding: 1rem;
-  background-color: #f5f7fa;
-  border-bottom: 1px solid #e0e7ee;
-  width: 100%;
+.judge-transcript-section::before,
+.judge-feedback-section::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(139, 92, 246, 0.05)) !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
 }
 
-/* Header with flex for showing bill text button */
-.section-header {
-  padding: 0; /* Remove padding since it's handled in h2 */
-  background-color: transparent;
-  border-bottom: none;
-  display: flex;
-  justify-content: center;
-  position: relative;
-  width: 100%;
+.judge-transcript-section:hover,
+.judge-feedback-section:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(74, 144, 226, 0.6) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Toggle bill text button - completely fixed positioning */
-.toggle-bill-text {
-  padding: 0;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 5;
-  height: 32px;
-  width: 120px; /* Fixed width */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: none; /* Prevent any shadow changes */
-  outline: none; /* Remove outline on focus */
+.judge-transcript-section:hover::before,
+.judge-feedback-section:hover::before {
+  opacity: 1 !important;
 }
 
-.toggle-bill-text:hover,
-.toggle-bill-text:active,
-.toggle-bill-text:focus {
-  background-color: #357abd;
-  transform: translateY(-50%); /* Keep the same transform on all states */
-  outline: none;
-  box-shadow: none;
+/* Section header styling */
+.judge-section-header {
+  padding: 0 !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 100% !important;
+  z-index: 2 !important;
 }
 
-/* Scrollable content area */
-.scrollable-content {
-  padding: 1.5rem;
-  overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  word-break: break-word; /* Ensure long words don't overflow */
+/* Section title styling */
+.judge-section-title {
+  margin: 0 !important;
+  font-size: 1.5rem !important;
+  color: #f8fafc !important;
+  text-align: center !important;
+  padding: 1.5rem !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 2px solid rgba(71, 85, 105, 0.5) !important;
+  width: 100% !important;
+  font-weight: 600 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
 }
 
-/* Ensure consistent spacing regardless of content */
-.transcript-section .scrollable-content {
-  min-height: 100px; /* Ensure minimum height even when empty */
+/* Toggle bill text button with glass-morphism */
+.judge-toggle-bill-text {
+  padding: 0.5rem 1rem !important;
+  background: rgba(74, 144, 226, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  color: #f8fafc !important;
+  border: 2px solid rgba(74, 144, 226, 0.3) !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  position: absolute !important;
+  right: 1rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 10 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Specific adjustment to match top padding in both columns */
-.transcript-section .scrollable-content,
-.feedback-section .scrollable-content {
-  padding-top: 1.5rem; /* Ensure both have exactly the same top padding */
+.judge-toggle-bill-text:hover,
+.judge-toggle-bill-text:active,
+.judge-toggle-bill-text:focus {
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.9), rgba(139, 92, 246, 0.9)) !important;
+  border-color: rgba(74, 144, 226, 0.6) !important;
+  transform: translateY(-50%) translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.4) !important;
+  outline: none !important;
 }
 
-/* If there's a specific element causing extra padding in the left column */
-.transcript-section .scrollable-content > *:first-child,
-.feedback-section .scrollable-content > *:first-child {
-  margin-top: 0;
+/* Scrollable content area with glass styling */
+.judge-scrollable-content {
+  padding: 2rem !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  word-break: break-word !important;
+  position: relative !important;
+  z-index: 2 !important;
+  background: rgba(15, 23, 42, 0.3) !important;
+  backdrop-filter: blur(5px) !important;
 }
 
-/* For empty content state */
-.transcript-section .scrollable-content:empty {
-  padding: 1.5rem;
-  height: 100%;
+/* Speech block styling with glass-morphism */
+.judge-speech-block {
+  background: rgba(30, 41, 59, 0.8) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 2px solid rgba(71, 85, 105, 0.4) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  margin-bottom: 1.5rem !important;
+  margin-top: 0 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-/* Loading feedback */
-.loading-feedback {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #666;
+.judge-speech-block::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.05), rgba(139, 92, 246, 0.05)) !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
 }
 
-.loading-spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #4a90e2;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
+.judge-speech-block:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(74, 144, 226, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3) !important;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.judge-speech-block:hover::before {
+  opacity: 1 !important;
 }
 
-/* Speech block styling */
-.speech-block {
-  background: white;
-  border: 1px solid #e0e7ee;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  margin-top: 0; /* Prevent unexpected top margin */
+.judge-speech-title {
+  margin-top: 0 !important;
+  color: #4a90e2 !important;
+  font-size: 1.5rem !important;
+  font-weight: bold !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-.speech-block h3 {
-  margin-top: 0;
-  color: #333;
-  font-size: 1.2rem;
+.judge-model-info {
+  color: #cbd5e1 !important;
+  font-size: 0.85rem !important;
+  font-style: italic !important;
+  margin-bottom: 1rem !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-.model-info {
-  color: #666;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
+/* Markdown content styling - all white text */
+.judge-markdown-h1 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin: 1rem 0 0.5rem 0 !important;
+  color: #4a90e2 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
 }
 
-/* Divider styling */
-hr.divider {
-  border: none;
-  height: 1px;
-  background-color: #e0e7ee;
-  margin: 1.5rem 0;
+.judge-markdown-h2 {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  margin: 1rem 0 0.5rem 0 !important;
+  color: #4a90e2 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
 }
 
-/* Button group at bottom */
-.button-group {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  justify-content: center;
-  flex-wrap: wrap;
+.judge-markdown-h3 {
+  font-size: 1.2rem !important;
+  font-weight: 500 !important;
+  margin: 0.8rem 0 0.4rem 0 !important;
+  color: #4a90e2 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
 }
 
-.button-group button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.judge-markdown-h4 {
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+  margin: 0.6rem 0 0.3rem 0 !important;
+  color: #4a90e2 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
 }
 
-.download-button {
-  background-color: #4a90e2;
-  color: white;
+.judge-markdown-p {
+  line-height: 1.6 !important;
+  margin-bottom: 1rem !important;
+  color: #f8fafc !important;
 }
 
-.download-button:hover:not(:disabled) {
-  background-color: #357abd;
+.judge-markdown-ul {
+  margin: 0.5rem 0 1rem 1.5rem !important;
+  list-style-type: disc !important;
+  color: #f8fafc !important;
 }
 
-.download-button:disabled {
-  background-color: #a3c5e9;
-  cursor: not-allowed;
+.judge-markdown-ol {
+  margin: 0.5rem 0 1rem 1.5rem !important;
+  list-style-type: decimal !important;
+  color: #f8fafc !important;
 }
 
-.share-button {
-  background-color: #28a745;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.judge-markdown-li {
+  margin-bottom: 0.3rem !important;
+  line-height: 1.5 !important;
+  color: #f8fafc !important;
 }
 
-.share-button:hover:not(:disabled) {
-  background-color: #218838;
+.judge-markdown-strong {
+  font-weight: 600 !important;
+  color: #f8fafc !important;
 }
 
-.share-button:disabled {
-  background-color: #a3c5e9;
-  cursor: not-allowed;
+.judge-markdown-em {
+  font-style: italic !important;
+  color: #f8fafc !important;
 }
 
-.home-button {
-  background-color: #6c757d;
-  color: white;
+.judge-markdown-hr {
+  border: none !important;
+  border-top: 1px solid rgba(71, 85, 105, 0.5) !important;
+  margin: 1.5rem 0 !important;
 }
 
-.home-button:hover {
-  background-color: #5a6268;
+/* Button group at bottom with glass-morphism */
+.judge-button-group {
+  display: flex !important;
+  gap: 1rem !important;
+  margin-top: 2rem !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
 }
 
-/* Error message */
-.error-text {
-  color: #e74c3c;
-  margin-top: 1rem;
-  text-align: center;
-  font-weight: 500;
+.judge-button-group button {
+  padding: 0.75rem 1.5rem !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Markdown content styling - copied from Debate.css */
-.scrollable-content h1,
-.scrollable-content .debate-heading-h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 1rem 0 0.5rem 0;
-  color: #4a90e2;
+.judge-share-button {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.8), rgba(34, 139, 58, 0.8)) !important;
+  color: #f8fafc !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
 }
 
-.scrollable-content h2,
-.scrollable-content .debate-heading-h2 {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin: 1rem 0 0.5rem 0;
-  color: #4a90e2;
+.judge-share-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.9), rgba(34, 139, 58, 0.9)) !important;
+  border-color: rgba(40, 167, 69, 0.6) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(40, 167, 69, 0.4) !important;
 }
 
-.scrollable-content h3,
-.scrollable-content .debate-heading-h3 {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0.8rem 0 0.4rem 0;
-  color: #333;
+.judge-share-button:disabled {
+  background: rgba(108, 117, 125, 0.6) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  opacity: 0.6 !important;
 }
 
-.scrollable-content h4,
-.scrollable-content .debate-heading-h4 {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin: 0.6rem 0 0.3rem 0;
-  color: #333;
+.judge-home-button {
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.8), rgba(90, 98, 104, 0.8)) !important;
+  color: #f8fafc !important;
 }
 
-.scrollable-content p,
-.scrollable-content .debate-paragraph {
-  line-height: 1.6;
-  margin-bottom: 1rem;
-  color: #333;
+.judge-home-button:hover {
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.9), rgba(90, 98, 104, 0.9)) !important;
+  border-color: rgba(108, 117, 125, 0.6) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(108, 117, 125, 0.4) !important;
 }
 
-.scrollable-content ul,
-.scrollable-content .debate-list {
-  margin: 0.5rem 0 1rem 1.5rem;
-  list-style-type: disc;
+/* Error message with glass styling */
+.judge-error-text {
+  color: #ef4444 !important;
+  margin-top: 1rem !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  padding: 1rem !important;
+  border-radius: 8px !important;
+  border: 2px solid rgba(239, 68, 68, 0.3) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-.scrollable-content ol,
-.scrollable-content .debate-numbered-list {
-  margin: 0.5rem 0 1rem 1.5rem;
-  list-style-type: decimal;
+/* Force all content inside scrollable areas to be white */
+.judge-scrollable-content *,
+.judge-scrollable-content p,
+.judge-scrollable-content span,
+.judge-scrollable-content div,
+.judge-scrollable-content li {
+  color: #f8fafc !important;
 }
 
-.scrollable-content li,
-.scrollable-content .debate-list-item {
-  margin-bottom: 0.3rem;
-  line-height: 1.5;
-  color: #333 !important;
-}
-
-.scrollable-content strong,
-.scrollable-content .debate-strong {
-  font-weight: bold;
-  color: #333;
-}
-
-.scrollable-content em,
-.scrollable-content .debate-emphasis {
-  font-style: italic;
-  color: #333;
-}
-
-.scrollable-content hr,
-.scrollable-content .divider {
-  border: none;
-  border-top: 1px solid #e0e7ee;
-  margin: 1.5rem 0;
-}
-
-/* Ensure any raw text is properly formatted */
-.scrollable-content pre {
-  background: #f5f5f5;
-  padding: 1rem;
-  border-radius: 4px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.scrollable-content code {
-  background: #f5f5f5;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-}
-
-/* Text color rules for Judge component content */
-.judge-container .scrollable-content p,
-.judge-container .scrollable-content li {
-  color: #333;
-}
-
-.judge-container .scrollable-content h1,
-.judge-container .scrollable-content h2,
-.judge-container .scrollable-content .debate-heading-h1,
-.judge-container .scrollable-content .debate-heading-h2 {
-  color: #4a90e2;
-}
-
-.judge-container .speech-block h3 {
-  color: #333;
-}
-
-.judge-container .model-info {
-  color: #666;
-}
-
-/* Mobile Responsiveness - Reduce header clutter */
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-  /* Make headers less cluttered */
   .judge-container {
-    padding: 4rem 0.5rem 1.5rem;
+    padding: 4rem 0.5rem 1.5rem !important;
   }
   
-  .main-heading {
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
+  .judge-main-heading {
+    font-size: 1.8rem !important;
+    margin-bottom: 0.5rem !important;
   }
   
-  .sub-heading {
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
+  .judge-sub-heading {
+    font-size: 1.1rem !important;
+    margin-bottom: 1.5rem !important;
   }
   
-  /* Stack sections vertically on mobile */
-  .debate-sections {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 0.5rem;
+  .judge-sections {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 0.5rem !important;
   }
   
-  .transcript-section,
-  .feedback-section {
-    height: 45vh;
-    min-height: 300px;
+  .judge-transcript-section,
+  .judge-feedback-section {
+    height: 45vh !important;
+    min-height: 300px !important;
   }
   
-  /* Make section headers more compact */
-  .transcript-section h2,
-  .feedback-section h2 {
-    font-size: 1.2rem;
-    padding: 0.75rem;
+  .judge-section-title {
+    font-size: 1.2rem !important;
+    padding: 1rem !important;
   }
   
-  /* Reduce button size and make responsive */
-  .toggle-bill-text {
-    height: 28px;
-    width: 100px;
-    font-size: 0.8rem;
-    right: 0.5rem;
+  .judge-toggle-bill-text {
+    height: 32px !important;
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.8rem !important;
+    right: 0.5rem !important;
   }
   
-  /* Make scrollable content more mobile-friendly */
-  .scrollable-content {
-    padding: 1rem;
-    font-size: 0.9rem;
+  .judge-scrollable-content {
+    padding: 1rem !important;
+    font-size: 0.9rem !important;
   }
   
-  /* Compact speech blocks */
-  .speech-block {
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
+  .judge-speech-block {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
   }
   
-  .speech-block h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.4rem;
+  .judge-speech-title {
+    font-size: 1.2rem !important;
+    margin-bottom: 0.5rem !important;
   }
   
-  .model-info {
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
+  .judge-model-info {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
   }
   
-  /* Button group improvements */
-  .button-group {
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+  .judge-button-group {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    margin-top: 1.5rem !important;
   }
   
-  .button-group button {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
+  .judge-button-group button {
+    padding: 0.6rem 1.2rem !important;
+    font-size: 0.9rem !important;
   }
 }
 
 @media (max-width: 576px) {
-  /* Extra small screens - further reduce clutter */
   .judge-container {
-    padding: 3.5rem 0.25rem 1rem;
+    padding: 3.5rem 0.25rem 1rem !important;
   }
   
-  .main-heading {
-    font-size: 1.2rem;
-    line-height: 1.3;
+  .judge-main-heading {
+    font-size: 1.4rem !important;
+    line-height: 1.3 !important;
   }
   
-  .sub-heading {
-    font-size: 1rem;
-    margin-bottom: 1rem;
+  .judge-sub-heading {
+    font-size: 1rem !important;
+    margin-bottom: 1rem !important;
   }
   
-  .debate-sections-container {
-    padding: 0 0.25rem;
+  .judge-sections-container {
+    padding: 0 0.25rem !important;
   }
   
-  .transcript-section,
-  .feedback-section {
-    height: 40vh;
-    min-height: 250px;
+  .judge-transcript-section,
+  .judge-feedback-section {
+    height: 40vh !important;
+    min-height: 250px !important;
   }
   
-  .transcript-section h2,
-  .feedback-section h2 {
-    font-size: 1.1rem;
-    padding: 0.6rem;
+  .judge-section-title {
+    font-size: 1.1rem !important;
+    padding: 0.75rem !important;
   }
   
-  .toggle-bill-text {
-    height: 24px;
-    width: 80px;
-    font-size: 0.7rem;
-    right: 0.25rem;
+  .judge-toggle-bill-text {
+    height: 28px !important;
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.6rem !important;
+    right: 0.25rem !important;
   }
   
-  .scrollable-content {
-    padding: 0.75rem;
-    font-size: 0.85rem;
-  }
-  
-  .back-to-home {
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+  .judge-scrollable-content {
+    padding: 0.75rem !important;
+    font-size: 0.85rem !important;
   }
 }
 
-/* Footer styles */
+/* Footer styles - consistent with other components */
 .footer-links {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2rem !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
 }
 
 .feedback-link {
-  color: #10b981;
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  padding: 0.5rem 1rem;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 0.5rem;
-  background: rgba(16, 185, 129, 0.1);
-  backdrop-filter: blur(10px);
+  color: #10b981 !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 0.5rem !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .feedback-link:hover {
-  color: #059669;
-  transform: translateY(-1px);
-  border-color: rgba(16, 185, 129, 0.5);
-  background: rgba(16, 185, 129, 0.15);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  color: #059669 !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
 }
 
 .github-link {
-  color: #4a90e2;
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  padding: 0.5rem 1rem;
-  border: 1px solid rgba(74, 144, 226, 0.3);
-  border-radius: 0.5rem;
-  background: rgba(74, 144, 226, 0.1);
-  backdrop-filter: blur(10px);
+  color: #4a90e2 !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  transition: all 0.2s ease !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  border-radius: 0.5rem !important;
+  background: rgba(74, 144, 226, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .github-link:hover {
-  color: #357abd;
-  transform: translateY(-1px);
-  border-color: rgba(74, 144, 226, 0.5);
-  background: rgba(74, 144, 226, 0.15);
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+  color: #357abd !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(74, 144, 226, 0.5) !important;
+  background: rgba(74, 144, 226, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2) !important;
 }
 
 .copyright {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: #64748b;
+  margin-top: 0.5rem !important;
+  font-size: 0.85rem !important;
+  color: #64748b !important;
 }
 
 /* Responsive footer styles */
 @media (max-width: 768px) {
   .footer-links {
-    gap: 1rem;
+    gap: 1rem !important;
   }
   
   .feedback-link {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
   }
   
   .github-link {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
   }
 }
 
 @media (max-width: 576px) {
   .footer-links {
-    flex-direction: column;
-    gap: 0.8rem;
+    flex-direction: column !important;
+    gap: 0.8rem !important;
   }
   
   .feedback-link,
   .github-link {
-    font-size: 0.8rem;
+    font-size: 0.8rem !important;
   }
   
   .feedback-link {
-    padding: 0.35rem 0.7rem;
+    padding: 0.35rem 0.7rem !important;
   }
   
   .github-link {
-    padding: 0.35rem 0.7rem;
+    padding: 0.35rem 0.7rem !important;
   }
 }

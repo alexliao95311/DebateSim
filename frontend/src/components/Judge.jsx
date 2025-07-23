@@ -159,38 +159,38 @@ ${feedback}`;
 
   return (
     <div className="judge-container">
-      <h1 className="main-heading">Debate Results</h1>
-      <h2 className="sub-heading">Topic: {topic}</h2>
+      <h1 className="judge-main-heading">Debate Results</h1>
+      <h2 className="judge-sub-heading">Topic: {topic}</h2>
       
-      <div className="debate-sections-container">
-        <div className="debate-sections">
-          <div className="transcript-section">
-            <div className="section-header">
-              <h2>Debate Transcript</h2>
+      <div className="judge-sections-container">
+        <div className="judge-sections">
+          <div className="judge-transcript-section">
+            <div className="judge-section-header">
+              <h2 className="judge-section-title">Debate Transcript</h2>
               {billDescription && (
                 <button 
-                  className="toggle-bill-text" 
+                  className="judge-toggle-bill-text" 
                   onClick={() => setShowBillText(!showBillText)}
                 >
                   {showBillText ? "Hide Bill Text" : "Show Bill Text"}
                 </button>
               )}
             </div>
-            <div className="scrollable-content">
+            <div className="judge-scrollable-content">
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
-                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
-                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
-                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
-                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
-                  hr: ({node, ...props}) => <hr className="divider" {...props} />
+                  h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                  ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                  strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                  hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
                 }}
               >
                 {formattedTranscript()}
@@ -198,9 +198,9 @@ ${feedback}`;
             </div>
           </div>
 
-          <div className="feedback-section">
-            <h2>AI Judge Feedback</h2>
-            <div className="scrollable-content">
+          <div className="judge-feedback-section">
+            <h2 className="judge-section-title">AI Judge Feedback</h2>
+            <div className="judge-scrollable-content">
               {!feedback ? (
                 <LoadingSpinner 
                   message="Analyzing debate and generating judgment" 
@@ -208,28 +208,28 @@ ${feedback}`;
                   estimatedTime={60000}
                 />
               ) : (
-                <div className="speech-block">
-                  <h3>AI Judge:</h3>
-                  <p className="model-info">Model: {judgeModel}</p>
+                <>
+                  <h3 className="judge-speech-title">AI Judge:</h3>
+                  <p className="judge-model-info">Model: {judgeModel}</p>
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}
                     components={{
-                      h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
-                      h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
-                      p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
-                      ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
-                      ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
-                      li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
-                      strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
-                      em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
-                      hr: ({node, ...props}) => <hr className="divider" {...props} />
+                      h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                      p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                      ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                      ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                      li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                      strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                      em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                      hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
                     }}
                   >
                     {feedback}
                   </ReactMarkdown>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -237,16 +237,16 @@ ${feedback}`;
       </div>
 
 
-      {error && <p className="error-text">{error}</p>}
-      <div className="button-group">
+      {error && <p className="judge-error-text">{error}</p>}
+      <div className="judge-button-group">
         <button 
-          className="share-button" 
+          className="judge-share-button" 
           onClick={handleShare} 
           disabled={!feedback || !saved}
         >
           📤 Share Debate
         </button>
-        <button className="home-button" onClick={handleBackToHome}>
+        <button className="judge-home-button" onClick={handleBackToHome}>
           Back to Home
         </button>
       </div>
