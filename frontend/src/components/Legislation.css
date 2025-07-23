@@ -11,79 +11,112 @@
   transition: padding-left 0.3s ease;
 }
 
-.legislation-container.sidebar-open {
+.legislation-container.legislation-sidebar-open {
   padding-left: 320px !important;
 }
 
-.home-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  height: 64px;
-  display: flex;
-  align-items: center;
+/* Header styles matching DebateSim.jsx */
+.legislation-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3) !important;
 }
 
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  position: relative;
-  width: 100%;
+.legislation-header-content {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 1rem 2rem !important;
 }
 
-.header-left,
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.legislation-header-left,
+.legislation-header-center,
+.legislation-header-right {
+  flex: 1 !important;
 }
 
-.header-center {
-  flex: 1;
-  text-align: center;
+.legislation-header-center {
+  display: flex !important;
+  justify-content: center !important;
 }
 
-.site-title {
-  font-size: 2rem;
-  color: #333;
-  margin: 0;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+.legislation-header-right {
+  display: flex !important;
+  justify-content: flex-end !important;
 }
 
-.username {
-  font-weight: 500;
-  color: #333;
+.legislation-site-title {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  cursor: pointer !important;
+  transition: color 0.3s ease !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
 }
 
-.logout-button {
-  height: 36px;
-  line-height: 36px;
-  padding: 0 1rem;
-  border: none;
-  border-radius: 4px;
-  background-color: #4a90e2;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.legislation-site-title:hover {
+  color: #4a90e2 !important;
 }
 
-.logout-button:hover {
-  background-color: #357abd;
+.legislation-user-section {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.legislation-username {
+  color: #cbd5e1 !important;
+  font-weight: 500 !important;
+}
+
+.legislation-logout-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  background: transparent !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.legislation-logout-button:hover {
+  background: rgba(71, 85, 105, 0.3) !important;
+  border-color: #64748b !important;
+}
+
+/* History button */
+.legislation-history-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.75rem 1.5rem !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 8px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.legislation-history-button:hover {
+  background: rgba(71, 85, 105, 0.3) !important;
+  border-color: #64748b !important;
 }
 
 /* === Mode toggle & button highlight === */
-.mode-toggle {
+.legislation-mode-toggle {
   display: flex;
   gap: 0;
   margin-bottom: 2rem;
@@ -96,7 +129,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.mode-button {
+.legislation-mode-button {
   flex: 1;
   padding: 0.75rem 1rem;
   border: none;
@@ -108,19 +141,19 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-.mode-button:hover {
+.legislation-mode-button:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.mode-button.active {
+.legislation-mode-button.active {
   background: #4a90e2;
   color: white;
   box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 }
 /* ================================ */
 
-.upload-container {
+.legislation-upload-container {
   width: 100%;
   max-width: 800px;
   margin-bottom: 2rem;
@@ -353,119 +386,102 @@
   font-size: 1rem;
 }
 
-.history-sidebar {
-  position: fixed;
-  top: 64px;
-  left: 0;
-  width: 300px;
-  height: calc(100vh - 64px);
-  background-color: #fff;
-  border-right: 1px solid #ccc;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-  z-index: 1100;
-  padding: 1rem;
+/* History sidebar styles matching DebateSim.jsx */
+.legislation-history-sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: -300px !important;
+  width: 300px !important;
+  height: 100vh !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(15px) !important;
+  border-right: 1px solid rgba(71, 85, 105, 0.3) !important;
+  transition: left 0.3s ease !important;
+  z-index: 999 !important;
+  padding: 6rem 1.5rem 2rem 1.5rem !important;
+  overflow-y: auto !important;
 }
 
-.history-sidebar h2 {
-  font-size: 1.5em;
-  margin-bottom: 1rem;
-  text-align: center;
-  color:white;
+.legislation-history-sidebar.legislation-expanded {
+  left: 0 !important;
 }
 
-.history-sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.legislation-history-sidebar h2 {
+  color: #f8fafc !important;
+  font-size: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  text-align: center !important;
 }
 
-.history-sidebar li {
-  padding: 0.75rem;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+.legislation-history-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
-.history-sidebar li:hover {
-  background-color: #f9f9f9;
+.legislation-history-item {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  margin-bottom: 0.75rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
 }
 
-.history-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.legislation-history-item:hover {
+  background: rgba(71, 85, 105, 0.3) !important;
+  transform: translateX(4px) !important;
 }
 
-.history-title {
-  font-weight: 500;
-  color: #333;
-  font-size: 0.9rem;
+.legislation-history-title {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.2 !important;
 }
 
-.history-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
+.legislation-history-meta {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 0.8rem !important;
 }
 
-.history-type {
-  color: white;
-  padding: 0.15rem 0.4rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: uppercase;
+.legislation-history-type {
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
 }
 
-/* Color coding for different activity types */
-.history-type.type-analyze {
-  background: #28a745; /* Green for analysis */
+.legislation-history-date {
+  color: #94a3b8 !important;
 }
 
-.history-type.type-bill-debate {
-  background: #dc3545; /* Red for bill debates */
+/* Activity type colors matching DebateSim */
+.legislation-type-analyze { background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }
+.legislation-type-bill-debate { background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important; }
+.legislation-type-topic-debate { background: rgba(139, 92, 246, 0.2) !important; color: #a78bfa !important; }
+.legislation-type-ai-vs-ai { background: rgba(249, 115, 22, 0.2) !important; color: #fb923c !important; }
+.legislation-type-ai-vs-user { background: rgba(236, 72, 153, 0.2) !important; color: #f472b6 !important; }
+.legislation-type-user-vs-user { background: rgba(14, 165, 233, 0.2) !important; color: #38bdf8 !important; }
+.legislation-type-default { background: rgba(74, 144, 226, 0.2) !important; color: #4a90e2 !important; }
+
+.legislation-close-sidebar-button {
+  width: 100% !important;
+  padding: 0.75rem !important;
+  background: rgba(71, 85, 105, 0.3) !important;
+  border: 1px solid rgba(71, 85, 105, 0.5) !important;
+  border-radius: 8px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  margin-top: 1rem !important;
 }
 
-.history-type.type-topic-debate {
-  background: #6f42c1; /* Purple for topic debates */
-}
-
-.history-type.type-ai-vs-ai {
-  background: #fd7e14; /* Orange for AI vs AI */
-}
-
-.history-type.type-ai-vs-user {
-  background: #20c997; /* Teal for AI vs User */
-}
-
-.history-type.type-user-vs-user {
-  background: #6c757d; /* Gray for User vs User */
-}
-
-.history-type.type-default {
-  background: #4a90e2; /* Blue as fallback */
-}
-
-.history-date {
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.history-sidebar button {
-  margin-top: 1rem;
-  width: 100%;
-  padding: 0.5rem;
-  border: none;
-  background-color: #4a90e2;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.history-sidebar button:hover {
-  background-color: #357abd;
+.legislation-close-sidebar-button:hover {
+  background: rgba(71, 85, 105, 0.5) !important;
+  border-color: #64748b !important;
 }
 
 .bottom-text {
@@ -1342,14 +1358,14 @@
 }
 
 /* === 3-Step Process UI Styles === */
-.step-by-step-container {
+.legislation-step-by-step-container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.progress-steps {
+.legislation-progress-steps {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1361,14 +1377,14 @@
   backdrop-filter: blur(10px);
 }
 
-.step {
+.legislation-step {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
 }
 
-.step-number {
+.legislation-step-number {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -1382,31 +1398,31 @@
   transition: all 0.3s ease;
 }
 
-.step.active .step-number {
+.legislation-step.active .legislation-step-number {
   background: #4a90e2;
   color: white;
   transform: scale(1.1);
 }
 
-.step-label {
+.legislation-step-label {
   font-size: 1rem;
   color: #6c757d;
   font-weight: 500;
   text-align: center;
 }
 
-.step.active .step-label {
+.legislation-step.active .legislation-step-label {
   color: #4a90e2;
   font-weight: 600;
 }
 
-.step-arrow {
+.legislation-step-arrow {
   color: #dee2e6;
   font-size: 2rem;
   font-weight: bold;
 }
 
-.step-content {
+.legislation-step-content {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   padding: 3rem;
