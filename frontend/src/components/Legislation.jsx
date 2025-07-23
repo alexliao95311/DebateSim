@@ -503,13 +503,13 @@ const Legislation = ({ user }) => {
   };
 
   const getActivityTypeClass = (item) => {
-    if (item.activityType === 'Analyze Bill') return 'type-analyze';
-    if (item.activityType === 'Debate Bill' || item.mode === 'bill-debate') return 'type-bill-debate';
-    if (item.activityType === 'Debate Topic') return 'type-topic-debate';
-    if (item.mode === 'ai-vs-ai') return 'type-ai-vs-ai';
-    if (item.mode === 'ai-vs-user') return 'type-ai-vs-user';
-    if (item.mode === 'user-vs-user') return 'type-user-vs-user';
-    return 'type-default';
+    if (item.activityType === 'Analyze Bill') return 'legislation-type-analyze';
+    if (item.activityType === 'Debate Bill' || item.mode === 'bill-debate') return 'legislation-type-bill-debate';
+    if (item.activityType === 'Debate Topic') return 'legislation-type-topic-debate';
+    if (item.mode === 'ai-vs-ai') return 'legislation-type-ai-vs-ai';
+    if (item.mode === 'ai-vs-user') return 'legislation-type-ai-vs-user';
+    if (item.mode === 'user-vs-user') return 'legislation-type-user-vs-user';
+    return 'legislation-type-default';
   };
 
   // Handle PDF upload for Step 1
@@ -1249,54 +1249,37 @@ const Legislation = ({ user }) => {
   };
 
   return (
-    <div className={`legislation-container ${showHistorySidebar ? 'sidebar-open' : ''}`}>
-      <header className="home-header">
-        <div className="header-content">
-          <div className="header-left">
+    <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''}`}>
+      <header className="legislation-header">
+        <div className="legislation-header-content">
+          {/* LEFT SECTION: History Button */}
+          <div className="legislation-header-left">
             <button
-              className="history-button"
+              className="legislation-history-button"
               onClick={() => setShowHistorySidebar(!showHistorySidebar)}
             >
               History
             </button>
           </div>
-          <div className="header-center">
-            <h1 className="site-title" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+
+          {/* CENTER SECTION: Title */}
+          <div className="legislation-header-center">
+            <h1 className="legislation-site-title" onClick={() => navigate("/")}>
               Bill and Legislation Debate
             </h1>
           </div>
-          <div className="header-right">
-            <span className="username">{user?.displayName}</span>
-            <button className="logout-button" onClick={handleLogout}>
-              Logout
-            </button>
+
+          {/* RIGHT SECTION: User + Logout */}
+          <div className="legislation-header-right">
+            <div className="legislation-user-section">
+              <span className="legislation-username">{user?.displayName}</span>
+              <button className="legislation-logout-button" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
-        {showHistorySidebar && (
-          <div className={`history-sidebar ${showHistorySidebar ? 'expanded' : ''}`}>
-            <h2>Activity History</h2>
-            <ul>
-              {history.length ? history.map(item => (
-                <li
-                  key={item.id}
-                  onClick={() => setSelectedHistory(item)}
-                  title="Click to view full transcript"
-                >
-                  <div className="history-item">
-                    <div className="history-title">{item.topic}</div>
-                    <div className="history-meta">
-                      <span className={`history-type ${getActivityTypeClass(item)}`}>
-                        {getActivityTypeDisplay(item)}
-                      </span>
-                      <span className="history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </li>
-              )) : <li>No history available</li>}
-            </ul>
-            <button onClick={() => setShowHistorySidebar(false)}>Close</button>
-          </div>
-        )}
+
 
         {/* Modal to view selected history transcript */}
         {selectedHistory && (
@@ -1455,27 +1438,27 @@ const Legislation = ({ user }) => {
       </header>
 
       {/* 3-Step Process UI */}
-      <div className="step-by-step-container">
+      <div className="legislation-step-by-step-container">
         {/* Progress Indicator */}
-        <div className="progress-steps">
-          <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
-            <div className="step-number">1</div>
-            <div className="step-label">Select Bill</div>
+        <div className="legislation-progress-steps">
+          <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
+            <div className="legislation-step-number">1</div>
+            <div className="legislation-step-label">Select Bill</div>
           </div>
-          <div className="step-arrow">→</div>
-          <div className={`step ${currentStep >= 2 ? 'active' : ''}`}>
-            <div className="step-number">2</div>
-            <div className="step-label">Choose Action</div>
+          <div className="legislation-step-arrow">→</div>
+          <div className={`legislation-step ${currentStep >= 2 ? 'active' : ''}`}>
+            <div className="legislation-step-number">2</div>
+            <div className="legislation-step-label">Choose Action</div>
           </div>
-          <div className="step-arrow">→</div>
-          <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
-            <div className="step-number">3</div>
-            <div className="step-label">Configure & Execute</div>
+          <div className="legislation-step-arrow">→</div>
+          <div className={`legislation-step ${currentStep >= 3 ? 'active' : ''}`}>
+            <div className="legislation-step-number">3</div>
+            <div className="legislation-step-label">Configure & Execute</div>
           </div>
         </div>
 
         {/* Step Content */}
-        <div className="step-content">
+        <div className="legislation-step-content">
           {/* Step 1: Select Bill */}
           {currentStep === 1 && (
             <div className="step-one">
@@ -2223,6 +2206,42 @@ const Legislation = ({ user }) => {
         </div>
         <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
       </footer>
+
+      {/* History Sidebar */}
+      <div className={`legislation-history-sidebar ${showHistorySidebar ? 'legislation-expanded' : ''}`}>
+        <h2>Activity History</h2>
+        <ul className="legislation-history-list">
+          {history.length > 0 ? (
+            history.map((item) => (
+              <li
+                key={item.id}
+                className="legislation-history-item"
+                onClick={() => setSelectedHistory(item)}
+                title="Click to view full transcript"
+              >
+                <div className="legislation-history-title">{item.topic || "Untitled Topic"}</div>
+                <div className="legislation-history-meta">
+                  <span className={`legislation-history-type ${getActivityTypeClass(item)}`}>
+                    {getActivityTypeDisplay(item)}
+                  </span>
+                  <span className="legislation-history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+              </li>
+            ))
+          ) : (
+            <li className="legislation-history-item" style={{ textAlign: 'center', color: '#94a3b8' }}>
+              <MessageSquare size={24} style={{ margin: '0 auto 0.5rem auto' }} />
+              No history available
+            </li>
+          )}
+        </ul>
+        <button 
+          className="legislation-close-sidebar-button"
+          onClick={() => setShowHistorySidebar(false)}
+        >
+          Close History
+        </button>
+      </div>
     </div>
   );
 };
