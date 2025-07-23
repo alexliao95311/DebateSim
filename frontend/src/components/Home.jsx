@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { 
@@ -28,17 +28,19 @@ function Home({ user, onLogout }) {
   const [showRightArrow, setShowRightArrow] = useState(true);
   const featureCardsRef = useRef(null);
 
+  // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
+  useLayoutEffect(() => {
+    // Multiple scroll reset methods to ensure it works
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   useEffect(() => {
-    // Force scroll reset with slight delay to ensure it works after navigation
-    const scrollTimer = setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }, 0);
-    
     // Trigger animations on mount
     const animationTimer = setTimeout(() => setIsVisible(true), 100);
     
     return () => {
-      clearTimeout(scrollTimer);
       clearTimeout(animationTimer);
     };
   }, []);
