@@ -160,10 +160,10 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
         .replace(/&gt;/g, '>')
         .replace(/&#39;/g, "'")
         .replace(/&nbsp;/g, ' ')
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove unecessary line breaks
         .trim();
       
-      // Create PDF with better text handling
+      // Create PDF with better text handling, resolves previous issues for pdfs
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "pt",
