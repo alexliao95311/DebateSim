@@ -22,6 +22,8 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
     } catch (err) {
       if (err.message && err.message.includes("too old or corrupted")) {
         setError(err.message);
+      } else if (err.message && err.message.includes("logged in")) {
+          setError("You must be logged in to share transcripts.");
       } else {
         setError("Failed to share transcript. Please try again.");
       }
@@ -39,7 +41,13 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
       await unshareTranscript(transcriptId, transcript.shareId);
       setShareUrl("");
     } catch (err) {
-      setError("Failed to unshare transcript. Please try again.");
+      if (err.message && err.message.includes("too old or corrupted")) {
+        setError(err.message);
+      } else if (err.message && err.message.includes("logged in")) {
+          setError("You must be logged in to unshare transcripts.");
+      } else {
+        setError("Failed to unshare transcript. Please try again.");
+      }
       console.error("Unshare error:", err);
     } finally {
       setIsSharing(false);
