@@ -197,21 +197,21 @@ function PublicTranscriptView() {
   if (loading) {
     return (
       <div className="public-transcript-container">
-        <header className="home-header">
-          <div className="header-content">
-            <div className="header-center">
-              <h1 onClick={handleBackToHome} style={{ cursor: "pointer" }}>
+        <header className="public-home-header">
+          <div className="public-header-content">
+            <div className="public-header-center">
+              <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
                 Debate Simulator
               </h1>
             </div>
-            <div className="header-right">
-              <button className="home-button" onClick={handleBackToHome}>
+            <div className="public-header-right">
+              <button className="public-home-button" onClick={handleBackToHome}>
                 Try DebateSim
               </button>
             </div>
           </div>
         </header>
-        <div className="main-content">
+        <div className="public-main-content">
           <LoadingSpinner message="Loading shared transcript..." />
         </div>
       </div>
@@ -221,25 +221,25 @@ function PublicTranscriptView() {
   if (error || !transcript) {
     return (
       <div className="public-transcript-container">
-        <header className="home-header">
-          <div className="header-content">
-            <div className="header-center">
-              <h1 onClick={handleBackToHome} style={{ cursor: "pointer" }}>
+        <header className="public-home-header">
+          <div className="public-header-content">
+            <div className="public-header-center">
+              <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
                 Debate Simulator
               </h1>
             </div>
-            <div className="header-right">
-              <button className="home-button" onClick={handleBackToHome}>
+            <div className="public-header-right">
+              <button className="public-home-button" onClick={handleBackToHome}>
                 Try DebateSim
               </button>
             </div>
           </div>
         </header>
-        <div className="main-content">
-          <div className="error-container">
-            <h2>Transcript Not Found</h2>
-            <p>{error || "The shared transcript you're looking for doesn't exist."}</p>
-            <button className="home-button" onClick={handleBackToHome}>
+        <div className="public-main-content">
+          <div className="public-error-container">
+            <h2 className="public-error-title">Transcript Not Found</h2>
+            <p className="public-error-text">{error || "The shared transcript you're looking for doesn't exist."}</p>
+            <button className="public-home-button" onClick={handleBackToHome}>
               Go to DebateSim
             </button>
           </div>
@@ -251,15 +251,15 @@ function PublicTranscriptView() {
   return (
     <div className="public-transcript-container">
       {/* Header */}
-      <header className="home-header">
-        <div className="header-content">
-          <div className="header-center">
-            <h1 onClick={handleBackToHome} style={{ cursor: "pointer" }}>
+      <header className="public-home-header">
+        <div className="public-header-content">
+          <div className="public-header-center">
+            <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
               Debate Simulator
             </h1>
           </div>
-          <div className="header-right">
-            <button className="home-button" onClick={handleBackToHome}>
+          <div className="public-header-right">
+            <button className="public-home-button" onClick={handleBackToHome}>
               Try DebateSim
             </button>
           </div>
@@ -267,13 +267,13 @@ function PublicTranscriptView() {
       </header>
 
       {/* Content */}
-      <div className="main-content">
-        <div className="transcript-header">
-          <h1>Shared {transcript.activityType === 'Analyze Bill' ? 'Bill Analysis' : 'Debate Transcript'}</h1>
-          <div className="transcript-meta">
-            <span className="topic">{transcript.topic}</span>
-            <span className="mode">{transcript.mode}</span>
-            <span className="date">
+      <div className="public-main-content">
+        <div className="public-transcript-header">
+          <h1 className="public-main-title">Shared {transcript.activityType === 'Analyze Bill' ? 'Bill Analysis' : 'Debate Transcript'}</h1>
+          <div className="public-transcript-meta">
+            <span className="public-topic">{transcript.topic}</span>
+            <span className="public-mode">{transcript.mode}</span>
+            <span className="public-date">
               {new Date(transcript.createdAt).toLocaleDateString()}
             </span>
           </div>
@@ -284,22 +284,22 @@ function PublicTranscriptView() {
           <BillGradingSection grades={transcript.grades} />
         )}
         
-        <div className="transcript-viewer">
-          <div className="transcript-content">
+        <div className="public-transcript-viewer">
+          <div className="public-transcript-content">
             <ReactMarkdown
               rehypePlugins={[rehypeRaw]}
               components={{
-                h1: ({node, ...props}) => <h1 className="transcript-heading-h1" {...props} />,
-                h2: ({node, ...props}) => <h2 className="transcript-heading-h2" {...props} />,
-                h3: ({node, ...props}) => <h3 className="transcript-heading-h3" {...props} />,
-                h4: ({node, ...props}) => <h4 className="transcript-heading-h4" {...props} />,
-                p: ({node, ...props}) => <p className="transcript-paragraph" {...props} />,
-                ul: ({node, ...props}) => <ul className="transcript-list" {...props} />,
-                ol: ({node, ...props}) => <ol className="transcript-numbered-list" {...props} />,
-                li: ({node, ...props}) => <li className="transcript-list-item" {...props} />,
-                strong: ({node, ...props}) => <strong className="transcript-strong" {...props} />,
-                em: ({node, ...props}) => <em className="transcript-emphasis" {...props} />,
-                hr: ({node, ...props}) => <hr className="transcript-divider" {...props} />
+                h1: ({node, ...props}) => <h1 className="public-markdown-h1" {...props} />,
+                h2: ({node, ...props}) => <h2 className="public-markdown-h2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="public-markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="public-markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="public-markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="public-markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="public-markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="public-markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="public-markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="public-markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="public-markdown-hr" {...props} />
               }}
             >
               {transcript.transcript}
@@ -308,15 +308,15 @@ function PublicTranscriptView() {
         </div>
         
         {/* Footer */}
-        <div className="transcript-footer">
-          <p>
+        <div className="public-transcript-footer">
+          <p className="public-footer-text">
             This debate transcript was generated using{" "}
-            <span className="debatesim-link" onClick={handleBackToHome}>
+            <span className="public-debatesim-link" onClick={handleBackToHome}>
               DebateSim
             </span>
             {" "}— Try creating your own AI-powered debates!
           </p>
-          <p className="shared-info">
+          <p className="public-shared-info">
             Shared on {new Date(transcript.sharedAt).toLocaleDateString()}
           </p>
         </div>
