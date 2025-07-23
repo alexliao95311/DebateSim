@@ -327,6 +327,7 @@ const Legislation = ({ user }) => {
   const [billsError, setBillsError] = useState('');
 
   const billNameInputRef = useRef(null);
+  const resultsRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch debate history function
@@ -550,6 +551,67 @@ const Legislation = ({ user }) => {
     setCurrentStep(3);
   };
 
+  // Staged analysis results reveal function
+  const stageAnalysisResults = async (analysis, grades, title) => {
+    // Reset all staged states
+    setShowGradingSection(false);
+    setShowAnalysisText(false);
+    setGradingSectionLoaded(false);
+    setAnalysisContentReady(false);
+    
+    // Set the data first (hidden)
+    setAnalysisResult(analysis);
+    if (grades) {
+      setAnalysisGrades(grades);
+    }
+    
+    // Smooth scroll to results area after data is set
+    setTimeout(() => {
+      if (resultsRef.current) {
+        resultsRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
+    
+    // Stage 1: Show grading section with animation
+    setTimeout(() => {
+      setShowGradingSection(true);
+      setTimeout(() => {
+        setGradingSectionLoaded(true);
+      }, 100);
+    }, 300);
+    
+    // Stage 2: Show analysis text after grading is loaded
+    setTimeout(() => {
+      setShowAnalysisText(true);
+      setTimeout(() => {
+        setAnalysisContentReady(true);
+      }, 200);
+    }, 1200);
+    
+    // Save to history after UI is ready
+    setTimeout(async () => {
+      if (user && !user.isGuest) {
+        try {
+          await saveTranscriptToUser(
+            analysis,
+            title,
+            'analysis',
+            'Analyze Bill',
+            grades,
+            selectedModel
+          );
+          await fetchHistory();
+        } catch (err) {
+          console.error("Error saving analysis to history:", err);
+        }
+      }
+    }, 1500);
+  };
+
   // Step 3: Handle analysis execution with progress updates
   const handleAnalyzeExecution = async () => {
     setLoadingState(true);
@@ -603,29 +665,8 @@ const Legislation = ({ user }) => {
         setProcessingStage('Finalizing analysis and grades...');
         setProgressStep(3);
         
-        setAnalysisResult(data.analysis);
-        
-        // Set grades from API response
-        if (data.grades) {
-          setAnalysisGrades(data.grades);
-        }
-        
-        // Save analysis to history with model info
-        if (user && !user.isGuest) {
-          try {
-            await saveTranscriptToUser(
-              data.analysis,
-              `Bill Analysis: ${selectedBill.title}`,
-              'analysis',
-              'Analyze Bill',
-              data.grades,
-              selectedModel
-            );
-            await fetchHistory();
-          } catch (err) {
-            console.error("Error saving analysis to history:", err);
-          }
-        }
+        // Stage the results reveal for smooth UI loading
+        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
         
       } else {
         // Handle uploaded PDF analysis - use cached text if available
@@ -693,29 +734,8 @@ const Legislation = ({ user }) => {
           }
         }
         
-        setAnalysisResult(analysisData.analysis);
-        
-        // Set grades from API response
-        if (analysisData.grades) {
-          setAnalysisGrades(analysisData.grades);
-        }
-        
-        // Save analysis to history with model info
-        if (user && !user.isGuest) {
-          try {
-            await saveTranscriptToUser(
-              analysisData.analysis,
-              `Bill Analysis: ${selectedBill.name}`,
-              'analysis',
-              'Analyze Bill',
-              analysisData.grades,
-              selectedModel
-            );
-            await fetchHistory();
-          } catch (err) {
-            console.error("Error saving analysis to history:", err);
-          }
-        }
+        // Stage the results reveal for smooth UI loading
+        await stageAnalysisResults(analysisData.analysis, analysisData.grades, `Bill Analysis: ${selectedBill.name}`);
       }
       
     } catch (err) {
@@ -866,6 +886,12 @@ const Legislation = ({ user }) => {
     setShowLinkConfirmation(false);
     setLinkLoading(false);
     setLinkError('');
+    
+    // Reset staged loading states
+    setShowGradingSection(false);
+    setShowAnalysisText(false);
+    setGradingSectionLoaded(false);
+    setAnalysisContentReady(false);
   };
 
   // Handle sharing current analysis
@@ -1247,6 +1273,12 @@ const Legislation = ({ user }) => {
     setLinkParsedBill(null);
     setLinkError("");
   };
+
+  // NEW: Staged loading states for smooth UI transitions
+  const [showGradingSection, setShowGradingSection] = useState(false);
+  const [showAnalysisText, setShowAnalysisText] = useState(false);
+  const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
+  const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
   return (
     <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''}`}>
@@ -2127,56 +2159,130 @@ const Legislation = ({ user }) => {
               {error && <p className="error-text">{error}</p>}
             </div>
           )}
-          {/* Results Section */}
+          
+          {/* Analysis Loading Skeleton */}
+          {loadingState && (
+            <div className="analysis-loading-skeleton">
+              <div className="skeleton-header">
+                <div className="skeleton-title"></div>
+                <div className="skeleton-subtitle"></div>
+              </div>
+              <div className="skeleton-grading-grid">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="skeleton-grade-card">
+                    <div className="skeleton-grade-icon"></div>
+                    <div className="skeleton-grade-circle"></div>
+                    <div className="skeleton-grade-text"></div>
+                  </div>
+                ))}
+              </div>
+              <div className="skeleton-analysis-text">
+                <div className="skeleton-text-line long"></div>
+                <div className="skeleton-text-line medium"></div>
+                <div className="skeleton-text-line long"></div>
+                <div className="skeleton-text-line short"></div>
+                <div className="skeleton-text-line long"></div>
+              </div>
+            </div>
+          )}
+          
+          {/* Results Section with Staged Loading */}
           {analysisResult && (
-            <div className="results-section">
-              <div className="results-header">
+            <div 
+              ref={resultsRef}
+              className={`results-section ${showGradingSection ? 'results-visible' : 'results-hidden'} ${analysisContentReady ? 'content-ready' : ''}`}
+            >
+              <div className="results-header" style={{
+                opacity: showGradingSection ? 1 : 0,
+                transition: 'opacity 0.5s ease-in-out'
+              }}>
                 <h2>Analysis Results</h2>
                 <div className="results-actions">
-                  <button className="share-analysis-btn" onClick={handleShareAnalysis}>
+                  <button 
+                    className="share-analysis-btn" 
+                    onClick={handleShareAnalysis}
+                    style={{
+                      opacity: analysisContentReady ? 1 : 0.5,
+                      pointerEvents: analysisContentReady ? 'auto' : 'none'
+                    }}
+                  >
                     📤 Share Analysis
                   </button>
-                  <button className="new-analysis-btn" onClick={resetFlow}>
+                  <button 
+                    className="new-analysis-btn" 
+                    onClick={resetFlow}
+                    style={{
+                      opacity: analysisContentReady ? 1 : 0.5,
+                      pointerEvents: analysisContentReady ? 'auto' : 'none'
+                    }}
+                  >
                     Start New Analysis
                   </button>
                 </div>
               </div>
               
-              {/* Grading Infographic Section */}
-              {analysisGrades && (
-                <BillGradingSection grades={analysisGrades} />
+              {/* Grading Infographic Section with Staged Loading */}
+              {analysisGrades && showGradingSection && (
+                <div 
+                  className={`grading-stage-container ${gradingSectionLoaded ? 'grading-loaded' : 'grading-loading'}`}
+                  style={{
+                    opacity: gradingSectionLoaded ? 1 : 0,
+                    transform: gradingSectionLoaded ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s ease-out, transform 0.6s ease-out'
+                  }}
+                >
+                  <BillGradingSection grades={analysisGrades} />
+                </div>
               )}
               
-              {/* Analysis Text Section */}
-              <div className="analysis-text-section">
-                <div className="analysis-text-header">
-                  <h2>Analysis Results</h2>
+              {/* Analysis Text Section with Staged Loading */}
+              {showAnalysisText && (
+                <div 
+                  className={`analysis-text-section ${analysisContentReady ? 'analysis-loaded' : 'analysis-loading'}`}
+                  style={{
+                    opacity: analysisContentReady ? 1 : 0,
+                    transform: analysisContentReady ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.8s ease-out, transform 0.8s ease-out',
+                    marginTop: '2rem'
+                  }}
+                >
+                  <div className="analysis-text-header">
+                    <h2>Detailed Analysis</h2>
+                  </div>
+                  <div className="analysis-result markdown-content">
+                    <ReactMarkdown 
+                      rehypePlugins={[rehypeRaw]} 
+                      className="markdown-renderer"
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
+                        h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
+                        p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                        ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                        ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+                      }}
+                    >
+                      {analysisResult}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-                <div className="analysis-result markdown-content">
-                  <ReactMarkdown 
-                    rehypePlugins={[rehypeRaw]} 
-                    className="markdown-renderer"
-                    components={{
-                      h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                      h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                      p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                      ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                      ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                    }}
-                  >
-                    {analysisResult}
-                  </ReactMarkdown>
-                </div>
-              </div>
+              )}
               
-              {/* Share button at the bottom */}
-              <div className="analysis-bottom-actions">
-                <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
-                  📤 Share This Analysis
-                </button>
-              </div>
+              {/* Share button at the bottom - only show when everything is ready */}
+              {analysisContentReady && (
+                <div 
+                  className="analysis-bottom-actions"
+                  style={{
+                    opacity: analysisContentReady ? 1 : 0,
+                    transition: 'opacity 0.5s ease-in-out 0.5s'
+                  }}
+                >
+                  <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
+                    📤 Share This Analysis
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
