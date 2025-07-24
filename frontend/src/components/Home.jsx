@@ -113,9 +113,9 @@ function Home({ user, onLogout }) {
       title: "Bill and Legislation Debate",
       description: "Upload any Congressional bill and engage in thoughtful debates about its merits with friends or AI opponents. Explore legislation from multiple perspectives.",
       icon: <Code className="home-feature-icon" />,
-      status: "beta",
+      status: "active",
       route: "/legislation",
-      tags: ["In Progress", "Collaborative"],
+      tags: ["AI Powered", "Collaborative"],
       gradient: "from-green-500 to-teal-600"
     },
     {
