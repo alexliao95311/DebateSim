@@ -200,14 +200,16 @@
 .upload-container p {
   margin-top: 1rem;
   padding: 0.8rem;
-  background-color: #f3f8ff;
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
   border-radius: 6px;
   text-align: center;
-  color: #4a90e2;
+  color: #60a5fa !important;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
 }
 
 .upload-container p::before {
@@ -267,8 +269,12 @@
 .form-group input {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ccc;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 4px;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease-in-out;
 }
 
 .form-group input[type="file"] {
@@ -284,10 +290,10 @@
   display: inline-block;
   padding: 0.6rem 1.2rem;
   margin-top: 0.5rem;
-  border: 2px solid #aac0e0;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 6px;
-  background-color: #fff;
-  color: #333;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
   font-weight: 500;
   font-size: 1rem;
   cursor: pointer;
@@ -323,7 +329,7 @@
   font-size: 0.9rem;
   display: flex;
   align-items: center;
-  color: #444;
+  color: #f8fafc !important;
 }
 
 .selected-file svg {
@@ -335,10 +341,12 @@
   width: 100%;
   padding: 0.6rem 1rem;
   margin-top: 0.5rem;
-  border: 2px solid #aac0e0;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 6px;
   font-size: 1rem;
-  color: #333;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(10px);
   transition: all 0.2s ease-in-out;
 }
 
@@ -354,22 +362,21 @@
 
 .form-group select {
   width: 100%;
-  padding: 0.6rem 2rem 0.6rem 1rem;
-  margin-top: 0.5rem;
-  border: 2px solid #aac0e0;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 6px;
   font-size: 1rem;
   font-weight: 500;
-  background-color: #fff;
-  color: #333;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
   appearance: none;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234a90e2"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f8fafc"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
-  background-size: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-size: 20px;
+  backdrop-filter: blur(10px);
 }
 
 .form-group select:hover {
@@ -385,8 +392,8 @@
 
 .form-group select option {
   padding: 10px;
-  background-color: #fff;
-  color: #333;
+  background: rgba(30, 41, 59, 0.9) !important;
+  color: #f8fafc !important;
 }
 
 .error-text {
@@ -504,7 +511,7 @@
   padding: 1rem;
   text-align: center;
   font-size: 0.9rem;
-  color: #666;
+  color: #e2e8f0 !important;
   width: 100%;
 }
 
@@ -522,19 +529,20 @@
 .dropdown-styled {
   margin-left: 0.5rem;
   padding: 0.5rem 2rem 0.5rem 1rem;
-  border: 2px solid #aac0e0;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 6px;
   font-size: 1rem;
   font-weight: bold;
-  background-color: #fff;
-  color: #222;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
   appearance: none;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f8fafc"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px;
+  backdrop-filter: blur(10px);
 }
 
 .dropdown-styled:hover {
@@ -573,7 +581,7 @@
 
 .model-selection label {
   font-weight: 600;
-  color: #000 !important;
+  color: #f8fafc !important;
   text-shadow: none !important;
 }
 
@@ -730,7 +738,7 @@
 
 .recommended-bills-section h2 {
   text-align: center;
-  color: #333;
+  color: #f8fafc !important;
   margin-bottom: 1rem;
   font-size: 1.4rem;
 }
@@ -742,7 +750,7 @@
 
 .section-description {
   text-align: center;
-  color: #666;
+  color: #e2e8f0 !important;
   margin-bottom: 2rem;
   font-size: 1rem;
 }
@@ -752,7 +760,7 @@
   flex-direction: column;
   align-items: center;
   padding: 3rem;
-  color: #666;
+  color: #e2e8f0 !important;
 }
 
 .bills-loading .loading-spinner {
@@ -824,49 +832,51 @@
 }
 
 .bill-card {
-  background: white;
-  border: 1px solid #e0e7ee;
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-width: 300px;
-  flex-shrink: 0;
+  background: rgba(30, 41, 59, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-width: 300px !important;
+  flex-shrink: 0 !important;
 }
 
 .bill-card.compact {
-  min-width: 280px;
-  max-width: 280px;
-  padding: 0.75rem;
-  height: 330px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #4a90e2 rgba(255, 255, 255, 0.1);
+  min-width: 280px !important;
+  max-width: 280px !important;
+  padding: 0.75rem !important;
+  height: 330px !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #4a90e2 rgba(71, 85, 105, 0.3) !important;
 }
 
 .bill-card.compact::-webkit-scrollbar {
-  width: 6px;
+  width: 6px !important;
 }
 
 .bill-card.compact::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(71, 85, 105, 0.2) !important;
+  border-radius: 3px !important;
 }
 
 .bill-card.compact::-webkit-scrollbar-thumb {
-  background: #4a90e2;
-  border-radius: 3px;
+  background: #4a90e2 !important;
+  border-radius: 3px !important;
 }
 
 .bill-card.compact::-webkit-scrollbar-thumb:hover {
-  background: #357abd;
+  background: #357abd !important;
 }
 
 .bill-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* New bill card layout - separate lines for code and status */
@@ -915,7 +925,7 @@
 }
 
 .bill-status {
-  color: #666;
+  color: #f8fafc !important;
   font-size: 0.8rem;
   font-weight: 500;
   font-style: italic;
@@ -933,7 +943,7 @@
 }
 
 .bill-title {
-  color: #333;
+  color: #f8fafc !important;
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -947,7 +957,7 @@
 }
 
 .bill-sponsor {
-  color: #666;
+  color: #cbd5e1 !important;
   font-size: 0.9rem;
   margin-bottom: 1rem;
   font-style: italic;
@@ -964,7 +974,7 @@
 }
 
 .bill-description {
-  color: #555;
+  color: #e2e8f0 !important;
   line-height: 1.5;
   margin-bottom: 0.5rem;
   font-size: 0.85rem;
@@ -1088,7 +1098,7 @@
 .progress-message {
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: #f8fafc !important;
   font-size: 0.9rem;
 }
 
@@ -1127,7 +1137,7 @@
 
 .progress-text {
   font-size: 0.8rem;
-  color: #666;
+  color: #f8fafc !important;
   text-align: center;
 }
 
@@ -1156,7 +1166,7 @@
 
 .loading-stage {
   font-size: 0.85rem;
-  color: #666;
+  color: #cbd5e1 !important;
   font-style: italic;
   max-width: 300px;
   line-height: 1.3;
@@ -1200,23 +1210,27 @@
 }
 
 .or-text {
-  color: #666;
+  color: #e2e8f0 !important;
   font-weight: 500;
   font-size: 1.1rem;
 }
 
 .link-input {
-  padding: 1rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 1rem;
-  min-width: 300px;
-  transition: border-color 0.3s ease;
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid rgba(74, 144, 226, 0.3);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease-in-out;
 }
 
 .link-input:focus {
   outline: none;
   border-color: #4a90e2;
+  box-shadow: 0 0 20px rgba(74, 144, 226, 0.3);
 }
 
 .upload-button {
@@ -1252,11 +1266,13 @@
 .link-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ccc;
+  border: 2px solid rgba(74, 144, 226, 0.3);
   border-radius: 6px;
   font-size: 0.9rem;
-  background-color: white;
-  color: #333;
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease-in-out;
 }
 
 .link-input:focus {
@@ -1405,7 +1421,7 @@
   height: 50px;
   border-radius: 50%;
   background: #e9ecef;
-  color: #6c757d;
+  color: #1e293b !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1433,7 +1449,7 @@
 }
 
 .legislation-step-arrow {
-  color: #64748b;
+  color: #cbd5e1 !important;
   font-size: 2rem;
   font-weight: bold;
 }
@@ -1528,7 +1544,7 @@
 
 .nav-button:disabled {
   background: #e9ecef;
-  color: #6c757d;
+  color: #94a3b8 !important;
   cursor: not-allowed;
   transform: none;
 }
@@ -2920,7 +2936,7 @@
 .copyright {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: #64748b;
+  color: #cbd5e1 !important;
 }
 
 /* Responsive footer styles */
@@ -3089,5 +3105,27 @@
     font-size: 1rem;
     padding: 0.8rem 1.5rem;
   }
+}
+
+/* Header styles for dark mode */
+.legislation-step-content h2, 
+.legislation-main-content h2,
+h2 {
+  color: #f8fafc !important;
+}
+
+.legislation-step-content h3,
+.legislation-main-content h3, 
+h3 {
+  color: #e2e8f0 !important;
+}
+
+.footer-note {
+  margin-top: 2rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #e2e8f0 !important;
+  width: 100%;
 }
 
