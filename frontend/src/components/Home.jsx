@@ -115,7 +115,7 @@ function Home({ user, onLogout }) {
       icon: <Code className="home-feature-icon" />,
       status: "active",
       route: "/legislation",
-      tags: ["AI Powered", "Collaborative"],
+      tags: ["AI Powered Analysis", "Collaborative"],
       gradient: "from-green-500 to-teal-600"
     },
     {
