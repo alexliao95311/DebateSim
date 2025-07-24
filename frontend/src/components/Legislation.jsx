@@ -894,24 +894,9 @@ const Legislation = ({ user }) => {
     setAnalysisContentReady(false);
   };
 
-  // Handle sharing current analysis
+  // Handle sharing current analysis - simplified like Judge.jsx
   const handleShareAnalysis = () => {
     if (!analysisResult) return;
-    
-    // Create a transcript-like object for sharing
-    const analysisTranscript = {
-      transcript: analysisResult,
-      topic: billSource === 'recommended' ? 
-        `Bill Analysis: ${selectedBill.title}` : 
-        `Bill Analysis: ${selectedBill.name}`,
-      mode: 'analysis',
-      activityType: 'Analyze Bill',
-      grades: analysisGrades,
-      model: selectedModel,
-      createdAt: new Date().toISOString()
-    };
-    
-    setSelectedHistory(analysisTranscript);
     setShowAnalysisShareModal(true);
   };
 
@@ -1393,12 +1378,22 @@ const Legislation = ({ user }) => {
         )}
         
         {/* Share Modal for Current Analysis */}
-        {showAnalysisShareModal && selectedHistory && (
+        {showAnalysisShareModal && analysisResult && selectedBill && (
           <ShareModal 
             isOpen={showAnalysisShareModal}
             onClose={() => setShowAnalysisShareModal(false)}
-            transcript={selectedHistory}
-            transcriptId={null} // No ID for current analysis
+            transcript={{
+              transcript: analysisResult,
+              topic: billSource === 'recommended' ? 
+                `Bill Analysis: ${selectedBill.title}` : 
+                `Bill Analysis: ${selectedBill.name}`,
+              mode: 'analysis',
+              activityType: 'Analyze Bill',
+              grades: analysisGrades,
+              model: selectedModel,
+              createdAt: new Date().toISOString()
+            }}
+            transcriptId={null}
           />
         )}
         
