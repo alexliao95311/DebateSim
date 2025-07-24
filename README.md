@@ -31,7 +31,7 @@ DebateSim is a sophisticated debate simulation platform that leverages cutting-e
 - Detailed breakdown of each debater's performance
 - Winner determination with clear reasoning
 
-### **Legislative Analysis** *(In Development)*
+### **Legislative Analysis** 
 - Upload Congressional bills and legislation documents (PDF)
 - AI-powered analysis of policy implications
 - Multi-perspective debate generation from legislative content
