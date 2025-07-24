@@ -218,6 +218,10 @@ function Home({ user, onLogout }) {
               <Clock size={16} />
               <span>{features.filter(f => f.status === 'beta').length} In Progress</span>
             </div>
+            <div className="home-stat-item">
+              <TrendingUp size={16} />
+              <span>{features.filter(f => f.status === 'coming-soon').length} Coming Soon</span>
+            </div>
           </div>
         </div>
 
