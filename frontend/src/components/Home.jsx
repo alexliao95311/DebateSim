@@ -210,20 +210,27 @@ function Home({ user, onLogout }) {
         <div className="home-section-header">
           <h2>Select a Feature</h2>
           <div className="home-feature-stats">
-            <div className="home-stat-item">
-              <TrendingUp size={16} />
-              <span>{features.filter(f => f.status === 'active').length} Active</span>
-            </div>
-            <div className="home-stat-item">
-              <Clock size={16} />
-              <span>{features.filter(f => f.status === 'beta').length} In Progress</span>
-            </div>
-            <div className="home-stat-item">
-              <TrendingUp size={16} />
-              <span>{features.filter(f => f.status === 'coming-soon').length} Coming Soon</span>
-            </div>
+            {features.filter(f => f.status === 'active').length > 0 && (
+              <div className="home-stat-item">
+                <TrendingUp size={16} />
+                <span>{features.filter(f => f.status === 'active').length} Active</span>
+              </div>
+            )}
+            {features.filter(f => f.status === 'beta').length > 0 && (
+              <div className="home-stat-item">
+                <Clock size={16} />
+                <span>{features.filter(f => f.status === 'beta').length} In Progress</span>
+              </div>
+            )}
+            {features.filter(f => f.status === 'coming-soon').length > 0 && (
+              <div className="home-stat-item">
+                <TrendingUp size={16} />
+                <span>{features.filter(f => f.status === 'coming-soon').length} Coming Soon</span>
+              </div>
+            )}
           </div>
         </div>
+
 
         <div className="home-features-container">
           <button 
