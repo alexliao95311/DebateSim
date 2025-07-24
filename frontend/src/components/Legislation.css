@@ -137,11 +137,11 @@
   margin-bottom: 2rem;
   width: 100%;
   max-width: 500px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.3) !important;
   border-radius: 8px;
   padding: 4px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
 }
 
 .legislation-mode-button {
@@ -157,7 +157,7 @@
 }
 
 .legislation-mode-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(74, 144, 226, 0.1) !important;
   color: white;
 }
 
@@ -726,9 +726,9 @@
   max-width: 1000px;
   margin: 0.5rem auto 2rem auto;
   padding: 1rem 1.5rem 2rem 1.5rem;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(30, 41, 59, 0.4) !important;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 .recommended-bills-section.compact {
@@ -1061,7 +1061,7 @@
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid #ffffff;
+  border: 2px solid #e2e8f0;
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
@@ -1126,7 +1126,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent) !important;
   animation: shimmer 2s infinite;
 }
 
@@ -1692,23 +1692,27 @@
 /* Analysis Loading Skeleton */
 .analysis-loading-skeleton {
   margin: 3rem auto 0 auto;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(30, 41, 59, 0.4) !important;
   border-radius: 20px;
   padding: 2rem;
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
   width: 100%;
-  max-width: 1000px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
 }
 
-@keyframes skeleton-pulse {
-  0% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 0.8;
-  }
+.analysis-loading-skeleton::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent) !important;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .skeleton-header {
@@ -3127,5 +3131,271 @@ h3 {
   font-size: 0.9rem;
   color: #e2e8f0 !important;
   width: 100%;
+}
+
+/* Dark mode overrides for search bar and tip */
+.search-bar {
+  background: rgba(30, 41, 59, 0.6) !important;
+  color: #f8fafc !important;
+  border: 2px solid rgba(74, 144, 226, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.search-bar::placeholder {
+  color: #94a3b8 !important;
+}
+
+.search-bar:focus {
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 20px rgba(74, 144, 226, 0.3) !important;
+}
+
+/* Dark mode for search tip/help text */
+.search-container div[style*="backgroundColor: #e7f3ff"] {
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+/* Dark mode for search loading text */
+p[style*="color: #6c757d"] {
+  color: #e2e8f0 !important;
+}
+
+small[style*="color: #8a8a8a"] {
+  color: #cbd5e1 !important;
+}
+
+/* Dark mode for search tips box */
+div[style*="backgroundColor: #d1ecf1"] {
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+/* Dark mode for search error messages */
+.search-error[style*="backgroundColor: #f8d7da"] {
+  background: rgba(220, 53, 69, 0.1) !important;
+  border: 1px solid rgba(220, 53, 69, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+/* Dark mode for "No bills found" section */
+div[style*="backgroundColor: #f8f9fa"] {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 2px dashed rgba(71, 85, 105, 0.5) !important;
+}
+
+/* Dark mode for "No bills found" heading and text */
+h4[style*="color: #495057"] {
+  color: #f8fafc !important;
+}
+
+p[style*="color: #6c757d"] {
+  color: #cbd5e1 !important;
+}
+
+/* Comprehensive dark mode overrides for all white/light backgrounds */
+
+/* Suggestions dropdown dark mode */
+.suggestions-dropdown[style*="backgroundColor: white"],
+div[style*="backgroundColor: white"] {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Suggestion items hover states */
+.suggestions-dropdown div:hover {
+  background: rgba(74, 144, 226, 0.1) !important;
+}
+
+/* Search status backgrounds */
+div[style*="backgroundColor: #fff3cd"] {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid rgba(255, 193, 7, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+div[style*="backgroundColor: #e7f3ff"] {
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  color: #60a5fa !important;
+}
+
+/* Loading screen backgrounds */
+div[style*="backgroundColor: #f8f9fa"] {
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
+/* Error message backgrounds */
+div[style*="backgroundColor: #f8d7da"] {
+  background: rgba(220, 53, 69, 0.1) !important;
+  border: 1px solid rgba(220, 53, 69, 0.3) !important;
+}
+
+/* Light blue info backgrounds */
+div[style*="backgroundColor: #d1ecf1"] {
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+}
+
+/* Fix light backgrounds in CSS */
+.form-group input[type="file"] + label:hover {
+  border-color: #4a90e2;
+  background: rgba(74, 144, 226, 0.1) !important;
+}
+
+.form-group input[type="file"] + label:active {
+  background: rgba(74, 144, 226, 0.2) !important;
+}
+
+.upload-container p {
+  background: rgba(74, 144, 226, 0.1) !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+}
+
+.form-group select:hover {
+  border-color: #4a90e2;
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+.form-group select:focus {
+  border-color: #357abd;
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+/* Fix step number backgrounds */
+.legislation-step-number {
+  background: rgba(71, 85, 105, 0.3) !important;
+}
+
+.nav-button:disabled {
+  background: rgba(71, 85, 105, 0.2) !important;
+}
+
+/* Fix loading skeleton backgrounds */
+.analysis-loading-skeleton,
+.debate-skeleton,
+.judge-skeleton,
+.full-analysis-skeleton,
+.argument-skeleton,
+.rebuttal-skeleton {
+  background: linear-gradient(90deg, rgba(71, 85, 105, 0.1), rgba(74, 144, 226, 0.1), rgba(71, 85, 105, 0.1)) !important;
+}
+
+/* Text color fixes for suggestion items */
+span[style*="color: #495057"] {
+  color: #f8fafc !important;
+}
+
+/* Text color fixes for search status */
+div[style*="color: #856404"] {
+  color: #fbbf24 !important;
+}
+
+div[style*="color: #004085"] {
+  color: #60a5fa !important;
+}
+
+/* Additional dark mode fixes for buttons and disabled states */
+
+/* Disabled button backgrounds */
+button[style*="backgroundColor: #ccc"],
+div[style*="backgroundColor: #ccc"] {
+  background: rgba(71, 85, 105, 0.3) !important;
+  color: #94a3b8 !important;
+}
+
+/* Button hover state fixes */
+button:hover[style*="backgroundColor: #c82333"] {
+  background: rgba(200, 35, 51, 0.8) !important;
+}
+
+/* Additional button backgrounds - ensure they stay as intended for colored buttons */
+button[style*="backgroundColor: #4a90e2"],
+button[style*="backgroundColor: #28a745"],  
+button[style*="backgroundColor: #007bff"],
+button[style*="backgroundColor: #17a2b8"],
+button[style*="backgroundColor: #dc3545"],
+button[style*="backgroundColor: #6c757d"] {
+  /* Keep these as they are - they're already dark themed */
+}
+
+/* Tooltip dark mode */
+.tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+/* Any remaining light backgrounds in gradients */
+div[style*="linear-gradient"],
+.loading-skeleton,
+.shimmer-effect {
+  background: linear-gradient(90deg, rgba(71, 85, 105, 0.1), rgba(74, 144, 226, 0.1), rgba(71, 85, 105, 0.1)) !important;
+}
+
+/* Ensure all text in light containers is readable */
+div[style*="backgroundColor: #f"] * {
+  color: #f8fafc !important;
+}
+
+div[style*="backgroundColor: #e"] * {
+  color: #f8fafc !important;
+}
+
+div[style*="backgroundColor: #d"] * {
+  color: #f8fafc !important;
+}
+
+/* Fix remaining white rgba backgrounds for dark mode */
+
+.legislation-header-tab-group {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 500px;
+  background: rgba(30, 41, 59, 0.3) !important;
+  border-radius: 8px;
+  padding: 4px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+.recommended-bills-section {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0.5rem auto 2rem auto;
+  padding: 1rem 1.5rem 2rem 1.5rem;
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.analysis-loading-skeleton {
+  margin: 3rem auto 0 auto;
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  width: 100%;
+}
+
+.analysis-loading-skeleton::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent) !important;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
