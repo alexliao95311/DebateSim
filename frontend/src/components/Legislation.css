@@ -3124,6 +3124,11 @@ h3 {
   color: #e2e8f0 !important;
 }
 
+/* Exception: Keep sidebar title black */
+.sidebar-title {
+  color: #333 !important;
+}
+
 .footer-note {
   margin-top: 2rem;
   padding: 1rem;
