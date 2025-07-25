@@ -51,6 +51,18 @@ function Home({ user, onLogout }) {
     if (!container) return;
     
     const { scrollLeft, scrollWidth, clientWidth } = container;
+    
+    // Only show arrows if there's actually overflow (more content than visible area)
+    const hasOverflow = scrollWidth > clientWidth + 10; // Add small buffer
+    
+    if (!hasOverflow) {
+      // Reset scroll position when there's no overflow
+      container.scrollLeft = 0;
+      setShowLeftArrow(false);
+      setShowRightArrow(false);
+      return;
+    }
+    
     const isAtStart = scrollLeft <= 5; // Small tolerance for floating point precision
     const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 5; // Small tolerance
     
@@ -62,7 +74,7 @@ function Home({ user, onLogout }) {
     const container = featureCardsRef.current;
     if (!container) return;
     
-    const scrollAmount = 350;
+    const scrollAmount = 370; // Increased to account for gaps
     container.scrollBy({ 
       left: direction === 'left' ? -scrollAmount : scrollAmount, 
       behavior: 'smooth' 
@@ -75,7 +87,13 @@ function Home({ user, onLogout }) {
 
     const handleScroll = () => updateArrowVisibility();
     const handleResize = () => {
-      setTimeout(() => updateArrowVisibility(), 100);
+      // Force a reflow to ensure accurate measurements
+      setTimeout(() => {
+        if (container) {
+          container.scrollLeft = container.scrollLeft; // Force reflow
+          updateArrowVisibility();
+        }
+      }, 100);
     };
 
     container.addEventListener('scroll', handleScroll);
