@@ -90,7 +90,7 @@
 .home-main-content {
   flex: 1 !important;
   width: 100% !important;
-  max-width: 1000px !important;
+  max-width: 1800px !important;
   margin: 0 auto !important;
   display: flex !important;
   flex-direction: column !important;
@@ -221,9 +221,9 @@
 .home-features-container {
   position: relative !important;
   width: 100% !important;
-  max-width: 1200px !important;
-  padding: 0 30px !important;
-  margin: 2rem 0 !important;
+  max-width: 1600px !important;
+  padding: 0 60px !important;
+  margin: 1.5rem 0 !important;
 }
 
 .home-scroll-arrow {
@@ -277,11 +277,18 @@
   gap: 2rem !important;
   width: 100% !important;
   overflow-x: auto !important;
-  overflow-y: hidden !important;
-  padding-bottom: 1.5rem !important;
+  overflow-y: visible !important;
+  padding: 1rem 0 1.5rem 0 !important;
   scrollbar-width: none !important;
   scroll-behavior: smooth !important;
   -ms-overflow-style: none !important;
+}
+
+/* Center cards when there's enough space (no scrolling needed) */
+@media (min-width: 1400px) {
+  .home-feature-cards {
+    justify-content: center !important;
+  }
 }
 
 .home-feature-cards::-webkit-scrollbar {
