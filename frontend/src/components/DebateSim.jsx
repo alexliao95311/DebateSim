@@ -25,6 +25,7 @@ import {
   Code
 } from "lucide-react";
 import "./DebateSim.css";
+import Footer from "./Footer.jsx";
 
 function DebateSim({ user }) {
   const [mode, setMode] = useState("");
@@ -508,30 +509,7 @@ function DebateSim({ user }) {
           </div>
         </div>
       )}
-
-      <footer className="debatesim-footer">
-        <div className="debatesim-footer-links">
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="debatesim-feedback-link"
-          >
-            <MessageSquare size={16} />
-            Give Feedback
-          </a>
-          <a
-            href="https://github.com/alexliao95311/DebateSim"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="debatesim-github-link"
-          >
-            <Code size={16} />
-            GitHub
-          </a>
-        </div>
-        <span className="debatesim-copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
-      </footer>
+      <Footer />
     </div>
   );
 }
