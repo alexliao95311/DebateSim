@@ -406,8 +406,21 @@ const Legislation = ({ user }) => {
 
 
   const handleLogout = () => {
+    // Reset scroll position before logout
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     signOut(getAuth())
-      .then(() => navigate('/login'))
+      .then(() => {
+        // Additional scroll reset after navigation
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 0);
+        navigate('/login');
+      })
       .catch(err => console.error("Logout error:", err));
   };
 
