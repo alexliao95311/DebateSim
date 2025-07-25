@@ -1791,13 +1791,13 @@ const Legislation = ({ user }) => {
                     {!searchLoading && !searchError && filteredBills.length > 0 && (
                       <>
                         <div style={{
-                          backgroundColor: "#d1ecf1",
-                          border: "1px solid #bee5eb",
+                          backgroundColor: "rgba(30, 41, 59, 0.6)",
+                          border: "1px solid rgba(71, 85, 105, 0.3)",
                           borderRadius: "4px",
                           padding: "0.75rem",
                           marginBottom: "1rem",
                           fontSize: "0.9rem",
-                          color: "#0c5460"
+                          color: "rgba(255, 255, 255, 0.89)"
                         }}>
                           💡 <strong>Search Tips:</strong> Try bill numbers (e.g., "HR 1234"), topics (e.g., "healthcare"), 
                           or sponsor names for better results.
@@ -2079,11 +2079,11 @@ const Legislation = ({ user }) => {
                     <div style={{
                       marginTop: "0.5rem",
                       padding: "0.5rem",
-                      backgroundColor: "#e7f3ff",
-                      border: "1px solid #b8daff",
+                      backgroundColor: "rgba(30, 41, 59, 0.6)",
+                      border: "1px solid rgba(71, 85, 105, 0.3)",
                       borderRadius: "4px",
                       fontSize: "0.85rem",
-                      color: "#004085",
+                      color: "rgba(255, 255, 255, 0.89)",
                       textAlign: "center",
                       fontStyle: "italic"
                     }}>
@@ -2096,11 +2096,11 @@ const Legislation = ({ user }) => {
                     <div style={{
                       marginTop: "0.5rem",
                       padding: "0.5rem",
-                      backgroundColor: liveSearchLoading ? "#fff3cd" : "#e7f3ff",
-                      border: `1px solid ${liveSearchLoading ? "#ffeaa7" : "#b8daff"}`,
+                      backgroundColor: liveSearchLoading ? "#fff3cd" : "rgba(30, 41, 59, 0.6)",
+                      border: `1px solid ${liveSearchLoading ? "#ffeaa7" : "rgba(71, 85, 105, 0.3)"}`,
                       borderRadius: "4px",
                       fontSize: "0.9rem",
-                      color: liveSearchLoading ? "#856404" : "#004085",
+                      color: liveSearchLoading ? "#856404" : "rgba(255, 255, 255, 0.89)",
                       display: "flex",
                       alignItems: "center",
                       gap: "0.5rem"
