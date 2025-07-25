@@ -315,7 +315,7 @@ Students using DebateSim show measurable improvements in:
 #### Generate Debate Response
 Generate AI argument for a debate position.
 
-```http
+```txt
 POST /generate-response
 Content-Type: application/json
 Authorization: Bearer {token}
@@ -352,7 +352,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "winner": "Pro" | "Con" | "Tie",
   "analysis": "Detailed evaluation of arguments",
@@ -441,7 +441,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "analysis": "Detailed analysis of the legislation",
   "grade": "A-" | "B+" | "C" | etc,
