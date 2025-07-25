@@ -1,10 +1,10 @@
-# DebateSim
+# DebateSim: AI-Powered Legislative Analysis & Debate Platform
 
 <div align="center">
 
 ![DebateSim Logo](https://img.shields.io/badge/DebateSim-AI%20Powered%20Debates-blue?style=for-the-badge)
 
-**An intelligent debate simulation platform powered by advanced AI models**
+**An intelligent debate simulation platform powered by advanced AI models for democratic discourse and legislative analysis**
 
 ## **[🌐 LIVE DEMO - debatesim.us](https://debatesim.us)**
 
@@ -14,41 +14,7 @@
 
 ---
 
-## Overview
 
-DebateSim is a sophisticated debate simulation platform that leverages cutting-edge AI technology to create engaging, educational debate experiences. Whether you're a student honing your argumentation skills, an educator facilitating classroom discussions, or simply someone passionate about exploring different perspectives on complex issues, DebateSim provides the tools to engage in structured, high-quality debates.
-
-## Key Features
-
-### **Multi-Modal Debate Formats**
-- **AI vs AI**: Watch two AI debaters engage in structured arguments on any topic
-- **AI vs User**: Challenge yourself against sophisticated AI opponents
-- **User vs User**: Facilitate human-to-human debates with AI moderation
-
-### **Intelligent AI Judge System**
-- Comprehensive post-debate analysis and feedback
-- Objective evaluation of argument strength and logical consistency
-- Detailed breakdown of each debater's performance
-- Winner determination with clear reasoning
-
-### **Legislative Analysis** 
-- Upload Congressional bills and legislation documents (PDF)
-- AI-powered analysis of policy implications
-- Multi-perspective debate generation from legislative content
-- Text extraction and summarization capabilities
-
-### **Debate Management**
-- Persistent debate history and transcript storage
-- Downloadable debate records in multiple formats
-- User authentication and personalized experience
-- Real-time debate progression tracking
-
-### **Advanced Technical Features**
-- Multiple AI model support (OpenAI, Meta LLaMA, Google, Anthropic)
-- Optimized response caching for improved performance
-- RESTful API architecture with FastAPI backend
-- Modern React frontend with responsive design
-- Firebase integration for user management and data persistence
 
 ## Getting Started
 
