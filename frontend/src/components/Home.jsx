@@ -17,6 +17,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import "./Home.css";
+import Footer from "./Footer.jsx";
 
 console.log("API_URL:", import.meta.env.VITE_API_URL);
 
@@ -312,30 +313,7 @@ function Home({ user, onLogout }) {
           </div>
         </div>
       </div>
-
-      <footer className="home-bottom-text">
-        <div className="home-footer-links">
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="home-feedback-link"
-          >
-            <MessageSquare size={16} />
-            Give Feedback
-          </a>
-          <a
-            href="https://github.com/alexliao95311/DebateSim"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="home-github-link"
-          >
-            <Code size={16} />
-            GitHub
-          </a>
-        </div>
-        <span className="home-copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
-      </footer>
+      <Footer />
     </div>
   );
 }

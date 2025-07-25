@@ -3,6 +3,7 @@ import { auth, provider } from "../firebase/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { MessageSquare, Code } from "lucide-react";
 import "./Login.css";
+import Footer from "./Footer.jsx";
 
 function Login({ onLogin }) {
   const [error, setError] = useState("");
@@ -362,29 +363,7 @@ function Login({ onLogin }) {
         )}
       </main>
 
-      <footer className="login-footer">
-        <div className="login-footer-links">
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="login-feedback-link"
-          >
-            <MessageSquare size={16} />
-            Give Feedback
-          </a>
-          <a
-            href="https://github.com/alexliao95311/DebateSim"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="login-github-link"
-          >
-            <Code size={16} />
-            GitHub
-          </a>
-        </div>
-        <span className="login-copyright">© {new Date().getFullYear()} DebateSim. All rights reserved.</span>
-      </footer>
+      <Footer />
     </div>
   );
 }
