@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -290,6 +290,192 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     </div>
   );
 };
+
+// Virtualized Bills List Component with Intersection Observer
+const VirtualizedBillsList = ({ bills, onSelect, isProcessing, processingStage, selectedBill, searchLoading = false }) => {
+  const [visibleBills, setVisibleBills] = useState([]);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const observerRef = useRef(null);
+  const containerRef = useRef(null);
+  const sentinelRef = useRef(null);
+  
+  const INITIAL_LOAD = 6; // Load first 6 bills immediately
+  const LOAD_INCREMENT = 4; // Load 4 more bills when scrolling
+
+  // Initialize observer and load initial bills
+  useEffect(() => {
+    if (bills.length === 0) {
+      setVisibleBills([]);
+      setLoadedCount(0);
+      return;
+    }
+
+    // Reset state when bills change
+    const initialCount = Math.min(INITIAL_LOAD, bills.length);
+    setLoadedCount(initialCount);
+    setVisibleBills(bills.slice(0, initialCount).map((bill, index) => ({
+      ...bill,
+      isVisible: false,
+      animationDelay: index * 100 // Stagger animations
+    })));
+
+    // Create intersection observer for fade-in animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const billId = entry.target.dataset.billId;
+            setVisibleBills(prev => 
+              prev.map(bill => 
+                bill.id === billId ? { ...bill, isVisible: true } : bill
+              )
+            );
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    observerRef.current = observer;
+
+    // Trigger initial animations after a short delay
+    setTimeout(() => {
+      setVisibleBills(prev => 
+        prev.map(bill => ({ ...bill, isVisible: true }))
+      );
+    }, 100);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [bills]);
+
+  // Sentinel observer for infinite loading
+  useEffect(() => {
+    if (!sentinelRef.current || loadedCount >= bills.length) return;
+
+    const sentinelObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !searchLoading) {
+          const newCount = Math.min(loadedCount + LOAD_INCREMENT, bills.length);
+          const newBills = bills.slice(loadedCount, newCount);
+          
+          setVisibleBills(prev => [
+            ...prev,
+            ...newBills.map((bill, index) => ({
+              ...bill,
+              isVisible: false,
+              animationDelay: (loadedCount + index) * 100
+            }))
+          ]);
+          
+          setLoadedCount(newCount);
+
+          // Trigger animations for new bills
+          setTimeout(() => {
+            setVisibleBills(prev => 
+              prev.map((bill, index) => 
+                index >= prev.length - newBills.length ? { ...bill, isVisible: true } : bill
+              )
+            );
+          }, 50);
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+
+    sentinelObserver.observe(sentinelRef.current);
+
+    return () => sentinelObserver.disconnect();
+  }, [loadedCount, bills.length, searchLoading]);
+
+  // Memoized bill check function for performance
+  const isBillProcessing = useCallback((billId) => {
+    return isProcessing && selectedBill?.id === billId;
+  }, [isProcessing, selectedBill?.id]);
+
+  if (searchLoading) {
+    return (
+      <div className="bills-loading-container">
+        <div className="bills-loading-skeleton">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="bill-card-skeleton" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className="skeleton-header"></div>
+              <div className="skeleton-title"></div>
+              <div className="skeleton-text"></div>
+              <div className="skeleton-text short"></div>
+              <div className="skeleton-button"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (bills.length === 0) {
+    return (
+      <div className="no-bills-message">
+        <div className="no-bills-icon">📄</div>
+        <p>No bills available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="virtualized-bills-container" ref={containerRef}>
+      <div className="bills-horizontal-scroll">
+        {visibleBills.map((bill, index) => (
+          <div 
+            key={`${bill.id}-${bill.number || index}`}
+            className={`bill-card-wrapper ${bill.isVisible ? 'visible' : 'hidden'}`}
+            data-bill-id={bill.id}
+            style={{
+              animationDelay: `${bill.animationDelay}ms`
+            }}
+          >
+            <BillCard 
+              bill={bill}
+              onSelect={onSelect}
+              isProcessing={isBillProcessing(bill.id)}
+              processingStage={isBillProcessing(bill.id) ? processingStage : ''}
+            />
+          </div>
+        ))}
+        
+        {/* Sentinel element for infinite loading */}
+        {loadedCount < bills.length && (
+          <div ref={sentinelRef} className="loading-sentinel">
+            <div className="loading-more-indicator">
+              <div className="loading-more-spinner"></div>
+              <span>Loading more bills...</span>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Progress indicator */}
+      {bills.length > INITIAL_LOAD && (
+        <div className="bills-progress">
+          <div className="progress-text">
+            Showing {Math.min(loadedCount, bills.length)} of {bills.length} bills
+          </div>
+          <div className="progress-bar-thin">
+            <div 
+              className="progress-fill-thin"
+              style={{ width: `${(loadedCount / bills.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Legislation = ({ user }) => {
   // 3-Step Process State
   const [currentStep, setCurrentStep] = useState(1);
@@ -1685,19 +1871,16 @@ const Legislation = ({ user }) => {
                       </div>
                     )}
                     
-                    {!billsLoading && !billsError && recommendedBills.length > 0 && (
-                      <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
-                        {recommendedBills.map((bill) => (
-                          <BillCard 
-                            key={bill.id} 
-                            bill={bill} 
-                            onSelect={handleSelectRecommendedBill}
-                            isProcessing={loadingState && selectedBill?.id === bill.id}
-                            processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                          />
-                        ))}
-                      </div>
-                    )}
+                                                                {!billsLoading && !billsError && recommendedBills.length > 0 && (
+                        <VirtualizedBillsList 
+                          bills={recommendedBills}
+                          onSelect={handleSelectRecommendedBill}
+                          isProcessing={loadingState}
+                          processingStage={processingStage}
+                          selectedBill={selectedBill}
+                          searchLoading={false}
+                        />
+                      )}
                   </>
                 )}
                 
@@ -1789,17 +1972,14 @@ const Legislation = ({ user }) => {
                           or sponsor names for better results.
                         </div>
                         
-                        <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
-                          {filteredBills.map((bill) => (
-                            <BillCard 
-                              key={bill.id} 
-                              bill={bill} 
-                              onSelect={handleSelectRecommendedBill}
-                              isProcessing={loadingState && selectedBill?.id === bill.id}
-                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                            />
-                          ))}
-                        </div>
+                        <VirtualizedBillsList 
+                          bills={filteredBills}
+                          onSelect={handleSelectRecommendedBill}
+                          isProcessing={loadingState}
+                          processingStage={processingStage}
+                          selectedBill={selectedBill}
+                          searchLoading={liveSearchLoading}
+                        />
                       </>
                     )}
                     
