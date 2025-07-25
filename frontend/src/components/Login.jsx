@@ -86,6 +86,18 @@ function Login({ onLogin }) {
     if (!container) return;
     
     const { scrollLeft, scrollWidth, clientWidth } = container;
+    
+    // Only show arrows if there's actually overflow (more content than visible area)
+    const hasOverflow = scrollWidth > clientWidth;
+    
+    if (!hasOverflow) {
+      // Reset scroll position when there's no overflow
+      container.scrollLeft = 0;
+      setShowLeftArrow(false);
+      setShowRightArrow(false);
+      return;
+    }
+    
     const isAtStart = scrollLeft <= 5; // Small tolerance for floating point precision
     const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 5; // Small tolerance
     
@@ -165,7 +177,13 @@ function Login({ onLogin }) {
 
     const handleScroll = () => updateArrowVisibility();
     const handleResize = () => {
-      setTimeout(() => updateArrowVisibility(), 100);
+      // Force a reflow to ensure accurate measurements
+      setTimeout(() => {
+        if (container) {
+          container.scrollLeft = container.scrollLeft; // Force reflow
+          updateArrowVisibility();
+        }
+      }, 100);
     };
 
     container.addEventListener('scroll', handleScroll);
