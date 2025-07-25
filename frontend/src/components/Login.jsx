@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { auth, provider } from "../firebase/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
 import { MessageSquare, Code } from "lucide-react";
@@ -103,14 +103,12 @@ function Login({ onLogin }) {
     });
   };
 
-  // Scroll reset on component mount
-  useEffect(() => {
-    // Force scroll reset with slight delay to ensure it works after navigation
-    const scrollTimer = setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }, 0);
-    
-    return () => clearTimeout(scrollTimer);
+  // Immediate scroll reset using useLayoutEffect
+  useLayoutEffect(() => {
+    // Multiple scroll reset methods to ensure it works
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, []);
 
   // Typing animation effect
