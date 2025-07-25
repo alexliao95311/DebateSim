@@ -1459,7 +1459,7 @@
   border-radius: 20px;
   padding: 3rem;
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  border: 1px solid rgba(208, 214, 222, 0.3) !important;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   min-height: 500px;
   text-align: center;
@@ -3268,11 +3268,6 @@ div[style*="backgroundColor: #d1ecf1"] {
 .form-group select:focus {
   border-color: #357abd;
   background: rgba(30, 41, 59, 0.8) !important;
-}
-
-/* Fix step number backgrounds */
-.legislation-step-number {
-  background: rgba(71, 85, 105, 0.3) !important;
 }
 
 .nav-button:disabled {
