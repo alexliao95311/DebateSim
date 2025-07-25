@@ -330,7 +330,7 @@ Authorization: Bearer {token}
 ```
 
 **Response:**
-```json
+```txt
 {
   "response": "Generated debate argument",
   "model_used": "openai/gpt-4o",
@@ -341,7 +341,7 @@ Authorization: Bearer {token}
 #### Judge Debate
 Get comprehensive AI evaluation of a completed debate.
 
-```http
+```txt
 POST /judge-debate
 Content-Type: application/json
 
@@ -375,7 +375,7 @@ Content-Type: application/json
 #### Judge Feedback
 Get detailed feedback on debate performance.
 
-```http
+```txt
 POST /judge-feedback
 Content-Type: application/json
 
@@ -386,7 +386,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
 "overall_feedback": "Comprehensive analysis",
   "individual_feedback": {
@@ -403,7 +403,7 @@ Content-Type: application/json
 #### Analyze Legislation (File Upload)
 Upload and analyze PDF legislative documents.
 
-```http
+```txt
 POST /analyze-legislation
 Content-Type: multipart/form-data
 
@@ -412,7 +412,7 @@ model: "openai/gpt-4o" (optional, defaults to gpt-4o)
 ```
 
 **Response:**
-```json
+```txt
 {
   "analysis": "Comprehensive bill analysis",
   "key_provisions": ["provision1", "provision2"],
@@ -430,7 +430,7 @@ model: "openai/gpt-4o" (optional, defaults to gpt-4o)
 #### Analyze Legislation Text
 Analyze legislative text directly without file upload.
 
-```http
+```txt
 POST /analyze-legislation-text
 Content-Type: application/json
 
@@ -453,7 +453,7 @@ Content-Type: application/json
 #### Grade Legislation
 Get graded evaluation of legislative quality and effectiveness.
 
-```http
+```txt
 POST /grade-legislation
 Content-Type: application/json
 
@@ -464,7 +464,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "grade": "B+",
   "score": 87,
@@ -484,7 +484,7 @@ Content-Type: application/json
 #### Search Bills
 Search current and historical Congressional bills.
 
-```http
+```txt
 POST /search-bills
 Content-Type: application/json
 
@@ -496,7 +496,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "bills": [
     {
@@ -517,7 +517,7 @@ Content-Type: application/json
 #### Get Search Suggestions
 Get intelligent search suggestions based on partial input.
 
-```http
+```txt
 POST /search-suggestions
 Content-Type: application/json
 
@@ -528,7 +528,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "suggestions": [
     "climate change",
@@ -543,12 +543,12 @@ Content-Type: application/json
 #### Get Recommended Bills
 Retrieve curated list of important current legislation.
 
-```http
+```txt
 GET /recommended-bills
 ```
 
 **Response:**
-```json
+```txt
 {
   "bills": [
     {
@@ -568,7 +568,7 @@ GET /recommended-bills
 #### Extract Bill from URL
 Extract bill information from Congress.gov URLs.
 
-```http
+```txt
 POST /extract-bill-from-url
 Content-Type: application/json
 
@@ -581,7 +581,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "title": "Official bill title",
   "description": "Detailed bill description",
@@ -599,7 +599,7 @@ Content-Type: application/json
 #### Extract Text from PDF
 Extract text content from uploaded PDF files.
 
-```http
+```txt
 POST /extract-text
 Content-Type: multipart/form-data
 
@@ -607,7 +607,7 @@ file: [PDF file]
 ```
 
 **Response:**
-```json
+```txt
 {
   "text": "Extracted text content",
   "page_count": 45,
@@ -620,7 +620,7 @@ file: [PDF file]
 #### Save Transcript
 Save debate transcript for future reference.
 
-```http
+```txt
 POST /save-transcript
 Content-Type: application/json
 
@@ -633,7 +633,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```txt
 {
   "message": "Transcript saved successfully",
   "transcript_id": "debate_20241218_123456",
@@ -645,7 +645,7 @@ Content-Type: application/json
 
 All endpoints return standard HTTP status codes and consistent error format:
 
-```json
+```txt
 {
   "detail": "Error description",
   "error_code": "SPECIFIC_ERROR_CODE",
