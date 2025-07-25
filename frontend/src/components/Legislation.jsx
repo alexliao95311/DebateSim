@@ -9,6 +9,7 @@ import rehypeRaw from 'rehype-raw';
 import { jsPDF } from "jspdf";
 import ShareModal from "./ShareModal";
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
+import Footer from "./Footer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -406,8 +407,21 @@ const Legislation = ({ user }) => {
 
 
   const handleLogout = () => {
+    // Reset scroll position before logout
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     signOut(getAuth())
-      .then(() => navigate('/login'))
+      .then(() => {
+        // Additional scroll reset after navigation
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 0);
+        navigate('/login');
+      })
       .catch(err => console.error("Logout error:", err));
   };
 
@@ -2459,29 +2473,7 @@ const Legislation = ({ user }) => {
       </div>
 
 
-      <footer className="bottom-text">
-        <div className="footer-links">
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLSf_bXEj_AJSyY17WA779h-ESk4om3QmPFT4sdyce7wcnwBr7Q/viewform?usp=sharing&ouid=109634392449391866526"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="feedback-link"
-          >
-            <MessageSquare size={16} />
-            Give Feedback
-          </a>
-          <a
-            href="https://github.com/alexliao95311/DebateSim"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="github-link"
-          >
-            <Code size={16} />
-            GitHub
-          </a>
-        </div>
-        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
-      </footer>
+      <Footer />
 
       {/* History Sidebar */}
       <div className={`legislation-history-sidebar ${showHistorySidebar ? 'legislation-expanded' : ''}`}>
