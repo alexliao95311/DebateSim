@@ -45,6 +45,11 @@ function App() {
   }, [auth]);
 
   const handleLogout = async () => {
+    // Reset scroll position before logout
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     try {
       await signOut(auth);
     } catch (error) {
@@ -52,6 +57,14 @@ function App() {
     }
     // Remove persisted guest user (if any)
     localStorage.removeItem("user");
+    
+    // Additional scroll reset after logout process
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 0);
+    
     setUser(null);
   };
 
