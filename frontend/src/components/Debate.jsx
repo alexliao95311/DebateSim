@@ -664,13 +664,13 @@ function Debate() {
               {!userSide && (
                 <div className="ai-vs-user-setup">
                   <h3>Setup Your Debate</h3>
-                  
+                  <p style={{ color: '#fff' }}>Choose your SIDE and SPEAKING ORDER</p>
                   <div className="side-selection-cards">
                     <div 
                       className={`side-card ${selectedSide === 'pro' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("pro")}
                     >
-                      <h4>🟢 Argue PRO</h4>
+                      <h4>Argue PRO</h4>
                       <p>Support the topic</p>
                       <p className="speaking-order">
                         You will go {firstSide === 'pro' ? 'FIRST' : 'SECOND'}
@@ -681,7 +681,7 @@ function Debate() {
                       className={`side-card ${selectedSide === 'con' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("con")}
                     >
-                      <h4>🔴 Argue CON</h4>
+                      <h4>Argue CON</h4>
                       <p>Oppose the topic</p>
                       <p className="speaking-order">
                         You will go {firstSide === 'con' ? 'FIRST' : 'SECOND'}
