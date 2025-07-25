@@ -1080,9 +1080,13 @@ button:disabled {
   border-radius: 6px;
   border: 2px solid #64748b;
   font-size: 1rem;
-  background: rgba(255,255,255,0.95);
-  color: #333;
+  background: black;
+  color: white;
   transition: border-color 0.3s ease;
+}
+
+.user-name-inputs input::placeholder {
+  color: white;
 }
 
 .name-input-group input:focus {
