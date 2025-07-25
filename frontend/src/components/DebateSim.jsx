@@ -23,7 +23,8 @@ import {
   Clock,
   MessageSquare,
   Code
-} from "lucide-react";
+} 
+from "lucide-react";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {

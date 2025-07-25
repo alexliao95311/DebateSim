@@ -367,7 +367,7 @@
   backdrop-filter: blur(5px) !important;
   z-index: 100 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-  background-color: rgba(0, 0, 0, 0);
+  background: rgba(0, 0, 0, 0) !important;
 }
 
 .debatesim-clear-button:hover {
@@ -375,7 +375,7 @@
   color: #ffffff !important;
   transform: translateY(-50%) scale(1.1) !important;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
-  background-color: rgba(0, 0, 0, 0) !important;
+  background: #ef4444c4 !important;
 }
 
 /* Start debate button */
