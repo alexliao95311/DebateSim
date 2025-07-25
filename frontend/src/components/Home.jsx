@@ -90,8 +90,19 @@ function Home({ user, onLogout }) {
   }, []);
 
   const handleLogout = () => {
+    // Reset scroll position before logout
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     signOut(getAuth()) 
       .then(() => {
+        // Additional scroll reset after navigation
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 0);
         onLogout();
       })
       .catch((err) => console.error("Logout error.", err));
