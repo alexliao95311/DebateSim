@@ -86,7 +86,7 @@ function Debate() {
 
   // Handler for the back to home button
   const handleBackToHome = () => {
-    navigate("/debatesim");
+    navigate("/");
   };
 
   // Reset scroll position on component mount
