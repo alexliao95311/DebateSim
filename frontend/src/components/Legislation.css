@@ -3407,7 +3407,7 @@ div[style*="backgroundColor: #d"] * {
 }
 
 
-/* === NEW: Page Loading and Smooth Animations === */
+/* === OLD ANIMATION STYLES REMOVED - ENHANCED VERSIONS AT END OF FILE === */
 
 /* Page Loader Overlay */
 .page-loader {
@@ -3787,4 +3787,601 @@ div[style*="backgroundColor: #d"] * {
   }
 }
 
-/* === END: Page Loading and Smooth Animations === */
+/* === END: OLD ANIMATION STYLES === */
+
+/* === Enhanced Page Loading and Smooth Animations === */
+
+/* Enhanced Page Loader Overlay */
+.page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.page-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+  max-width: 400px;
+  padding: 2rem;
+}
+
+.page-loader-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(74, 144, 226, 0.2);
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: pageLoaderSpin 1s linear infinite;
+  filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+}
+
+@keyframes pageLoaderSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.page-loader-text {
+  color: #f8fafc;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: pageLoaderPulse 2s ease-in-out infinite;
+  letter-spacing: 0.5px;
+}
+
+.page-loader-subtext {
+  color: #cbd5e1;
+  font-size: 1rem;
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  animation: pageLoaderSubtextFade 3s ease-in-out infinite;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+@keyframes pageLoaderPulse {
+  0%, 100% { 
+    opacity: 0.8; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pageLoaderSubtextFade {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.95; }
+}
+
+/* Enhanced Main Container Loading States */
+.legislation-container.content-loading {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, visibility 0.8s ease, transform 0.8s ease;
+  pointer-events: none;
+}
+
+.legislation-container.content-loaded {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 1s ease 0.4s, visibility 1s ease 0.4s, transform 1s ease 0.4s;
+  pointer-events: auto;
+}
+
+/* Enhanced Component Fade-in Animations */
+.component-hidden {
+  opacity: 0;
+  transform: translateY(40px);
+  visibility: hidden;
+  transition: opacity 1s ease, transform 1s ease, visibility 1s ease;
+  will-change: opacity, transform;
+}
+
+.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition: opacity 1s ease, transform 1s ease, visibility 1s ease;
+  will-change: auto;
+}
+
+/* Enhanced Header Animation */
+.legislation-header.component-hidden {
+  opacity: 0;
+  transform: translateY(-30px);
+  backdrop-filter: blur(0px);
+}
+
+.legislation-header.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  backdrop-filter: blur(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease, backdrop-filter 0.8s ease;
+}
+
+/* Enhanced Bills Section Staggered Animation */
+.bills-section.component-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.98);
+  filter: blur(2px);
+}
+
+.bills-section.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1.2s ease 0.3s, transform 1.2s ease 0.3s, filter 1.2s ease 0.3s;
+}
+
+/* Enhanced Bill Cards Staggered Entrance */
+.bill-card-wrapper {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.bills-section.component-visible .bill-card-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Enhanced delay for each bill card with smoother staggering */
+.bill-card-wrapper:nth-child(1) { transition-delay: 0.1s; }
+.bill-card-wrapper:nth-child(2) { transition-delay: 0.2s; }
+.bill-card-wrapper:nth-child(3) { transition-delay: 0.35s; }
+.bill-card-wrapper:nth-child(4) { transition-delay: 0.5s; }
+.bill-card-wrapper:nth-child(5) { transition-delay: 0.65s; }
+.bill-card-wrapper:nth-child(6) { transition-delay: 0.8s; }
+.bill-card-wrapper:nth-child(n+7) { transition-delay: 0.95s; }
+
+/* Enhanced Steps Section Animation */
+.legislation-step-by-step-container.component-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.98);
+  filter: blur(1px);
+}
+
+.legislation-step-by-step-container.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s ease 0.5s, transform 1s ease 0.5s, filter 1s ease 0.5s;
+}
+
+/* Enhanced Footer Animation */
+.footer-wrapper.component-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.footer-wrapper.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s ease 0.8s, transform 0.8s ease 0.8s;
+}
+
+/* Enhanced Results Section Animation */
+.results-section.results-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.96);
+  visibility: hidden;
+  filter: blur(3px);
+}
+
+.results-section.results-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  filter: blur(0px);
+  transition: opacity 1s ease, transform 1s ease, visibility 1s ease, filter 1s ease;
+}
+
+.results-section.content-ready {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18);
+  transition: opacity 1s ease, transform 1s ease, visibility 1s ease, filter 1s ease, box-shadow 1.5s ease 0.8s;
+}
+
+/* Enhanced Grading Section Animation */
+.grading-stage-container.grading-loading {
+  opacity: 0;
+  transform: translateY(40px) scale(0.94);
+  filter: blur(5px);
+  visibility: hidden;
+}
+
+.grading-stage-container.grading-loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  visibility: visible;
+  transition: opacity 1s ease, transform 1s ease, filter 1s ease, visibility 1s ease;
+}
+
+/* Enhanced Individual Grade Cards Staggered Animation */
+.grading-section .grade-item {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.grading-section.grading-loaded .grade-item {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.grading-section.grading-loaded .grade-item:nth-child(1) { transition-delay: 0.1s; }
+.grading-section.grading-loaded .grade-item:nth-child(2) { transition-delay: 0.2s; }
+.grading-section.grading-loaded .grade-item:nth-child(3) { transition-delay: 0.3s; }
+.grading-section.grading-loaded .grade-item:nth-child(4) { transition-delay: 0.4s; }
+.grading-section.grading-loaded .grade-item:nth-child(5) { transition-delay: 0.5s; }
+.grading-section.grading-loaded .grade-item:nth-child(6) { transition-delay: 0.6s; }
+
+/* Enhanced Analysis Text Animation */
+.analysis-text-section.analysis-loading {
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(4px);
+  visibility: hidden;
+}
+
+.analysis-text-section.analysis-loaded {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  visibility: visible;
+  transition: opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease, visibility 1.2s ease;
+}
+
+/* Enhanced Loading Container */
+.loading-container {
+  background: rgba(74, 144, 226, 0.08);
+  border: 2px solid rgba(74, 144, 226, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(74, 144, 226, 0.12);
+  backdrop-filter: blur(25px);
+  animation: loadingContainerPulse 2.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+  animation: loadingShimmer 2s ease-in-out infinite;
+}
+
+@keyframes loadingContainerPulse {
+  0%, 100% {
+    border-color: rgba(74, 144, 226, 0.25);
+    box-shadow: 0 12px 40px rgba(74, 144, 226, 0.12);
+    transform: scale(1);
+  }
+  50% {
+    border-color: rgba(74, 144, 226, 0.4);
+    box-shadow: 0 16px 50px rgba(74, 144, 226, 0.2);
+    transform: scale(1.01);
+  }
+}
+
+@keyframes loadingShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Enhanced Loading Spinner */
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(74, 144, 226, 0.2);
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: enhancedSpin 1s linear infinite;
+  filter: drop-shadow(0 3px 6px rgba(74, 144, 226, 0.4));
+  position: relative;
+}
+
+.loading-spinner::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top: 2px solid rgba(74, 144, 226, 0.6);
+  animation: enhancedSpinReverse 1.5s linear infinite;
+}
+
+@keyframes enhancedSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes enhancedSpinReverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Enhanced Progress Bar Animations */
+.progress-fill {
+  background: linear-gradient(90deg, #4a90e2, #357abd, #60a5fa, #4a90e2);
+  background-size: 300% 100%;
+  animation: progressShimmer 2.5s ease-in-out infinite;
+  box-shadow: 0 3px 12px rgba(74, 144, 226, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: progressGlow 2s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0%, 100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes progressGlow {
+  0%, 100% { 
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(100%);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Bills Loading */
+.bills-horizontal-scroll {
+  min-height: 350px;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  position: relative;
+}
+
+.bills-horizontal-scroll.searching {
+  opacity: 0.6;
+  transform: scale(0.98);
+  pointer-events: none;
+}
+
+.bills-horizontal-scroll.searching::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+  animation: searchingShimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes searchingShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Enhanced Search Loading States */
+.search-bar.live-searching {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25);
+  background: rgba(30, 41, 59, 0.8);
+  animation: searchPulse 2s ease-in-out infinite;
+}
+
+@keyframes searchPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.15);
+  }
+}
+
+/* Enhanced Button Loading States */
+.select-bill-button:disabled {
+  background: linear-gradient(45deg, #a3c5e9, #b8d4f0);
+  animation: buttonDisabledPulse 2s ease-in-out infinite;
+  cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+}
+
+.select-bill-button:disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: buttonShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonDisabledPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+@keyframes buttonShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Smooth Scroll Behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced Mobile Optimizations */
+@media (max-width: 768px) {
+  .page-loader-spinner {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+  }
+  
+  .page-loader-text {
+    font-size: 1.1rem;
+  }
+  
+  .page-loader-subtext {
+    font-size: 0.9rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(25px);
+  }
+  
+  .bill-card-wrapper {
+    transform: translateY(20px) scale(0.98);
+  }
+  
+  .bills-section.component-visible .bill-card-wrapper {
+    transform: translateY(0) scale(1);
+  }
+  
+  /* Reduce animation intensity on mobile for better performance */
+  .loading-container {
+    animation: loadingContainerPulseMobile 3s ease-in-out infinite;
+  }
+  
+  @keyframes loadingContainerPulseMobile {
+    0%, 100% {
+      border-color: rgba(74, 144, 226, 0.25);
+      transform: scale(1);
+    }
+    50% {
+      border-color: rgba(74, 144, 226, 0.35);
+      transform: scale(1.005);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .page-loader-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+  
+  .page-loader-text {
+    font-size: 1rem;
+  }
+  
+  .page-loader-subtext {
+    font-size: 0.85rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(20px);
+  }
+  
+  .page-loader-content {
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+}
+
+/* Enhanced Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .page-loader-spinner,
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .page-loader-text,
+  .page-loader-subtext {
+    animation: none;
+  }
+  
+  .component-hidden,
+  .component-visible,
+  .bill-card-wrapper,
+  .grading-stage-container,
+  .analysis-text-section {
+    transition: opacity 0.3s ease;
+    transform: none;
+    filter: none;
+  }
+  
+  .loading-container {
+    animation: none;
+  }
+  
+  .progress-fill {
+    animation: none;
+    background: #4a90e2;
+  }
+  
+  .search-bar.live-searching {
+    animation: none;
+  }
+  
+  .bills-horizontal-scroll.searching::after {
+    animation: none;
+  }
+}
+
+/* Performance Optimizations */
+.legislation-container {
+  contain: layout style paint;
+}
+
+.bill-card-wrapper,
+.grade-item,
+.component-hidden,
+.component-visible {
+  contain: layout style;
+}
+
+/* GPU Acceleration for Smooth Animations */
+.page-loader,
+.page-loader-spinner,
+.loading-spinner,
+.component-hidden,
+.component-visible,
+.bill-card-wrapper,
+.grading-stage-container,
+.analysis-text-section {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* === END: Enhanced Page Loading and Smooth Animations === */
