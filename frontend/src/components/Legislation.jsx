@@ -21,7 +21,7 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
-// NEW: Page Loading Component for initial render
+// Enhanced Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
   if (!isLoading) return null;
   
@@ -30,12 +30,13 @@ const PageLoader = ({ isLoading }) => {
       <div className="page-loader-content">
         <div className="page-loader-spinner"></div>
         <div className="page-loader-text">Loading Bill Analysis Platform...</div>
+        <div className="page-loader-subtext">Preparing your legislative analysis environment</div>
       </div>
     </div>
   );
 };
 
-// Progress Bar Component for Streaming
+// Enhanced Progress Bar Component for Streaming
 const ProgressBar = ({ step, total, message }) => {
   const percentage = total > 0 ? (step / total) * 100 : 0;
   
@@ -305,8 +306,9 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     </div>
   );
 };
+
 const Legislation = ({ user }) => {
-  // NEW: Initial page loading state
+  // Enhanced page loading state with better sequencing
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isContentReady, setIsContentReady] = useState(false);
   const [componentsLoaded, setComponentsLoaded] = useState({
@@ -315,6 +317,11 @@ const Legislation = ({ user }) => {
     steps: false,
     footer: false
   });
+
+  // Enhanced loading states for smoother transitions
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
 
   // 3-Step Process State
   const [currentStep, setCurrentStep] = useState(1);
@@ -380,69 +387,101 @@ const Legislation = ({ user }) => {
     }
   };
 
-   // NEW: Initial page loading sequence
+  // Enhanced initial page loading sequence with better timing
   useLayoutEffect(() => {
-    // Prevent scroll during loading
+    // Prevent scroll during loading and smooth reset
     document.body.style.overflow = 'hidden';
+    window.scrollTo({ top: 0, behavior: 'auto' });
     
-    // Smooth scroll reset
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Staged component loading simulation
-    const loadComponents = async () => {
-      // Header loads first
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setComponentsLoaded(prev => ({ ...prev, header: true }));
-      
-      // Bills section loads
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setComponentsLoaded(prev => ({ ...prev, bills: true }));
-      
-      // Steps section loads
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setComponentsLoaded(prev => ({ ...prev, steps: true }));
-      
-      // Footer loads last
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setComponentsLoaded(prev => ({ ...prev, footer: true }));
-      
-      // All content ready
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setIsContentReady(true);
-      
-      // Remove page loader
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setIsPageLoading(false);
-      
-      // Re-enable scrolling
-      document.body.style.overflow = 'auto';
+    const loadingSequence = async () => {
+      try {
+        // Phase 1: Asset and dependency loading simulation
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setAssetsLoaded(true);
+        
+        // Phase 2: Component initialization - staggered for smooth experience
+        // Header loads first (most important for navigation)
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setComponentsLoaded(prev => ({ ...prev, header: true }));
+        
+        // Steps section loads next (core UI structure)
+        await new Promise(resolve => setTimeout(resolve, 150));
+        setComponentsLoaded(prev => ({ ...prev, steps: true }));
+        
+        // Bills section loads (content dependent)
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setComponentsLoaded(prev => ({ ...prev, bills: true }));
+        
+        // Footer loads last (least critical)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setComponentsLoaded(prev => ({ ...prev, footer: true }));
+        
+        // Phase 3: Data ready state
+        await new Promise(resolve => setTimeout(resolve, 150));
+        setDataReady(true);
+        
+        // Phase 4: Content fully ready
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setIsContentReady(true);
+        
+        // Phase 5: Remove page loader with delay for smooth transition
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setIsPageLoading(false);
+        
+        // Phase 6: Re-enable scrolling after everything is loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        document.body.style.overflow = 'auto';
+        setIsInitialLoad(false);
+        
+      } catch (error) {
+        console.error('Loading sequence error:', error);
+        // Fallback: still show content even if loading sequence fails
+        setIsContentReady(true);
+        setIsPageLoading(false);
+        document.body.style.overflow = 'auto';
+        setIsInitialLoad(false);
+      }
     };
     
-    loadComponents();
+    loadingSequence();
+    
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, []);
 
-  // Fetch debate history on component mount (after loading)
+  // Fetch debate history on component mount (after initial data is ready)
   useEffect(() => {
-     if (isContentReady) {
+    if (dataReady && componentsLoaded.header) {
       fetchHistory();
     }
-  }, [user, isContentReady]);
+  }, [user, dataReady, componentsLoaded.header]);
 
-
-   // Fetch recommended bills from Congress.gov API (after initial loading)
+  // Fetch recommended bills with better loading states
   useEffect(() => {
-    if (!componentsLoaded.bills) return;
-    async function fetchRecommendedBills() {
+    if (!componentsLoaded.bills || !dataReady) return;
+    
+    const fetchRecommendedBills = async () => {
       setBillsLoading(true);
       setBillsError('');
+      
       try {
-        // Note: In production, you would store the API key securely in environment variables
-        // For now, we'll use a demo endpoint or mock data
-        const response = await fetch(`${API_URL}/recommended-bills`);
+        // Add minimum loading time for UX consistency
+        const [response] = await Promise.all([
+          fetch(`${API_URL}/recommended-bills`),
+          new Promise(resolve => setTimeout(resolve, 500)) // Minimum 500ms for smooth experience
+        ]);
+        
         if (!response.ok) {
           throw new Error('Failed to fetch recommended bills');
         }
+        
         const data = await response.json();
+        
+        // Simulate processing time for smoother experience
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         setRecommendedBills(data.bills || []);
       } catch (err) {
         console.error("Error fetching recommended bills:", err);
@@ -461,28 +500,29 @@ const Legislation = ({ user }) => {
       } finally {
         setBillsLoading(false);
       }
-    }
+    };
+    
     fetchRecommendedBills();
-  }, [componentsLoaded.bills]);
-
+  }, [componentsLoaded.bills, dataReady]);
 
   const handleLogout = () => {
-    // Reset scroll position before logout
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    // Enhanced logout with smooth scroll reset
+    document.body.style.overflow = 'hidden';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
     signOut(getAuth())
       .then(() => {
-        // Additional scroll reset after navigation
+        // Additional cleanup and smooth transition
         setTimeout(() => {
           window.scrollTo(0, 0);
-          document.documentElement.scrollTop = 0;
-          document.body.scrollTop = 0;
-        }, 0);
+          document.body.style.overflow = 'auto';
+        }, 100);
         navigate('/login');
       })
-      .catch(err => console.error("Logout error:", err));
+      .catch(err => {
+        console.error("Logout error:", err);
+        document.body.style.overflow = 'auto';
+      });
   };
 
   // Step 1: Handle bill selection from recommended bills (lazy loading)
