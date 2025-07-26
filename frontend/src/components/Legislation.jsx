@@ -21,6 +21,20 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+// NEW: Page Loading Component for initial render
+const PageLoader = ({ isLoading }) => {
+  if (!isLoading) return null;
+  
+  return (
+    <div className="page-loader">
+      <div className="page-loader-content">
+        <div className="page-loader-spinner"></div>
+        <div className="page-loader-text">Loading Bill Analysis Platform...</div>
+      </div>
+    </div>
+  );
+};
+
 // Progress Bar Component for Streaming
 const ProgressBar = ({ step, total, message }) => {
   const percentage = total > 0 ? (step / total) * 100 : 0;
@@ -292,6 +306,16 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
   );
 };
 const Legislation = ({ user }) => {
+  // NEW: Initial page loading state
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isContentReady, setIsContentReady] = useState(false);
+  const [componentsLoaded, setComponentsLoaded] = useState({
+    header: false,
+    bills: false,
+    steps: false,
+    footer: false
+  });
+
   // 3-Step Process State
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -356,22 +380,58 @@ const Legislation = ({ user }) => {
     }
   };
 
-  // Immediate scroll reset using useLayoutEffect
+   // NEW: Initial page loading sequence
   useLayoutEffect(() => {
-    // Multiple scroll reset methods to ensure it works
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    // Prevent scroll during loading
+    document.body.style.overflow = 'hidden';
+    
+    // Smooth scroll reset
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Staged component loading simulation
+    const loadComponents = async () => {
+      // Header loads first
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setComponentsLoaded(prev => ({ ...prev, header: true }));
+      
+      // Bills section loads
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setComponentsLoaded(prev => ({ ...prev, bills: true }));
+      
+      // Steps section loads
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setComponentsLoaded(prev => ({ ...prev, steps: true }));
+      
+      // Footer loads last
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setComponentsLoaded(prev => ({ ...prev, footer: true }));
+      
+      // All content ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setIsContentReady(true);
+      
+      // Remove page loader
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsPageLoading(false);
+      
+      // Re-enable scrolling
+      document.body.style.overflow = 'auto';
+    };
+    
+    loadComponents();
   }, []);
 
-  // Fetch debate history on component mount
+  // Fetch debate history on component mount (after loading)
   useEffect(() => {
-    fetchHistory();
-  }, [user]);
+     if (isContentReady) {
+      fetchHistory();
+    }
+  }, [user, isContentReady]);
 
 
-  // Fetch recommended bills from Congress.gov API
+   // Fetch recommended bills from Congress.gov API (after initial loading)
   useEffect(() => {
+    if (!componentsLoaded.bills) return;
     async function fetchRecommendedBills() {
       setBillsLoading(true);
       setBillsError('');
@@ -403,7 +463,7 @@ const Legislation = ({ user }) => {
       }
     }
     fetchRecommendedBills();
-  }, []);
+  }, [componentsLoaded.bills]);
 
 
   const handleLogout = () => {
@@ -568,7 +628,20 @@ const Legislation = ({ user }) => {
     setCurrentStep(3);
   };
 
-  // Staged analysis results reveal function
+   // Enhanced smooth scroll function for results
+  const smoothScrollToResults = () => {
+    if (resultsRef.current) {
+      const headerHeight = 80; // Account for fixed header
+      const targetPosition = resultsRef.current.offsetTop - headerHeight;
+      
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Staged analysis results reveal function with enhanced animations
   const stageAnalysisResults = async (analysis, grades, title) => {
     // Reset all staged states
     setShowGradingSection(false);
@@ -582,34 +655,33 @@ const Legislation = ({ user }) => {
       setAnalysisGrades(grades);
     }
     
-    // Smooth scroll to results area after data is set
-    setTimeout(() => {
-      if (resultsRef.current) {
-        resultsRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
-        });
-      }
-    }, 100);
+    // Wait a moment before starting animations
+    await new Promise(resolve => setTimeout(resolve, 200));
     
-    // Stage 1: Show grading section with animation
-    setTimeout(() => {
-      setShowGradingSection(true);
-      setTimeout(() => {
-        setGradingSectionLoaded(true);
-      }, 100);
-    }, 300);
+    // Stage 1: Show grading section with smooth entrance
+    setShowGradingSection(true);
     
-    // Stage 2: Show analysis text after grading is loaded
+    // Smooth scroll to results area after grading section appears
+    setTimeout(() => {
+      smoothScrollToResults();
+    }, 400);
+    
+    // Stage 1.5: Mark grading as loaded for animations
+    setTimeout(() => {
+      setGradingSectionLoaded(true);
+    }, 600);
+    
+    // Stage 2: Show analysis text after grading is fully loaded
     setTimeout(() => {
       setShowAnalysisText(true);
-      setTimeout(() => {
-        setAnalysisContentReady(true);
-      }, 200);
-    }, 1200);
+    }, 1400);
     
-    // Save to history after UI is ready
+    // Stage 2.5: Mark analysis content as ready
+    setTimeout(() => {
+      setAnalysisContentReady(true);
+    }, 1800);
+    
+    // Save to history after all UI animations complete
     setTimeout(async () => {
       if (user && !user.isGuest) {
         try {
@@ -626,7 +698,7 @@ const Legislation = ({ user }) => {
           console.error("Error saving analysis to history:", err);
         }
       }
-    }, 1500);
+    }, 2200);
   };
 
   // Step 3: Handle analysis execution with progress updates
@@ -1340,37 +1412,68 @@ const Legislation = ({ user }) => {
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
+  // NEW: Intersection Observer for scroll-triggered animations
+  useEffect(() => {
+    if (!isContentReady) return;
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+        }
+      });
+    }, observerOptions);
+
+    // Observe elements that should animate on scroll
+    const elementsToObserve = document.querySelectorAll('.bill-card, .step-content, .upload-section');
+    elementsToObserve.forEach((el) => observer.observe(el));
+
+    return () => {
+      elementsToObserve.forEach((el) => observer.unobserve(el));
+    };
+  }, [isContentReady]);
+
   return (
-    <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''}`}>
-      <header className="legislation-header">
-        <div className="legislation-header-content">
-          {/* LEFT SECTION: History Button */}
-          <div className="legislation-header-left">
-            <button
-              className="legislation-history-button"
-              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-            >
-              History
-            </button>
-          </div>
-
-          {/* CENTER SECTION: Title */}
-          <div className="legislation-header-center">
-            <h1 className="legislation-site-title" onClick={() => navigate("/")}>
-              Bill and Legislation Debate
-            </h1>
-          </div>
-
-          {/* RIGHT SECTION: User + Logout */}
-          <div className="legislation-header-right">
-            <div className="legislation-user-section">
-              <span className="legislation-username">{user?.displayName}</span>
-              <button className="legislation-logout-button" onClick={handleLogout}>
-                Logout
+    <>
+      {/* NEW: Page Loader */}
+      <PageLoader isLoading={isPageLoading} />
+      
+      <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''} ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
+        {/* Header with fade-in animation */}
+        <header className={`legislation-header ${componentsLoaded.header ? 'component-visible' : 'component-hidden'}`}>
+          <div className="legislation-header-content">
+            {/* LEFT SECTION: History Button */}
+            <div className="legislation-header-left">
+              <button
+                className="legislation-history-button"
+                onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+              >
+                History
               </button>
             </div>
+
+            {/* CENTER SECTION: Title */}
+            <div className="legislation-header-center">
+              <h1 className="legislation-site-title" onClick={() => navigate("/")}>
+                Bill and Legislation Debate
+              </h1>
+            </div>
+
+            {/* RIGHT SECTION: User + Logout */}
+            <div className="legislation-header-right">
+              <div className="legislation-user-section">
+                <span className="legislation-username">{user?.displayName}</span>
+                <button className="legislation-logout-button" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
 
       {/* Modal to view selected history transcript */}
@@ -1653,25 +1756,25 @@ const Legislation = ({ user }) => {
         )}
       </header>
 
-      {/* 3-Step Process UI */}
-      <div className="legislation-step-by-step-container">
-        {/* Progress Indicator */}
-        <div className="legislation-progress-steps">
-          <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
-            <div className="legislation-step-number">1</div>
-            <div className="legislation-step-label">Select Bill</div>
+        {/* 3-Step Process UI with fade-in animation */}
+        <div className={`legislation-step-by-step-container ${componentsLoaded.steps ? 'component-visible' : 'component-hidden'}`}>
+          {/* Progress Indicator */}
+          <div className="legislation-progress-steps">
+            <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
+              <div className="legislation-step-number">1</div>
+              <div className="legislation-step-label">Select Bill</div>
+            </div>
+            <div className="legislation-step-arrow">→</div>
+            <div className={`legislation-step ${currentStep >= 2 ? 'active' : ''}`}>
+              <div className="legislation-step-number">2</div>
+              <div className="legislation-step-label">Choose Action</div>
+            </div>
+            <div className="legislation-step-arrow">→</div>
+            <div className={`legislation-step ${currentStep >= 3 ? 'active' : ''}`}>
+              <div className="legislation-step-number">3</div>
+              <div className="legislation-step-label">Configure & Execute</div>
+            </div>
           </div>
-          <div className="legislation-step-arrow">→</div>
-          <div className={`legislation-step ${currentStep >= 2 ? 'active' : ''}`}>
-            <div className="legislation-step-number">2</div>
-            <div className="legislation-step-label">Choose Action</div>
-          </div>
-          <div className="legislation-step-arrow">→</div>
-          <div className={`legislation-step ${currentStep >= 3 ? 'active' : ''}`}>
-            <div className="legislation-step-number">3</div>
-            <div className="legislation-step-label">Configure & Execute</div>
-          </div>
-        </div>
 
         {/* Step Content */}
         <div className="legislation-step-content">
@@ -1680,8 +1783,8 @@ const Legislation = ({ user }) => {
             <div className="step-one">
               <h2>Step 1: Choose a Bill</h2>
               
-              {/* Bills Section */}
-              <div className="bills-section">
+              {/* Bills Section with fade-in animation */}
+              <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                 {!isSearchMode && (
                   <>
                     <h3>📋 Trending Congressional Bills</h3>
@@ -1701,14 +1804,24 @@ const Legislation = ({ user }) => {
                     
                     {!billsLoading && !billsError && recommendedBills.length > 0 && (
                       <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
-                        {recommendedBills.map((bill) => (
-                          <BillCard 
-                            key={bill.id} 
-                            bill={bill} 
-                            onSelect={handleSelectRecommendedBill}
-                            isProcessing={loadingState && selectedBill?.id === bill.id}
-                            processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                          />
+                        {recommendedBills.map((bill, index) => (
+                          <div 
+                            key={bill.id}
+                            className="bill-card-wrapper"
+                            style={{
+                              animationDelay: `${index * 100}ms`,
+                              opacity: componentsLoaded.bills ? 1 : 0,
+                              transform: componentsLoaded.bills ? 'translateY(0)' : 'translateY(20px)',
+                              transition: 'opacity 0.6s ease, transform 0.6s ease'
+                            }}
+                          >
+                            <BillCard 
+                              bill={bill} 
+                              onSelect={handleSelectRecommendedBill}
+                              isProcessing={loadingState && selectedBill?.id === bill.id}
+                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                            />
+                          </div>
                         ))}
                       </div>
                     )}
@@ -2469,14 +2582,17 @@ const Legislation = ({ user }) => {
               )}
             </div>
           )}
+           </div>
         </div>
-      </div>
 
 
-      <Footer />
+        {/* Footer with fade-in animation */}
+        <div className={`footer-wrapper ${componentsLoaded.footer ? 'component-visible' : 'component-hidden'}`}>
+          <Footer />
+        </div>
 
-      {/* History Sidebar */}
-      <div className={`legislation-history-sidebar ${showHistorySidebar ? 'legislation-expanded' : ''}`}>
+        {/* History Sidebar */}
+        <div className={`legislation-history-sidebar ${showHistorySidebar ? 'legislation-expanded' : ''}`}>
         <h2>Activity History</h2>
         <ul className="legislation-history-list">
           {history.length > 0 ? (
@@ -2554,7 +2670,8 @@ const Legislation = ({ user }) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
