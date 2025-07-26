@@ -1080,12 +1080,15 @@
   justify-content: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: rgba(74, 144, 226, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(74, 144, 226, 0.3);
+  background: rgba(74, 144, 226, 0.08);
+  border-radius: 16px;
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.1);
+  backdrop-filter: blur(20px);
   margin: 2rem auto;
   text-align: center;
   max-width: 500px;
+  animation: loadingContainerPulse 2s ease-in-out infinite;
 }
 
 /* Progress Bar Styles */
@@ -1113,10 +1116,13 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4a90e2, #357abd);
+  background: linear-gradient(90deg, #4a90e2, #357abd, #4a90e2);
+  background-size: 200% 100%;
   border-radius: 4px;
   transition: width 0.3s ease;
   position: relative;
+  animation: progressShimmer 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 }
 
 .progress-fill::after {
@@ -1126,7 +1132,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent) !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent) !important;
   animation: shimmer 2s infinite;
 }
 
@@ -1142,12 +1148,13 @@
 }
 
 .loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(74, 144, 226, 0.3);
+  width: 32px;
+  height: 32px;
+  border: 4px solid rgba(74, 144, 226, 0.2);
+  border-top: 4px solid #4a90e2;
   border-radius: 50%;
-  border-top-color: #4a90e2;
-  animation: spin 1s linear infinite;
+  animation: enhancedSpin 1s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
 }
 
 .loading-text {
@@ -3398,3 +3405,386 @@ div[style*="backgroundColor: #d"] * {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+
+/* === NEW: Page Loading and Smooth Animations === */
+
+/* Page Loader Overlay */
+.page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+}
+
+.page-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+}
+
+.page-loader-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(74, 144, 226, 0.2);
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: pageLoaderSpin 1s linear infinite;
+}
+
+@keyframes pageLoaderSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.page-loader-text {
+  color: #f8fafc;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: pageLoaderPulse 2s ease-in-out infinite;
+}
+
+@keyframes pageLoaderPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Main Container Loading States */
+.legislation-container.content-loading {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.legislation-container.content-loaded {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s ease 0.3s, visibility 0.8s ease 0.3s;
+}
+
+/* Component Fade-in Animations */
+.component-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+/* Header Animation */
+.legislation-header.component-hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.legislation-header.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* Bills Section Staggered Animation */
+.bills-section.component-hidden {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.bills-section.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 1s ease 0.2s, transform 1s ease 0.2s;
+}
+
+/* Bill Cards Staggered Entrance */
+.bill-card-wrapper {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.bills-section.component-visible .bill-card-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Add delay for each bill card */
+.bill-card-wrapper:nth-child(1) { transition-delay: 0.1s; }
+.bill-card-wrapper:nth-child(2) { transition-delay: 0.2s; }
+.bill-card-wrapper:nth-child(3) { transition-delay: 0.3s; }
+.bill-card-wrapper:nth-child(4) { transition-delay: 0.4s; }
+.bill-card-wrapper:nth-child(5) { transition-delay: 0.5s; }
+.bill-card-wrapper:nth-child(6) { transition-delay: 0.6s; }
+.bill-card-wrapper:nth-child(n+7) { transition-delay: 0.7s; }
+
+/* Steps Section Animation */
+.legislation-step-by-step-container.component-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.legislation-step-by-step-container.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.8s ease 0.4s, transform 0.8s ease 0.4s;
+}
+
+/* Footer Animation */
+.footer-wrapper.component-hidden {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.footer-wrapper.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease 0.6s, transform 0.6s ease 0.6s;
+}
+
+/* Enhanced Results Section Animation */
+.results-section.results-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.98);
+  visibility: hidden;
+}
+
+.results-section.results-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s ease;
+}
+
+.results-section.content-ready {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s ease, box-shadow 1s ease 0.5s;
+}
+
+/* Grading Section Enhanced Animation */
+.grading-stage-container.grading-loading {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  filter: blur(5px);
+}
+
+.grading-stage-container.grading-loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease;
+}
+
+/* Individual Grade Cards Staggered Animation */
+.grading-section.grading-loaded .grade-item {
+  animation: gradeCardSlideIn 0.6s ease forwards;
+}
+
+.grading-section.grading-loaded .grade-item:nth-child(1) { animation-delay: 0.1s; }
+.grading-section.grading-loaded .grade-item:nth-child(2) { animation-delay: 0.2s; }
+.grading-section.grading-loaded .grade-item:nth-child(3) { animation-delay: 0.3s; }
+.grading-section.grading-loaded .grade-item:nth-child(4) { animation-delay: 0.4s; }
+.grading-section.grading-loaded .grade-item:nth-child(5) { animation-delay: 0.5s; }
+.grading-section.grading-loaded .grade-item:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes gradeCardSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Analysis Text Enhanced Animation */
+.analysis-text-section.analysis-loading {
+  opacity: 0;
+  transform: translateY(30px);
+  filter: blur(3px);
+}
+
+.analysis-text-section.analysis-loaded {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  transition: opacity 1s ease, transform 1s ease, filter 1s ease;
+}
+
+/* Scroll Reveal Animation for Results */
+.results-section {
+  will-change: transform, opacity;
+}
+
+/* Loading State Improvements */
+.loading-container {
+  background: rgba(74, 144, 226, 0.08);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.1);
+  backdrop-filter: blur(20px);
+  animation: loadingContainerPulse 2s ease-in-out infinite;
+}
+
+@keyframes loadingContainerPulse {
+  0%, 100% {
+    border-color: rgba(74, 144, 226, 0.2);
+    box-shadow: 0 8px 32px rgba(74, 144, 226, 0.1);
+  }
+  50% {
+    border-color: rgba(74, 144, 226, 0.4);
+    box-shadow: 0 12px 40px rgba(74, 144, 226, 0.2);
+  }
+}
+
+/* Enhanced Loading Spinner */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 4px solid rgba(74, 144, 226, 0.2);
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: enhancedSpin 1s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
+}
+
+@keyframes enhancedSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Progress Bar Enhancements */
+.progress-fill {
+  background: linear-gradient(90deg, #4a90e2, #357abd, #4a90e2);
+  background-size: 200% 100%;
+  animation: progressShimmer 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+@keyframes progressShimmer {
+  0%, 100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
+/* Prevent Layout Shift During Loading */
+.bills-horizontal-scroll {
+  min-height: 350px;
+  transition: opacity 0.3s ease, min-height 0.3s ease;
+}
+
+.bills-horizontal-scroll.searching {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Scroll-triggered animations - only for content that's not initially visible */
+.upload-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.upload-section.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Override scroll animations for initially visible content */
+.bills-section.component-visible .bill-card,
+.step-content.component-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Keep bill card wrapper animations when bills section is visible */
+.bills-section.component-visible .bill-card-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .page-loader-spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .page-loader-text {
+    font-size: 1rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(20px);
+  }
+  
+  .bill-card-wrapper {
+    transform: translateY(15px) scale(0.98);
+  }
+  
+  .bills-section.component-visible .bill-card-wrapper {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-loader-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+  
+  .page-loader-text {
+    font-size: 0.9rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(15px);
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .page-loader-spinner {
+    animation: none;
+  }
+  
+  .page-loader-text {
+    animation: none;
+  }
+  
+  .component-hidden,
+  .component-visible,
+  .bill-card-wrapper,
+  .grading-stage-container,
+  .analysis-text-section {
+    transition: opacity 0.3s ease;
+    transform: none;
+  }
+  
+  .loading-container {
+    animation: none;
+  }
+  
+  .progress-fill {
+    animation: none;
+  }
+}
+
+/* === END: Page Loading and Smooth Animations === */
