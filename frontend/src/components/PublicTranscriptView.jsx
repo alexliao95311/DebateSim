@@ -191,7 +191,7 @@ function PublicTranscriptView() {
   }, [shareId]);
 
   const handleBackToHome = () => {
-    navigate("/debatesim");
+    window.location.href = "https://debatesim.us";
   };
 
   if (loading) {
