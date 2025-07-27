@@ -1838,8 +1838,9 @@ const Legislation = ({ user }) => {
                         flexDirection: "column",
                         alignItems: "center",
                         padding: "2rem",
-                        backgroundColor: "#f8f9fa",
+                        backgroundColor: "rgba(30, 41, 59, 0.6)",
                         borderRadius: "8px",
+                        border: "1px solid rgba(71, 85, 105, 0.3)",
                         margin: "1rem 0"
                       }}>
                         <div className="loading-spinner" style={{
@@ -1851,8 +1852,8 @@ const Legislation = ({ user }) => {
                           animation: "spin 1s linear infinite",
                           marginBottom: "1rem"
                         }}></div>
-                        <p style={{ margin: 0, color: "#6c757d" }}>Searching Congress.gov for bills...</p>
-                        <small style={{ color: "#8a8a8a", marginTop: "0.5rem" }}>
+                        <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.89)" }}>Searching Congress.gov for bills...</p>
+                        <small style={{ color: "rgba(255, 255, 255, 0.89)", marginTop: "0.5rem" }}>
                           This may take a few seconds
                         </small>
                       </div>
@@ -1934,15 +1935,15 @@ const Legislation = ({ user }) => {
                       <div style={{
                         textAlign: "center",
                         padding: "2rem",
-                        backgroundColor: "#f8f9fa",
+                        backgroundColor: "rgba(30, 41, 59, 0.6)",
                         borderRadius: "8px",
-                        border: "2px dashed #dee2e6"
+                        border: "2px dashed rgba(71, 85, 105, 0.3)"
                       }}>
                         <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔍</div>
-                        <h4 style={{ margin: "0 0 0.5rem 0", color: "#495057" }}>
+                        <h4 style={{ margin: "0 0 0.5rem 0", color: "rgba(255, 255, 255, 0.89)" }}>
                           No bills found for "{searchQuery}"
                         </h4>
-                        <p style={{ margin: "0 0 1rem 0", color: "#6c757d" }}>
+                        <p style={{ margin: "0 0 1rem 0", color: "rgba(255, 255, 255, 0.89)" }}>
                           Try different keywords, check spelling, or browse trending bills below.
                         </p>
                         <div style={{ 
