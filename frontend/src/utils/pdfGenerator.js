@@ -226,8 +226,9 @@ class PDFGenerator {
 
   
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
+    const headerHeight = data.model ? 70 : 55;
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, pageWidth, startY + 40, 'F');
+    pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
     
     // Main title
     pdf.setTextColor(...this.colors.white);
