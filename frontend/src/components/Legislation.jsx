@@ -2534,38 +2534,26 @@ const Legislation = ({ user }) => {
                 </div>
               )}
               
-              {/* Analysis Text Section with Staged Loading */}
+              {/* Analysis Text Section - Simplified */}
               {showAnalysisText && (
-                <div 
-                  className={`analysis-text-section ${analysisContentReady ? 'analysis-loaded' : 'analysis-loading'}`}
+                <ReactMarkdown 
+                  rehypePlugins={[rehypeRaw]} 
+                  className="markdown-renderer"
                   style={{
-                    opacity: analysisContentReady ? 1 : 0,
-                    transform: analysisContentReady ? 'translateY(0)' : 'translateY(20px)',
-                    transition: 'opacity 0.8s ease-out, transform 0.8s ease-out',
                     marginTop: '2rem'
                   }}
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
+                    p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                    ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                    ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+                  }}
                 >
-                  <div className="analysis-text-header">
-                    <h2>Detailed Analysis</h2>
-                  </div>
-                  <div className="analysis-result markdown-content">
-                    <ReactMarkdown 
-                      rehypePlugins={[rehypeRaw]} 
-                      className="markdown-renderer"
-                      components={{
-                        h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                        h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                        p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                        ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                        ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                      }}
-                    >
-                      {analysisResult}
-                    </ReactMarkdown>
-                  </div>
-                </div>
+                  {`## Detailed Analysis\n\n${analysisResult}`}
+                </ReactMarkdown>
               )}
               
               {/* Action buttons at the bottom - only show when everything is ready */}
