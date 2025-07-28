@@ -1691,21 +1691,17 @@ const Legislation = ({ user }) => {
         
         {/* Bill Link Confirmation Modal */}
         {showLinkConfirmation && linkParsedBill && (
-          <div className="history-modal">
-            <div className="modal-content">
-              <div className="modal-header">
-                <div className="modal-header-content">
-                  <h2>Confirm Bill Selection</h2>
-                </div>
-                <button className="modal-header-close" onClick={handleBillLinkCancel}>
+          <div className="bill-link-modal">
+            <div className="bill-link-modal-content">
+              <div className="bill-link-modal-header">
+                <h2>Confirm Bill Selection</h2>
+                <button className="bill-link-modal-close" onClick={handleBillLinkCancel}>
                   ❌
                 </button>
               </div>
               
-              <div style={{ padding: "1rem" }}>
-                <p style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>
-                  Is this the bill you want to use?
-                </p>
+              <div className="bill-link-modal-body">
+                <p>Is this the bill you want to use?</p>
                 
                 <div style={{ 
                   backgroundColor: "#f8f9fa", 
@@ -1714,14 +1710,14 @@ const Legislation = ({ user }) => {
                   padding: "1rem", 
                   marginBottom: "1.5rem" 
                 }}>
-                  <h3 style={{ margin: "0 0 0.5rem 0", color: "#333" }}>
+                  <h3 style={{ margin: "0 0 0.5rem 0", color: "#000000" }}>
                     {linkParsedBill.type} {linkParsedBill.number} - {linkParsedBill.congress}th Congress
                   </h3>
-                  <p style={{ margin: "0 0 0.5rem 0", fontWeight: "bold", color: "#555" }}>
+                  <p style={{ margin: "0 0 0.5rem 0", fontWeight: "bold", color: "#000000" }}>
                     {linkParsedBill.title}
                   </p>
                   {linkParsedBill.sponsor && (
-                    <p style={{ margin: "0", color: "#666", fontSize: "0.9rem" }}>
+                    <p style={{ margin: "0", color: "#000000", fontSize: "0.9rem" }}>
                       Sponsor: {linkParsedBill.sponsor}
                     </p>
                   )}

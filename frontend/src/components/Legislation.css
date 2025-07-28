@@ -3060,6 +3060,92 @@
   font-style: italic;
 }
 
+/* Bill Link Confirmation Modal - Maximum specificity */
+div.bill-link-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 9999 !important;
+  padding: 2rem !important;
+  min-height: 100vh !important;
+  min-width: 100vw !important;
+}
+
+div.bill-link-modal div.bill-link-modal-content {
+  background: white !important;
+  color: black !important;
+  border-radius: 16px !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  width: 600px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  margin: auto !important;
+}
+
+div.bill-link-modal div.bill-link-modal-header {
+  background: #f8f9fa !important;
+  color: #000000 !important;
+  padding: 1.5rem !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+div.bill-link-modal div.bill-link-modal-header h2 {
+  margin: 0 !important;
+  color: #000000 !important;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+div.bill-link-modal button.bill-link-modal-close {
+  background: none !important;
+  border: none !important;
+  font-size: 1rem !important;
+  cursor: pointer !important;
+  padding: 0.25rem !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s ease !important;
+  color: #999999 !important;
+  opacity: 0.6 !important;
+}
+
+div.bill-link-modal button.bill-link-modal-close:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  opacity: 1 !important;
+}
+
+div.bill-link-modal div.bill-link-modal-body {
+  padding: 1.5rem !important;
+  color: #000000 !important;
+}
+
+div.bill-link-modal div.bill-link-modal-body p {
+  margin-bottom: 1rem !important;
+  font-size: 1.1rem !important;
+  color: #000000 !important;
+}
+
+div.bill-link-modal div.bill-link-modal-body h3 {
+  margin: 0 0 0.5rem 0 !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+
+div.bill-link-modal div.bill-link-modal-body div p {
+  color: #000000 !important;
+}
+
 /* Prevent layout breaks from share modals */
 .legislation-container {
   position: relative;
