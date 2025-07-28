@@ -328,7 +328,10 @@ class PDFGenerator {
     renderer.strong = (text) => `**${text}**`;
     renderer.em = (text) => `*${text}*`;
     renderer.list = (body, ordered) => `${body}\n`;
-    renderer.listitem = (text) => `• ${text}\n`;
+    renderer.listitem = (text) => {
+      const cleanText = text.replace(/^[-*+•]\s*/, '').trim();
+      return `• ${cleanText}\n`;
+    };
     renderer.code = (code) => `[${code}]`;
     renderer.codespan = (code) => `[${code}]`;
     renderer.blockquote = (quote) => `"${quote}"\n\n`;
