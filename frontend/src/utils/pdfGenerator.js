@@ -334,7 +334,10 @@ class PDFGenerator {
     };
     renderer.code = (code) => `[${code}]`;
     renderer.codespan = (code) => `[${code}]`;
-    renderer.blockquote = (quote) => `"${quote}"\n\n`;
+    renderer.blockquote = (quote) => {
+      const cleanQuote = quote.replace(/^["'>\s]*/, '').replace(/["'>\s]*$/, '').trim();
+      return `"${cleanQuote}"\n\n`;
+    };
     renderer.hr = () => `${'─'.repeat(50)}\n\n`;
     renderer.br = () => '\n';
     renderer.link = (href, title, text) => `${text} (${href})`;
