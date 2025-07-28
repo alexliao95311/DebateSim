@@ -418,11 +418,10 @@ class PDFGenerator {
         pdf.setTextColor(...this.colors.dark);
         continue;
       }
-
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(...this.colors.dark);
-      
+
       line = this.processInlineFormatting(pdf, line);
       
       const wrappedLines = pdf.splitTextToSize(line, contentWidth);
