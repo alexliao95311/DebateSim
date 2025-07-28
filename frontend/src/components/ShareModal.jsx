@@ -103,9 +103,8 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
         createdAt: transcript.createdAt
       };
 
-      // Determine which type of PDF to generate based on activity type
+      // check which type
       if (transcript.activityType === 'Analyze Bill') {
-        // For bill analysis, use the analysis PDF format
         PDFGenerator.generateAnalysisPDF({
           topic: transcript.topic,
           content: transcript.transcript,
@@ -114,7 +113,6 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
           createdAt: transcript.createdAt
         });
       } else {
-        // For debates and other activities, use the debate PDF format
         PDFGenerator.generateDebatePDF(pdfData);
       }     
     } catch (err) {
