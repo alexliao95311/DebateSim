@@ -1901,7 +1901,7 @@
   margin: 0;
 }
 
-.new-analysis-btn {
+.back-to-home-btn {
   background: #6c757d;
   color: white;
   border: none;
@@ -1912,7 +1912,7 @@
   transition: background-color 0.3s ease;
 }
 
-.new-analysis-btn:hover {
+.back-to-home-btn:hover {
   background: #5a6268;
 }
 
@@ -2816,7 +2816,7 @@
   }
   
   .share-analysis-btn,
-  .new-analysis-btn {
+  .back-to-home-btn {
     min-width: 150px;
   }
 }
@@ -3228,7 +3228,7 @@ div.bill-link-modal div.bill-link-modal-body div p {
   }
   
   .share-analysis-btn,
-  .new-analysis-btn {
+  .back-to-home-btn {
     width: 100%;
     max-width: 200px;
     text-align: center;
