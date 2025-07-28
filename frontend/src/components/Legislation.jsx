@@ -6,8 +6,8 @@ import { saveTranscriptToUser } from '../firebase/saveTranscript';
 import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import { jsPDF } from "jspdf";
 import ShareModal from "./ShareModal";
+import PDFGenerator from "../utils/pdfGenerator";
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
 
