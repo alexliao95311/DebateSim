@@ -1747,9 +1747,8 @@ const Legislation = ({ user }) => {
         )}
       </header>
 
-        {/* 3-Step Process UI with fade-in animation - Hidden when analysis results are shown */}
-        {!analysisResult && (
-          <div className={`legislation-step-by-step-container ${componentsLoaded.steps ? 'component-visible' : 'component-hidden'}`}>
+        {/* 3-Step Process UI with fade-in animation */}
+        <div className={`legislation-step-by-step-container ${componentsLoaded.steps ? 'component-visible' : 'component-hidden'}`}>
           {/* Progress Indicator */}
           <div className="legislation-progress-steps">
             <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
@@ -2449,7 +2448,6 @@ const Legislation = ({ user }) => {
               {error && <p className="error-text">{error}</p>}
             </div>
           )}
-        )}
           
           {/* Analysis Loading Skeleton */}
           {loadingState && (
@@ -2510,14 +2508,14 @@ const Legislation = ({ user }) => {
                     📄 Download PDF
                   </button>                 
                   <button 
-                    className="back-to-home-btn" 
-                    onClick={() => navigate("/")}
+                    className="new-analysis-btn" 
+                    onClick={resetFlow}
                     style={{
                       opacity: analysisContentReady ? 1 : 0.5,
                       pointerEvents: analysisContentReady ? 'auto' : 'none'
                     }}
                   >
-                    Back to Home
+                    Start New Analysis
                   </button>
                 </div>
               </div>
