@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import { marked } from "marked";
 
-
 class PDFGenerator {
   constructor() {
     this.colors = {
@@ -81,9 +80,10 @@ class PDFGenerator {
 
   // analysis pdf's
   addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
+    const headerHeight = data.model ? 70 : 55; 
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, pageWidth, startY + 40, 'F');
-    
+    pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
+
     pdf.setTextColor(...this.colors.white);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(24);
@@ -111,7 +111,7 @@ class PDFGenerator {
       pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
     }
     
-    return startY + 80;
+    return startY + headerHeight + 25;
   }
 
   //grades
@@ -226,8 +226,9 @@ class PDFGenerator {
 
   
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
+    const headerHeight = data.model ? 70 : 55;
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, pageWidth, startY + 40, 'F');
+    pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
     
     // Main title
     pdf.setTextColor(...this.colors.white);
@@ -255,6 +256,11 @@ class PDFGenerator {
     pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
     
     return startY + 80;
+    if (data.model) {
+      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
+    }
+    
+    return startY + headerHeight + 25;
   }
 
   addDebateSetup(pdf, data, startY, contentWidth, pageWidth, pageHeight) {
@@ -312,19 +318,26 @@ class PDFGenerator {
 
     const renderer = new marked.Renderer();
     
+    // removes the random hashtags 
     renderer.heading = (text, level) => {
-      const prefix = '### '.repeat(Math.min(level, 3));
-      return `${prefix}${text}\n\n`;
+      const cleanText = text.replace(/^#+\s*/, '');
+      return `${cleanText}\n\n`;
     };
     
     renderer.paragraph = (text) => `${text}\n\n`;
     renderer.strong = (text) => `**${text}**`;
     renderer.em = (text) => `*${text}*`;
     renderer.list = (body, ordered) => `${body}\n`;
-    renderer.listitem = (text) => `• ${text}\n`;
+    renderer.listitem = (text) => {
+      const cleanText = text.replace(/^[-*+•]\s*/, '').trim();
+      return `• ${cleanText}\n`;
+    };
     renderer.code = (code) => `[${code}]`;
     renderer.codespan = (code) => `[${code}]`;
-    renderer.blockquote = (quote) => `"${quote}"\n\n`;
+    renderer.blockquote = (quote) => {
+      const cleanQuote = quote.replace(/^["'>\s]*/, '').replace(/["'>\s]*$/, '').trim();
+      return `"${cleanQuote}"\n\n`;
+    };
     renderer.hr = () => `${'─'.repeat(50)}\n\n`;
     renderer.br = () => '\n';
     renderer.link = (href, title, text) => `${text} (${href})`;
@@ -343,7 +356,16 @@ class PDFGenerator {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
       .replace(/&nbsp;/g, ' ')
+      .replace(/%20/g, ' ')  // Fix URL spaces
+      .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch (e) {
+          return match; // Return original if decoding fails
+        }
+      })
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
 
@@ -371,8 +393,12 @@ class PDFGenerator {
         currentY = this.margins.top;
       }
 
-      if (line.startsWith('###')) {
-        const headerText = line.replace(/^###\s*/, '');
+      const isHeader = line.startsWith('###') || 
+        (/^[A-Z][A-Z\s]{2,}$/.test(line) && line.length < 50) || // All caps headers
+        (line.match(/^[A-Z][^.!?]*[A-Z]$/) && !line.includes(',') && line.length < 60); // Title case headers
+      
+      if (line.startsWith('###') || isHeader) {
+        const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
         
         currentY += 20; 
         
@@ -403,12 +429,18 @@ class PDFGenerator {
   processInlineFormatting(pdf, text) {
     // For now, remove markdown formatting for cleaner PDF
     return text
-      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold
-      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic
+      .replace(/^#+\s*/, '')              // Remove hashtags if it somehow didn't do it yet
+      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold 
+      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic 
       .replace(/`([^`]+)`/g, '[$1]')      // Code to brackets
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links
-      .replace(/^[-*+]\s+/g, '• ')        // List bullets
-      .replace(/^\d+\.\s+/g, '• ');       // Numbered lists
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links to text only
+      .replace(/^[-*+]\s+/g, '• ')        // Consistent bullet points
+      .replace(/^\d+\.\s+/g, '• ')        // Numbered lists to bullets
+      .replace(/^>\s*/g, '"')             // Blockquotes to quotes
+      .replace(/^["']\s*/, '"')           // Normalize quote marks
+      .replace(/\s*["']$/, '"')           // Normalize ending quotes
+      .replace(/\s+/g, ' ')               // Normalize whitespace
+      .trim();
   }
 
   addFooter(pdf, data) {
