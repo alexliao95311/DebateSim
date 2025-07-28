@@ -429,6 +429,7 @@ const Legislation = ({ user }) => {
   }, [user, isContentReady]);
 
 
+
    // Fetch recommended bills from Congress.gov API (after initial loading)
   useEffect(() => {
     if (!componentsLoaded.bills) return;
@@ -1430,7 +1431,7 @@ const Legislation = ({ user }) => {
     }, observerOptions);
 
     // Observe elements that should animate on scroll
-    const elementsToObserve = document.querySelectorAll('.bill-card, .step-content, .upload-section');
+    const elementsToObserve = document.querySelectorAll('.bill-card, .step-content');
     elementsToObserve.forEach((el) => observer.observe(el));
 
     return () => {
