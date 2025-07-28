@@ -393,11 +393,15 @@ class PDFGenerator {
         currentY = this.margins.top;
       }
 
-      const isHeader = line.startsWith('###') || 
-        (/^[A-Z][A-Z\s]{2,}$/.test(line) && line.length < 50) || // All caps headers
-        (line.match(/^[A-Z][^.!?]*[A-Z]$/) && !line.includes(',') && line.length < 60); // Title case headers
+      // Only treat as headers if they explicitly start with # or match very specific patterns
+      const isMarkdownHeader = line.match(/^#{1,6}\s+/);
+      const isAllCapsHeader = /^[A-Z][A-Z\s]{8,}$/.test(line) && line.length < 60 && !line.includes('.') && !line.includes(',');
+      const isSectionHeader = line.match(/^(SECTION|CHAPTER|TITLE|PART)\s+[IVX\d]+/i) || 
+                              line.match(/^(Executive Summary|Bill Details|Policy Analysis|Overall Assessment|Potential Benefits|Potential Concerns)$/);
       
-      if (line.startsWith('###') || isHeader) {
+      const isHeader = isMarkdownHeader || isAllCapsHeader || isSectionHeader;
+      
+      if (isHeader) {
         const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
         
         currentY += 20; 
@@ -415,6 +419,11 @@ class PDFGenerator {
         pdf.setTextColor(...this.colors.dark);
         continue;
       }
+
+      // Ensure we're using normal text formatting for non-headers
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(...this.colors.dark);
 
       line = this.processInlineFormatting(pdf, line);
       
