@@ -356,7 +356,16 @@ class PDFGenerator {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
       .replace(/&nbsp;/g, ' ')
+      .replace(/%20/g, ' ')  // Fix URL spaces
+      .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch (e) {
+          return match; // Return original if decoding fails
+        }
+      })
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
 
@@ -384,8 +393,12 @@ class PDFGenerator {
         currentY = this.margins.top;
       }
 
-      if (line.startsWith('###')) {
-        const headerText = line.replace(/^###\s*/, '');
+      const isHeader = line.startsWith('###') || 
+        (/^[A-Z][A-Z\s]{2,}$/.test(line) && line.length < 50) || // All caps headers
+        (line.match(/^[A-Z][^.!?]*[A-Z]$/) && !line.includes(',') && line.length < 60); // Title case headers
+      
+      if (line.startsWith('###') || isHeader) {
+        const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
         
         currentY += 20; 
         
