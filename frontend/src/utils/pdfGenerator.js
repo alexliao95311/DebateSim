@@ -256,6 +256,11 @@ class PDFGenerator {
     pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
     
     return startY + 80;
+    if (data.model) {
+      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
+    }
+    
+    return startY + headerHeight + 25;
   }
 
   addDebateSetup(pdf, data, startY, contentWidth, pageWidth, pageHeight) {
@@ -313,9 +318,10 @@ class PDFGenerator {
 
     const renderer = new marked.Renderer();
     
+    // removes the random hashtags 
     renderer.heading = (text, level) => {
-      const prefix = '### '.repeat(Math.min(level, 3));
-      return `${prefix}${text}\n\n`;
+      const cleanText = text.replace(/^#+\s*/, '');
+      return `${cleanText}\n\n`;
     };
     
     renderer.paragraph = (text) => `${text}\n\n`;
