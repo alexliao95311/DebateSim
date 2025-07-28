@@ -94,195 +94,29 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
     
     setPdfError("");
     try {
-      // Get the raw markdown content
-      let markdownContent = transcript.transcript || "No content available.";
-      
-      // Decode HTML entities
-      const decodeHtmlEntities = (text) => {
-        const textArea = document.createElement('textarea');
-        textArea.innerHTML = text;
-        return textArea.value;
+      const pdfData = {
+        topic: transcript.topic || "Activity Transcript",
+        transcript: transcript.transcript || "No content available.",
+        mode: transcript.mode,
+        activityType: transcript.activityType,
+        model: transcript.model,
+        createdAt: transcript.createdAt
       };
-      
-      // Decode HTML entities in the content
-      markdownContent = decodeHtmlEntities(markdownContent);
-      
-      // Configure marked to convert markdown to clean plain text
-      const renderer = new marked.Renderer();
-      renderer.heading = (text, level) => {
-        const cleanText = decodeHtmlEntities(text);
-        return `${'#'.repeat(level)} ${cleanText}\n\n`;
-      };
-      renderer.paragraph = (text) => {
-        const cleanText = decodeHtmlEntities(text);
-        return `${cleanText}\n\n`;
-      };
-      renderer.strong = (text) => {
-        const cleanText = decodeHtmlEntities(text);
-        return cleanText; // Remove bold formatting for cleaner text
-      };
-      renderer.em = (text) => {
-        const cleanText = decodeHtmlEntities(text);
-        return cleanText; // Remove italic formatting for cleaner text
-      };
-      renderer.list = (body, ordered) => `${body}\n`;
-      renderer.listitem = (text) => {
-        const cleanText = decodeHtmlEntities(text);
-        return `• ${cleanText}\n`;
-      };
-      renderer.code = (code) => decodeHtmlEntities(code);
-      renderer.codespan = (code) => decodeHtmlEntities(code);
-      renderer.blockquote = (quote) => {
-        const cleanText = decodeHtmlEntities(quote);
-        return `"${cleanText}"\n\n`;
-      };
-      renderer.hr = () => `${'─'.repeat(50)}\n\n`;
-      renderer.br = () => '\n';
-      renderer.link = (href, title, text) => {
-        const cleanText = decodeHtmlEntities(text);
-        return `${cleanText} (${href})`;
-      };
-      
-      marked.setOptions({
-        renderer: renderer,
-        breaks: true,
-        gfm: true
-      });
 
-      // Convert markdown to formatted text and clean up
-      let formattedText = marked(markdownContent);
-      
-      // Additional cleanup for better formatting
-      formattedText = formattedText
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&#39;/g, "'")
-        .replace(/&nbsp;/g, ' ')
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove unecessary line breaks
-        .trim();
-      
-      // Create PDF with better text handling, resolves previous issues for pdfs
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "letter",
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margins = { top: 60, right: 60, bottom: 80, left: 60 };
-      const maxWidth = pageWidth - margins.left - margins.right;
-      
-      // Add header
-      pdf.setFontSize(16);
-      pdf.setFont(undefined, 'bold');
-      const title = transcript.topic || "Activity Transcript";
-      pdf.text(title, margins.left, margins.top);
-      
-      // Add metadata
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      pdf.setTextColor(100);
-      const date = transcript.createdAt ? new Date(transcript.createdAt).toLocaleDateString() : new Date().toLocaleDateString();
-      let metaInfo = `Generated on ${date}`;
-      if (transcript.model) {
-        metaInfo += ` • Model: ${transcript.model}`;
-      }
-      pdf.text(metaInfo, margins.left, margins.top + 25);
-      
-      // Add separator line
-      pdf.setLineWidth(0.5);
-      pdf.setDrawColor(200);
-      pdf.line(margins.left, margins.top + 35, pageWidth - margins.right, margins.top + 35);
-      
-      // Reset for content
-      pdf.setTextColor(0);
-      pdf.setFontSize(11);
-      let currentY = margins.top + 55;
-      
-      // Split content into lines and add to PDF with improved processing
-      const lines = formattedText.split('\n');
-      
-      for (let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        
-        if (!line) {
-          currentY += 8; // Add space for empty lines
-          continue;
-        }
-        
-        // Handle headers (lines starting with #)
-        if (line.startsWith('#')) {
-          const headerLevel = line.match(/^#+/)[0].length;
-          const headerText = line.replace(/^#+\s*/, '');
-          
-          // Add some space before headers (except first one)
-          if (currentY > margins.top + 55) {
-            currentY += 15;
-          }
-          
-          pdf.setFont(undefined, 'bold');
-          pdf.setFontSize(headerLevel === 1 ? 14 : headerLevel === 2 ? 12 : 11);
-          
-          // Check if we need a new page
-          if (currentY + 20 > pageHeight - margins.bottom) {
-            pdf.addPage();
-            currentY = margins.top;
-          }
-          
-          const wrappedHeader = pdf.splitTextToSize(headerText, maxWidth);
-          pdf.text(wrappedHeader, margins.left, currentY);
-          currentY += wrappedHeader.length * (headerLevel === 1 ? 18 : headerLevel === 2 ? 16 : 14) + 8;
-          
-          pdf.setFont(undefined, 'normal');
-          pdf.setFontSize(11);
-          continue;
-        }
-        
-        // Simplified text processing - remove all markdown formatting
-        line = line
-          .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
-          .replace(/\*([^*]+)\*/g, '$1') // Remove italic
-          .replace(/`([^`]+)`/g, '$1') // Remove code
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
-          .replace(/^[-*+]\s+/g, '• ') // Convert list markers to bullets
-          .replace(/^\d+\.\s+/g, '• '); // Convert numbered lists to bullets
-        
-        // Check if we need a new page
-        if (currentY > pageHeight - margins.bottom) {
-          pdf.addPage();
-          currentY = margins.top;
-        }
-        
-        // Split long lines and add to PDF
-        const wrappedLines = pdf.splitTextToSize(line, maxWidth);
-        pdf.text(wrappedLines, margins.left, currentY);
-        currentY += wrappedLines.length * 14 + 4;
-      }
-      
-      // Add page numbers
-      const totalPages = pdf.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(9);
-        pdf.setTextColor(120);
-        pdf.text(
-          `Page ${i} of ${totalPages}`,
-          pageWidth - margins.right,
-          pageHeight - 20,
-          { align: "right" }
-        );
-      }
-      
-      // Generate filename
-      const fileName = transcript.topic 
-        ? `${transcript.topic.replace(/[^a-z0-9]/gi, '_')}_transcript.pdf`
-        : `activity_transcript_${Date.now()}.pdf`;
-      
-      pdf.save(fileName);
-      
+      // Determine which type of PDF to generate based on activity type
+      if (transcript.activityType === 'Analyze Bill') {
+        // For bill analysis, use the analysis PDF format
+        PDFGenerator.generateAnalysisPDF({
+          topic: transcript.topic,
+          content: transcript.transcript,
+          grades: transcript.grades,
+          model: transcript.model,
+          createdAt: transcript.createdAt
+        });
+      } else {
+        // For debates and other activities, use the debate PDF format
+        PDFGenerator.generateDebatePDF(pdfData);
+      }     
     } catch (err) {
       setPdfError("Failed to generate PDF. Please try again.");
       console.error("PDF generation error:", err);
