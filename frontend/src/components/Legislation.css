@@ -274,7 +274,6 @@
   background: rgba(30, 41, 59, 0.6) !important;
   color: #f8fafc !important;
   backdrop-filter: blur(10px);
-  transition: all 0.2s ease-in-out;
 }
 
 .form-group input[type="file"] {
@@ -297,7 +296,6 @@
   font-weight: 500;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -347,7 +345,6 @@
   background: rgba(30, 41, 59, 0.6) !important;
   color: #f8fafc !important;
   backdrop-filter: blur(10px);
-  transition: all 0.2s ease-in-out;
 }
 
 .form-group input[type="url"]:hover {
@@ -371,7 +368,6 @@
   color: #f8fafc !important;
   appearance: none;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f8fafc"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -537,7 +533,6 @@
   color: #f8fafc !important;
   appearance: none;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f8fafc"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -3640,6 +3635,7 @@ div[style*="backgroundColor: #d"] * {
   transition: opacity 0.6s ease 0.6s, transform 0.6s ease 0.6s;
 }
 
+
 /* Enhanced Results Section Animation */
 .results-section.results-hidden {
   opacity: 0;
@@ -3782,12 +3778,6 @@ div[style*="backgroundColor: #d"] * {
 
 /* Scroll-triggered animations - only for content that's not initially visible */
 .upload-section {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.upload-section.in-view {
   opacity: 1;
   transform: translateY(0);
 }
