@@ -429,12 +429,18 @@ class PDFGenerator {
   processInlineFormatting(pdf, text) {
     // For now, remove markdown formatting for cleaner PDF
     return text
-      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold
-      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic
+      .replace(/^#+\s*/, '')              // Remove hashtags if it somehow didn't do it yet
+      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold 
+      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic 
       .replace(/`([^`]+)`/g, '[$1]')      // Code to brackets
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links
-      .replace(/^[-*+]\s+/g, '• ')        // List bullets
-      .replace(/^\d+\.\s+/g, '• ');       // Numbered lists
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links to text only
+      .replace(/^[-*+]\s+/g, '• ')        // Consistent bullet points
+      .replace(/^\d+\.\s+/g, '• ')        // Numbered lists to bullets
+      .replace(/^>\s*/g, '"')             // Blockquotes to quotes
+      .replace(/^["']\s*/, '"')           // Normalize quote marks
+      .replace(/\s*["']$/, '"')           // Normalize ending quotes
+      .replace(/\s+/g, ' ')               // Normalize whitespace
+      .trim();
   }
 
   addFooter(pdf, data) {
