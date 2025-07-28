@@ -5,8 +5,8 @@ import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { jsPDF } from "jspdf";
 import ShareModal from "./ShareModal";
+import PDFGenerator from "../utils/pdfGenerator";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {
