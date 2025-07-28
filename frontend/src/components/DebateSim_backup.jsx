@@ -5,9 +5,9 @@ import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { jsPDF } from "jspdf";
 import ShareModal from "./ShareModal";
 import "./DebateSim.css";
+import PDFGenerator from "../utils/pdfGenerator";
 
 function DebateSim({ user }) {
   const [mode, setMode] = useState("");
@@ -92,53 +92,18 @@ function DebateSim({ user }) {
     
     setPdfError("");
     try {
-      const element = pdfContentRef.current;
-      if (!element) {
-        throw new Error("PDF content element not found");
-      }
+      // Prepare data for the PDF generator
+      const pdfData = {
+        topic: selectedHistory.topic || "Debate Transcript",
+        transcript: selectedHistory.transcript || "No transcript available.",
+        mode: selectedHistory.mode,
+        activityType: selectedHistory.activityType,
+        model: selectedHistory.model,
+        createdAt: selectedHistory.createdAt
+      };
 
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "letter",
-      });
-
-      const margins = [72, 36, 72, 36];
-
-      pdf.setFontSize(12);
-
-      pdf.html(element, {
-        callback: (pdfInstance) => {
-          const totalPages = pdfInstance.internal.getNumberOfPages();
-          for (let i = 1; i <= totalPages; i++) {
-            pdfInstance.setPage(i);
-            pdfInstance.setFontSize(10);
-            pdfInstance.setTextColor(150);
-            const pageWidth = pdfInstance.internal.pageSize.getWidth();
-            const pageHeight = pdfInstance.internal.pageSize.getHeight();
-            pdfInstance.text(
-              `Page ${i} of ${totalPages}`,
-              pageWidth - margins[1],
-              pageHeight - 18,
-              { align: "right" }
-            );
-          }
-          const fileName = selectedHistory.topic 
-            ? `${selectedHistory.topic.replace(/[^a-z0-9]/gi, '_')}_transcript.pdf`
-            : `debate_transcript_${Date.now()}.pdf`;
-          pdfInstance.save(fileName);
-        },
-        margin: margins,
-        autoPaging: "text",
-        break: {
-          avoid: "li, p, h2, h3",
-        },
-        html2canvas: {
-          scale: 0.75,
-          windowWidth: 540,
-          useCORS: true,
-        },
-      });
+      // Generate professional PDF
+      PDFGenerator.generateDebatePDF(pdfData);
     } catch (err) {
       setPdfError("Failed to generate PDF. Please try again.");
       console.error("PDF generation error:", err);

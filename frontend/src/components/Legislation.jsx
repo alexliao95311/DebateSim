@@ -6,10 +6,10 @@ import { saveTranscriptToUser } from '../firebase/saveTranscript';
 import "./Legislation.css";
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
-import { jsPDF } from "jspdf";
 import ShareModal from "./ShareModal";
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
+import PDFGenerator from "../utils/pdfGenerator";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -989,58 +989,57 @@ const Legislation = ({ user }) => {
     setShowAnalysisShareModal(true);
   };
 
+  // Handle downloading current analysis as PDF
+  const handleDownloadAnalysisPDF = () => {
+    if (!analysisResult) return;
+    
+    try {
+      const billTitle = billSource === 'recommended' || billSource === 'link' ? 
+        selectedBill.title : 
+        selectedBill.name?.replace('.pdf', '') || 'Bill Analysis';
+
+      PDFGenerator.generateAnalysisPDF({
+        topic: `Bill Analysis: ${billTitle}`,
+        content: analysisResult,
+        grades: analysisGrades,
+        model: selectedModel,
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Failed to generate analysis PDF:", err);
+      // Could add error state here if needed
+    }
+  };
+
   const handleDownloadPDF = () => {
     if (!selectedHistory) return;
     
     setPdfError("");
     try {
-      const element = pdfContentRef.current;
-      if (!element) {
-        throw new Error("PDF content element not found");
+      // Prepare data for the PDF generator
+      const pdfData = {
+        topic: selectedHistory.topic || "Debate Transcript",
+        transcript: selectedHistory.transcript || "No transcript available.",
+        mode: selectedHistory.mode,
+        activityType: selectedHistory.activityType,
+        model: selectedHistory.model,
+        createdAt: selectedHistory.createdAt
+      };
+
+      // Determine which type of PDF to generate based on activity type
+      if (selectedHistory.activityType === 'Analyze Bill') {
+        // For bill analysis, use the analysis PDF format
+        PDFGenerator.generateAnalysisPDF({
+          topic: selectedHistory.topic,
+          content: selectedHistory.transcript,
+          grades: selectedHistory.grades,
+          model: selectedHistory.model,
+          createdAt: selectedHistory.createdAt
+        });
+      } else {
+        // For debates and other activities, use the debate PDF format
+        PDFGenerator.generateDebatePDF(pdfData);
       }
-
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "letter",
-      });
-
-      const margins = [72, 36, 72, 36];
-
-      pdf.setFontSize(12);
-
-      pdf.html(element, {
-        callback: (pdfInstance) => {
-          const totalPages = pdfInstance.internal.getNumberOfPages();
-          for (let i = 1; i <= totalPages; i++) {
-            pdfInstance.setPage(i);
-            pdfInstance.setFontSize(10);
-            pdfInstance.setTextColor(150);
-            const pageWidth = pdfInstance.internal.pageSize.getWidth();
-            const pageHeight = pdfInstance.internal.pageSize.getHeight();
-            pdfInstance.text(
-              `Page ${i} of ${totalPages}`,
-              pageWidth - margins[1],
-              pageHeight - 18,
-              { align: "right" }
-            );
-          }
-          const fileName = selectedHistory.topic 
-            ? `${selectedHistory.topic.replace(/[^a-z0-9]/gi, '_')}_transcript.pdf`
-            : `debate_transcript_${Date.now()}.pdf`;
-          pdfInstance.save(fileName);
-        },
-        margin: margins,
-        autoPaging: "text",
-        break: {
-          avoid: "li, p, h2, h3",
-        },
-        html2canvas: {
-          scale: 0.75,
-          windowWidth: 540,
-          useCORS: true,
-        },
-      });
     } catch (err) {
       setPdfError("Failed to generate PDF. Please try again.");
       console.error("PDF generation error:", err);
@@ -2507,6 +2506,16 @@ const Legislation = ({ user }) => {
                     📤 Share Analysis
                   </button>
                   <button 
+                    className="download-analysis-btn" 
+                    onClick={handleDownloadAnalysisPDF}
+                    style={{
+                      opacity: analysisContentReady ? 1 : 0.5,
+                      pointerEvents: analysisContentReady ? 'auto' : 'none'
+                    }}
+                  >
+                    📄 Download PDF
+                  </button>
+                  <button 
                     className="new-analysis-btn" 
                     onClick={resetFlow}
                     style={{
@@ -2567,7 +2576,7 @@ const Legislation = ({ user }) => {
                 </div>
               )}
               
-              {/* Share button at the bottom - only show when everything is ready */}
+              {/* Action buttons at the bottom - only show when everything is ready */}
               {analysisContentReady && (
                 <div 
                   className="analysis-bottom-actions"
@@ -2578,6 +2587,9 @@ const Legislation = ({ user }) => {
                 >
                   <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
                     📤 Share This Analysis
+                  </button>
+                  <button className="download-analysis-btn-large" onClick={handleDownloadAnalysisPDF}>
+                    📄 Download PDF Report
                   </button>
                 </div>
               )}
