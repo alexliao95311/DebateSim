@@ -111,7 +111,7 @@ class PDFGenerator {
       pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
     }
     
-    return startY + 80;
+    return startY + headerHeight + 25;
   }
 
   //grades
