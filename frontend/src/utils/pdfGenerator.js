@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import { marked } from "marked";
 
-
 class PDFGenerator {
   constructor() {
     this.colors = {
@@ -81,9 +80,10 @@ class PDFGenerator {
 
   // analysis pdf's
   addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
+    const headerHeight = data.model ? 70 : 55; 
     pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, pageWidth, startY + 40, 'F');
-    
+    pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
+
     pdf.setTextColor(...this.colors.white);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(24);
