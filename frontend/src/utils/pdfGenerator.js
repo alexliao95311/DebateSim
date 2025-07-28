@@ -254,7 +254,11 @@ class PDFGenerator {
   }
 
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
+<<<<<<< HEAD
     const headerHeight = data.model ? 85 : 70;
+=======
+    const headerHeight = data.model ? 70 : 55;
+>>>>>>> 1464aa6 (fixed header on debate transcript for case when model is there)
     pdf.setFillColor(...this.colors.primary);
     pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
     
