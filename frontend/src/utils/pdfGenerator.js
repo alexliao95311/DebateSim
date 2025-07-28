@@ -401,6 +401,7 @@ class PDFGenerator {
       const isHeader = isMarkdownHeader || isAllCapsHeader || isSectionHeader;
       
       if (isHeader) {
+
         const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
         
         currentY += 20; 
