@@ -1,8 +1,8 @@
 // components/ShareModal.jsx
 import React, { useState } from "react";
 import { shareTranscript, unshareTranscript } from "../firebase/shareTranscript";
-import { jsPDF } from "jspdf";
 import { marked } from 'marked';
+import PDFGenerator from "../utils/pdfGenerator";
 import "./ShareModal.css";
 
 function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
