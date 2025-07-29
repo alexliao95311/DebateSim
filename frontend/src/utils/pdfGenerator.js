@@ -19,10 +19,10 @@ class PDFGenerator {
     };
     
     this.margins = {
-      top: 80,
-      right: 60,
-      bottom: 80,
-      left: 60
+      top: 85,      
+      right: 65,
+      bottom: 85,
+      left: 65
     };
   }
 
