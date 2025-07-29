@@ -1,16 +1,40 @@
 // components/ShareModal.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { shareTranscript, unshareTranscript } from "../firebase/shareTranscript";
 import { marked } from 'marked';
 import PDFGenerator from "../utils/pdfGenerator";
 import "./ShareModal.css";
 
 function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
-  const [shareUrl, setShareUrl] = useState(transcript?.shareId ? `${window.location.origin}/shared/${transcript.shareId}` : "");
+  const [shareUrl, setShareUrl] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [pdfError, setPdfError] = useState("");
+
+  // Reset share URL when transcript changes
+  useEffect(() => {
+    if (transcript?.shareId) {
+      setShareUrl(`${window.location.origin}/shared/${transcript.shareId}`);
+    } else {
+      setShareUrl("");
+    }
+    // Reset other states when transcript changes
+    setError("");
+    setCopySuccess(false);
+    setPdfError("");
+  }, [transcript?.id, transcript?.shareId]);
+
+  // Reset states when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Clear temporary states when modal closes
+      setError("");
+      setCopySuccess(false);
+      setPdfError("");
+      setIsSharing(false);
+    }
+  }, [isOpen]);
 
   const handleShare = async () => {
     setIsSharing(true);
@@ -64,30 +88,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
     }
   };
 
-  const handleSocialShare = (platform) => {
-    const text = `Check out this debate transcript: ${transcript.topic}`;
-    const url = shareUrl;
-    
-    let shareLink = "";
-    switch (platform) {
-      case "twitter":
-        shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        break;
-      case "facebook":
-        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case "linkedin":
-        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        break;
-      case "reddit":
-        shareLink = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`;
-        break;
-      default:
-        return;
-    }
-    
-    window.open(shareLink, "_blank", "width=600,height=400");
-  };
+
 
   const handleDownloadPDF = () => {
     if (!transcript) return;
@@ -134,7 +135,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
         <div className="share-modal-body">
           <div className="transcript-preview">
             <h4>{transcript.topic}</h4>
-            <p className="transcript-meta">
+            <p className="transcript-meta centered">
               {transcript.mode} • {new Date(transcript.createdAt).toLocaleDateString()}
             </p>
           </div>
@@ -185,32 +186,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
                 </button>
               </div>
 
-              <div className="social-share-buttons">
-                <button 
-                  className="social-button twitter"
-                  onClick={() => handleSocialShare("twitter")}
-                >
-                  <span>𝕏</span> Twitter
-                </button>
-                <button 
-                  className="social-button facebook"
-                  onClick={() => handleSocialShare("facebook")}
-                >
-                  <span>f</span> Facebook
-                </button>
-                <button 
-                  className="social-button linkedin"
-                  onClick={() => handleSocialShare("linkedin")}
-                >
-                  <span>in</span> LinkedIn
-                </button>
-                <button 
-                  className="social-button reddit"
-                  onClick={() => handleSocialShare("reddit")}
-                >
-                  <span>r</span> Reddit
-                </button>
-              </div>
+
             </div>
           )}
         </div>
