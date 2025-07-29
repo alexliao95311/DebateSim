@@ -121,7 +121,6 @@ class PDFGenerator {
       startY = this.margins.top;
     }
 
-
     const gradeCategories = [
       { 
         key: 'overall', 
@@ -250,11 +249,6 @@ class PDFGenerator {
     pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
     
     return startY + 80;
-    if (data.model) {
-      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
-    }
-    
-    return startY + headerHeight + 25;
   }
 
   addDebateSetup(pdf, data, startY, contentWidth, pageWidth, pageHeight) {
