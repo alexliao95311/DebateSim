@@ -121,12 +121,6 @@ class PDFGenerator {
       startY = this.margins.top;
     }
 
-    pdf.setTextColor(...this.colors.dark);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
-    pdf.text("ANALYSIS GRADES", this.margins.left, startY);
-    
-    startY += 35;
 
     const gradeCategories = [
       { 
