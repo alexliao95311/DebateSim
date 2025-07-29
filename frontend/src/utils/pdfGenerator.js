@@ -310,11 +310,11 @@ processMarkdownContent(content) {
   if (!content) return "No content available.";
 
   const renderer = new marked.Renderer();
- renderer.heading = (text, level) => {
-    const cleanText = text.replace(/^#+\s*/, '');
-    return `${cleanText}\n\n`;
+  renderer.heading = (text, level) => {
+    const cleanText = text.replace(/^#+\s*/, '').trim();
+    return `HEADING_${level}:${cleanText}\n\n`;
   };
-  renderer.paragraph = (text) => `${text}\\n\\n`;
+  renderer.paragraph = (text) => `${text}\n\n`;
   renderer.strong = (text) => `**${text}**`;
   renderer.em = (text) => `*${text}*`;
   renderer.list = (body, ordered) => `${body}\n`;
