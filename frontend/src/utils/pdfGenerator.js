@@ -13,7 +13,9 @@ class PDFGenerator {
       light: [248, 249, 250],       // #f8f9fa - Light background
       white: [255, 255, 255],
       black: [0, 0, 0],
-      gray: [108, 117, 125]
+      gray: [108, 117, 125],
+      accent: [0, 123, 191],        
+      text: [33, 37, 41]           
     };
     
     this.margins = {
