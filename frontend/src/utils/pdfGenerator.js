@@ -114,7 +114,9 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   });
   pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
 
-
+  if (data.model) {
+    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
+  }
 
   return startY + headerHeightBase + 25;
 }
