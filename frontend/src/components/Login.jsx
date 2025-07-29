@@ -256,11 +256,12 @@ function Login({ onLogin }) {
                 <span className="login-typing-cursor" style={{ opacity: isTyping ? 1 : 0 }}>|</span>
               </p>
             </div>
-            <div className="login-hero-actions">
+            <div className="login-hero-actions" style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
               <button className="login-btn-start primary" onClick={scrollToNextSection}>
                 <span>Explore</span>
                 <div className="login-btn-arrow">➤</div>
               </button>
+              <div style={{width: '16px'}}></div>
               <button 
                 className="login-btn-start secondary" 
                 onClick={handleGoogleLogin}
@@ -272,7 +273,7 @@ function Login({ onLogin }) {
                     <span>Signing in...</span>
                   </>
                 ) : (
-                  <span>Get Started Now</span>
+                  <span>Get Started</span>
                 )}
               </button>
             </div>
