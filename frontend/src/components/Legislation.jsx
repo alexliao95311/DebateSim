@@ -2124,6 +2124,7 @@ const Legislation = ({ user }) => {
                       disabled={searchLoading || liveSearchLoading || !searchQuery.trim()}
                       style={{
                         padding: "0.75rem 1.5rem",
+                        margin: "0",
                         backgroundColor: (searchLoading || liveSearchLoading || !searchQuery.trim()) ? "#ccc" : "#007bff",
                         color: "white",
                         border: "none",
@@ -2142,7 +2143,7 @@ const Legislation = ({ user }) => {
                       <button
                         onClick={handleClearSearch}
                         style={{
-                          padding: "0.75rem",
+                          padding: "0.75rem 1.5rem !important",
                           backgroundColor: "#6c757d",
                           color: "white",
                           border: "none",
