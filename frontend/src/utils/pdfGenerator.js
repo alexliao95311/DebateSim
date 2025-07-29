@@ -444,13 +444,13 @@ processMarkdownContent(content) {
       }
       pdf.setFont('helvetica', 'normal');
       pdf.setgiFontSize(11);
-      pdf.setTextColor(...this.colors.dark);
+      pdf.setTextColor(...this.colors.text);
 
       line = this.processInlineFormatting(pdf, line);
       
       const wrappedLines = pdf.splitTextToSize(line, contentWidth);
       pdf.text(wrappedLines, this.margins.left, currentY);
-      currentY += wrappedLines.length * lineHeight + 4;
+      currentY += wrappedLines.length * lineHeight + 8;
     }
 
     return currentY;
@@ -459,17 +459,23 @@ processMarkdownContent(content) {
   processInlineFormatting(pdf, text) {
     // For now, remove markdown formatting for cleaner PDF
     return text
-      .replace(/^#+\s*/, '')              // Remove hashtags if it somehow didn't do it yet
-      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold 
-      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic 
-      .replace(/`([^`]+)`/g, '[$1]')      // Code to brackets
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links to text only
-      .replace(/^[-*+]\s+/g, '• ')        // Consistent bullet points
-      .replace(/^\d+\.\s+/g, '• ')        // Numbered lists to bullets
-      .replace(/^>\s*/g, '"')             // Blockquotes to quotes
-      .replace(/^["']\s*/, '"')           // Normalize quote marks
-      .replace(/\s*["']$/, '"')           // Normalize ending quotes
-      .replace(/\s+/g, ' ')               // Normalize whitespace
+      .replace(/^#+\s*/, '')                    // emove remaining hashtags
+      .replace(/\*\*([^*]+)\*\*/g, '$1')        // remove bold markdown but keep text
+      .replace(/\*([^*]+)\*/g, '$1')            // remove italic markdown but keep text
+      .replace(/`([^`]+)`/g, '[$1]')            
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // remove urls
+      .replace(/^[-*+]\s+/g, '• ')              //  bullet points
+      .replace(/^\d+\.\s+/g, '• ')              // numbered lists to bullets
+      .replace(/^>\s*/g, '"')                   // blockquotes to quotes
+      .replace(/^["']\s*/, '"')                 
+      .replace(/\s*["']$/, '"')                 
+      .replace(/\s+/g, ' ')                     //  whitespace
+      .replace(/[""]/g, '"')                    //  smart quotes to regular quotes
+      .replace(/['']/g, "'")                    //  smart apostrophes
+      .replace(/–/g, '-')                       //  en-dash to hyphen
+      .replace(/—/g, '-')                       //  em-dash to hyphen
+      .replace(/…/g, '...')                     //  ellipsis
+      .replace(/[\u2000-\u200B\u2028-\u2029]/g, ' ') // Remove unicode spaces
       .trim();
   }
 
