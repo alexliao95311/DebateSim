@@ -428,10 +428,18 @@ processMarkdownContent(content) {
       }
 
       if (line.startsWith('• ')) {
-        
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(11);
-        pdf.setTextColor(...this.colors.dark);
+        pdf.setTextColor(...this.colors.text);
+        
+        const bulletText = line.substring(2).trim();
+        const wrappedBullet = pdf.splitTextToSize(bulletText, contentWidth - 20);
+        
+        pdf.text('•', this.margins.left, currentY);
+        
+        // indent
+        pdf.text(wrappedBullet, this.margins.left + 15, currentY);
+        currentY += wrappedBullet.length * lineHeight + 6;
         continue;
       }
       pdf.setFont('helvetica', 'normal');
