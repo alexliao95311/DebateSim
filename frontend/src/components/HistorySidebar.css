@@ -1,0 +1,313 @@
+/* HistorySidebar.css - Shared styles for history sidebar and modal */
+
+/* History sidebar base styles - works with any prefix */
+[class*="-history-sidebar"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: -300px !important;
+  width: 300px !important;
+  height: 100vh !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(15px) !important;
+  border-right: 1px solid rgba(71, 85, 105, 0.3) !important;
+  transition: left 0.3s ease !important;
+  z-index: 999 !important;
+  padding: 6rem 1.5rem 2rem 1.5rem !important;
+  overflow-y: auto !important;
+}
+
+[class*="-history-sidebar"][class*="expanded"] {
+  left: 0 !important;
+}
+
+[class*="-history-sidebar"] h2 {
+  color: #f8fafc !important;
+  font-size: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  text-align: center !important;
+}
+
+[class*="-history-list"] {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+[class*="-history-item"] {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  margin-bottom: 0.75rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+[class*="-history-item"]:hover {
+  background: rgba(71, 85, 105, 0.3) !important;
+  transform: translateX(4px) !important;
+}
+
+[class*="-history-title"] {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.2 !important;
+}
+
+[class*="-history-meta"] {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 0.8rem !important;
+}
+
+[class*="-history-type"] {
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+}
+
+[class*="-history-date"] {
+  color: #94a3b8 !important;
+}
+
+/* Activity type colors - works with any prefix */
+[class*="-type-analyze"] { background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }
+[class*="-type-bill-debate"] { background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important; }
+[class*="-type-topic-debate"] { background: rgba(139, 92, 246, 0.2) !important; color: #a78bfa !important; }
+[class*="-type-ai-vs-ai"] { background: rgba(249, 115, 22, 0.2) !important; color: #fb923c !important; }
+[class*="-type-ai-vs-user"] { background: rgba(236, 72, 153, 0.2) !important; color: #f472b6 !important; }
+[class*="-type-user-vs-user"] { background: rgba(14, 165, 233, 0.2) !important; color: #38bdf8 !important; }
+[class*="-type-default"] { background: rgba(74, 144, 226, 0.2) !important; color: #4a90e2 !important; }
+
+[class*="-close-sidebar-button"] {
+  width: 100% !important;
+  padding: 0.75rem !important;
+  background: rgba(71, 85, 105, 0.3) !important;
+  border: 1px solid rgba(71, 85, 105, 0.5) !important;
+  border-radius: 8px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  margin-top: 1rem !important;
+}
+
+[class*="-close-sidebar-button"]:hover {
+  background: rgba(71, 85, 105, 0.5) !important;
+  border-color: #64748b !important;
+}
+
+/* Modal styles - works with any prefix */
+[class*="-history-modal"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(5px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 2000 !important;
+  padding: 2rem !important;
+}
+
+[class*="-modal-content"] {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(15px) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  width: 800px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  color: #f8fafc !important;
+}
+
+[class*="-modal-header"] {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 1.5rem 2rem !important;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3) !important;
+  background: transparent !important;
+}
+
+[class*="-modal-header"] h2 {
+  color: #f8fafc !important;
+  margin: 0 !important;
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  flex: 1 !important;
+}
+
+[class*="-modal-header-share"] {
+  background: none !important;
+  border: none !important;
+  font-size: 1.2rem !important;
+  cursor: pointer !important;
+  color: #4a90e2 !important;
+  padding: 0.5rem !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+[class*="-modal-header-share"]:hover {
+  background: rgba(74, 144, 226, 0.2) !important;
+  color: #60a5fa !important;
+}
+
+[class*="-modal-header-close"] {
+  background: none !important;
+  border: none !important;
+  font-size: 1.2rem !important;
+  cursor: pointer !important;
+  color: #94a3b8 !important;
+  padding: 0.5rem !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+[class*="-modal-header-close"]:hover {
+  background: rgba(71, 85, 105, 0.3) !important;
+  color: #f8fafc !important;
+}
+
+[class*="-transcript-viewer"] {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 2rem !important;
+  color: #f8fafc !important;
+  line-height: 1.6 !important;
+}
+
+/* Ensure all text in transcript viewer is white */
+[class*="-transcript-viewer"] * {
+  color: #f8fafc !important;
+}
+
+/* Transcript viewer heading styles - make headers white */
+[class*="-transcript-viewer"] .debate-heading-h1,
+[class*="-transcript-viewer"] .debate-heading-h2,
+[class*="-transcript-viewer"] .debate-heading-h3,
+[class*="-transcript-viewer"] .debate-heading-h4,
+[class*="-transcript-viewer"] .debate-paragraph,
+[class*="-transcript-viewer"] .debate-list,
+[class*="-transcript-viewer"] .debate-numbered-list,
+[class*="-transcript-viewer"] .debate-list-item,
+[class*="-transcript-viewer"] .debate-strong,
+[class*="-transcript-viewer"] .debate-emphasis {
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  margin: 1.5rem 0 1rem 0 !important;
+}
+
+[class*="-transcript-viewer"] .debate-paragraph,
+[class*="-transcript-viewer"] .debate-list-item {
+  font-weight: normal !important;
+  margin: 0.5rem 0 !important;
+}
+
+[class*="-transcript-viewer"] .debate-heading-h1 {
+  font-size: 1.5rem !important;
+}
+
+[class*="-transcript-viewer"] .debate-heading-h2 {
+  font-size: 1.3rem !important;
+}
+
+[class*="-transcript-viewer"] .debate-heading-h3 {
+  font-size: 1.1rem !important;
+}
+
+[class*="-transcript-viewer"] .debate-heading-h4 {
+  font-size: 1rem !important;
+}
+
+[class*="-modal-button-group"] {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 1rem !important;
+  padding: 1.5rem 2rem !important;
+  border-top: 1px solid rgba(71, 85, 105, 0.3) !important;
+  background: transparent !important;
+}
+
+[class*="-modal-button-group"] button {
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 8px !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+[class*="-share-button"] {
+  background: #4a90e2 !important;
+  color: white !important;
+}
+
+[class*="-share-button"]:hover {
+  background: #357abd !important;
+  transform: translateY(-2px) !important;
+}
+
+[class*="-download-button"] {
+  background: #22c55e !important;
+  color: white !important;
+}
+
+[class*="-download-button"]:hover {
+  background: #16a34a !important;
+  transform: translateY(-2px) !important;
+}
+
+[class*="-close-button"] {
+  background: #64748b !important;
+  color: white !important;
+}
+
+[class*="-close-button"]:hover {
+  background: #475569 !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Error text styling */
+.error-text {
+  color: #dc3545 !important;
+  margin: 0.5rem 1.5rem !important;
+  text-align: center !important;
+  font-size: 0.9rem !important;
+}
+
+/* Container adjustments when sidebar is open */
+[class*="sidebar-open"] {
+  padding-left: 320px !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  [class*="-history-sidebar"] {
+    width: 280px !important;
+  }
+  
+  [class*="-modal-content"] {
+    width: 95vw !important;
+    max-height: 95vh !important;
+  }
+  
+  [class*="-modal-button-group"] {
+    flex-direction: column !important;
+  }
+  
+  [class*="sidebar-open"] {
+    padding-left: 300px !important;
+  }
+} 

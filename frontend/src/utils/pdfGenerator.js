@@ -396,6 +396,7 @@ processMarkdownContent(content) {
       if (isHeader) {
         let headerText;
         let fontSize;
+
         
         if (headingMatch) {
           const level = parseInt(headingMatch[1]);
@@ -459,7 +460,7 @@ processMarkdownContent(content) {
   processInlineFormatting(pdf, text) {
     // For now, remove markdown formatting for cleaner PDF
     return text
-      .replace(/^#+\s*/, '')                    // emove remaining hashtags
+      .replace(/^#+\s*/, '')                    // remove remaining hashtags
       .replace(/\*\*([^*]+)\*\*/g, '$1')        // remove bold markdown but keep text
       .replace(/\*([^*]+)\*/g, '$1')            // remove italic markdown but keep text
       .replace(/`([^`]+)`/g, '[$1]')            
