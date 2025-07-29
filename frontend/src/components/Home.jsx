@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
+import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
+import HistorySidebar from "./HistorySidebar";
 import { 
   Code, 
   Gavel, 
@@ -14,7 +16,8 @@ import {
   Zap,
   TrendingUp,
   Award,
-  MessageSquare
+  MessageSquare,
+  History
 } from "lucide-react";
 import "./Home.css";
 import Footer from "./Footer.jsx";
@@ -27,6 +30,8 @@ function Home({ user, onLogout }) {
   const [isVisible, setIsVisible] = useState(false);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const featureCardsRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
@@ -45,6 +50,29 @@ function Home({ user, onLogout }) {
       clearTimeout(animationTimer);
     };
   }, []);
+
+  // Fetch debate history on load
+  useEffect(() => {
+    async function fetchHistory() {
+      if (!user || user.isGuest) return;
+      try {
+        const db = getFirestore();
+        const transcriptsRef = collection(db, "users", user.uid, "transcripts");
+        const q = query(transcriptsRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const fetchedHistory = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setHistory(fetchedHistory);
+        }
+      } catch (err) {
+        console.error("Error fetching debate history:", err);
+      }
+    }
+    fetchHistory();
+  }, [user]);
 
   const updateArrowVisibility = () => {
     const container = featureCardsRef.current;
@@ -199,13 +227,17 @@ function Home({ user, onLogout }) {
   };
 
   return (
-    <div className="home-container">
+    <div className={`home-container ${showHistorySidebar ? 'home-sidebar-open' : ''}`}>
       <header className="home-header">
         <div className="home-header-content">
           <div className="home-header-left">
-            <div className="home-brand-section">
-              <Award className="home-brand-icon" />
-            </div>
+            <button
+              className="home-history-button"
+              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+            >
+              <History size={18} />
+              <span>History</span>
+            </button>
           </div>
 
           <div className="home-header-center">
@@ -342,6 +374,15 @@ function Home({ user, onLogout }) {
           </div>
         </div>
       </div>
+
+      <HistorySidebar 
+        user={user}
+        history={history}
+        showHistorySidebar={showHistorySidebar}
+        setShowHistorySidebar={setShowHistorySidebar}
+        componentPrefix="home"
+      />
+      
       <Footer />
     </div>
   );
