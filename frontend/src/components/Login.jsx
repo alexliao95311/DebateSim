@@ -299,8 +299,8 @@ function Login({ onLogin }) {
                 <span className="login-stat-label">Debates Simulated</span>
               </div>
               <div className="login-stat-item">
-                <span className="login-stat-number">50+</span>
-                <span className="login-stat-label">Topics Available</span>
+                <span className="login-stat-number">∞</span>
+                <span className="login-stat-label">Topics</span>
               </div>
               <div className="login-stat-item">
                 <span className="login-stat-number">24/7</span>
