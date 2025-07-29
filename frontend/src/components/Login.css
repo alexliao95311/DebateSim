@@ -101,7 +101,7 @@ html {
 }
 
 .login-btn-ghost {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.8), rgba(74, 144, 226, 0.9)) !important;
+  background: rgba(74, 144, 226, 0.6) !important;
   color: #f8fafc !important;
   border: 2px solid rgba(74, 144, 226, 0.3) !important;
   backdrop-filter: blur(10px) !important;
@@ -110,14 +110,14 @@ html {
 }
 
 .login-btn-ghost:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.9), rgba(139, 92, 246, 0.9)) !important;
+  background: rgba(74, 144, 226, 0.6)!important;
   border-color: rgba(74, 144, 226, 0.6) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 24px rgba(74, 144, 226, 0.4) !important;
 }
 
 .login-btn-google {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.8), rgba(74, 144, 226, 0.9)) !important;
+  background: rgba(74, 144, 226, 0.6) !important;
   color: #f8fafc !important;
   border: 2px solid rgba(74, 144, 226, 0.3) !important;
   backdrop-filter: blur(10px) !important;
@@ -128,7 +128,7 @@ html {
 }
 
 .login-btn-google:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.9), rgba(139, 92, 246, 0.9)) !important;
+  background: rgba(74, 144, 226, 0.6) !important;
   border-color: rgba(74, 144, 226, 0.6) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 24px rgba(74, 144, 226, 0.4) !important;
