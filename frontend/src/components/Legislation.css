@@ -2325,7 +2325,14 @@
   background-color: #357abd;
 }
 
+.modal-button-group .download-button {
+  background-color: #4a90e2;
+  color: white;
+}
 
+.modal-button-group .download-button:hover {
+  background-color: #357abd;
+}
 
 .modal-button-group .close-button {
   background-color: #4a90e2;
@@ -2337,7 +2344,6 @@
   background-color: #357abd;
 }
 
-/* Modal title centering */
 .modal-content h2 {
   text-align: center;
   color: #f8fafc !important;
