@@ -365,7 +365,6 @@ processMarkdownContent(content) {
     let currentY = startY;
     const lineHeight = 16;
     const paragraphSpacing = 8;
-    
     const lines = content.split('\n');
     
     for (let i = 0; i < lines.length; i++) {
@@ -376,7 +375,6 @@ processMarkdownContent(content) {
         continue;
       }
 
-      // Check for new page
       if (currentY + 30 > pageHeight - this.margins.bottom) {
         pdf.addPage();
         currentY = this.margins.top;
