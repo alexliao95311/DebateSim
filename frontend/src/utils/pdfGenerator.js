@@ -408,12 +408,26 @@ processMarkdownContent(content) {
         currentY += 25; 
         
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(14);
+        pdf.setFontSize(fontSize);
         pdf.setTextColor(...this.colors.primary);
         
         const wrappedHeader = pdf.splitTextToSize(headerText, contentWidth);
         pdf.text(wrappedHeader, this.margins.left, currentY);
-        currentY += wrappedHeader.length * 18 + 10;
+        if (fontSize >= 16) {
+          const headerWidth = Math.max(...wrappedHeader.map(h => pdf.getStringUnitWidth(h) * fontSize / pdf.internal.scaleFactor));
+          pdf.setDrawColor(...this.colors.primary);
+          pdf.setLineWidth(1);
+          pdf.line(this.margins.left, currentY + 5, this.margins.left + headerWidth, currentY + 5);
+        }
+        currentY += wrappedHeader.length * (fontSize + 4) + 15;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.setTextColor(...this.colors.text);
+        continue;
+      }
+
+      if (line.startsWith('• ')) {
         
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(11);
