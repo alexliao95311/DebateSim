@@ -4,23 +4,25 @@ import { marked } from "marked";
 class PDFGenerator {
   constructor() {
     this.colors = {
-      primary: [74, 144, 226],      // #4a90e2
-      secondary: [108, 117, 125],   // #6c757d
-      success: [40, 167, 69],       // #28a745
-      warning: [255, 193, 7],       // #ffc107
-      danger: [220, 53, 69],        // #dc3545
-      dark: [52, 58, 64],           // #343a40
-      light: [248, 249, 250],       // #f8f9fa
+      primary: [74, 144, 226],      // #4a90e2 - Professional blue
+      secondary: [108, 117, 125],   // #6c757d - Neutral gray
+      success: [40, 167, 69],       // #28a745 - Success green
+      warning: [255, 193, 7],       // #ffc107 - Warning amber
+      danger: [220, 53, 69],        // #dc3545 - Error red
+      dark: [52, 58, 64],           // #343a40 - Dark text
+      light: [248, 249, 250],       // #f8f9fa - Light background
       white: [255, 255, 255],
       black: [0, 0, 0],
-      gray: [108, 117, 125]
+      gray: [108, 117, 125],
+      accent: [0, 123, 191],        
+      text: [33, 37, 41]           
     };
     
     this.margins = {
-      top: 80,
-      right: 60,
-      bottom: 80,
-      left: 60
+      top: 85,      
+      right: 65,
+      bottom: 85,
+      left: 65
     };
   }
 
@@ -212,7 +214,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   }
 
   addAnalysisContent(pdf, content, startY, contentWidth, pageWidth, pageHeight) {
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.primary);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(18);
     pdf.text("DETAILED ANALYSIS", this.margins.left, startY);
@@ -266,7 +268,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     pdf.setFillColor(...this.colors.light);
     pdf.setDrawColor(...this.colors.gray);
     pdf.rect(this.margins.left, startY, contentWidth, 80, 'FD');
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.text);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(14);
     pdf.text("DEBATE CONFIGURATION", this.margins.left + 15, startY + 20);
@@ -292,7 +294,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   }
 
   addDebateTranscript(pdf, transcript, startY, contentWidth, pageWidth, pageHeight) {
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.primary);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(18);
     pdf.text("TRANSCRIPT", this.margins.left, startY);
@@ -308,11 +310,11 @@ processMarkdownContent(content) {
   if (!content) return "No content available.";
 
   const renderer = new marked.Renderer();
- renderer.heading = (text, level) => {
-    const cleanText = text.replace(/^#+\s*/, '');
-    return `${cleanText}\n\n`;
+  renderer.heading = (text, level) => {
+    const cleanText = text.replace(/^#+\s*/, '').trim();
+    return `HEADING_${level}:${cleanText}\n\n`;
   };
-  renderer.paragraph = (text) => `${text}\\n\\n`;
+  renderer.paragraph = (text) => `${text}\n\n`;
   renderer.strong = (text) => `**${text}**`;
   renderer.em = (text) => `*${text}*`;
   renderer.list = (body, ordered) => `${body}\n`;
@@ -340,7 +342,6 @@ processMarkdownContent(content) {
 
   processedContent = processedContent
     .replace(/&quot;/g, '"')    
-    .replace(/%/g, '')                      
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -350,11 +351,16 @@ processMarkdownContent(content) {
     .replace(/%20/g, ' ')
     .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
       try {
-        return String.fromCharCode(parseInt(hex, 16));
+        const decoded = String.fromCharCode(parseInt(hex, 16));
+        if (decoded.match(/[a-zA-Z0-9\s\-_.,!?;:()]/)) {
+          return decoded;
+        }
+        return match;
       } catch (e) {
         return match; // og if decoding fails
       }
     })
+    .replace(/(?<!%[0-9A-Fa-f])%(?![0-9A-Fa-f]{2})/g, '')
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .trim();
 
@@ -364,57 +370,88 @@ processMarkdownContent(content) {
   addFormattedText(pdf, content, startY, contentWidth, pageWidth, pageHeight) {
     let currentY = startY;
     const lineHeight = 16;
-    const paragraphSpacing = 8;
+    const paragraphSpacing = 12;
     const lines = content.split('\n');
     
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i].trim();
-      
+
       if (!line) {
         currentY += paragraphSpacing;
         continue;
       }
 
-      if (currentY + 30 > pageHeight - this.margins.bottom) {
+      if (currentY + 40 > pageHeight - this.margins.bottom) {
         pdf.addPage();
         currentY = this.margins.top;
       }
-
+      const headingMatch = line.match(/^HEADING_(\d+):(.+)$/);
       const isMarkdownHeader = line.match(/^#{1,6}\s+/);
       const isAllCapsHeader = /^[A-Z][A-Z\s]{8,}$/.test(line) && line.length < 60 && !line.includes('.') && !line.includes(',');
       const isSectionHeader = line.match(/^(SECTION|CHAPTER|TITLE|PART)\s+[IVX\d]+/i) || 
-                              line.match(/^(Executive Summary|Bill Details|Policy Analysis|Overall Assessment|Potential Benefits|Potential Concerns)$/);
+                              line.match(/^(Executive Summary|Bill Details|Policy Analysis|Overall Assessment|Potential Benefits|Potential Concerns|Key Provisions|Implementation Timeline|Fiscal Impact|Legal Framework)$/i);
       
-      const isHeader = isMarkdownHeader || isAllCapsHeader || isSectionHeader;
+      const isHeader = headingMatch || isMarkdownHeader || isAllCapsHeader || isSectionHeader;
       
       if (isHeader) {
+        let headerText;
+        let fontSize;
 
-        const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
         
-        currentY += 20; 
+        if (headingMatch) {
+          const level = parseInt(headingMatch[1]);
+          headerText = headingMatch[2].trim();
+          fontSize = Math.max(16, 20 - (level * 2));
+        } else {
+          headerText = line.replace(/^#+\s*/, '').trim();
+          fontSize = 16;
+        }
+        currentY += 25; 
         
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(14);
+        pdf.setFontSize(fontSize);
         pdf.setTextColor(...this.colors.primary);
         
         const wrappedHeader = pdf.splitTextToSize(headerText, contentWidth);
         pdf.text(wrappedHeader, this.margins.left, currentY);
-        currentY += wrappedHeader.length * 18 + 10;
-        
+        if (fontSize >= 16) {
+          const headerWidth = Math.max(...wrappedHeader.map(h => pdf.getStringUnitWidth(h) * fontSize / pdf.internal.scaleFactor));
+          pdf.setDrawColor(...this.colors.primary);
+          pdf.setLineWidth(1);
+          pdf.line(this.margins.left, currentY + 5, this.margins.left + headerWidth, currentY + 5);
+        }
+        currentY += wrappedHeader.length * (fontSize + 4) + 15;
+
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(11);
-        pdf.setTextColor(...this.colors.dark);
+        pdf.setTextColor(...this.colors.text);
+        continue;
+      }
+
+      if (line.startsWith('• ')) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.setTextColor(...this.colors.text);
+        
+        const bulletText = line.substring(2).trim();
+        const wrappedBullet = pdf.splitTextToSize(bulletText, contentWidth - 20);
+        
+        pdf.text('•', this.margins.left, currentY);
+        
+        // indent
+        pdf.text(wrappedBullet, this.margins.left + 15, currentY);
+        currentY += wrappedBullet.length * lineHeight + 6;
         continue;
       }
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      pdf.setTextColor(...this.colors.dark);
+      pdf.setgiFontSize(11);
+      pdf.setTextColor(...this.colors.text);
 
       line = this.processInlineFormatting(pdf, line);
       
       const wrappedLines = pdf.splitTextToSize(line, contentWidth);
       pdf.text(wrappedLines, this.margins.left, currentY);
-      currentY += wrappedLines.length * lineHeight + 4;
+      currentY += wrappedLines.length * lineHeight + 8;
     }
 
     return currentY;
@@ -423,21 +460,27 @@ processMarkdownContent(content) {
   processInlineFormatting(pdf, text) {
     // For now, remove markdown formatting for cleaner PDF
     return text
-      .replace(/^#+\s*/, '')              // Remove hashtags if it somehow didn't do it yet
-      .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold 
-      .replace(/\*([^*]+)\*/g, '$1')      // Remove italic 
-      .replace(/`([^`]+)`/g, '[$1]')      // Code to brackets
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links to text only
-      .replace(/^[-*+]\s+/g, '• ')        // Consistent bullet points
-      .replace(/^\d+\.\s+/g, '• ')        // Numbered lists to bullets
-      .replace(/^>\s*/g, '"')             // Blockquotes to quotes
-      .replace(/^["']\s*/, '"')           // Normalize quote marks
-      .replace(/\s*["']$/, '"')           // Normalize ending quotes
-      .replace(/\s+/g, ' ')               // Normalize whitespace
+      .replace(/^#+\s*/, '')                    // remove remaining hashtags
+      .replace(/\*\*([^*]+)\*\*/g, '$1')        // remove bold markdown but keep text
+      .replace(/\*([^*]+)\*/g, '$1')            // remove italic markdown but keep text
+      .replace(/`([^`]+)`/g, '[$1]')            
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // remove urls
+      .replace(/^[-*+]\s+/g, '• ')              //  bullet points
+      .replace(/^\d+\.\s+/g, '• ')              // numbered lists to bullets
+      .replace(/^>\s*/g, '"')                   // blockquotes to quotes
+      .replace(/^["']\s*/, '"')                 
+      .replace(/\s*["']$/, '"')                 
+      .replace(/\s+/g, ' ')                     //  whitespace
+      .replace(/[""]/g, '"')                    //  smart quotes to regular quotes
+      .replace(/['']/g, "'")                    //  smart apostrophes
+      .replace(/–/g, '-')                       //  en-dash to hyphen
+      .replace(/—/g, '-')                       //  em-dash to hyphen
+      .replace(/…/g, '...')                     //  ellipsis
+      .replace(/[\u2000-\u200B\u2028-\u2029]/g, ' ') // Remove unicode spaces
       .trim();
   }
 
-  addFooter(pdf, data) {
+  addFooter(pdf, _data) {
     const totalPages = pdf.internal.getNumberOfPages();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
