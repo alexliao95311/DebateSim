@@ -4,13 +4,13 @@ import { marked } from "marked";
 class PDFGenerator {
   constructor() {
     this.colors = {
-      primary: [74, 144, 226],      // #4a90e2
-      secondary: [108, 117, 125],   // #6c757d
-      success: [40, 167, 69],       // #28a745
-      warning: [255, 193, 7],       // #ffc107
-      danger: [220, 53, 69],        // #dc3545
-      dark: [52, 58, 64],           // #343a40
-      light: [248, 249, 250],       // #f8f9fa
+      primary: [74, 144, 226],      // #4a90e2 - Professional blue
+      secondary: [108, 117, 125],   // #6c757d - Neutral gray
+      success: [40, 167, 69],       // #28a745 - Success green
+      warning: [255, 193, 7],       // #ffc107 - Warning amber
+      danger: [220, 53, 69],        // #dc3545 - Error red
+      dark: [52, 58, 64],           // #343a40 - Dark text
+      light: [248, 249, 250],       // #f8f9fa - Light background
       white: [255, 255, 255],
       black: [0, 0, 0],
       gray: [108, 117, 125]
@@ -369,7 +369,7 @@ processMarkdownContent(content) {
     
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i].trim();
-      
+
       if (!line) {
         currentY += paragraphSpacing;
         continue;
@@ -436,7 +436,7 @@ processMarkdownContent(content) {
       .trim();
   }
 
-  addFooter(pdf, data) {
+  addFooter(pdf, _data) {
     const totalPages = pdf.internal.getNumberOfPages();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
