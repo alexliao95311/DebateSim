@@ -342,7 +342,6 @@ processMarkdownContent(content) {
 
   processedContent = processedContent
     .replace(/&quot;/g, '"')    
-    .replace(/%/g, '')                      
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -352,11 +351,16 @@ processMarkdownContent(content) {
     .replace(/%20/g, ' ')
     .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
       try {
-        return String.fromCharCode(parseInt(hex, 16));
+        const decoded = String.fromCharCode(parseInt(hex, 16));
+        if (decoded.match(/[a-zA-Z0-9\s\-_.,!?;:()]/)) {
+          return decoded;
+        }
+        return match;
       } catch (e) {
         return match; // og if decoding fails
       }
     })
+    .replace(/(?<!%[0-9A-Fa-f])%(?![0-9A-Fa-f]{2})/g, '')
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .trim();
 
