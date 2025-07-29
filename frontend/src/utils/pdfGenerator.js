@@ -214,7 +214,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   }
 
   addAnalysisContent(pdf, content, startY, contentWidth, pageWidth, pageHeight) {
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.primary);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(18);
     pdf.text("DETAILED ANALYSIS", this.margins.left, startY);
@@ -268,7 +268,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     pdf.setFillColor(...this.colors.light);
     pdf.setDrawColor(...this.colors.gray);
     pdf.rect(this.margins.left, startY, contentWidth, 80, 'FD');
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.text);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(14);
     pdf.text("DEBATE CONFIGURATION", this.margins.left + 15, startY + 20);
@@ -294,7 +294,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   }
 
   addDebateTranscript(pdf, transcript, startY, contentWidth, pageWidth, pageHeight) {
-    pdf.setTextColor(...this.colors.dark);
+    pdf.setTextColor(...this.colors.primary);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(18);
     pdf.text("TRANSCRIPT", this.margins.left, startY);
