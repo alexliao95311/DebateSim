@@ -24,7 +24,6 @@ class PDFGenerator {
     };
   }
 
- 
   generateAnalysisPDF(analysisData) {
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -78,55 +77,56 @@ class PDFGenerator {
     pdf.save(fileName);
   }
 
-  // analysis pdf's
-  addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
-    const headerHeight = data.model ? 70 : 55; 
-    pdf.setFillColor(...this.colors.primary);
-    pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
+// Analysis pdf's
+addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
+  let maxTitleFontSize = 24;
+  const headerHeightBase = data.model ? 70 : 55;
+  const title = "BILL ANALYSIS REPORT";
+  let titleFontSize = maxTitleFontSize;
 
-    pdf.setTextColor(...this.colors.white);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(24);
-    const title = "BILL ANALYSIS REPORT";
-    const titleWidth = pdf.getStringUnitWidth(title) * 24 / pdf.internal.scaleFactor;
-    pdf.text(title, (pageWidth - titleWidth) / 2, startY - 15);
-    
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'normal');
-    const subtitle = data.topic || "Legislative Analysis";
-    const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
-    pdf.text(subtitleLines, this.margins.left + 20, startY + 10);
-    
-    pdf.setFontSize(10);
-    const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
-    
-    if (data.model) {
-      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
-    }
-    
-    return startY + headerHeight + 25;
+  pdf.setFillColor(...this.colors.primary);
+  pdf.rect(0, 0, pageWidth, startY + headerHeightBase, 'F');
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(...this.colors.white);
+
+  let titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
+  while (titleWidth > pageWidth - 40 && titleFontSize > 14) {
+    titleFontSize -= 1;
+    titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
+  }
+  pdf.setFontSize(titleFontSize);
+  pdf.text(title, (pageWidth - titleWidth) / 2, startY - 15);
+
+  const subtitle = (data.topic || "Legislative Analysis").replace(/["'%]/g, '');
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(14);
+  const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
+  pdf.text(subtitleLines, this.margins.left + 20, startY + 10);
+
+  pdf.setFontSize(10);
+  const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
+
+  if (data.model) {
+    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
   }
 
-  //grades
+  return startY + headerHeightBase + 25;
+}
+
+  // grades
   addGradesSection(pdf, grades, startY, contentWidth, pageWidth, pageHeight) {
     if (startY + 300 > pageHeight - this.margins.bottom) {
       pdf.addPage();
       startY = this.margins.top;
     }
-
-    pdf.setTextColor(...this.colors.dark);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
-    pdf.text("ANALYSIS GRADES", this.margins.left, startY);
-    
-    startY += 35;
 
     const gradeCategories = [
       { 
@@ -224,7 +224,6 @@ class PDFGenerator {
     return this.addFormattedText(pdf, processedContent, startY, contentWidth, pageWidth, pageHeight);
   }
 
-  
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
     const headerHeight = data.model ? 70 : 55;
     pdf.setFillColor(...this.colors.primary);
@@ -256,11 +255,6 @@ class PDFGenerator {
     pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
     
     return startY + 80;
-    if (data.model) {
-      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
-    }
-    
-    return startY + headerHeight + 25;
   }
 
   addDebateSetup(pdf, data, startY, contentWidth, pageWidth, pageHeight) {
@@ -272,12 +266,10 @@ class PDFGenerator {
     pdf.setFillColor(...this.colors.light);
     pdf.setDrawColor(...this.colors.gray);
     pdf.rect(this.margins.left, startY, contentWidth, 80, 'FD');
-
     pdf.setTextColor(...this.colors.dark);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(14);
     pdf.text("DEBATE CONFIGURATION", this.margins.left + 15, startY + 20);
-
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(11);
     
@@ -299,7 +291,6 @@ class PDFGenerator {
     return startY + 100;
   }
 
- 
   addDebateTranscript(pdf, transcript, startY, contentWidth, pageWidth, pageHeight) {
     pdf.setTextColor(...this.colors.dark);
     pdf.setFont('helvetica', 'bold');
@@ -313,64 +304,38 @@ class PDFGenerator {
     return this.addFormattedText(pdf, processedTranscript, startY, contentWidth, pageWidth, pageHeight);
   }
 
-  processMarkdownContent(content) {
-    if (!content) return "No content available.";
+processMarkdownContent(content) {
+  if (!content) return "No content available.";
 
-    const renderer = new marked.Renderer();
-    
-    // removes the random hashtags 
-    renderer.heading = (text, level) => {
-      const cleanText = text.replace(/^#+\s*/, '');
-      return `${cleanText}\n\n`;
-    };
-    
-    renderer.paragraph = (text) => `${text}\n\n`;
-    renderer.strong = (text) => `**${text}**`;
-    renderer.em = (text) => `*${text}*`;
-    renderer.list = (body, ordered) => `${body}\n`;
-    renderer.listitem = (text) => {
-      const cleanText = text.replace(/^[-*+•]\s*/, '').trim();
-      return `• ${cleanText}\n`;
-    };
-    renderer.code = (code) => `[${code}]`;
-    renderer.codespan = (code) => `[${code}]`;
-    renderer.blockquote = (quote) => {
-      const cleanQuote = quote.replace(/^["'>\s]*/, '').replace(/["'>\s]*$/, '').trim();
-      return `"${cleanQuote}"\n\n`;
-    };
-    renderer.hr = () => `${'─'.repeat(50)}\n\n`;
-    renderer.br = () => '\n';
-    renderer.link = (href, title, text) => `${text} (${href})`;
+  const renderer = new marked.Renderer();
+  renderer.heading = (text, level) => `${text.replace(/^#+\\s*/, '')}\\n\\n`;
+  renderer.paragraph = (text) => `${text}\\n\\n`;
+  renderer.strong = (text) => `**${text}**`;
+  renderer.em = (text) => `*${text}*`;
+  renderer.listitem = (text) => `• ${text.replace(/^[-*+•]\\s*/, '')}\\n`;
+  renderer.blockquote = (quote) => `${quote.trim()}\\n\\n`;
 
-    marked.setOptions({
-      renderer: renderer,
-      breaks: true,
-      gfm: true
-    });
+  marked.setOptions({
+    renderer: renderer,
+    breaks: true,
+    gfm: true
+  });
 
-    let processedContent = marked(content);
-    
-    processedContent = processedContent
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#39;/g, "'")
-      .replace(/&#x27;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-      .replace(/%20/g, ' ')  // Fix URL spaces
-      .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
-        try {
-          return String.fromCharCode(parseInt(hex, 16));
-        } catch (e) {
-          return match; // Return original if decoding fails
-        }
-      })
-      .replace(/\n\s*\n\s*\n/g, '\n\n')
-      .trim();
+  let processedContent = marked(content);
 
-    return processedContent;
-  }
+  processedContent = processedContent
+    .replace(/&quot;|&#39;|&#x27;|["']/g, '') 
+    .replace(/%/g, '')                      
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/%20/g, ' ')
+    .replace(/\\n\\s*\\n\\s*\\n/g, '\\n\\n')
+    .trim();
+
+  return processedContent;
+}
 
   addFormattedText(pdf, content, startY, contentWidth, pageWidth, pageHeight) {
     let currentY = startY;
@@ -505,5 +470,4 @@ class PDFGenerator {
     return `${type}_${sanitizedTopic}_${timestamp}.pdf`;
   }
 }
-
 export default new PDFGenerator();
