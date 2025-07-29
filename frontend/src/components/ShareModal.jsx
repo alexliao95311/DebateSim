@@ -1,16 +1,40 @@
 // components/ShareModal.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { shareTranscript, unshareTranscript } from "../firebase/shareTranscript";
 import { marked } from 'marked';
 import PDFGenerator from "../utils/pdfGenerator";
 import "./ShareModal.css";
 
 function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
-  const [shareUrl, setShareUrl] = useState(transcript?.shareId ? `${window.location.origin}/shared/${transcript.shareId}` : "");
+  const [shareUrl, setShareUrl] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [pdfError, setPdfError] = useState("");
+
+  // Reset share URL when transcript changes
+  useEffect(() => {
+    if (transcript?.shareId) {
+      setShareUrl(`${window.location.origin}/shared/${transcript.shareId}`);
+    } else {
+      setShareUrl("");
+    }
+    // Reset other states when transcript changes
+    setError("");
+    setCopySuccess(false);
+    setPdfError("");
+  }, [transcript?.id, transcript?.shareId]);
+
+  // Reset states when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Clear temporary states when modal closes
+      setError("");
+      setCopySuccess(false);
+      setPdfError("");
+      setIsSharing(false);
+    }
+  }, [isOpen]);
 
   const handleShare = async () => {
     setIsSharing(true);
