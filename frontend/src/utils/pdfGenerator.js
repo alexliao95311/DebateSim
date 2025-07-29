@@ -24,7 +24,6 @@ class PDFGenerator {
     };
   }
 
- 
   generateAnalysisPDF(analysisData) {
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -78,7 +77,7 @@ class PDFGenerator {
     pdf.save(fileName);
   }
 
-  // analysis pdf's
+  // Analysis pdf's
   addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     const headerHeight = data.model ? 70 : 55; 
     pdf.setFillColor(...this.colors.primary);
@@ -114,7 +113,7 @@ class PDFGenerator {
     return startY + headerHeight + 25;
   }
 
-  //grades
+  // grades
   addGradesSection(pdf, grades, startY, contentWidth, pageWidth, pageHeight) {
     if (startY + 300 > pageHeight - this.margins.bottom) {
       pdf.addPage();
@@ -217,7 +216,6 @@ class PDFGenerator {
     return this.addFormattedText(pdf, processedContent, startY, contentWidth, pageWidth, pageHeight);
   }
 
-  
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
     const headerHeight = data.model ? 70 : 55;
     pdf.setFillColor(...this.colors.primary);
@@ -260,12 +258,10 @@ class PDFGenerator {
     pdf.setFillColor(...this.colors.light);
     pdf.setDrawColor(...this.colors.gray);
     pdf.rect(this.margins.left, startY, contentWidth, 80, 'FD');
-
     pdf.setTextColor(...this.colors.dark);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(14);
     pdf.text("DEBATE CONFIGURATION", this.margins.left + 15, startY + 20);
-
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(11);
     
@@ -287,7 +283,6 @@ class PDFGenerator {
     return startY + 100;
   }
 
- 
   addDebateTranscript(pdf, transcript, startY, contentWidth, pageWidth, pageHeight) {
     pdf.setTextColor(...this.colors.dark);
     pdf.setFont('helvetica', 'bold');
@@ -303,7 +298,6 @@ class PDFGenerator {
 
   processMarkdownContent(content) {
     if (!content) return "No content available.";
-
     const renderer = new marked.Renderer();
     
     // removes the random hashtags 
@@ -492,5 +486,4 @@ class PDFGenerator {
     return `${type}_${sanitizedTopic}_${timestamp}.pdf`;
   }
 }
-
 export default new PDFGenerator();
