@@ -1474,32 +1474,11 @@ const Legislation = ({ user }) => {
       {/* Modal to view selected history transcript */}
       {selectedHistory && (
         <div className="debatesim-history-modal" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 2100,
-          backdropFilter: 'blur(5px)',
-          padding: '2rem'
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)', display: 'flex',
+          justifyContent: 'center', alignItems: 'center', zIndex: 2100
         }}>
-          <div className="debatesim-modal-content" style={{
-            background: 'rgba(30, 41, 59, 0.95)',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '900px',
-            maxHeight: 'calc(100vh - 4rem)',
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            animation: 'slideUp 0.3s ease-out',
-            margin: 'auto',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+          <div className="debatesim-modal-content">
             <div className="debatesim-modal-header" style={{
               display: 'flex',
               justifyContent: 'space-between',
