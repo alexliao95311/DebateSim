@@ -370,7 +370,7 @@ processMarkdownContent(content) {
   addFormattedText(pdf, content, startY, contentWidth, pageWidth, pageHeight) {
     let currentY = startY;
     const lineHeight = 16;
-    const paragraphSpacing = 8;
+    const paragraphSpacing = 12;
     const lines = content.split('\n');
     
     for (let i = 0; i < lines.length; i++) {
@@ -381,22 +381,31 @@ processMarkdownContent(content) {
         continue;
       }
 
-      if (currentY + 30 > pageHeight - this.margins.bottom) {
+      if (currentY + 40 > pageHeight - this.margins.bottom) {
         pdf.addPage();
         currentY = this.margins.top;
       }
-
+      const headingMatch = line.match(/^HEADING_(\d+):(.+)$/);
       const isMarkdownHeader = line.match(/^#{1,6}\s+/);
       const isAllCapsHeader = /^[A-Z][A-Z\s]{8,}$/.test(line) && line.length < 60 && !line.includes('.') && !line.includes(',');
       const isSectionHeader = line.match(/^(SECTION|CHAPTER|TITLE|PART)\s+[IVX\d]+/i) || 
-                              line.match(/^(Executive Summary|Bill Details|Policy Analysis|Overall Assessment|Potential Benefits|Potential Concerns)$/);
+                              line.match(/^(Executive Summary|Bill Details|Policy Analysis|Overall Assessment|Potential Benefits|Potential Concerns|Key Provisions|Implementation Timeline|Fiscal Impact|Legal Framework)$/i);
       
-      const isHeader = isMarkdownHeader || isAllCapsHeader || isSectionHeader;
+      const isHeader = headingMatch || isMarkdownHeader || isAllCapsHeader || isSectionHeader;
       
       if (isHeader) {
-        const headerText = line.replace(/^#+\s*/, ''); // Remove any hashtags
+        let headerText;
+        let fontSize;
         
-        currentY += 20; 
+        if (headingMatch) {
+          const level = parseInt(headingMatch[1]);
+          headerText = headingMatch[2].trim();
+          fontSize = Math.max(16, 20 - (level * 2));
+        } else {
+          headerText = line.replace(/^#+\s*/, '').trim();
+          fontSize = 16;
+        }
+        currentY += 25; 
         
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(14);
