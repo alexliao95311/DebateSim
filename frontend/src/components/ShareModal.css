@@ -16,7 +16,9 @@
 }
 
 .share-modal-content {
-  background: white;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
@@ -25,6 +27,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease-out;
   margin: auto;
+  color: #f8fafc;
 }
 
 @keyframes slideUp {
@@ -43,12 +46,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e0e7ee;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  background: transparent;
 }
 
 .share-modal-header h3 {
   margin: 0;
-  color: #333 !important;
+  color: #f8fafc !important;
   font-size: 1.3rem;
   font-weight: 600;
   text-align: center;
@@ -58,7 +62,7 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #666;
+  color: #94a3b8;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
@@ -66,25 +70,43 @@
 }
 
 .close-button:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: rgba(71, 85, 105, 0.3);
+  color: #f8fafc;
 }
 
 .share-modal-body {
   padding: 1.5rem;
 }
 
+/* Ensure all text in share modal is white */
+.share-modal-content * {
+  color: #f8fafc;
+}
+
+/* Override for specific elements that need different colors */
+.error-message {
+  color: #fca5a5 !important;
+}
+
+.transcript-meta {
+  color: #94a3b8 !important;
+}
+
+.share-actions p {
+  color: #cbd5e1 !important;
+}
+
 .transcript-preview {
-  background: #f8f9fa;
+  background: rgba(30, 41, 59, 0.6);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.5rem;
-  border: 1px solid #e0e7ee;
+  border: 1px solid rgba(71, 85, 105, 0.3);
 }
 
 .transcript-preview h4 {
   margin: 0 0 0.5rem 0;
-  color: #333;
+  color: #f8fafc;
   font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
@@ -92,32 +114,35 @@
 
 .transcript-meta {
   margin: 0;
-  color: #666;
+  color: #94a3b8;
   font-size: 0.9rem;
 }
 
+.transcript-meta.centered {
+  text-align: center;
+}
+
 .error-message {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
+  color: #fca5a5;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
   border-radius: 6px;
   padding: 0.75rem;
   margin-bottom: 1rem;
   font-size: 0.9rem;
   text-align: center;
-
 }
 
 .download-section {
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e0e7ee;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
 }
 
 .download-section h4 {
   margin: 0 0 1rem 0;
-  color: #333;
+  color: #f8fafc;
   font-size: 1.1rem;
   font-weight: 600;
 }
@@ -150,13 +175,13 @@
 
 .share-actions h4 {
   margin: 0 0 1rem 0;
-  color: #333;
+  color: #f8fafc;
   font-size: 1.1rem;
   font-weight: 600;
 }
 
 .share-actions p {
-  color: #666;
+  color: #cbd5e1;
   margin-bottom: 1.5rem;
   line-height: 1.5;
 }
@@ -197,12 +222,18 @@
 .share-link-input {
   flex: 1;
   padding: 0.75rem;
-  border: 2px solid #e0e7ee;
+  border: 2px solid rgba(71, 85, 105, 0.3);
   border-radius: 6px;
   font-size: 0.9rem;
-  color: #333;
-  background: #f8f9fa;
+  color: #f8fafc;
+  background: rgba(30, 41, 59, 0.6);
   font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.share-link-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
 .copy-button {
@@ -223,69 +254,7 @@
   transform: translateY(-1px);
 }
 
-.social-share-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
 
-.social-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: white;
-}
-
-.social-button span {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-.social-button.twitter {
-  background: #1da1f2;
-}
-
-.social-button.twitter:hover {
-  background: #1a91da;
-}
-
-.social-button.facebook {
-  background: #1877f2;
-}
-
-.social-button.facebook:hover {
-  background: #166fe5;
-}
-
-.social-button.linkedin {
-  background: #0077b5;
-}
-
-.social-button.linkedin:hover {
-  background: #006ca3;
-}
-
-.social-button.reddit {
-  background: #ff4500;
-}
-
-.social-button.reddit:hover {
-  background: #e63e00;
-}
-
-.social-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
 
 
 /* Mobile responsiveness */
@@ -306,9 +275,5 @@
   
   .share-link-input {
     margin-bottom: 0.5rem;
-  }
-  
-  .social-share-buttons {
-    grid-template-columns: 1fr;
   }
 }

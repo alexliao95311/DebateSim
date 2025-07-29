@@ -10,6 +10,11 @@
   align-items: center !important;
   justify-content: flex-start !important;
   position: relative !important;
+  transition: padding-left 0.3s ease !important;
+}
+
+.home-container.home-sidebar-open {
+  padding-left: 320px !important;
 }
 
 /* Enhanced hero section */
@@ -169,6 +174,28 @@
 
 .home-header-right {
   justify-content: flex-end !important;
+}
+
+/* History button styles */
+.home-history-button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  background: rgba(74, 144, 226, 0.1) !important;
+  color: #4a90e2 !important;
+  border: 1px solid rgba(74, 144, 226, 0.3) !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.home-history-button:hover {
+  background: rgba(74, 144, 226, 0.2) !important;
+  border-color: #4a90e2 !important;
+  transform: translateY(-1px) !important;
 }
 
 .home-user-section {
