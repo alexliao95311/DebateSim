@@ -308,12 +308,27 @@ processMarkdownContent(content) {
   if (!content) return "No content available.";
 
   const renderer = new marked.Renderer();
-  renderer.heading = (text, level) => `${text.replace(/^#+\\s*/, '')}\\n\\n`;
+ renderer.heading = (text, level) => {
+    const cleanText = text.replace(/^#+\s*/, '');
+    return `${cleanText}\n\n`;
+  };
   renderer.paragraph = (text) => `${text}\\n\\n`;
   renderer.strong = (text) => `**${text}**`;
   renderer.em = (text) => `*${text}*`;
-  renderer.listitem = (text) => `• ${text.replace(/^[-*+•]\\s*/, '')}\\n`;
-  renderer.blockquote = (quote) => `${quote.trim()}\\n\\n`;
+  renderer.list = (body, ordered) => `${body}\n`;
+  renderer.listitem = (text) => {
+    const cleanText = text.replace(/^[-*+•]\s*/, '').trim();
+    return `• ${cleanText}\n`;
+  };
+  renderer.code = (code) => `[${code}]`;
+  renderer.codespan = (code) => `[${code}]`;
+  renderer.blockquote = (quote) => {
+    const cleanQuote = quote.replace(/^["'>\s]*/, '').replace(/["'>\s]*$/, '').trim();
+    return `"${cleanQuote}"\n\n`;
+  };
+  renderer.hr = () => `${'─'.repeat(50)}\n\n`;
+  renderer.br = () => '\n';
+  renderer.link = (href, title, text) => `${text} (${href})`;
 
   marked.setOptions({
     renderer: renderer,
@@ -324,14 +339,23 @@ processMarkdownContent(content) {
   let processedContent = marked(content);
 
   processedContent = processedContent
-    .replace(/&quot;|&#39;|&#x27;|["']/g, '') 
+    .replace(/&quot;/g, '"')    
     .replace(/%/g, '')                      
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/%20/g, ' ')
-    .replace(/\\n\\s*\\n\\s*\\n/g, '\\n\\n')
+    .replace(/%([0-9A-Fa-f]{2})/g, (match, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16));
+      } catch (e) {
+        return match; // og if decoding fails
+      }
+    })
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
     .trim();
 
   return processedContent;
