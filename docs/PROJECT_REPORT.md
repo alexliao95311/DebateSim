@@ -523,4 +523,4 @@ Through continued development and community engagement, DebateSim will play an i
 - **Last Updated**: July 2025
 - **Authors**: DebateSim Development Team
 - **License**: MIT License
-- **Contact**: [Contact Information] 
+- **Contact**: smmrinal2009@gmail.com, *insert emails*
