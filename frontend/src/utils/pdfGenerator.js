@@ -444,7 +444,7 @@ processMarkdownContent(content) {
         continue;
       }
       pdf.setFont('helvetica', 'normal');
-      pdf.setgiFontSize(11);
+      pdf.setFontSize(11);
       pdf.setTextColor(...this.colors.text);
 
       line = this.processInlineFormatting(pdf, line);
