@@ -808,7 +808,7 @@ Through continued development and community engagement, DebateSim will play an i
 **Document Information:**
 - **Created**: January 2025
 - **Version**: 1.0
-- **Last Updated**: January 2025
+- **Last Updated**: July 2025
 - **Authors**: DebateSim Development Team
 - **License**: MIT License
 - **Contact**: [Contact Information] 
