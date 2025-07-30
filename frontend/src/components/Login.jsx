@@ -294,6 +294,18 @@ function Login({ onLogin }) {
             <p className="login-section-description">
               Challenge your thinking with AI-powered opponents and enhance your speaking skills
             </p>
+            
+            <div className="login-mission-section">
+              <h3 className="login-mission-title">Our Mission</h3>
+              <div className="login-mission-content">
+                <p className="login-mission-text">
+                  Today's information landscape is polarized and overwhelming. DebateSim combines AI, 
+                  real-time data, and a flexible debate system so anyone can grasp legislation and 
+                  debate effectively.
+                </p>
+              </div>
+            </div>
+
             <div className="login-stats-grid">
               <div className="login-stat-item">
                 <span className="login-stat-number">1000+</span>

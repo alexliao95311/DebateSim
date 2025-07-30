@@ -454,6 +454,59 @@ div.login-hero-actions {
   line-height: 1.6 !important;
 }
 
+/* Mission Section Styling */
+.login-mission-section {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(30, 41, 59, 0.1) 100%) !important;
+  backdrop-filter: blur(15px) !important;
+  border-radius: 20px !important;
+  padding: 2.5rem !important;
+  margin: 2rem 0 !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.login-mission-section::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #60a5fa, transparent) !important;
+}
+
+.login-mission-title {
+  font-size: 1.8rem !important;
+  font-weight: 600 !important;
+  color: #60a5fa !important;
+  margin-bottom: 1.5rem !important;
+  text-align: center !important;
+  letter-spacing: -0.01em !important;
+}
+
+.login-mission-content {
+  text-align: center !important;
+}
+
+.login-mission-text {
+  font-size: 1.2rem !important;
+  color: #ffffff !important;
+  line-height: 1.7 !important;
+  margin-bottom: 1rem !important;
+  font-style: italic !important;
+  max-width: 600px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.login-mission-attribution {
+  font-size: 1rem !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  opacity: 0.8 !important;
+}
+
 .login-stats-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
