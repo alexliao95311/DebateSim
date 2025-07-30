@@ -11,6 +11,171 @@ import {
   MessageSquare 
 } from "lucide-react";
 import "./HistorySidebar.css";
+import "./Legislation.css"; // For grading section styles
+
+// Circular Progress Component for grading display
+const CircularProgress = ({ percentage, size = 80, strokeWidth = 8, color = '#4a90e2' }) => {
+  const radius = (size - strokeWidth) / 2;
+  const strokeDasharray = 2 * Math.PI * radius;
+  const strokeDashoffset = strokeDasharray - (percentage / 100) * strokeDasharray;
+
+  return (
+    <div className="circular-progress" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          stroke="#e2e8f0"
+          fill="transparent"
+        />
+        <circle
+          className="progress-fill"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          style={{ stroke: color }}
+        />
+      </svg>
+      <div className="progress-text" style={{ color }}>
+        {Math.round(percentage)}%
+      </div>
+    </div>
+  );
+};
+
+// Grade Item Component
+const GradeItem = ({ label, percentage, description, tooltip, icon, category, isOverall = false, showTooltip = true }) => {
+  const getGradeClass = (score) => {
+    if (score >= 90) return 'grade-excellent';
+    if (score >= 70) return 'grade-good';
+    if (score >= 50) return 'grade-fair';
+    if (score >= 30) return 'grade-poor';
+    return 'grade-very-poor';
+  };
+
+  const getGradeColor = (score) => {
+    if (score >= 90) return '#28a745';
+    if (score >= 70) return '#20c997';
+    if (score >= 50) return '#ffc107';
+    if (score >= 30) return '#fd7e14';
+    return '#dc3545';
+  };
+
+  const gradeClass = getGradeClass(percentage);
+  const gradeColor = getGradeColor(percentage);
+
+  return (
+    <div className={`grade-item ${gradeClass} ${category} ${isOverall ? 'overall' : ''}`}>
+      <div className="grade-header">
+        <span className="grade-icon">{icon}</span>
+        <div className="grade-label">{label}</div>
+      </div>
+      <CircularProgress 
+        percentage={percentage} 
+        size={isOverall ? 90 : 75}
+        strokeWidth={isOverall ? 8 : 6}
+        color={gradeColor}
+      />
+      <div className="grade-description">{description}</div>
+      {tooltip && showTooltip && (
+        <div className="tooltip">
+          {tooltip}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bill Grading Section Component
+const BillGradingSection = ({ grades }) => {
+  const gradingCriteria = {
+    economicImpact: {
+      label: 'Economic Impact',
+      description: 'Fiscal responsibility & benefits',
+      tooltip: 'Evaluates the bill\'s economic benefits, cost-effectiveness, and fiscal impact on government budgets and the economy.',
+      icon: '💰',
+      category: 'moderate',
+      order: 1
+    },
+    publicBenefit: {
+      label: 'Public Benefit',
+      description: 'Benefits to citizens',
+      tooltip: 'Assesses how much the bill addresses public needs and benefits different segments of the population.',
+      icon: '👥',
+      category: 'positive',
+      order: 2
+    },
+    feasibility: {
+      label: 'Implementation Feasibility',
+      description: 'Practicality of execution',
+      tooltip: 'Examines whether the bill can be realistically implemented with available resources and existing infrastructure.',
+      icon: '🛠',
+      category: 'caution',
+      order: 3
+    },
+    legalSoundness: {
+      label: 'Legal Soundness',
+      description: 'Constitutional compliance',
+      tooltip: 'Reviews the bill\'s compliance with constitutional principles and existing legal frameworks.',
+      icon: '⚖️',
+      category: 'positive',
+      order: 4
+    },
+    effectiveness: {
+      label: 'Goal Effectiveness',
+      description: 'Achievement of stated objectives',
+      tooltip: 'Measures how well the bill addresses its stated problems and achieves its intended objectives.',
+      icon: '🎯',
+      category: 'moderate',
+      order: 5
+    },
+    overall: {
+      label: 'Overall Rating',
+      description: 'Comprehensive assessment',
+      tooltip: 'A weighted average of all criteria with emphasis on effectiveness and public benefit.',
+      icon: '📊',
+      category: 'overall',
+      order: 6
+    }
+  };
+  
+  return (
+    <div className="grading-section">
+      <div className="grading-header">
+        <h2>Bill Analysis Grades</h2>
+        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+      </div>
+      
+      <div className="grading-grid">
+        {Object.entries(gradingCriteria)
+          .sort(([,a], [,b]) => a.order - b.order)
+          .map(([key, criteria]) => {
+            const isOverall = key === 'overall';
+            const percentage = grades[key] || 0;
+            
+            return (
+              <GradeItem
+                key={key}
+                label={criteria.label}
+                percentage={percentage}
+                description={criteria.description}
+                tooltip={criteria.tooltip}
+                icon={criteria.icon}
+                category={criteria.category}
+                isOverall={isOverall}
+                showTooltip={false}
+              />
+            );
+          })}
+      </div>
+    </div>
+  );
+};
 
 function HistorySidebar({ 
   user, 
@@ -137,6 +302,13 @@ function HistorySidebar({
               </button>
             </div>
             <div className={`${componentPrefix}-transcript-viewer`}>
+              {/* Show grading section for bill analysis */}
+              {selectedHistory.activityType === 'Analyze Bill' && selectedHistory.grades && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <BillGradingSection grades={selectedHistory.grades} />
+                </div>
+              )}
+              
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
                 components={{
