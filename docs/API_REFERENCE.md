@@ -31,7 +31,7 @@ response = requests.post(f"{API_BASE}/generate-response", json={
 
 ## Core Endpoints
 
-### 🤖 AI Debate Generation
+### AI Debate Generation
 
 #### POST `/generate-response`
 Generate AI debate responses with model selection.
@@ -53,7 +53,7 @@ Generate AI debate responses with model selection.
 
 ---
 
-### ⚖️ AI Judge Evaluation
+### AI Judge Evaluation
 
 #### POST `/judge-feedback`
 Get comprehensive debate evaluation.
@@ -73,7 +73,7 @@ Get comprehensive debate evaluation.
 
 ---
 
-### 📄 Document Processing
+### Document Processing
 
 #### POST `/extract-text`
 Extract text from PDF files.
@@ -91,7 +91,7 @@ response = requests.post(f"{API_BASE}/extract-text", files=files)
 
 ---
 
-### 🏛️ Congressional Data
+### Congressional Data
 
 #### POST `/search-bills`
 Search current Congress bills with advanced filtering.
@@ -123,7 +123,7 @@ Extract bill metadata from Congress.gov URLs.
 
 ---
 
-### 📊 Legislative Analysis
+### Legislative Analysis
 
 #### POST `/analyze-bill`
 Comprehensive AI-powered bill analysis.
