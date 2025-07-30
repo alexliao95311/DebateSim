@@ -120,6 +120,6 @@ This documentation is released under the MIT License, same as the main project.
 
 ---
 
-**Last Updated**: January 2025  
+**Last Updated**: July 2025  
 **Version**: 1.0  
 **Maintained by**: DebateSim Development Team 
