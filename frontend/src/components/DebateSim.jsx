@@ -29,6 +29,7 @@ function DebateSim({ user }) {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const pdfContentRef = useRef(null);
+  const topicSectionRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
@@ -67,6 +68,20 @@ function DebateSim({ user }) {
     }
     fetchHistory();
   }, [user]);
+
+  // Auto-scroll to topic section when mode is selected
+  useEffect(() => {
+    if (mode && topicSectionRef.current) {
+      // Add a small delay to ensure the UI has updated
+      setTimeout(() => {
+        topicSectionRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }, 300);
+    }
+  }, [mode]);
 
   const modes = [
     {
@@ -223,18 +238,20 @@ function DebateSim({ user }) {
         </div>
 
         {/* Topic Input Section */}
-        <div className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.6s' }}>
+        <div ref={topicSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.6s' }}>
           <h2 className="debatesim-section-title">Enter Debate Topic</h2>
           <div className="debatesim-input-section">
-            <div className="debatesim-input-container">
-              <input
-                ref={inputRef}
-                className="debatesim-topic-input"
-                type="text"
-                placeholder="Enter a compelling debate topic..."
-                value={debateTopic}
-                onChange={(e) => setDebateTopic(e.target.value)}
-              />
+            <div className="debatesim-input-wrapper">
+              <div className="debatesim-input-container">
+                <input
+                  ref={inputRef}
+                  className="debatesim-topic-input"
+                  type="text"
+                  placeholder="Enter a compelling debate topic..."
+                  value={debateTopic}
+                  onChange={(e) => setDebateTopic(e.target.value)}
+                />
+              </div>
               {debateTopic && (
                 <button 
                   className="debatesim-clear-button" 
