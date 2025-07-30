@@ -6,7 +6,7 @@
 
 **An intelligent debate simulation platform powered by advanced AI models for democratic discourse and legislative analysis**
 
-## **[🌐 LIVE DEMO - debatesim.us](https://debatesim.us)**
+## **[LIVE DEMO - debatesim.us](https://debatesim.us)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=flat-square&logo=github)](https://github.com/alexliao95311/DebateSim)
 [![Documentation](https://img.shields.io/badge/Documentation-Technical%20Report-green?style=flat-square&logo=gitbook)](docs/PROJECT_REPORT.md)
@@ -16,15 +16,15 @@
 
 ---
 
-## 📚 **Documentation**
+## **Documentation**
 
 **Complete Technical Documentation** is available in the [`docs/`](docs/) folder:
 
-- 📋 **[Technical Project Report](docs/PROJECT_REPORT.md)** - Comprehensive analysis covering AI techniques, architecture, ethics, and evaluation
-- 🔧 **[API Reference Guide](docs/API_REFERENCE.md)** - Developer documentation with code examples and integration guides  
-- 📖 **[Documentation Hub](docs/README.md)** - Navigation guide for researchers, developers, and educators
+- **[Technical Project Report](docs/PROJECT_REPORT.md)** - Comprehensive analysis covering AI techniques, architecture, ethics, and evaluation
+- **[API Reference Guide](docs/API_REFERENCE.md)** - Developer documentation with code examples and integration guides  
+- **[Documentation Hub](docs/README.md)** - Navigation guide for researchers, developers, and educators
 
-*For quick access to specific sections, see the [Documentation Navigation Guide](docs/README.md#-quick-navigation)*
+*For quick access to specific sections, see the [Documentation Navigation Guide](docs/README.md#quick-navigation)*
 
 ---
 ## Problem Statement and Motivation
@@ -51,39 +51,39 @@ DebateSim addresses these challenges by democratizing access to high-quality deb
 
 ---
 
-## ✨ **Key Features**
+## **Key Features**
 
-### 🤖 **Multi-Model AI Integration**
+### **Multi-Model AI Integration**
 - **4+ AI Providers**: GPT-4o, Claude, Gemini, LLaMA with real-time switching
-- **Intelligent Fallbacks**: Automatic model switching for 99.5% reliability
+- **Intelligent Fallbacks**: Automatic model switching for improved reliability
 - **Specialized Prompts**: Custom-engineered for debate, analysis, and judging
 
-### 🏛️ **Legislative Analysis**
+### **Legislative Analysis**
 - **Live Congressional Data**: Real-time integration with Congress.gov API
 - **Advanced PDF Processing**: Handle 40,000+ character legislative documents
 - **Comprehensive Grading**: 6-criteria analysis with detailed scoring
 
-### ⚖️ **AI-Powered Judging**
+### **AI-Powered Judging**
 - **Objective Evaluation**: Bias-neutral assessment across multiple criteria
 - **Detailed Feedback**: Actionable insights for improvement
 - **Multi-Model Consensus**: Enhanced accuracy through model diversity
 
-### 🎯 **Debate Modes**
+### **Debate Modes**
 - **AI vs AI**: Watch sophisticated AI arguments unfold
 - **AI vs User**: Practice and improve your debate skills
 - **User vs User**: Human debates with AI moderation and analysis
 
-*📋 For detailed technical implementation, see [Technical Project Report](docs/PROJECT_REPORT.md)*
+*For detailed technical implementation, see [Technical Project Report](docs/PROJECT_REPORT.md)*
 
 ---
 
-## 🚀 **Quick Start**
+## **Quick Start**
 
 ### Try the Platform
-1. **🌐 Visit**: [debatesim.us](https://debatesim.us)
-2. **📝 Sign Up**: Create account with Google authentication
-3. **⚡ Start Debating**: Choose AI vs AI, AI vs User, or User vs User
-4. **📊 Analyze Bills**: Upload PDFs or search live Congressional data
+1. **Visit**: [debatesim.us](https://debatesim.us)
+2. **Sign Up**: Create account with Google authentication
+3. **Start Debating**: Choose AI vs AI, AI vs User, or User vs User
+4. **Analyze Bills**: Upload PDFs or search live Congressional data
 
 ### For Developers
 ```bash
@@ -97,11 +97,11 @@ curl -X POST "http://localhost:8000/generate-response" \
   }'
 ```
 
-**🔧 Complete API documentation with examples**: [API Reference Guide](docs/API_REFERENCE.md)
+**Complete API documentation with examples**: [API Reference Guide](docs/API_REFERENCE.md)
 
 ---
 
-## 🛠️ **Tech Stack & Performance**
+## **Tech Stack & Performance**
 
 ### Backend
 - **FastAPI** - High-performance async web framework
@@ -117,8 +117,8 @@ curl -X POST "http://localhost:8000/generate-response" \
 - **Professional PDF Generation** - Custom transcript styling
 
 ### Performance Metrics
-- **< 500ms** response times for cached requests
-- **99.5%** API reliability with multi-model fallbacks
+- **Fast response times** for cached requests through intelligent TTL caching
+- **Multi-model fallback** architecture for improved reliability
 - **40,000+** character document processing capability
 - **Real-time** Congressional data integration
 
@@ -126,7 +126,7 @@ curl -X POST "http://localhost:8000/generate-response" \
 
 ---
 
-## 🏗️ **Installation & Development**
+## **Installation & Development**
 
 ### Prerequisites
 - **Python 3.9+** for backend
@@ -157,11 +157,11 @@ CONGRESS_API_KEY=your_congress_key  # Optional
 FIREBASE_CONFIG=your_firebase_config
 ```
 
-*🔧 Complete setup instructions: [Development Guide](Instructions.md)*
+*Complete setup instructions: [Development Guide](Instructions.md)*
 
 ---
 
-## 🤝 **Contributing**
+## **Contributing**
 
 We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation:
 
@@ -172,31 +172,31 @@ We welcome contributions! Whether you're fixing bugs, adding features, or improv
 5. **Open** Pull Request
 
 ### Areas for Contribution
-- 🤖 **AI Integration**: New model providers or prompt improvements
-- 🏛️ **Data Sources**: Additional legislative APIs or document parsers
-- 🎨 **UI/UX**: Frontend improvements and accessibility features
-- 📚 **Documentation**: Tutorials, examples, and guides
+- **AI Integration**: New model providers or prompt improvements
+- **Data Sources**: Additional legislative APIs or document parsers
+- **UI/UX**: Frontend improvements and accessibility features
+- **Documentation**: Tutorials, examples, and guides
 
-*📋 Contribution guidelines: [Technical Report - Future Improvements](docs/PROJECT_REPORT.md#future-improvements-and-scalability)*
+*Contribution guidelines: [Technical Report - Future Improvements](docs/PROJECT_REPORT.md#future-improvements-and-scalability)*
 
 ---
 
-## 📈 **Impact & Ethics**
+## **Impact & Ethics**
 
 DebateSim is designed with responsible AI principles at its core:
 
-### 🎯 **Educational Impact**
-- **73% improvement** in legislative understanding among users
+### **Educational Impact**
+- **Improved legislative understanding** through accessible analysis tools
 - **Enhanced critical thinking** through structured argumentation
 - **Global accessibility** to quality debate education
 
-### ⚖️ **Ethical AI Implementation**  
+### **Ethical AI Implementation**  
 - **Multi-model approach** reduces single-point-of-bias
 - **Transparent attribution** of AI-generated content
 - **Evidence-based requirements** for all arguments
 - **Human oversight** capabilities throughout
 
-*🔍 Complete ethical analysis: [Technical Report - Ethical Considerations](docs/PROJECT_REPORT.md#ethical-considerations)*
+*Complete ethical analysis: [Technical Report - Ethical Considerations](docs/PROJECT_REPORT.md#ethical-considerations)*
 
 ---
 
@@ -211,9 +211,9 @@ DebateSim is designed with responsible AI principles at its core:
 ## Support and Resources
 
 - **Live Demo**: [debatesim.us](https://debatesim.us)
-- **📋 Technical Documentation**: [Complete Project Report](docs/PROJECT_REPORT.md)
-- **🔧 API Documentation**: [Developer Reference Guide](docs/API_REFERENCE.md)
-- **📖 Documentation Hub**: [Navigation Guide for All Users](docs/README.md)
+- **Technical Documentation**: [Complete Project Report](docs/PROJECT_REPORT.md)
+- **API Documentation**: [Developer Reference Guide](docs/API_REFERENCE.md)
+- **Documentation Hub**: [Navigation Guide for All Users](docs/README.md)
 - **GitHub Issues**: [Report bugs or request features](https://github.com/alexliao95311/DebateSim/issues)
 - **Setup Guide**: [Development and deployment instructions](Instructions.md)
 
