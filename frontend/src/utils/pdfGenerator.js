@@ -79,75 +79,74 @@ class PDFGenerator {
     pdf.save(fileName);
   }
 
-// Analysis pdf's
-addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
-  const title = "BILL ANALYSIS REPORT";
-  let titleFontSize = 24;
+  // Analysis pdf's
+  addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
+    const title = "BILL ANALYSIS REPORT";
+    let titleFontSize = 24;
 
-  // calcs title width, also shrinks font
-  pdf.setFont('helvetica', 'bold');
-  let titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
-  while (titleWidth > pageWidth - 40 && titleFontSize > 14) {
-    titleFontSize--;
-    titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
+    // calcs
+    pdf.setFont('helvetica', 'bold');
+    let titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
+    while (titleWidth > pageWidth - 40 && titleFontSize > 14) {
+      titleFontSize--;
+      titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
+    }
+
+    // Subtitle 
+    const subtitle = (data.topic || "Legislative Analysis")
+      .replace(/["'%]/g, '')
+      .replace(/[^\w\s\-.,!?;:()]/g, '')
+      .trim();
+
+    const subtitleFontSize = 14;
+    pdf.setFontSize(subtitleFontSize);
+    pdf.setFont('helvetica', 'normal');
+    const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
+    const subtitleHeight = subtitleLines.length * (subtitleFontSize + 2); // rough line height
+
+    // calcs height
+    const paddingTop = 20;
+    const paddingBottom = 20;
+    const spacing = 10;
+    const metaLineHeight = 12;
+    const metaLineCount = data.model ? 2 : 1;
+    const totalHeaderHeight =
+      paddingTop + titleFontSize + spacing + subtitleHeight + spacing + (metaLineCount * metaLineHeight) + paddingBottom;
+
+    // background
+    pdf.setFillColor(...this.colors.primary);
+    pdf.rect(0, 0, pageWidth, startY + totalHeaderHeight, 'F');
+
+    // title
+    pdf.setTextColor(...this.colors.white);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(titleFontSize);
+    pdf.text(title, (pageWidth - titleWidth) / 2, startY + paddingTop + titleFontSize);
+
+    // Subtitle
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(subtitleFontSize);
+    const subtitleY = startY + paddingTop + titleFontSize + spacing;
+    pdf.text(subtitleLines, this.margins.left + 20, subtitleY);
+
+    // Meta info AFTER subtitle
+    const metaStartY = subtitleY + subtitleHeight + spacing;
+    pdf.setFontSize(10);
+    pdf.text(`Generated: ${new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, this.margins.left + 20, metaStartY);
+
+    if (data.model) {
+      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, metaStartY + metaLineHeight);
+    }
+
+    return startY + totalHeaderHeight + 10;
   }
 
-  // Subtitle and meta info
-  const subtitle = (data.topic || "Legislative Analysis")
-    .replace(/["'%]/g, '')
-    .replace(/[^\w\s\-.,!?;:()]/g, '')  
-    .trim();
-
-  const subtitleFontSize = 14;
-  pdf.setFontSize(subtitleFontSize);
-  pdf.setFont('helvetica', 'normal');
-  const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
-  const subtitleHeight = subtitleLines.length * (subtitleFontSize + 2); // approx line height
-
-  const hasModel = !!data.model;
-  const metaLines = hasModel ? 2 : 1;
-  const metaLineHeight = 12;
-  const metaHeight = metaLines * metaLineHeight;
-
-  // padding + title + subtitle + meta info
-  const paddingTop = 20;
-  const paddingBottom = 20;
-  const spacing = 10;
-
-  const headerHeight = paddingTop + titleFontSize + spacing + subtitleHeight + spacing + metaHeight + paddingBottom;
-
-  // background
-  pdf.setFillColor(...this.colors.primary);
-  pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
-
-  // title
-  pdf.setTextColor(...this.colors.white);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(titleFontSize);
-  pdf.text(title, (pageWidth - titleWidth) / 2, startY + paddingTop + titleFontSize);
-
-  // subtitle
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(subtitleFontSize);
-  pdf.text(subtitleLines, this.margins.left + 20, startY + paddingTop + titleFontSize + spacing + 5);
-
-  // date and model name
-  pdf.setFontSize(10);
-  const dateY = startY + paddingTop + titleFontSize + spacing + subtitleHeight + spacing + 5;
-  const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  pdf.text(`Generated: ${date}`, this.margins.left + 20, dateY);
-  if (data.model) {
-    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, dateY + metaLineHeight);
-  }
-
-  return startY + headerHeight + 10;
-}
 
 
   // grades
