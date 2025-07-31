@@ -551,15 +551,6 @@ Format your response with clear headings using markdown (###)."""</span>
         >
           <div className="presentation-cta-content">
             <h2 className="presentation-cta-title">Join the Future of Debate</h2>
-            
-            <div className="presentation-feature-bullets">
-              <ul>
-                <li>Try a live debate at DebateSim.us and experience AI-powered discussions</li>
-                <li>Star the GitHub repository to support open-source debate technology</li>
-                <li>Join the community of students improving their critical thinking skills</li>
-                <li>Explore the technical documentation and contribute to the project</li>
-              </ul>
-            </div>
 
             <div className="presentation-cta-actions">
               <a 
