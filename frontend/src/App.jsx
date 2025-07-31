@@ -8,6 +8,7 @@ import Debate from "./components/Debate";
 import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
+import Presentation from "./components/Presentation";
 
 // Component to handle scroll reset on route changes
 function ScrollToTop() {
@@ -94,8 +95,9 @@ function App() {
     <Router future={{ v7_startTransition: true }}>
       <ScrollToTop />
       <Routes>
-        {/* Public route for shared transcripts - accessible without login */}
+        {/* Public routes - accessible without login */}
         <Route path="/shared/:shareId" element={<PublicTranscriptView />} />
+        <Route path="/presentation" element={<Presentation />} />
         
         {!user ? (
           <Route path="*" element={<Login onLogin={setUser} />} />
