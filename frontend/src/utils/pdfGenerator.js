@@ -82,7 +82,7 @@ class PDFGenerator {
 // Analysis pdf's
 addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   let maxTitleFontSize = 24;
-  const headerHeightBase = data.model ? 70 : 55;
+  const headerHeightBase = data.model ? 85 : 70;
   const title = "BILL ANALYSIS REPORT";
   let titleFontSize = maxTitleFontSize;
 
@@ -100,11 +100,14 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   pdf.setFontSize(titleFontSize);
   pdf.text(title, (pageWidth - titleWidth) / 2, startY - 15);
 
-  const subtitle = (data.topic || "Legislative Analysis").replace(/["'%]/g, '');
+  const subtitle = (data.topic || "Legislative Analysis")
+    .replace(/["'%]/g, '')
+    .replace(/[^\w\s\-.,!?;:()]/g, '')  
+    .trim();
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(14);
   const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
-  pdf.text(subtitleLines, this.margins.left + 20, startY + 10);
+  pdf.text(subtitleLines, this.margins.left + 20, startY + 15)
 
   pdf.setFontSize(10);
   const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
@@ -114,10 +117,9 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     hour: '2-digit',
     minute: '2-digit'
   });
-  pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
-
+  pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 35);
   if (data.model) {
-    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
+    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 50);
   }
 
   return startY + headerHeightBase + 25;
@@ -227,7 +229,7 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
   }
 
   addDebateHeader(pdf, data, startY, pageWidth, contentWidth) {
-    const headerHeight = data.model ? 70 : 55;
+    const headerHeight = data.model ? 85 : 70;
     pdf.setFillColor(...this.colors.primary);
     pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
     
@@ -242,9 +244,12 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     // Topic
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'normal');
-    const topic = data.topic || "Debate Topic";
+    const topic = (data.topic || "Debate Topic")
+      .replace(/["'%]/g, '')
+      .replace(/[^\w\s\-.,!?;:()]/g, '')  
+      .trim();
     const topicLines = pdf.splitTextToSize(topic, contentWidth - 40);
-    pdf.text(topicLines, this.margins.left + 20, startY + 10);
+    pdf.text(topicLines, this.margins.left + 20, startY + 15);
     
     pdf.setFontSize(10);
     const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
@@ -254,9 +259,12 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
       hour: '2-digit',
       minute: '2-digit'
     });
-    pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 30);
+    pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 35); 
+    if (data.model) {
+      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 50); 
+    }
     
-    return startY + 80;
+    return startY + headerHeight + 25;
   }
 
   addDebateSetup(pdf, data, startY, contentWidth, pageWidth, pageHeight) {
@@ -360,7 +368,10 @@ processMarkdownContent(content) {
         return match; // og if decoding fails
       }
     })
-    .replace(/(?<!%[0-9A-Fa-f])%(?![0-9A-Fa-f]{2})/g, '')
+    .replace(/(?<!%[0-9A-Fa-f])%(?![0-9A-Fa-f]{2})(?!\d)/g, '')
+    .replace(/%+\s*$/gm, '')
+    // Remove random percent signs 
+    .replace(/\b%+\b(?!\d)/g, '')
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .trim();
 
@@ -477,6 +488,8 @@ processMarkdownContent(content) {
       .replace(/—/g, '-')                       //  em-dash to hyphen
       .replace(/…/g, '...')                     //  ellipsis
       .replace(/[\u2000-\u200B\u2028-\u2029]/g, ' ') // Remove unicode spaces
+      .replace(/%+(?!\d)/g, '')                 // Remove percent signs not followed by digits
+      .replace(/\s%+\s/g, ' ')     
       .trim();
   }
 
