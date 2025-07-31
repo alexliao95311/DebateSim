@@ -81,35 +81,59 @@ class PDFGenerator {
 
 // Analysis pdf's
 addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
-  let maxTitleFontSize = 24;
-  const headerHeightBase = data.model ? 85 : 70;
   const title = "BILL ANALYSIS REPORT";
-  let titleFontSize = maxTitleFontSize;
+  let titleFontSize = 24;
 
-  pdf.setFillColor(...this.colors.primary);
-  pdf.rect(0, 0, pageWidth, startY + headerHeightBase, 'F');
-
+  // calcs title width, also shrinks font
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(...this.colors.white);
-
   let titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
   while (titleWidth > pageWidth - 40 && titleFontSize > 14) {
-    titleFontSize -= 1;
+    titleFontSize--;
     titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
   }
-  pdf.setFontSize(titleFontSize);
-  pdf.text(title, (pageWidth - titleWidth) / 2, startY - 15);
 
+  // Subtitle and meta info
   const subtitle = (data.topic || "Legislative Analysis")
     .replace(/["'%]/g, '')
     .replace(/[^\w\s\-.,!?;:()]/g, '')  
     .trim();
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(14);
-  const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
-  pdf.text(subtitleLines, this.margins.left + 20, startY + 15)
 
+  const subtitleFontSize = 14;
+  pdf.setFontSize(subtitleFontSize);
+  pdf.setFont('helvetica', 'normal');
+  const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
+  const subtitleHeight = subtitleLines.length * (subtitleFontSize + 2); // approx line height
+
+  const hasModel = !!data.model;
+  const metaLines = hasModel ? 2 : 1;
+  const metaLineHeight = 12;
+  const metaHeight = metaLines * metaLineHeight;
+
+  // padding + title + subtitle + meta info
+  const paddingTop = 20;
+  const paddingBottom = 20;
+  const spacing = 10;
+
+  const headerHeight = paddingTop + titleFontSize + spacing + subtitleHeight + spacing + metaHeight + paddingBottom;
+
+  // background
+  pdf.setFillColor(...this.colors.primary);
+  pdf.rect(0, 0, pageWidth, startY + headerHeight, 'F');
+
+  // title
+  pdf.setTextColor(...this.colors.white);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(titleFontSize);
+  pdf.text(title, (pageWidth - titleWidth) / 2, startY + paddingTop + titleFontSize);
+
+  // subtitle
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(subtitleFontSize);
+  pdf.text(subtitleLines, this.margins.left + 20, startY + paddingTop + titleFontSize + spacing + 5);
+
+  // date and model name
   pdf.setFontSize(10);
+  const dateY = startY + paddingTop + titleFontSize + spacing + subtitleHeight + spacing + 5;
   const date = new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -117,13 +141,14 @@ addAnalysisHeader(pdf, data, startY, pageWidth, contentWidth) {
     hour: '2-digit',
     minute: '2-digit'
   });
-  pdf.text(`Generated: ${date}`, this.margins.left + 20, startY + 35);
+  pdf.text(`Generated: ${date}`, this.margins.left + 20, dateY);
   if (data.model) {
-    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 50);
+    pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, dateY + metaLineHeight);
   }
 
-  return startY + headerHeightBase + 25;
+  return startY + headerHeight + 10;
 }
+
 
   // grades
   addGradesSection(pdf, grades, startY, contentWidth, pageWidth, pageHeight) {
