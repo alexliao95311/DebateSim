@@ -84,7 +84,7 @@ class PDFGenerator {
     const title = "BILL ANALYSIS REPORT";
     let titleFontSize = 24;
 
-    // Calculate title width and shrink font if needed
+    // calcs
     pdf.setFont('helvetica', 'bold');
     let titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
     while (titleWidth > pageWidth - 40 && titleFontSize > 14) {
@@ -92,7 +92,7 @@ class PDFGenerator {
       titleWidth = pdf.getStringUnitWidth(title) * titleFontSize / pdf.internal.scaleFactor;
     }
 
-    // Subtitle (bill topic)
+    // Subtitle 
     const subtitle = (data.topic || "Legislative Analysis")
       .replace(/["'%]/g, '')
       .replace(/[^\w\s\-.,!?;:()]/g, '')
@@ -104,7 +104,7 @@ class PDFGenerator {
     const subtitleLines = pdf.splitTextToSize(subtitle, contentWidth - 40);
     const subtitleHeight = subtitleLines.length * (subtitleFontSize + 2); // rough line height
 
-    // Calculate total height needed dynamically
+    // calcs height
     const paddingTop = 20;
     const paddingBottom = 20;
     const spacing = 10;
@@ -113,11 +113,11 @@ class PDFGenerator {
     const totalHeaderHeight =
       paddingTop + titleFontSize + spacing + subtitleHeight + spacing + (metaLineCount * metaLineHeight) + paddingBottom;
 
-    // Draw background
+    // background
     pdf.setFillColor(...this.colors.primary);
     pdf.rect(0, 0, pageWidth, startY + totalHeaderHeight, 'F');
 
-    // Title
+    // title
     pdf.setTextColor(...this.colors.white);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(titleFontSize);
@@ -129,7 +129,7 @@ class PDFGenerator {
     const subtitleY = startY + paddingTop + titleFontSize + spacing;
     pdf.text(subtitleLines, this.margins.left + 20, subtitleY);
 
-    // Meta info (date and model), placed after subtitle
+    // Meta info AFTER subtitle
     const metaStartY = subtitleY + subtitleHeight + spacing;
     pdf.setFontSize(10);
     pdf.text(`Generated: ${new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', {
