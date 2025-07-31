@@ -105,7 +105,7 @@ class PDFGenerator {
     const subtitleHeight = subtitleLines.length * (subtitleFontSize + 2); // rough line height
 
     // calcs height
-    const paddingTop = 20;
+    const paddingTop = 10;
     const paddingBottom = 20;
     const spacing = 10;
     const metaLineHeight = 12;
@@ -126,7 +126,8 @@ class PDFGenerator {
     // Subtitle
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(subtitleFontSize);
-    const subtitleY = startY + paddingTop + titleFontSize + spacing;
+    const titleToSubtitleSpacing = 20; 
+    const subtitleY = startY + paddingTop + titleFontSize + titleToSubtitleSpacing;
     pdf.text(subtitleLines, this.margins.left + 20, subtitleY);
 
     // Meta info AFTER subtitle
