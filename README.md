@@ -122,7 +122,6 @@ curl -X POST "http://localhost:8000/generate-response" \
 - **40,000+** character document processing capability
 - **Real-time** Congressional data integration
 
-*📊 Detailed evaluation metrics and findings: [Technical Report - Results](docs/PROJECT_REPORT.md#results-and-evaluation)*
 
 ---
 
@@ -131,7 +130,7 @@ curl -X POST "http://localhost:8000/generate-response" \
 ### Prerequisites
 - **Python 3.9+** for backend
 - **Node.js 18+** for frontend  
-- **API Keys**: OpenRouter, Congress.gov (optional)
+- **API Keys**: OpenRouter, Congress.gov
 
 ### Local Development Setup
 ```bash
@@ -157,7 +156,6 @@ CONGRESS_API_KEY=your_congress_key  # Optional
 FIREBASE_CONFIG=your_firebase_config
 ```
 
-*Complete setup instructions: [Development Guide](Instructions.md)*
 
 ---
 
