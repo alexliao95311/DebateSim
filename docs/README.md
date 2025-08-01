@@ -14,23 +14,6 @@ Welcome to the DebateSim technical documentation directory. This folder contains
 - Future improvements and scalability plans
 - Complete API documentation
 
-### Additional Documentation (Coming Soon)
-
-#### Architecture Documentation
-- `ARCHITECTURE.md` - Detailed system architecture diagrams
-- `DATABASE_SCHEMA.md` - Data models and relationships
-- `DEPLOYMENT_GUIDE.md` - Production deployment instructions
-
-#### Developer Documentation  
-- `DEVELOPMENT_SETUP.md` - Local development environment setup
-- `CONTRIBUTING.md` - Guidelines for contributors
-- `TESTING_GUIDE.md` - Testing procedures and standards
-
-#### User Guides
-- `USER_MANUAL.md` - End-user guide for all platform features
-- `ADMIN_GUIDE.md` - Administrative features and management
-- `EDUCATOR_GUIDE.md` - Classroom and educational use cases
-
 ## Quick Navigation
 
 ### For Researchers and Academics
@@ -76,15 +59,6 @@ Welcome to the DebateSim technical documentation directory. This folder contains
 - Async processing architecture
 - Sub-second response times for cached content
 
-## Performance Metrics
-
-| Metric | Achievement |
-|--------|-------------|
-| **Response Time** | Fast response times for cached requests |
-| **Document Processing** | 40,000+ character support |
-| **API Reliability** | Multi-model fallbacks for improved reliability |
-| **User Satisfaction** | Intuitive interface with real-time features |
-| **Cache Efficiency** | Multi-level TTL caching strategy |
 
 ## Technical Stack
 
@@ -112,7 +86,7 @@ For questions about the documentation or technical implementation:
 
 - **Technical Questions**: Create an issue in the main repository
 - **Documentation Updates**: Submit a pull request with improvements
-- **Research Collaboration**: Contact the development team
+- **Research Collaboration**: Contact the development team at alexliao365@gmail.com
 
 ## License
 

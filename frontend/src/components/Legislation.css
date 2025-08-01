@@ -762,8 +762,146 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem;
+  padding: 2rem 0;
   color: #e2e8f0 !important;
+}
+
+.bills-skeleton-container {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0 1rem 0;
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #4a90e2 rgba(220, 220, 220, 0.8);
+}
+
+.bill-skeleton-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 2px solid rgba(71, 85, 105, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 0.75rem !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  height: 330px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.6;
+    background: rgba(30, 41, 59, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    background: rgba(30, 41, 59, 0.6);
+  }
+}
+
+.skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-bill-type {
+  width: 60px;
+  height: 20px;
+  background: linear-gradient(90deg, #4a90e2 25%, rgba(74, 144, 226, 0.5) 50%, #4a90e2 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-link {
+  width: 50px;
+  height: 14px;
+  background: linear-gradient(90deg, rgba(71, 85, 105, 0.4) 25%, rgba(71, 85, 105, 0.6) 50%, rgba(71, 85, 105, 0.4) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 3px;
+}
+
+.skeleton-status {
+  width: 80%;
+  height: 12px;
+  background: linear-gradient(90deg, rgba(71, 85, 105, 0.3) 25%, rgba(71, 85, 105, 0.5) 50%, rgba(71, 85, 105, 0.3) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 3px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-title {
+  width: 90%;
+  height: 16px;
+  background: linear-gradient(90deg, rgba(248, 250, 252, 0.2) 25%, rgba(248, 250, 252, 0.4) 50%, rgba(248, 250, 252, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-sponsor {
+  width: 70%;
+  height: 12px;
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0.2) 25%, rgba(203, 213, 225, 0.4) 50%, rgba(203, 213, 225, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 3px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-description {
+  flex-grow: 1;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.15) 25%, rgba(226, 232, 240, 0.3) 50%, rgba(226, 232, 240, 0.15) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 3px;
+}
+
+.skeleton-line.long { width: 95%; }
+.skeleton-line.medium { width: 75%; }
+.skeleton-line.short { width: 60%; }
+
+.skeleton-button {
+  width: 100%;
+  height: 32px;
+  background: linear-gradient(90deg, rgba(74, 144, 226, 0.2) 25%, rgba(74, 144, 226, 0.4) 50%, rgba(74, 144, 226, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 6px;
+  margin-top: auto;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.bills-loading-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+  gap: 1rem;
 }
 
 .bills-loading .loading-spinner {
@@ -3701,8 +3839,7 @@ div[style*="backgroundColor: #d"] * {
 }
 
 .results-section.content-ready {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s ease, box-shadow 1s ease 0.5s;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
 }
 
 /* Grading Section Enhanced Animation */
@@ -3914,3 +4051,658 @@ div[style*="backgroundColor: #d"] * {
 }
 
 /* === END: Page Loading and Smooth Animations === */
+
+/* === ENHANCED: Page Loading and Smooth Animations === */
+
+/* Enhanced Page Loader Overlay */
+.page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #334155 70%, #475569 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(15px);
+  animation: pageLoaderFadeIn 0.3s ease-out;
+}
+
+@keyframes pageLoaderFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(15px);
+  }
+}
+
+.page-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  text-align: center;
+  animation: pageLoaderContentSlide 0.6s ease-out 0.2s both;
+}
+
+@keyframes pageLoaderContentSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.page-loader-spinner {
+  width: 70px;
+  height: 70px;
+  border: 5px solid rgba(74, 144, 226, 0.15);
+  border-top: 5px solid #4a90e2;
+  border-right: 5px solid rgba(74, 144, 226, 0.4);
+  border-radius: 50%;
+  animation: pageLoaderSpin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  position: relative;
+}
+
+.page-loader-spinner::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, #4a90e2, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pageLoaderCore 2s ease-in-out infinite;
+}
+
+@keyframes pageLoaderSpin {
+  0% { 
+    transform: rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  }
+  50% { 
+    transform: rotate(180deg) scale(1.05);
+    filter: drop-shadow(0 6px 12px rgba(74, 144, 226, 0.4));
+  }
+  100% { 
+    transform: rotate(360deg) scale(1);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  }
+}
+
+@keyframes pageLoaderCore {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+.page-loader-text {
+  color: #f8fafc;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  animation: pageLoaderTextPulse 2.5s ease-in-out infinite;
+  letter-spacing: 0.5px;
+}
+
+@keyframes pageLoaderTextPulse {
+  0%, 100% { 
+    opacity: 0.7; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.02);
+  }
+}
+
+/* Enhanced Main Container Loading States */
+.legislation-container.content-loading {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.98);
+  transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+}
+
+.legislation-container.content-loaded {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition: opacity 1s ease 0.4s, visibility 1s ease 0.4s, transform 1s ease 0.4s;
+}
+
+/* Enhanced Component Fade-in Animations */
+.component-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  filter: blur(2px);
+  transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Enhanced Header Animation */
+.legislation-header.component-hidden {
+  opacity: 0;
+  transform: translateY(-30px);
+  backdrop-filter: blur(5px);
+}
+
+.legislation-header.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  backdrop-filter: blur(20px);
+  transition: opacity 0.8s ease, transform 0.8s ease, backdrop-filter 0.8s ease;
+}
+
+/* Enhanced Bills Section Animation */
+.bills-section.component-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.95);
+  filter: blur(3px);
+}
+
+.bills-section.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1.2s ease 0.3s, transform 1.2s ease 0.3s, filter 1.2s ease 0.3s;
+}
+
+/* Enhanced Bill Cards Staggered Entrance */
+.bill-card-wrapper {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9) rotateX(10deg);
+  filter: blur(1px);
+  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  perspective: 1000px;
+}
+
+.bills-section.component-visible .bill-card-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateX(0deg);
+  filter: blur(0px);
+}
+
+/* Enhanced staggered delays for bill cards */
+.bill-card-wrapper:nth-child(1) { transition-delay: 0.1s; }
+.bill-card-wrapper:nth-child(2) { transition-delay: 0.15s; }
+.bill-card-wrapper:nth-child(3) { transition-delay: 0.2s; }
+.bill-card-wrapper:nth-child(4) { transition-delay: 0.25s; }
+.bill-card-wrapper:nth-child(5) { transition-delay: 0.3s; }
+.bill-card-wrapper:nth-child(6) { transition-delay: 0.35s; }
+.bill-card-wrapper:nth-child(7) { transition-delay: 0.4s; }
+.bill-card-wrapper:nth-child(8) { transition-delay: 0.45s; }
+.bill-card-wrapper:nth-child(n+9) { transition-delay: 0.5s; }
+
+/* Enhanced Bill Card Hover Effects */
+.bill-card {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  will-change: transform, box-shadow;
+}
+
+.bill-card:hover {
+  transform: translateY(-8px) scale(1.02) !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(74, 144, 226, 0.2) !important;
+}
+
+/* Enhanced Steps Section Animation */
+.legislation-step-by-step-container.component-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.96);
+  filter: blur(2px);
+}
+
+.legislation-step-by-step-container.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s ease 0.5s, transform 1s ease 0.5s, filter 1s ease 0.5s;
+}
+
+/* Enhanced Footer Animation */
+.footer-wrapper.component-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  filter: blur(1px);
+}
+
+.footer-wrapper.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  transition: opacity 0.8s ease 0.7s, transform 0.8s ease 0.7s, filter 0.8s ease 0.7s;
+}
+
+/* Enhanced Results Section Animation */
+.results-section.results-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.95);
+  filter: blur(4px);
+  visibility: hidden;
+}
+
+.results-section.results-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  visibility: visible;
+  transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              filter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              visibility 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.results-section.content-ready {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(74, 144, 226, 0.1);
+  transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              filter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              visibility 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 1.2s ease 0.6s;
+}
+
+/* Enhanced Grading Section Animation */
+.grading-stage-container.grading-loading {
+  opacity: 0;
+  transform: translateY(40px) scale(0.92);
+  filter: blur(6px);
+}
+
+.grading-stage-container.grading-loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              filter 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Enhanced Individual Grade Cards Animation */
+.grade-item {
+  transform: translateY(30px) scale(0.9);
+  opacity: 0;
+  filter: blur(2px);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.grading-stage-container.grading-loaded .grade-item {
+  animation: enhancedGradeCardSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.grading-stage-container.grading-loaded .grade-item:nth-child(1) { animation-delay: 0.1s; }
+.grading-stage-container.grading-loaded .grade-item:nth-child(2) { animation-delay: 0.15s; }
+.grading-stage-container.grading-loaded .grade-item:nth-child(3) { animation-delay: 0.2s; }
+.grading-stage-container.grading-loaded .grade-item:nth-child(4) { animation-delay: 0.25s; }
+.grading-stage-container.grading-loaded .grade-item:nth-child(5) { animation-delay: 0.3s; }
+.grading-stage-container.grading-loaded .grade-item:nth-child(6) { animation-delay: 0.35s; }
+
+@keyframes enhancedGradeCardSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9) rotateY(-10deg);
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.02) rotateY(2deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateY(0deg);
+    filter: blur(0px);
+  }
+}
+
+/* Enhanced Analysis Text Animation */
+.analysis-text-section.analysis-loading {
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(4px);
+}
+
+.analysis-text-section.analysis-loaded {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  transition: opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease;
+}
+
+/* Enhanced Loading State Improvements */
+.loading-container {
+  background: rgba(74, 144, 226, 0.08);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(74, 144, 226, 0.15);
+  backdrop-filter: blur(25px);
+  animation: enhancedLoadingContainerPulse 2.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+  animation: loadingShimmer 2s infinite;
+}
+
+@keyframes loadingShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes enhancedLoadingContainerPulse {
+  0%, 100% {
+    border-color: rgba(74, 144, 226, 0.2);
+    box-shadow: 0 12px 40px rgba(74, 144, 226, 0.15);
+    transform: scale(1);
+  }
+  50% {
+    border-color: rgba(74, 144, 226, 0.4);
+    box-shadow: 0 16px 50px rgba(74, 144, 226, 0.25);
+    transform: scale(1.01);
+  }
+}
+
+/* Enhanced Loading Spinner */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 5px solid rgba(74, 144, 226, 0.15);
+  border-top: 5px solid #4a90e2;
+  border-right: 5px solid rgba(74, 144, 226, 0.4);
+  border-radius: 50%;
+  animation: enhancedSpin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.4));
+  position: relative;
+}
+
+.loading-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle, #4a90e2, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: spinnerCore 2s ease-in-out infinite;
+}
+
+@keyframes spinnerCore {
+  0%, 100% { 
+    opacity: 0.4; 
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% { 
+    opacity: 0.9; 
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes enhancedSpin {
+  0% { 
+    transform: rotate(0deg) scale(1);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.4));
+  }
+  50% { 
+    transform: rotate(180deg) scale(1.05);
+    filter: drop-shadow(0 6px 12px rgba(74, 144, 226, 0.5));
+  }
+  100% { 
+    transform: rotate(360deg) scale(1);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.4));
+  }
+}
+
+/* Enhanced Progress Bar */
+.progress-fill {
+  background: linear-gradient(90deg, #4a90e2, #357abd, #60a5fa, #4a90e2);
+  background-size: 300% 100%;
+  animation: enhancedProgressShimmer 2.5s ease-in-out infinite;
+  box-shadow: 0 3px 12px rgba(74, 144, 226, 0.4);
+  border-radius: 4px;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  animation: progressGlow 2s infinite;
+}
+
+@keyframes enhancedProgressShimmer {
+  0%, 100% {
+    background-position: 300% 0;
+  }
+  50% {
+    background-position: -300% 0;
+  }
+}
+
+@keyframes progressGlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Enhanced Bills Loading States */
+.bills-loading {
+  animation: billsLoadingPulse 2s ease-in-out infinite;
+}
+
+@keyframes billsLoadingPulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.bills-horizontal-scroll {
+  min-height: 350px;
+  transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
+}
+
+.bills-horizontal-scroll.searching {
+  opacity: 0.5;
+  transform: scale(0.98);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* Enhanced Search Loading States */
+.search-bar.live-searching {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25), 0 4px 12px rgba(255, 193, 7, 0.2);
+  animation: searchPulse 2s ease-in-out infinite;
+}
+
+@keyframes searchPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.25), 0 4px 12px rgba(255, 193, 7, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.35), 0 6px 16px rgba(255, 193, 7, 0.3);
+  }
+}
+
+/* Intersection Observer Animations */
+.bill-card.in-view {
+  animation: slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.step-content.in-view {
+  animation: fadeInScale 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes slideInFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .page-loader-spinner {
+    width: 60px;
+    height: 60px;
+    border-width: 4px;
+  }
+  
+  .page-loader-text {
+    font-size: 1.1rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(25px) scale(0.96);
+    filter: blur(1px);
+  }
+  
+  .bill-card-wrapper {
+    transform: translateY(20px) scale(0.95);
+  }
+  
+  .bills-section.component-visible .bill-card-wrapper {
+    transform: translateY(0) scale(1);
+  }
+  
+  .loading-container {
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(74, 144, 226, 0.15);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-loader-spinner {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+  }
+  
+  .page-loader-text {
+    font-size: 1rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(20px) scale(0.98);
+    filter: blur(0.5px);
+  }
+  
+  .loading-container {
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .page-loader-spinner,
+  .loading-spinner {
+    animation: reducedSpin 2s linear infinite;
+  }
+  
+  @keyframes reducedSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .page-loader-text {
+    animation: none;
+  }
+  
+  .component-hidden,
+  .component-visible,
+  .bill-card-wrapper,
+  .grading-stage-container,
+  .analysis-text-section {
+    transition: opacity 0.3s ease;
+    transform: none !important;
+    filter: none !important;
+  }
+  
+  .loading-container {
+    animation: none;
+  }
+  
+  .progress-fill {
+    animation: none;
+    background: #4a90e2;
+  }
+  
+  .bill-card:hover {
+    transform: translateY(-4px) !important;
+  }
+}
+
+/* High Performance Mode for Older Devices */
+@media (max-width: 768px) and (max-height: 1024px) {
+  .component-hidden,
+  .component-visible {
+    filter: none;
+  }
+  
+  .bill-card-wrapper {
+    filter: none;
+  }
+  
+  .loading-container::before {
+    display: none;
+  }
+}
+
+/* === END: Enhanced Page Loading and Smooth Animations === */
