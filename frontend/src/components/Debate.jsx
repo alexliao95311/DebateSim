@@ -888,7 +888,7 @@ function Debate() {
               {userVsUserSetup.confirmed && (
                 <div className="user-vs-user-setup">
                   <h3>User vs User Debate</h3>
-                  <p style={{ marginBottom: "1rem", color: "#666" }}>
+                  <p style={{ marginBottom: "1rem", color: "#fff" }}>
                     Current turn: <strong>
                       {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </strong> ({userVsUserSide.toUpperCase()})
