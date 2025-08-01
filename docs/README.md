@@ -86,7 +86,7 @@ For questions about the documentation or technical implementation:
 
 - **Technical Questions**: Create an issue in the main repository
 - **Documentation Updates**: Submit a pull request with improvements
-- **Research Collaboration**: Contact the development team
+- **Research Collaboration**: Contact the development team at alexliao365@gmail.com
 
 ## License
 
