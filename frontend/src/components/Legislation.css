@@ -80,6 +80,14 @@
   gap: 1rem !important;
 }
 
+.legislation-user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  color: #cbd5e1 !important;
+  font-size: 0.9rem !important;
+}
+
 .legislation-username {
   color: #f8fafc !important;
   font-weight: 500 !important;

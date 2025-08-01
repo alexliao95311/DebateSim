@@ -1242,12 +1242,22 @@ button:disabled {
 }
 
 /* Footer styles */
+.bottom-text {
+  margin-top: 3rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #64748b;
+  width: 100%;
+}
+
 .footer-links {
   display: flex;
   align-items: center;
   gap: 2rem;
   flex-wrap: wrap;
   justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
 .feedback-link {
