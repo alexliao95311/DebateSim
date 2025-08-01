@@ -380,45 +380,55 @@ const Legislation = ({ user }) => {
     }
   };
 
-   // NEW: Initial page loading sequence
+   // Enhanced initial page loading sequence with improved timing
   useLayoutEffect(() => {
-    // Prevent scroll during loading
+    // Prevent scroll and hide scrollbar during loading
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.scrollBehavior = 'auto';
     
-    // Smooth scroll reset
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Immediate scroll reset without animation
+    window.scrollTo(0, 0);
     
-    // Staged component loading simulation
+    // Enhanced staged component loading with optimal timing
     const loadComponents = async () => {
-      // Header loads first
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Header loads first - critical above-the-fold content
+      await new Promise(resolve => setTimeout(resolve, 150));
       setComponentsLoaded(prev => ({ ...prev, header: true }));
       
-      // Bills section loads
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Bills section loads - main content area
+      await new Promise(resolve => setTimeout(resolve, 250));
       setComponentsLoaded(prev => ({ ...prev, bills: true }));
       
-      // Steps section loads
+      // Steps section loads - interactive elements
       await new Promise(resolve => setTimeout(resolve, 200));
       setComponentsLoaded(prev => ({ ...prev, steps: true }));
       
-      // Footer loads last
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Footer loads last - non-critical content
+      await new Promise(resolve => setTimeout(resolve, 150));
       setComponentsLoaded(prev => ({ ...prev, footer: true }));
       
-      // All content ready
+      // All content ready - trigger final animations
       await new Promise(resolve => setTimeout(resolve, 200));
       setIsContentReady(true);
       
-      // Remove page loader
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Brief pause before removing loader for smooth transition
+      await new Promise(resolve => setTimeout(resolve, 400));
       setIsPageLoading(false);
       
-      // Re-enable scrolling
-      document.body.style.overflow = 'auto';
+      // Re-enable scrolling and smooth scroll behavior
+      setTimeout(() => {
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.scrollBehavior = 'smooth';
+      }, 100);
     };
     
     loadComponents();
+    
+    // Cleanup function
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.scrollBehavior = 'smooth';
+    };
   }, []);
 
   // Fetch debate history on component mount (after loading)
@@ -629,20 +639,54 @@ const Legislation = ({ user }) => {
     setCurrentStep(3);
   };
 
-   // smooth scroll 
+   // Enhanced smooth scroll with easing and viewport awareness
   const smoothScrollToResults = () => {
     if (resultsRef.current) {
       const headerHeight = 80; // Account for fixed header
-      const targetPosition = resultsRef.current.offsetTop - headerHeight;
+      const extraPadding = 20; // Additional padding for better visual spacing
+      const targetPosition = resultsRef.current.offsetTop - headerHeight - extraPadding;
       
-      window.scrollTo({
-        top: targetPosition,
-        behavior: 'smooth'
-      });
+      // Check if we need to scroll at all
+      const currentScroll = window.pageYOffset;
+      const viewportHeight = window.innerHeight;
+      const elementTop = resultsRef.current.offsetTop;
+      const elementHeight = resultsRef.current.offsetHeight;
+      
+      // Only scroll if the element is not fully visible
+      if (elementTop < currentScroll + headerHeight || 
+          elementTop + elementHeight > currentScroll + viewportHeight) {
+        
+        // Use requestAnimationFrame for smoother animation
+        const startPosition = currentScroll;
+        const distance = targetPosition - startPosition;
+        const duration = Math.min(800, Math.abs(distance) * 1.5); // Adaptive duration
+        let startTime = null;
+        
+        const easeInOutQuart = (t) => {
+          return t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t;
+        };
+        
+        const animation = (currentTime) => {
+          if (startTime === null) startTime = currentTime;
+          const timeElapsed = currentTime - startTime;
+          const progress = Math.min(timeElapsed / duration, 1);
+          
+          const easedProgress = easeInOutQuart(progress);
+          const currentPosition = startPosition + (distance * easedProgress);
+          
+          window.scrollTo(0, currentPosition);
+          
+          if (progress < 1) {
+            requestAnimationFrame(animation);
+          }
+        };
+        
+        requestAnimationFrame(animation);
+      }
     }
   };
 
-  // Staged analysis results reveal function with enhanced animations
+  // Enhanced staged analysis results reveal function with professional animations
   const stageAnalysisResults = async (analysis, grades, title) => {
     // Reset all staged states
     setShowGradingSection(false);
@@ -656,31 +700,31 @@ const Legislation = ({ user }) => {
       setAnalysisGrades(grades);
     }
     
-    // Wait a moment before starting animations
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait a moment before starting animations to prevent flash
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Stage 1: Show grading section with smooth entrance
     setShowGradingSection(true);
     
-    // Smooth scroll to results area after grading section appears
+    // Enhanced smooth scroll to results area with easing
     setTimeout(() => {
       smoothScrollToResults();
-    }, 600);
+    }, 400);
     
-    // Stage 1.5: Mark grading as loaded for animations
+    // Stage 1.5: Mark grading as loaded for staggered card animations
     setTimeout(() => {
       setGradingSectionLoaded(true);
-    }, 600);
+    }, 700);
     
-    // Stage 2: Show analysis text after grading is fully loaded
+    // Stage 2: Show analysis text with fade-in after grading is settled
     setTimeout(() => {
       setShowAnalysisText(true);
-    }, 1400);
+    }, 1600);
     
-    // Stage 2.5: Mark analysis content as ready
+    // Stage 2.5: Mark analysis content as ready for final polish
     setTimeout(() => {
       setAnalysisContentReady(true);
-    }, 1800);
+    }, 2000);
     
     // Save to history after all UI animations complete
     setTimeout(async () => {
@@ -699,7 +743,7 @@ const Legislation = ({ user }) => {
           console.error("Error saving analysis to history:", err);
         }
       }
-    }, 2200);
+    }, 2400);
   };
 
   // Step 3: Handle analysis execution with progress updates
@@ -1410,24 +1454,36 @@ const Legislation = ({ user }) => {
     if (!isContentReady) return;
 
     const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
+      threshold: 0.15,
+      rootMargin: '0px 0px -30px 0px'
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('in-view');
+          // Add staggered animation delay for multiple elements
+          const siblings = Array.from(entry.target.parentNode?.children || []);
+          const index = siblings.indexOf(entry.target);
+          if (index >= 0) {
+            entry.target.style.animationDelay = `${index * 0.1}s`;
+          }
         }
       });
     }, observerOptions);
 
-    // Observe elements that should animate on scroll
-    const elementsToObserve = document.querySelectorAll('.bill-card, .step-content');
-    elementsToObserve.forEach((el) => observer.observe(el));
+    // Improved element selection with more specific targeting
+    const elementsToObserve = document.querySelectorAll(
+      '.bill-card:not(.in-view), .step-content:not(.in-view), .grade-item:not(.in-view)'
+    );
+    
+    elementsToObserve.forEach((el) => {
+      // Add a slight delay to prevent immediate triggering
+      setTimeout(() => observer.observe(el), 100);
+    });
 
     return () => {
-      elementsToObserve.forEach((el) => observer.unobserve(el));
+      observer.disconnect();
     };
   }, [isContentReady]);
 
@@ -1780,8 +1836,29 @@ const Legislation = ({ user }) => {
                     
                     {billsLoading && (
                       <div className="bills-loading">
-                        <div className="loading-spinner"></div>
-                        <p>Loading current bills from Congress...</p>
+                        <div className="bills-skeleton-container">
+                          {[...Array(5)].map((_, index) => (
+                            <div key={index} className="bill-skeleton-card">
+                              <div className="skeleton-header">
+                                <div className="skeleton-bill-type"></div>
+                                <div className="skeleton-link"></div>
+                              </div>
+                              <div className="skeleton-status"></div>
+                              <div className="skeleton-title"></div>
+                              <div className="skeleton-sponsor"></div>
+                              <div className="skeleton-description">
+                                <div className="skeleton-line long"></div>
+                                <div className="skeleton-line medium"></div>
+                                <div className="skeleton-line short"></div>
+                              </div>
+                              <div className="skeleton-button"></div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="bills-loading-text">
+                          <div className="loading-spinner"></div>
+                          <p>Loading current bills from Congress...</p>
+                        </div>
                       </div>
                     )}
                     
