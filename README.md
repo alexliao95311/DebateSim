@@ -122,7 +122,6 @@ curl -X POST "http://localhost:8000/generate-response" \
 - **40,000+** character document processing capability
 - **Real-time** Congressional data integration
 
-*📊 Detailed evaluation metrics and findings: [Technical Report - Results](docs/PROJECT_REPORT.md#results-and-evaluation)*
 
 ---
 
