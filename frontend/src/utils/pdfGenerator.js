@@ -293,6 +293,11 @@ class PDFGenerator {
       pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 50); 
     }
     
+    return startY + 80;
+    if (data.model) {
+      pdf.text(`AI Model: ${data.model}`, this.margins.left + 20, startY + 45);
+    }
+    
     return startY + headerHeight + 25;
   }
 
@@ -346,28 +351,25 @@ class PDFGenerator {
 processMarkdownContent(content) {
   if (!content) return "No content available.";
 
-  const renderer = new marked.Renderer();
-  renderer.heading = (text, level) => {
-    const cleanText = text.replace(/^#+\s*/, '').trim();
-    return `HEADING_${level}:${cleanText}\n\n`;
-  };
-  renderer.paragraph = (text) => `${text}\n\n`;
-  renderer.strong = (text) => `**${text}**`;
-  renderer.em = (text) => `*${text}*`;
-  renderer.list = (body, ordered) => `${body}\n`;
-  renderer.listitem = (text) => {
-    const cleanText = text.replace(/^[-*+•]\s*/, '').trim();
-    return `• ${cleanText}\n`;
-  };
-  renderer.code = (code) => `[${code}]`;
-  renderer.codespan = (code) => `[${code}]`;
-  renderer.blockquote = (quote) => {
-    const cleanQuote = quote.replace(/^["'>\s]*/, '').replace(/["'>\s]*$/, '').trim();
-    return `"${cleanQuote}"\n\n`;
-  };
-  renderer.hr = () => `${'─'.repeat(50)}\n\n`;
-  renderer.br = () => '\n';
-  renderer.link = (href, title, text) => `${text} (${href})`;
+    const renderer = new marked.Renderer();
+    
+    // removes the random hashtags 
+    renderer.heading = (text, level) => {
+      const cleanText = text.replace(/^#+\s*/, '');
+      return `${cleanText}\n\n`;
+    };
+    
+    renderer.paragraph = (text) => `${text}\n\n`;
+    renderer.strong = (text) => `**${text}**`;
+    renderer.em = (text) => `*${text}*`;
+    renderer.list = (body, ordered) => `${body}\n`;
+    renderer.listitem = (text) => `• ${text}\n`;
+    renderer.code = (code) => `[${code}]`;
+    renderer.codespan = (code) => `[${code}]`;
+    renderer.blockquote = (quote) => `"${quote}"\n\n`;
+    renderer.hr = () => `${'─'.repeat(50)}\n\n`;
+    renderer.br = () => '\n';
+    renderer.link = (href, title, text) => `${text} (${href})`;
 
   marked.setOptions({
     renderer: renderer,

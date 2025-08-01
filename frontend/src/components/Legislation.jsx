@@ -629,7 +629,7 @@ const Legislation = ({ user }) => {
     setCurrentStep(3);
   };
 
-   // Enhanced smooth scroll function for results
+   // smooth scroll 
   const smoothScrollToResults = () => {
     if (resultsRef.current) {
       const headerHeight = 80; // Account for fixed header
@@ -665,7 +665,7 @@ const Legislation = ({ user }) => {
     // Smooth scroll to results area after grading section appears
     setTimeout(() => {
       smoothScrollToResults();
-    }, 400);
+    }, 600);
     
     // Stage 1.5: Mark grading as loaded for animations
     setTimeout(() => {
@@ -755,7 +755,7 @@ const Legislation = ({ user }) => {
         setProcessingStage('Finalizing analysis and grades...');
         setProgressStep(3);
         
-        // Stage the results reveal for smooth UI loading
+        // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
         
       } else {
@@ -824,7 +824,7 @@ const Legislation = ({ user }) => {
           }
         }
         
-        // Stage the results reveal for smooth UI loading
+        // Stage results
         await stageAnalysisResults(analysisData.analysis, analysisData.grades, `Bill Analysis: ${selectedBill.name}`);
       }
       
@@ -1288,7 +1288,7 @@ const Legislation = ({ user }) => {
     // Delay hiding suggestions to allow clicking on them
     setTimeout(() => {
       setShowSuggestions(false);
-    }, 200);
+    }, 300);
   };
 
   // Congress.gov URL parser function
@@ -1401,13 +1401,11 @@ const Legislation = ({ user }) => {
     setLinkError("");
   };
 
-  // NEW: Staged loading states for smooth UI transitions
   const [showGradingSection, setShowGradingSection] = useState(false);
   const [showAnalysisText, setShowAnalysisText] = useState(false);
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
-  // NEW: Intersection Observer for scroll-triggered animations
   useEffect(() => {
     if (!isContentReady) return;
 
