@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
+import { History, User, LogOut } from "lucide-react";
 import "./DebateSim.css";
 
 function DebateSim({ user }) {
@@ -118,7 +119,8 @@ function DebateSim({ user }) {
               className="history-button"
               onClick={() => setShowHistorySidebar(!showHistorySidebar)}
             >
-              History
+              <History size={18} />
+              <span>History</span>
             </button>
           </div>
 
@@ -132,9 +134,13 @@ function DebateSim({ user }) {
           {/* RIGHT SECTION: User + Logout */}
           <div className="header-right">
             <div className="user-section">
-              <span className="username">{user?.displayName}</span>
+              <div className="user-info">
+                <User size={18} />
+                <span className="username">{user?.displayName}</span>
+              </div>
               <button className="logout-button" onClick={handleLogout}>
-                Logout
+                <LogOut size={16} />
+                <span>Logout</span>
               </button>
             </div>
           </div>
