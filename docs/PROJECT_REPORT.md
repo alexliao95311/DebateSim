@@ -41,7 +41,7 @@ The platform addresses critical gaps in civic engagement tools by offering:
 
 Modern democratic discourse faces several critical challenges:
 
-1. **Information Complexity**: Legislative documents are increasingly complex, often exceeding 40,000 characters with intricate legal language that barriers public understanding.
+1. **Information Complexity**: Legislative documents are increasingly complex, often with intricate legal language that barriers public understanding.
 
 2. **Limited Access to Analysis**: Professional legislative analysis is expensive and time-consuming, creating an information gap between policymakers and citizens.
 
