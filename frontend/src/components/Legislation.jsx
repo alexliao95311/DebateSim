@@ -380,60 +380,45 @@ const Legislation = ({ user }) => {
     }
   };
 
-   // ENHANCED: Initial page loading sequence with improved timing and effects
+   // NEW: Initial page loading sequence
   useLayoutEffect(() => {
-    // Prevent scroll during loading and add loading state to body
+    // Prevent scroll during loading
     document.body.style.overflow = 'hidden';
-    document.body.classList.add('page-loading');
     
     // Smooth scroll reset
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Enhanced staged component loading with better timing
+    // Staged component loading simulation
     const loadComponents = async () => {
-      // Add initial delay for dramatic effect
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Header loads first with smooth entrance
+      // Header loads first
+      await new Promise(resolve => setTimeout(resolve, 200));
       setComponentsLoaded(prev => ({ ...prev, header: true }));
-      await new Promise(resolve => setTimeout(resolve, 400));
       
-      // Bills section loads with staggered animation
-      setComponentsLoaded(prev => ({ ...prev, bills: true }));
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      // Steps section loads with bounce effect
-      setComponentsLoaded(prev => ({ ...prev, steps: true }));
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
-      // Footer slides up
-      setComponentsLoaded(prev => ({ ...prev, footer: true }));
+      // Bills section loads
       await new Promise(resolve => setTimeout(resolve, 300));
+      setComponentsLoaded(prev => ({ ...prev, bills: true }));
       
-      // All content ready - final polish
+      // Steps section loads
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setComponentsLoaded(prev => ({ ...prev, steps: true }));
+      
+      // Footer loads last
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setComponentsLoaded(prev => ({ ...prev, footer: true }));
+      
+      // All content ready
+      await new Promise(resolve => setTimeout(resolve, 200));
       setIsContentReady(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Smooth page loader removal with fade out
+      // Remove page loader
+      await new Promise(resolve => setTimeout(resolve, 300));
       setIsPageLoading(false);
       
-      // Re-enable scrolling with slight delay for smooth transition
-      setTimeout(() => {
-        document.body.style.overflow = 'auto';
-        document.body.classList.remove('page-loading');
-        
-        // Add a subtle entrance effect to the whole page
-        document.documentElement.style.scrollBehavior = 'smooth';
-      }, 300);
+      // Re-enable scrolling
+      document.body.style.overflow = 'auto';
     };
     
     loadComponents();
-    
-    // Cleanup function
-    return () => {
-      document.body.style.overflow = 'auto';
-      document.body.classList.remove('page-loading');
-    };
   }, []);
 
   // Fetch debate history on component mount (after loading)
@@ -1421,32 +1406,24 @@ const Legislation = ({ user }) => {
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
-  // Enhanced scroll-triggered animations for dynamic content
   useEffect(() => {
     if (!isContentReady) return;
 
     const observerOptions = {
-      threshold: 0.15,
-      rootMargin: '0px 0px -80px 0px'
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('in-view');
-          // Add staggered animation for child elements
-          const children = entry.target.querySelectorAll('.bill-card, .action-card, .grade-item');
-          children.forEach((child, index) => {
-            setTimeout(() => {
-              child.classList.add('animate-in');
-            }, index * 100);
-          });
         }
       });
     }, observerOptions);
 
-    // Observe elements that should animate on scroll (for dynamic content)
-    const elementsToObserve = document.querySelectorAll('.step-content, .results-section, .analysis-text-section');
+    // Observe elements that should animate on scroll
+    const elementsToObserve = document.querySelectorAll('.bill-card, .step-content');
     elementsToObserve.forEach((el) => observer.observe(el));
 
     return () => {
