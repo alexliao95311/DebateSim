@@ -136,14 +136,6 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
           <>📄 Upload PDF or TXT file</>
         )}
       </button>
-      <small style={{ 
-        display: 'block', 
-        color: '#666', 
-        marginTop: '0.25rem',
-        fontSize: '0.8rem'
-      }}>
-        Upload a PDF or TXT file to automatically fill the text area
-      </small>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
