@@ -3693,7 +3693,7 @@ div[style*="backgroundColor: #d"] * {
 }
 
 .results-section.content-ready {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
   transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s ease, box-shadow 1s ease 0.5s;
 }
 
@@ -3906,3 +3906,840 @@ div[style*="backgroundColor: #d"] * {
 }
 
 /* === END: Page Loading and Smooth Animations === */
+
+/* === ENHANCED: Page Loading and Smooth Animations === */
+
+/* Body Loading State */
+body.page-loading {
+  overflow: hidden !important;
+  cursor: wait;
+}
+
+body.page-loading * {
+  cursor: wait !important;
+}
+
+/* Enhanced Page Loader Overlay with Gradient Animation */
+.page-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
+  background-size: 400% 400%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.page-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+  animation: pageLoaderFloat 2s ease-in-out infinite;
+}
+
+@keyframes pageLoaderFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Enhanced Spinner with Glow Effect */
+.page-loader-spinner {
+  width: 80px;
+  height: 80px;
+  border: 6px solid rgba(74, 144, 226, 0.1);
+  border-top: 6px solid #4a90e2;
+  border-right: 6px solid rgba(74, 144, 226, 0.3);
+  border-radius: 50%;
+  animation: pageLoaderSpin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  position: relative;
+  box-shadow: 
+    0 0 20px rgba(74, 144, 226, 0.3),
+    inset 0 0 20px rgba(74, 144, 226, 0.1);
+}
+
+.page-loader-spinner::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top: 2px solid rgba(74, 144, 226, 0.6);
+  animation: pageLoaderSpin 0.8s linear infinite reverse;
+}
+
+@keyframes pageLoaderSpin {
+  0% { 
+    transform: rotate(0deg);
+    box-shadow: 
+      0 0 20px rgba(74, 144, 226, 0.3),
+      inset 0 0 20px rgba(74, 144, 226, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px rgba(74, 144, 226, 0.5),
+      inset 0 0 30px rgba(74, 144, 226, 0.2);
+  }
+  100% { 
+    transform: rotate(360deg);
+    box-shadow: 
+      0 0 20px rgba(74, 144, 226, 0.3),
+      inset 0 0 20px rgba(74, 144, 226, 0.1);
+  }
+}
+
+/* Enhanced Loading Text with Typing Effect */
+.page-loader-text {
+  color: #f8fafc;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  animation: pageLoaderPulse 2s ease-in-out infinite, pageLoaderGlow 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-loader-text::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.4), transparent);
+  animation: pageLoaderShine 2s ease-in-out infinite;
+}
+
+@keyframes pageLoaderPulse {
+  0%, 100% { 
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pageLoaderGlow {
+  0%, 100% {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    text-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(74, 144, 226, 0.5),
+      0 0 30px rgba(74, 144, 226, 0.3);
+  }
+}
+
+@keyframes pageLoaderShine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced Main Container Loading States */
+.legislation-container.content-loading {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+  filter: blur(5px);
+  transition: opacity 0.8s ease, visibility 0.8s ease, transform 0.8s ease, filter 0.8s ease;
+}
+
+.legislation-container.content-loaded {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  filter: blur(0px);
+  transition: opacity 1s ease 0.5s, visibility 1s ease 0.5s, transform 1s ease 0.5s, filter 1s ease 0.5s;
+}
+
+/* Enhanced Component Fade-in Animations */
+.component-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  filter: blur(3px);
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced Header Animation with Slide Down */
+.legislation-header.component-hidden {
+  opacity: 0;
+  transform: translateY(-30px);
+  backdrop-filter: blur(0px);
+}
+
+.legislation-header.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  backdrop-filter: blur(20px);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              backdrop-filter 0.8s ease;
+  animation: headerSlideIn 0.8s ease-out;
+}
+
+@keyframes headerSlideIn {
+  0% {
+    transform: translateY(-30px);
+    box-shadow: none;
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Enhanced Bills Section with Wave Animation */
+.bills-section.component-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.9);
+  filter: blur(5px);
+}
+
+.bills-section.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1.2s ease 0.3s, transform 1.2s ease 0.3s, filter 1.2s ease 0.3s;
+  animation: billsSectionRise 1.2s ease-out 0.3s both;
+}
+
+@keyframes billsSectionRise {
+  0% {
+    transform: translateY(50px) scale(0.9);
+    box-shadow: none;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Enhanced Bill Cards with Cascading Wave Effect */
+.bill-card-wrapper {
+  opacity: 0;
+  transform: translateY(30px) scale(0.9) rotateX(15deg);
+  filter: blur(2px);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.bills-section.component-visible .bill-card-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateX(0deg);
+  filter: blur(0px);
+  animation: billCardFloat 0.8s ease-out;
+}
+
+@keyframes billCardFloat {
+  0% {
+    transform: translateY(30px) scale(0.9) rotateX(15deg);
+    box-shadow: none;
+  }
+  50% {
+    transform: translateY(-5px) scale(1.02) rotateX(0deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateX(0deg);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Staggered delays with more variation */
+.bill-card-wrapper:nth-child(1) { transition-delay: 0.1s; }
+.bill-card-wrapper:nth-child(2) { transition-delay: 0.2s; }
+.bill-card-wrapper:nth-child(3) { transition-delay: 0.35s; }
+.bill-card-wrapper:nth-child(4) { transition-delay: 0.5s; }
+.bill-card-wrapper:nth-child(5) { transition-delay: 0.65s; }
+.bill-card-wrapper:nth-child(6) { transition-delay: 0.8s; }
+.bill-card-wrapper:nth-child(7) { transition-delay: 0.95s; }
+.bill-card-wrapper:nth-child(8) { transition-delay: 1.1s; }
+.bill-card-wrapper:nth-child(n+9) { transition-delay: 1.25s; }
+
+/* Enhanced Steps Section with Bounce Effect */
+.legislation-step-by-step-container.component-hidden {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  filter: blur(4px);
+}
+
+.legislation-step-by-step-container.component-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s ease 0.6s, transform 1s ease 0.6s, filter 1s ease 0.6s;
+  animation: stepsContainerBounce 1s ease-out 0.6s both;
+}
+
+@keyframes stepsContainerBounce {
+  0% {
+    transform: translateY(40px) scale(0.95);
+  }
+  60% {
+    transform: translateY(-10px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced Footer with Slide Up */
+.footer-wrapper.component-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  filter: blur(2px);
+}
+
+.footer-wrapper.component-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  transition: opacity 0.8s ease 0.8s, transform 0.8s ease 0.8s, filter 0.8s ease 0.8s;
+  animation: footerSlideUp 0.8s ease-out 0.8s both;
+}
+
+@keyframes footerSlideUp {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Results Section Animation with Morphing Effect */
+.results-section.results-hidden {
+  opacity: 0;
+  transform: translateY(50px) scale(0.9) rotateX(10deg);
+  filter: blur(8px);
+  visibility: hidden;
+  box-shadow: none;
+}
+
+.results-section.results-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateX(0deg);
+  filter: blur(0px);
+  visibility: visible;
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 1s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 1.5s ease 0.5s;
+  animation: resultsReveal 1s ease-out;
+}
+
+@keyframes resultsReveal {
+  0% {
+    transform: translateY(50px) scale(0.9) rotateX(10deg);
+    box-shadow: none;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02) rotateX(0deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateX(0deg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.results-section.content-ready {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2);
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 1s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 2s ease 0.8s;
+}
+
+/* Enhanced Grading Section with Particle Effect */
+.grading-stage-container.grading-loading {
+  opacity: 0;
+  transform: translateY(40px) scale(0.9);
+  filter: blur(10px);
+}
+
+.grading-stage-container.grading-loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: gradingReveal 1s ease-out;
+}
+
+@keyframes gradingReveal {
+  0% {
+    transform: translateY(40px) scale(0.9);
+    filter: blur(10px);
+  }
+  60% {
+    transform: translateY(-5px) scale(1.02);
+    filter: blur(2px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Enhanced Individual Grade Cards with Magnetic Effect */
+.grading-section.grading-loaded .grade-item {
+  animation: gradeCardMagneticSlide 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform: translateY(50px) scale(0.8) rotateY(15deg);
+  opacity: 0;
+  filter: blur(5px);
+}
+
+.grading-section.grading-loaded .grade-item:nth-child(1) { animation-delay: 0.1s; }
+.grading-section.grading-loaded .grade-item:nth-child(2) { animation-delay: 0.2s; }
+.grading-section.grading-loaded .grade-item:nth-child(3) { animation-delay: 0.3s; }
+.grading-section.grading-loaded .grade-item:nth-child(4) { animation-delay: 0.4s; }
+.grading-section.grading-loaded .grade-item:nth-child(5) { animation-delay: 0.5s; }
+.grading-section.grading-loaded .grade-item:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes gradeCardMagneticSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) scale(0.8) rotateY(15deg);
+    filter: blur(5px);
+    box-shadow: none;
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-10px) scale(1.05) rotateY(0deg);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateY(0deg);
+    filter: blur(0px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Enhanced Analysis Text with Typewriter Effect */
+.analysis-text-section.analysis-loading {
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(5px);
+}
+
+.analysis-text-section.analysis-loaded {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+  transition: opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease;
+  animation: analysisTextReveal 1.2s ease-out;
+}
+
+@keyframes analysisTextReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+    filter: blur(5px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-5px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+/* Enhanced Loading State Improvements */
+.loading-container {
+  background: rgba(74, 144, 226, 0.08);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(74, 144, 226, 0.1);
+  backdrop-filter: blur(20px);
+  animation: loadingContainerPulse 2s ease-in-out infinite,
+             loadingContainerFloat 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+  animation: loadingContainerSweep 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes loadingContainerPulse {
+  0%, 100% {
+    border-color: rgba(74, 144, 226, 0.2);
+    box-shadow: 0 8px 32px rgba(74, 144, 226, 0.1);
+    transform: scale(1);
+  }
+  50% {
+    border-color: rgba(74, 144, 226, 0.4);
+    box-shadow: 0 12px 40px rgba(74, 144, 226, 0.2);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes loadingContainerFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.02);
+  }
+}
+
+@keyframes loadingContainerSweep {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+/* Enhanced Loading Spinner with Orbit Effect */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(74, 144, 226, 0.1);
+  border-top: 4px solid #4a90e2;
+  border-right: 4px solid rgba(74, 144, 226, 0.3);
+  border-radius: 50%;
+  animation: enhancedSpin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  position: relative;
+}
+
+.loading-spinner::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid rgba(74, 144, 226, 0.6);
+  border-radius: 50%;
+  animation: enhancedSpin 0.8s linear infinite reverse;
+}
+
+.loading-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #4a90e2;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.8);
+  animation: spinnerPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes enhancedSpin {
+  0% { 
+    transform: rotate(0deg);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 6px 12px rgba(74, 144, 226, 0.5));
+  }
+  100% { 
+    transform: rotate(360deg);
+    filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.3));
+  }
+}
+
+@keyframes spinnerPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.8);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    box-shadow: 0 0 20px rgba(74, 144, 226, 1);
+  }
+}
+
+/* Enhanced Progress Bar with Wave Effect */
+.progress-fill {
+  background: linear-gradient(90deg, #4a90e2, #357abd, #60a5fa, #4a90e2);
+  background-size: 300% 100%;
+  animation: progressWave 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressWave {
+  0%, 100% {
+    background-position: 0% 50%;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.6);
+  }
+}
+
+@keyframes progressShine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced Search State Animations */
+.bills-horizontal-scroll {
+  min-height: 350px;
+  transition: opacity 0.5s ease, transform 0.5s ease, filter 0.5s ease;
+}
+
+.bills-horizontal-scroll.searching {
+  opacity: 0.6;
+  transform: scale(0.98);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+/* Scroll-triggered animations for dynamic content */
+.in-view {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: slideInScale 0.6s ease-out;
+}
+
+@keyframes slideInScale {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced page transitions */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Smooth page entrance effect */
+.legislation-container {
+  will-change: transform, opacity, filter;
+}
+
+/* Mobile Optimizations with Reduced Effects */
+@media (max-width: 768px) {
+  .page-loader-spinner {
+    width: 60px;
+    height: 60px;
+    border-width: 4px;
+  }
+  
+  .page-loader-text {
+    font-size: 1.1rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(25px) scale(0.98);
+    filter: blur(2px);
+  }
+  
+  .bill-card-wrapper {
+    transform: translateY(20px) scale(0.95);
+    filter: blur(1px);
+  }
+  
+  .bills-section.component-visible .bill-card-wrapper {
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+  
+  /* Reduce animation complexity on mobile */
+  .grading-section.grading-loaded .grade-item {
+    animation: gradeCardSimpleSlide 0.6s ease forwards;
+  }
+  
+  @keyframes gradeCardSimpleSlide {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .page-loader-spinner {
+    width: 50px;
+    height: 50px;
+    border-width: 3px;
+  }
+  
+  .page-loader-text {
+    font-size: 1rem;
+  }
+  
+  .component-hidden {
+    transform: translateY(20px);
+    filter: blur(1px);
+  }
+  
+  /* Further simplify animations on small screens */
+  .loading-container::before {
+    display: none;
+  }
+  
+  .loading-spinner::before,
+  .loading-spinner::after {
+    display: none;
+  }
+}
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .page-loader {
+    animation: none;
+    background: #1e293b;
+  }
+  
+  .page-loader-content {
+    animation: none;
+  }
+  
+  .page-loader-spinner {
+    animation: pageLoaderSpin 2s linear infinite;
+    box-shadow: none;
+  }
+  
+  .page-loader-spinner::before,
+  .page-loader-spinner::after {
+    display: none;
+  }
+  
+  .page-loader-text {
+    animation: none;
+  }
+  
+  .page-loader-text::after {
+    display: none;
+  }
+  
+  .component-hidden,
+  .component-visible,
+  .bill-card-wrapper,
+  .grading-stage-container,
+  .analysis-text-section {
+    transition: opacity 0.3s ease;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  
+  .loading-container {
+    animation: none;
+  }
+  
+  .loading-container::before {
+    display: none;
+  }
+  
+  .progress-fill {
+    animation: none;
+    background: #4a90e2;
+  }
+  
+  .progress-fill::before {
+    display: none;
+  }
+}
+
+/* === END: Enhanced Page Loading and Smooth Animations === */
