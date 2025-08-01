@@ -59,15 +59,6 @@ Welcome to the DebateSim technical documentation directory. This folder contains
 - Async processing architecture
 - Sub-second response times for cached content
 
-## Performance Metrics
-
-| Metric | Achievement |
-|--------|-------------|
-| **Response Time** | Fast response times for cached requests |
-| **Document Processing** | 40,000+ character support |
-| **API Reliability** | Multi-model fallbacks for improved reliability |
-| **User Satisfaction** | Intuitive interface with real-time features |
-| **Cache Efficiency** | Multi-level TTL caching strategy |
 
 ## Technical Stack
 
