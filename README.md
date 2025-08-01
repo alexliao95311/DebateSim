@@ -130,7 +130,7 @@ curl -X POST "http://localhost:8000/generate-response" \
 ### Prerequisites
 - **Python 3.9+** for backend
 - **Node.js 18+** for frontend  
-- **API Keys**: OpenRouter, Congress.gov (optional)
+- **API Keys**: OpenRouter, Congress.gov
 
 ### Local Development Setup
 ```bash
