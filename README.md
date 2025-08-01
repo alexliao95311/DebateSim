@@ -156,7 +156,6 @@ CONGRESS_API_KEY=your_congress_key  # Optional
 FIREBASE_CONFIG=your_firebase_config
 ```
 
-*Complete setup instructions: [Development Guide](Instructions.md)*
 
 ---
 
