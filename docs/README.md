@@ -14,23 +14,6 @@ Welcome to the DebateSim technical documentation directory. This folder contains
 - Future improvements and scalability plans
 - Complete API documentation
 
-### Additional Documentation (Coming Soon)
-
-#### Architecture Documentation
-- `ARCHITECTURE.md` - Detailed system architecture diagrams
-- `DATABASE_SCHEMA.md` - Data models and relationships
-- `DEPLOYMENT_GUIDE.md` - Production deployment instructions
-
-#### Developer Documentation  
-- `DEVELOPMENT_SETUP.md` - Local development environment setup
-- `CONTRIBUTING.md` - Guidelines for contributors
-- `TESTING_GUIDE.md` - Testing procedures and standards
-
-#### User Guides
-- `USER_MANUAL.md` - End-user guide for all platform features
-- `ADMIN_GUIDE.md` - Administrative features and management
-- `EDUCATOR_GUIDE.md` - Classroom and educational use cases
-
 ## Quick Navigation
 
 ### For Researchers and Academics
