@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
-import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
+import { MessageSquare, Code, Share2, X, Download, History, User, LogOut } from 'lucide-react';
 import Footer from "./Footer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -1448,7 +1448,8 @@ const Legislation = ({ user }) => {
                 className="legislation-history-button"
                 onClick={() => setShowHistorySidebar(!showHistorySidebar)}
               >
-                History
+                <History size={18} />
+                <span>History</span>
               </button>
             </div>
 
@@ -1462,9 +1463,13 @@ const Legislation = ({ user }) => {
             {/* RIGHT SECTION: User + Logout */}
             <div className="legislation-header-right">
               <div className="legislation-user-section">
-                <span className="legislation-username">{user?.displayName}</span>
+                <div className="legislation-user-info">
+                  <User size={18} />
+                  <span className="legislation-username">{user?.displayName}</span>
+                </div>
                 <button className="legislation-logout-button" onClick={handleLogout}>
-                  Logout
+                  <LogOut size={16} />
+                  <span>Logout</span>
                 </button>
               </div>
             </div>
