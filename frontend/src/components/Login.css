@@ -847,10 +847,106 @@ div.login-hero-actions {
   color: #64748b !important;
 }
 
+/* Mobile dropdown styles */
+.login-desktop-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+.login-mobile-dropdown-container {
+  display: none !important;
+  position: relative !important;
+}
+
+.login-mobile-dropdown-trigger {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.75rem 1rem !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.login-mobile-dropdown-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.login-dropdown-arrow {
+  transition: transform 0.3s ease !important;
+}
+
+.login-dropdown-arrow.rotated {
+  transform: rotate(180deg) !important;
+}
+
+.login-mobile-dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  margin-top: 0.5rem !important;
+  background-color: rgba(11, 17, 32, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+  min-width: 200px !important;
+  z-index: 1001 !important;
+  overflow: hidden !important;
+}
+
+.login-dropdown-option {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  padding: 0.875rem 1rem !important;
+  border: none !important;
+  background: transparent !important;
+  color: #f8fafc !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: left !important;
+}
+
+.login-dropdown-option:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.login-dropdown-option:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.login-dropdown-spinner {
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  border-top: 2px solid #f8fafc !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+}
+
 /* Responsive Design with prefixed classes */
 @media (max-width: 768px) {
   .login-navbar-right {
     gap: 0.5rem !important;
+  }
+
+  .login-desktop-buttons {
+    display: none !important;
+  }
+
+  .login-mobile-dropdown-container {
+    display: block !important;
   }
   
   .login-btn {
