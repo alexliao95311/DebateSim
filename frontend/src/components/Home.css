@@ -626,24 +626,73 @@
 }
 
 @media (max-width: 480px) {
-  .home-header-content {
-    flex-direction: column !important;
-    gap: 0.5rem !important;
-    padding: 0.5rem 1rem !important;
+  .home-header {
+    height: auto !important;
+    min-height: 64px !important;
   }
   
-  .home-header-left,
-  .home-header-right {
-    flex: none !important;
+  .home-header-content {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+  
+  .home-header-left {
+    flex: 0 0 auto !important;
+    order: 1 !important;
   }
   
   .home-header-center {
-    position: static !important;
-    transform: none !important;
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    order: 2 !important;
+    min-width: 0 !important;
+  }
+  
+  .home-header-right {
+    flex: 0 0 auto !important;
+    order: 3 !important;
   }
   
   .home-site-title {
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .home-history-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .home-history-button span {
+    display: none !important;
+  }
+  
+  .home-user-section {
+    gap: 0.25rem !important;
+  }
+  
+  .home-username {
+    max-width: 80px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  
+  .home-logout-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .home-logout-button span {
+    display: none !important;
+  }
+  
+  .home-container {
+    padding-top: 80px !important;
   }
   
   .home-welcome-message {

@@ -7,11 +7,13 @@ import LoadingSpinner from "./LoadingSpinner";
 import "./Judge.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
-import { MessageSquare, Code } from "lucide-react";
+import { MessageSquare, Code, User, LogOut } from "lucide-react";
+import { getAuth, signOut } from "firebase/auth";
 
 function Judge() {
   const location = useLocation();
   const navigate = useNavigate();
+  const auth = getAuth();
   
   // Retrieve debate details from router state
   const { transcript, topic, mode, judgeModel } = location.state || {};
@@ -29,6 +31,7 @@ function Judge() {
   const [timestamp] = useState(() => new Date().toLocaleString());
   const [showBillText, setShowBillText] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [user, setUser] = useState(auth.currentUser);
   
   // Extract bill description from transcript
   const [billDescription, setBillDescription] = useState("");
@@ -115,6 +118,15 @@ ${feedback}`;
     navigate("/");
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const handleShare = () => {
     if (!feedback || !transcript) return;
     
@@ -159,8 +171,41 @@ ${feedback}`;
 
   return (
     <div className="judge-container">
-      <h1 className="judge-main-heading">Debate Results</h1>
-      <h2 className="judge-sub-heading">Topic: {topic}</h2>
+      <header className="judge-header">
+        <div className="judge-header-content">
+          <div className="judge-header-left">
+            <button 
+              className="judge-back-button"
+              onClick={() => navigate("/")}
+            >
+              ← Home
+            </button>
+          </div>
+
+          <div className="judge-header-center">
+            <h1 className="judge-site-title" onClick={() => navigate("/")}>
+              Judge Results
+            </h1>
+          </div>
+
+          <div className="judge-header-right">
+            <div className="judge-user-section">
+              <div className="judge-user-info">
+                <User size={18} />
+                <span>{user?.displayName || "Guest"}</span>
+              </div>
+              <button className="judge-logout-button" onClick={handleLogout}>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="judge-main-content">
+        <h1 className="judge-main-heading">Debate Results</h1>
+        <h2 className="judge-sub-heading">Topic: {topic}</h2>
       
       <div className="judge-sections-container">
         <div className="judge-sections">
@@ -234,21 +279,21 @@ ${feedback}`;
             </div>
           </div>
         </div>
-      </div>
+        </div>
 
-
-      {error && <p className="judge-error-text">{error}</p>}
-      <div className="judge-button-group">
-        <button 
-          className="judge-share-button" 
-          onClick={handleShare} 
-          disabled={!feedback || !saved}
-        >
-          📤 Share Debate
-        </button>
-        <button className="judge-home-button" onClick={handleBackToHome}>
-          Back to Home
-        </button>
+        {error && <p className="judge-error-text">{error}</p>}
+        <div className="judge-button-group">
+          <button 
+            className="judge-share-button" 
+            onClick={handleShare} 
+            disabled={!feedback || !saved}
+          >
+            📤 Share Debate
+          </button>
+          <button className="judge-home-button" onClick={handleBackToHome}>
+            Back to Home
+          </button>
+        </div>
       </div>
       
       {/* Share Modal */}

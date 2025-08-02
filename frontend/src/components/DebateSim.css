@@ -725,6 +725,14 @@
     padding: 6rem 1rem 2rem 1rem !important;
   }
   
+  .debatesim-header-content {
+    padding: 0 1rem !important;
+  }
+  
+  .debatesim-site-title {
+    font-size: 1.5rem !important;
+  }
+  
   .debatesim-mode-grid {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
@@ -744,6 +752,75 @@
 }
 
 @media (max-width: 480px) {
+  .debatesim-header {
+    height: auto !important;
+    min-height: 64px !important;
+  }
+  
+  .debatesim-header-content {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+  
+  .debatesim-header-left {
+    flex: 0 0 auto !important;
+    order: 1 !important;
+  }
+  
+  .debatesim-header-center {
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    order: 2 !important;
+    min-width: 0 !important;
+  }
+  
+  .debatesim-header-right {
+    flex: 0 0 auto !important;
+    order: 3 !important;
+  }
+  
+  .debatesim-site-title {
+    font-size: 1.2rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .debatesim-history-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .debatesim-history-button span {
+    display: none !important;
+  }
+  
+  .debatesim-user-section {
+    gap: 0.25rem !important;
+  }
+  
+  .debatesim-user-info span {
+    max-width: 80px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  
+  .debatesim-logout-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .debatesim-logout-button span {
+    display: none !important;
+  }
+  
+  .debatesim-container {
+    padding-top: 80px !important;
+  }
+  
   .debatesim-mode-card {
     padding: 1.5rem !important;
   }
