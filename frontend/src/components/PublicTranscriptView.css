@@ -395,16 +395,51 @@
 }
 
 @media (max-width: 480px) {
-  .public-transcript-container {
-    padding: 5rem 0.5rem 2rem 0.5rem !important;
+  .public-home-header {
+    height: auto !important;
+    min-height: 64px !important;
   }
   
   .public-header-content {
-    padding: 0 0.5rem !important;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.5rem !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    position: relative !important;
+  }
+  
+  .public-header-center {
+    position: static !important;
+    left: auto !important;
+    transform: none !important;
+    flex: 1 1 auto !important;
+    order: 1 !important;
+    text-align: center !important;
+  }
+  
+  .public-header-right {
+    flex: 0 0 auto !important;
+    order: 2 !important;
+    margin-top: 0.5rem !important;
   }
   
   .public-site-title {
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .public-home-button {
+    height: 36px !important;
+    line-height: 36px !important;
+    padding: 0 1rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .public-transcript-container {
+    padding: 6rem 0.5rem 2rem 0.5rem !important;
   }
   
   .public-main-title {
