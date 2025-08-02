@@ -223,6 +223,6 @@ DebateSim is designed with responsible AI principles at its core:
 
 *Empowering critical thinking through AI-powered discourse*
 
-**License**: MIT | **Version**: 1.0.0 | **Last Updated**: July 2025
+**License**: MIT, Not available to recreate externally. | **Version**: 1.0.0 | **Last Updated**: July 2025
 
 </div>
