@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { auth, provider } from "../firebase/firebaseConfig";
 import { signInWithPopup } from "firebase/auth";
-import { MessageSquare, Code } from "lucide-react";
+import { MessageSquare, Code, ChevronDown, User, Menu } from "lucide-react";
 import "./Login.css";
 import Footer from "./Footer.jsx";
 
@@ -13,9 +13,11 @@ function Login({ onLogin }) {
   const [isTyping, setIsTyping] = useState(true);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
 
   const sectionsRef = useRef([]);
   const featureCardsRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const dynamicTexts = [
     "AI-powered debate simulation.",
@@ -116,6 +118,20 @@ function Login({ onLogin }) {
     });
   };
 
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowMobileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
     // Multiple scroll reset methods to ensure it works
@@ -208,31 +224,83 @@ function Login({ onLogin }) {
           </div>
         </div>
         <div className="login-navbar-right">
-          <button
-            className="login-btn login-btn-ghost"
-            onClick={handleGuestLogin}
-            disabled={loading}
-          >
-            <span className="login-btn-text">Continue as Guest</span>
-          </button>
-          <button
-            className="login-btn login-btn-google"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            title="Sign in securely with your Google account"
-          >
-            {loading ? (
-              <div className="login-loading-container">
-                <div className="login-loading-spinner"></div>
-                <span>Signing in...</span>
-              </div>
-            ) : (
-              <div className="login-google-btn-content">
-                <img src="/images/google.png" alt="Google logo" />
-                <span>Sign in with Google</span>
+          {/* Desktop buttons */}
+          <div className="login-desktop-buttons">
+            <button
+              className="login-btn login-btn-ghost"
+              onClick={handleGuestLogin}
+              disabled={loading}
+            >
+              <span className="login-btn-text">Continue as Guest</span>
+            </button>
+            <button
+              className="login-btn login-btn-google"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              title="Sign in securely with your Google account"
+            >
+              {loading ? (
+                <div className="login-loading-container">
+                  <div className="login-loading-spinner"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                <div className="login-google-btn-content">
+                  <img src="/images/google.png" alt="Google logo" />
+                  <span>Sign in with Google</span>
+                </div>
+              )}
+            </button>
+          </div>
+
+          {/* Mobile dropdown */}
+          <div className="login-mobile-dropdown-container" ref={dropdownRef}>
+            <button
+              className="login-mobile-dropdown-trigger"
+              onClick={() => setShowMobileDropdown(!showMobileDropdown)}
+              disabled={loading}
+            >
+              <User size={18} />
+              <span>Sign In</span>
+              <ChevronDown size={16} className={`login-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
+            </button>
+
+            {showMobileDropdown && (
+              <div className="login-mobile-dropdown-menu">
+                <button
+                  className="login-dropdown-option login-dropdown-guest"
+                  onClick={() => {
+                    handleGuestLogin();
+                    setShowMobileDropdown(false);
+                  }}
+                  disabled={loading}
+                >
+                  <User size={16} />
+                  <span>Continue as Guest</span>
+                </button>
+                <button
+                  className="login-dropdown-option login-dropdown-google"
+                  onClick={() => {
+                    handleGoogleLogin();
+                    setShowMobileDropdown(false);
+                  }}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <div className="login-dropdown-spinner"></div>
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <img src="/images/google.png" alt="Google logo" width="16" height="16" />
+                      <span>Sign in with Google</span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
-          </button>
+          </div>
         </div>
       </nav>
 
