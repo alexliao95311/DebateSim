@@ -9,7 +9,7 @@ import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import HistorySidebar from "./HistorySidebar";
-import { MessageSquare, Code, Share2, X, Download, History, User, LogOut } from 'lucide-react';
+import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -348,6 +348,8 @@ const Legislation = ({ user }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
@@ -439,7 +441,19 @@ const Legislation = ({ user }) => {
     }
   }, [user, isContentReady]);
 
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowMobileDropdown(false);
+      }
+    };
 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
    // Fetch recommended bills from Congress.gov API (after initial loading)
   useEffect(() => {
@@ -1516,7 +1530,8 @@ const Legislation = ({ user }) => {
 
             {/* RIGHT SECTION: User + Logout */}
             <div className="legislation-header-right">
-              <div className="legislation-user-section">
+              {/* Desktop user section */}
+              <div className="legislation-user-section legislation-desktop-user">
                 <div className="legislation-user-info">
                   <User size={18} />
                   <span className="legislation-username">{user?.displayName}</span>
@@ -1525,6 +1540,46 @@ const Legislation = ({ user }) => {
                   <LogOut size={16} />
                   <span>Logout</span>
                 </button>
+              </div>
+
+              {/* Mobile dropdown */}
+              <div className="legislation-mobile-dropdown-container" ref={dropdownRef}>
+                <button
+                  className="legislation-mobile-dropdown-trigger"
+                  onClick={() => setShowMobileDropdown(!showMobileDropdown)}
+                >
+                  <Menu size={18} />
+                  <ChevronDown size={16} className={`legislation-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
+                </button>
+
+                {showMobileDropdown && (
+                  <div className="legislation-mobile-dropdown-menu">
+                    <div className="legislation-dropdown-user-info">
+                      <User size={16} />
+                      <span>{user?.displayName}</span>
+                    </div>
+                    <button
+                      className="legislation-dropdown-option"
+                      onClick={() => {
+                        setShowHistorySidebar(!showHistorySidebar);
+                        setShowMobileDropdown(false);
+                      }}
+                    >
+                      <History size={16} />
+                      <span>History</span>
+                    </button>
+                    <button
+                      className="legislation-dropdown-option legislation-dropdown-logout"
+                      onClick={() => {
+                        handleLogout();
+                        setShowMobileDropdown(false);
+                      }}
+                    >
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
