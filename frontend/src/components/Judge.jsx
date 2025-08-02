@@ -7,7 +7,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import "./Judge.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
-import { MessageSquare, Code, User, LogOut } from "lucide-react";
+import { MessageSquare, Code, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 
 function Judge() {
@@ -32,6 +32,8 @@ function Judge() {
   const [showBillText, setShowBillText] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [user, setUser] = useState(auth.currentUser);
+  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+  const dropdownRef = useRef(null);
   
   // Extract bill description from transcript
   const [billDescription, setBillDescription] = useState("");
@@ -44,6 +46,20 @@ function Judge() {
     }, 0);
     
     return () => clearTimeout(scrollTimer);
+  }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowMobileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -189,7 +205,8 @@ ${feedback}`;
           </div>
 
           <div className="judge-header-right">
-            <div className="judge-user-section">
+            {/* Desktop user section */}
+            <div className="judge-user-section judge-desktop-user">
               <div className="judge-user-info">
                 <User size={18} />
                 <span>{user?.displayName || "Guest"}</span>
@@ -198,6 +215,36 @@ ${feedback}`;
                 <LogOut size={16} />
                 <span>Logout</span>
               </button>
+            </div>
+
+            {/* Mobile dropdown */}
+            <div className="judge-mobile-dropdown-container" ref={dropdownRef}>
+              <button
+                className="judge-mobile-dropdown-trigger"
+                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
+              >
+                <Menu size={18} />
+                <ChevronDown size={16} className={`judge-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
+              </button>
+
+              {showMobileDropdown && (
+                <div className="judge-mobile-dropdown-menu">
+                  <div className="judge-dropdown-user-info">
+                    <User size={16} />
+                    <span>{user?.displayName || "Guest"}</span>
+                  </div>
+                  <button
+                    className="judge-dropdown-option judge-dropdown-logout"
+                    onClick={() => {
+                      handleLogout();
+                      setShowMobileDropdown(false);
+                    }}
+                  >
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

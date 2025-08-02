@@ -115,6 +115,97 @@
   transform: translateY(-1px) !important;
 }
 
+/* Mobile dropdown styles */
+.legislation-desktop-user {
+  display: flex !important;
+}
+
+.legislation-mobile-dropdown-container {
+  display: none !important;
+  position: relative !important;
+}
+
+.legislation-mobile-dropdown-trigger {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  color: #f8fafc !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.legislation-mobile-dropdown-trigger:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.legislation-dropdown-arrow {
+  transition: transform 0.3s ease !important;
+}
+
+.legislation-dropdown-arrow.rotated {
+  transform: rotate(180deg) !important;
+}
+
+.legislation-mobile-dropdown-menu {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  margin-top: 0.5rem !important;
+  background-color: rgba(11, 17, 32, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+  min-width: 180px !important;
+  z-index: 1001 !important;
+  overflow: hidden !important;
+}
+
+.legislation-dropdown-user-info {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.875rem 1rem !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #f8fafc !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.legislation-dropdown-option {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  padding: 0.875rem 1rem !important;
+  border: none !important;
+  background: transparent !important;
+  color: #f8fafc !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: left !important;
+}
+
+.legislation-dropdown-option:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.legislation-dropdown-logout {
+  color: #ef4444 !important;
+}
+
+.legislation-dropdown-logout:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
 /* History button */
 .legislation-history-button {
   display: flex !important;
@@ -1554,6 +1645,14 @@
   
   .legislation-site-title {
     font-size: 1.5rem !important;
+  }
+
+  .legislation-desktop-user {
+    display: none !important;
+  }
+
+  .legislation-mobile-dropdown-container {
+    display: block !important;
   }
 }
 
