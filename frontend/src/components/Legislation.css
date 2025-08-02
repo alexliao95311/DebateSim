@@ -1535,6 +1535,93 @@
   .bill-description {
     font-size: 0.9rem;
   }
+  
+  /* Header mobile styles */
+  .legislation-header-content {
+    padding: 0 1rem !important;
+  }
+  
+  .legislation-site-title {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* === Mobile Header Responsive Styles === */
+@media (max-width: 768px) {
+  .legislation-header-content {
+    padding: 0 1rem !important;
+  }
+  
+  .legislation-site-title {
+    font-size: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .legislation-header {
+    height: auto !important;
+    min-height: 64px !important;
+  }
+  
+  .legislation-header-content {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+  
+  .legislation-header-left {
+    flex: 0 0 auto !important;
+    order: 1 !important;
+  }
+  
+  .legislation-header-center {
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    order: 2 !important;
+    min-width: 0 !important;
+  }
+  
+  .legislation-header-right {
+    flex: 0 0 auto !important;
+    order: 3 !important;
+  }
+  
+  .legislation-site-title {
+    font-size: 1.1rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .legislation-history-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .legislation-user-section {
+    gap: 0.25rem !important;
+  }
+  
+  .legislation-user-info span {
+    max-width: 70px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  
+  .legislation-logout-button {
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .legislation-logout-button span {
+    display: none !important;
+  }
+  
+  .legislation-container {
+    padding-top: 80px !important;
+  }
 }
 
 /* === 3-Step Process UI Styles === */
