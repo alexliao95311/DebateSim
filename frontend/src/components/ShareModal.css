@@ -13,6 +13,8 @@
   z-index: 2100;
   backdrop-filter: blur(5px);
   padding: 2rem;
+  padding-top: calc(2rem + 20vh);
+  overflow-y: auto;
 }
 
 .share-modal-content {
