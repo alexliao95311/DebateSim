@@ -281,8 +281,14 @@ function PublicTranscriptView() {
         
         {/* Show grading for bill analysis */}
         {transcript.grades && (
-          <BillGradingSection grades={transcript.grades} />
+          <>
+            {console.log('Rendering grading section:', transcript.grades)}
+            <BillGradingSection grades={transcript.grades} />
+          </>
         )}
+        
+        {/* Debug info */}
+        {!transcript.grades && console.log('No grades found in transcript:', transcript)}
         
         <div className="public-transcript-viewer">
           <div className="public-transcript-content">
