@@ -476,6 +476,10 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
   width: 100% !important;
   transition: all 0.3s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  visibility: visible !important;
 }
 
 .grading-section:hover {
@@ -494,12 +498,14 @@
   font-size: 2rem !important;
   margin-bottom: 0.5rem !important;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+  visibility: visible !important;
 }
 
 .grading-subtitle {
   color: #cbd5e1 !important;
   font-size: 1.1rem !important;
   font-style: italic !important;
+  visibility: visible !important;
 }
 
 .grading-grid {
@@ -529,6 +535,8 @@
   position: relative !important;
   cursor: help !important;
   min-height: 200px !important;
+  visibility: visible !important;
+  z-index: 2 !important;
 }
 
 .grade-item:hover {
@@ -549,18 +557,22 @@
   width: 75px !important;
   height: 75px !important;
   margin: 1rem 0 !important;
+  visibility: visible !important;
+  z-index: 3 !important;
 }
 
 .circular-progress svg {
   width: 100% !important;
   height: 100% !important;
   transform: rotate(-90deg) !important;
+  visibility: visible !important;
 }
 
 .circular-progress .progress-bg {
   fill: none !important;
   stroke: rgba(71, 85, 105, 0.5) !important;
   stroke-width: 6 !important;
+  visibility: visible !important;
 }
 
 .circular-progress .progress-fill {
@@ -568,6 +580,7 @@
   stroke-width: 6 !important;
   stroke-linecap: round !important;
   transition: stroke-dasharray 1s ease-in-out !important;
+  visibility: visible !important;
 }
 
 .circular-progress .progress-text {
@@ -579,6 +592,8 @@
   font-weight: 700 !important;
   color: #f8fafc !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+  visibility: visible !important;
+  z-index: 4 !important;
 }
 
 .grade-header {
@@ -592,6 +607,7 @@
 .grade-icon {
   font-size: 1.5rem !important;
   margin-bottom: 0.25rem !important;
+  visibility: visible !important;
 }
 
 .grade-label {
@@ -601,6 +617,7 @@
   line-height: 1.2 !important;
   text-align: center !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  visibility: visible !important;
 }
 
 .grade-description {
@@ -610,6 +627,7 @@
   text-align: center !important;
   margin-top: 0.5rem !important;
   font-weight: 500 !important;
+  visibility: visible !important;
 }
 
 /* Category-based Styling with glass-morphism */
