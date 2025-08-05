@@ -24,6 +24,19 @@ const SpeechTest = () => {
                     (navigator.brave && navigator.brave.isBrave());
     logDebug('Is Brave browser:', isBrave);
     
+    // Additional Brave-specific checks
+    if (isBrave) {
+      logDebug('Brave-specific checks:');
+      logDebug('- navigator.brave:', navigator.brave);
+      logDebug('- navigator.brave.isBrave():', navigator.brave?.isBrave());
+      logDebug('- navigator.brave.isBrave.name:', navigator.brave?.isBrave?.name);
+      
+      // Check for additional Brave properties
+      if (navigator.brave) {
+        logDebug('Brave API available:', Object.keys(navigator.brave));
+      }
+    }
+    
     // Check browser support
     const hasWebkitSpeechRecognition = 'webkitSpeechRecognition' in window;
     const hasSpeechRecognition = 'SpeechRecognition' in window;
@@ -57,6 +70,26 @@ const SpeechTest = () => {
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
+    
+    // Brave-specific settings
+    if (isBrave) {
+      logDebug('Applying Brave-specific settings');
+      // Try to set additional properties that might help with Brave
+      try {
+        recognition.grammars = null; // Clear any grammars
+        logDebug('Cleared grammars for Brave');
+      } catch (err) {
+        logDebug('Could not clear grammars:', err);
+      }
+      
+      // Try different language settings for Brave
+      try {
+        recognition.lang = 'en-US';
+        logDebug('Set language to en-US for Brave');
+      } catch (err) {
+        logDebug('Could not set language:', err);
+      }
+    }
     
     logDebug('SpeechRecognition configured:', {
       continuous: recognition.continuous,
@@ -124,15 +157,15 @@ const SpeechTest = () => {
           break;
         case 'network':
           errorMessage = isBrave 
-            ? 'Network error in Brave. Try disabling Brave Shields or use Chrome.'
-            : 'Network error. Please check your internet connection.';
+            ? 'Network error in Brave. Try additional Brave settings or use Chrome/Safari.'
+            : 'Network error. Please check your internet connection and try again.';
           break;
         case 'aborted':
           errorMessage = 'Speech recognition was aborted. Please try again.';
           break;
         case 'service-not-allowed':
           errorMessage = isBrave
-            ? 'Speech recognition service not allowed in Brave. Try disabling Brave Shields.'
+            ? 'Speech recognition service not allowed in Brave. Try additional Brave settings or use Chrome/Safari.'
             : 'Speech recognition service not allowed. Please check your browser settings.';
           break;
         case 'bad-grammar':
@@ -246,6 +279,75 @@ const SpeechTest = () => {
         🎤 Speech Recognition Test
       </h1>
       
+      {/* Brave Browser Warning */}
+      {navigator.userAgent.includes('Brave') && (
+        <div style={{
+          padding: '1rem',
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffeaa7',
+          borderRadius: '8px',
+          marginBottom: '2rem'
+        }}>
+          <h3 style={{ color: '#856404', margin: '0 0 0.5rem 0' }}>⚠️ Brave Browser Detected</h3>
+          <p style={{ color: '#856404', margin: '0 0 1rem 0' }}>
+            Brave browser's privacy features may block speech recognition. Try these solutions:
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/microphone';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🔧 Open Brave Settings
+            </button>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/sound';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🎵 Sound Settings
+            </button>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/cookies';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#ffc107',
+                color: 'black',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              🍪 Cookie Settings
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div style={{
         backgroundColor: '#f5f5f5',
         padding: '1.5rem',
@@ -307,6 +409,16 @@ const SpeechTest = () => {
             marginBottom: '1rem'
           }}>
             ❌ Error: {error}
+            {error.includes('Brave') && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <strong>Quick Fix:</strong>
+                <ol style={{ margin: '0.5rem 0 0 1rem', fontSize: '0.9rem' }}>
+                  <li>Click the lion icon (🦁) in the address bar</li>
+                  <li>Set "Shields" to "Down"</li>
+                  <li>Refresh the page and try again</li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
         
@@ -398,6 +510,154 @@ const SpeechTest = () => {
           <li>Check the browser console (F12) for additional logs</li>
         </ol>
       </div>
+      
+      {/* Brave Browser Solutions */}
+      {navigator.userAgent.includes('Brave') && (
+        <div style={{
+          marginTop: '2rem',
+          padding: '1rem',
+          backgroundColor: '#fff3cd',
+          borderRadius: '8px',
+          border: '1px solid #ffeaa7'
+        }}>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>🔧 Brave Browser Solutions:</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+            <div>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Method 1: Disable Shields</h4>
+              <ol style={{ margin: 0, fontSize: '0.9rem', color: '#856404' }}>
+                <li>Click the lion icon (🦁) in the address bar</li>
+                <li>Set "Shields" to "Down"</li>
+                <li>Refresh the page</li>
+                <li>Try speech recognition again</li>
+              </ol>
+            </div>
+            <div>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Method 2: Allow Cookies</h4>
+              <ol style={{ margin: 0, fontSize: '0.9rem', color: '#856404' }}>
+                <li>Go to Settings > Shields > Site and shield settings</li>
+                <li>Set "Cookies and site data" to "Allow all"</li>
+                <li>Refresh the page</li>
+                <li>Try speech recognition again</li>
+              </ol>
+            </div>
+            <div>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Method 3: Use Chrome</h4>
+              <ol style={{ margin: 0, fontSize: '0.9rem', color: '#856404' }}>
+                <li>Open Chrome browser</li>
+                <li>Go to the same URL</li>
+                <li>Speech recognition should work immediately</li>
+                <li>No additional settings needed</li>
+              </ol>
+            </div>
+          </div>
+          
+          {/* Additional Brave Settings */}
+          <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'rgba(255, 255, 255, 0.3)', borderRadius: '4px' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>🔍 If Shields Are Already Down:</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              <div>
+                <h5 style={{ margin: '0 0 0.25rem 0', color: '#856404', fontSize: '0.9rem' }}>Check These Settings:</h5>
+                <ul style={{ margin: 0, fontSize: '0.8rem', color: '#856404' }}>
+                  <li>Settings > Privacy and security > Site and shield settings</li>
+                  <li>Set "Fingerprinting" to "Allow all"</li>
+                  <li>Set "HTTPS Everywhere" to "Off"</li>
+                  <li>Set "Scripts" to "Allow all"</li>
+                </ul>
+              </div>
+              <div>
+                <h5 style={{ margin: '0 0 0.25rem 0', color: '#856404', fontSize: '0.9rem' }}>Try These Steps:</h5>
+                <ul style={{ margin: 0, fontSize: '0.8rem', color: '#856404' }}>
+                  <li>Clear browser cache and cookies</li>
+                  <li>Try incognito/private mode</li>
+                  <li>Disable all extensions temporarily</li>
+                  <li>Check if VPN is interfering</li>
+                </ul>
+              </div>
+              <div>
+                <h5 style={{ margin: '0 0 0.25rem 0', color: '#856404', fontSize: '0.9rem' }}>Alternative Browsers:</h5>
+                <ul style={{ margin: 0, fontSize: '0.8rem', color: '#856404' }}>
+                  <li>✅ Safari (you confirmed it works)</li>
+                  <li>✅ Chrome (should work)</li>
+                  <li>✅ Edge (should work)</li>
+                  <li>⚠️ Firefox (limited support)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          {/* Quick Test Buttons */}
+          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/microphone';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🔧 Microphone Settings
+            </button>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/cookies';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🍪 Cookie Settings
+            </button>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/javascript';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#ffc107',
+                color: 'black',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              📜 JavaScript Settings
+            </button>
+            <button
+              onClick={() => {
+                const url = 'chrome://settings/content/sound';
+                window.open(url, '_blank');
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#6f42c1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              🎵 Sound Settings
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
