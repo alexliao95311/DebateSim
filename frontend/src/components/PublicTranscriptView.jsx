@@ -6,23 +6,24 @@ import rehypeRaw from "rehype-raw";
 import { getSharedTranscript } from "../firebase/shareTranscript";
 import LoadingSpinner from "./LoadingSpinner";
 import "./PublicTranscriptView.css";
+import "./Legislation.css"; // For grading section styles
 
-// Import grading components (inline to avoid dependency issues)
-const CircularProgress = ({ percentage, size = 70, strokeWidth = 6, color = '#4a90e2' }) => {
+// Circular Progress Component for grading display
+const CircularProgress = ({ percentage, size = 80, strokeWidth = 8, color = '#4a90e2' }) => {
   const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const strokeDasharray = 2 * Math.PI * radius;
+  const strokeDashoffset = strokeDasharray - (percentage / 100) * strokeDasharray;
 
   return (
     <div className="circular-progress" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
         <circle
-          className="progress-bg"
           cx={size / 2}
           cy={size / 2}
           r={radius}
           strokeWidth={strokeWidth}
+          stroke="#e2e8f0"
+          fill="transparent"
         />
         <circle
           className="progress-fill"
@@ -42,7 +43,16 @@ const CircularProgress = ({ percentage, size = 70, strokeWidth = 6, color = '#4a
   );
 };
 
-const GradeItem = ({ label, percentage, description, tooltip, icon, category, isOverall = false }) => {
+// Grade Item Component
+const GradeItem = ({ label, percentage, description, tooltip, icon, category, isOverall = false, showTooltip = true }) => {
+  const getGradeClass = (score) => {
+    if (score >= 90) return 'grade-excellent';
+    if (score >= 70) return 'grade-good';
+    if (score >= 50) return 'grade-fair';
+    if (score >= 30) return 'grade-poor';
+    return 'grade-very-poor';
+  };
+
   const getGradeColor = (score) => {
     if (score >= 90) return '#28a745';
     if (score >= 70) return '#20c997';
@@ -51,10 +61,11 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
     return '#dc3545';
   };
 
+  const gradeClass = getGradeClass(percentage);
   const gradeColor = getGradeColor(percentage);
 
   return (
-    <div className={`grade-item ${category} ${isOverall ? 'overall' : ''}`}>
+    <div className={`grade-item ${gradeClass} ${category} ${isOverall ? 'overall' : ''}`}>
       <div className="grade-header">
         <span className="grade-icon">{icon}</span>
         <div className="grade-label">{label}</div>
@@ -66,7 +77,7 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
         color={gradeColor}
       />
       <div className="grade-description">{description}</div>
-      {tooltip && (
+      {tooltip && showTooltip && (
         <div className="tooltip">
           {tooltip}
         </div>
@@ -151,6 +162,7 @@ const BillGradingSection = ({ grades }) => {
                 icon={criteria.icon}
                 category={criteria.category}
                 isOverall={isOverall}
+                showTooltip={true}
               />
             );
           })}
@@ -280,15 +292,11 @@ function PublicTranscriptView() {
         </div>
         
         {/* Show grading for bill analysis */}
-        {transcript.grades && (
-          <>
-            {console.log('Rendering grading section:', transcript.grades)}
+        {transcript.activityType === 'Analyze Bill' && transcript.grades && (
+          <div className="grading-stage-container grading-loaded" style={{ marginBottom: '2rem' }}>
             <BillGradingSection grades={transcript.grades} />
-          </>
+          </div>
         )}
-        
-        {/* Debug info */}
-        {!transcript.grades && console.log('No grades found in transcript:', transcript)}
         
         <div className="public-transcript-viewer">
           <div className="public-transcript-content">

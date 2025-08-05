@@ -20,8 +20,8 @@
   border: 1px solid rgba(71, 85, 105, 0.3);
   border-radius: 12px;
   width: 100%;
-  max-width: 500px;
-  max-height: calc(100vh - 4rem);
+  max-width: 600px;
+  max-height: calc(100vh - 2rem);
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease-out;
@@ -253,8 +253,167 @@
   transform: translateY(-1px);
 }
 
+/* === Bill Grading Styles for Share Modal === */
+.grading-section-modal {
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+}
 
+.grading-header-modal {
+  text-align: center;
+  margin-bottom: 1rem;
+}
 
+.grading-header-modal h4 {
+  color: #f8fafc !important;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.grading-subtitle-modal {
+  color: #cbd5e1 !important;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.grading-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 100%;
+}
+
+.grading-grid-modal .grade-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 0.75rem !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  min-height: 120px !important;
+  transition: all 0.2s ease !important;
+}
+
+.grading-grid-modal .grade-item:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(74, 144, 226, 0.4) !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+.grading-grid-modal .grade-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.grading-grid-modal .grade-icon {
+  font-size: 1rem !important;
+}
+
+.grading-grid-modal .grade-label {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  color: #f8fafc !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+}
+
+.grading-grid-modal .grade-description {
+  font-size: 0.6rem !important;
+  color: #cbd5e1 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  margin-top: 0.25rem !important;
+}
+
+.grading-grid-modal .circular-progress {
+  position: relative !important;
+  margin: 0.5rem 0 !important;
+}
+
+.grading-grid-modal .circular-progress svg {
+  width: 100% !important;
+  height: 100% !important;
+  transform: rotate(-90deg) !important;
+}
+
+.grading-grid-modal .circular-progress .progress-bg {
+  fill: none !important;
+  stroke: rgba(71, 85, 105, 0.4) !important;
+  stroke-width: 4 !important;
+}
+
+.grading-grid-modal .circular-progress .progress-fill {
+  fill: none !important;
+  stroke-width: 4 !important;
+  stroke-linecap: round !important;
+}
+
+.grading-grid-modal .circular-progress .progress-text {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+}
+
+/* Category-based styling for modal */
+.grading-grid-modal .grade-item.positive {
+  border-color: rgba(40, 167, 69, 0.3) !important;
+}
+
+.grading-grid-modal .grade-item.moderate {
+  border-color: rgba(255, 193, 7, 0.3) !important;
+}
+
+.grading-grid-modal .grade-item.caution {
+  border-color: rgba(255, 126, 20, 0.3) !important;
+}
+
+.grading-grid-modal .grade-item.overall {
+  border: 2px solid rgba(74, 144, 226, 0.4) !important;
+  background: rgba(74, 144, 226, 0.1) !important;
+}
+
+.grading-grid-modal .grade-item.overall .grade-label {
+  color: #4a90e2 !important;
+  font-weight: 700 !important;
+}
+
+/* Mobile responsiveness for modal grading */
+@media (max-width: 576px) {
+  .grading-grid-modal {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .grading-grid-modal .grade-item {
+    min-height: 100px !important;
+    padding: 0.5rem !important;
+  }
+  
+  .grading-grid-modal .grade-label {
+    font-size: 0.65rem !important;
+  }
+  
+  .grading-grid-modal .grade-description {
+    font-size: 0.55rem !important;
+  }
+  
+  .grading-grid-modal .grade-icon {
+    font-size: 0.9rem !important;
+  }
+}
 
 /* Mobile responsiveness */
 @media (max-width: 576px) {
