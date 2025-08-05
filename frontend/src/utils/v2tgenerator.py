@@ -5,7 +5,7 @@ from google.cloud import speech
 RATE = 16000
 CHUNK = int(RATE / 10) # btw this means 100ms
 
-class MicrophoneStream:
+class MicStream:
     """rec system to chunk"""
     def __init__(self, rate, chunk):
         self._rate = rate
