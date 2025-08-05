@@ -13,3 +13,19 @@ class MicStream:
 
         self._buff = queue.Queue()
         self.closed = True
+
+def print_server(responses):
+    """ prints server logs/responses """
+    for response in responses:
+        if not response.results:
+            continue
+        result = response.results[0]
+
+        if not result.alternatives:
+            continue
+        transcript = result.alternatives[0].transcript
+
+        if result.is_final:
+            print(f"Final transcript: {transcript}\n")
+        else:
+            print(f"Partial transcript: {transcript}", end="\r")
