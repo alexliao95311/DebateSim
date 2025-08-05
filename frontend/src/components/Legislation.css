@@ -43,21 +43,6 @@
   padding: 2rem !important;
 }
 
-/* Fix ShareModal positioning - override stacking context issues */
-.share-modal-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.7) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 2100 !important;
-  backdrop-filter: blur(5px) !important;
-  padding: 2rem !important;
-}
 
 /* Header styles matching Home.jsx exactly */
 .legislation-header {
@@ -1986,8 +1971,8 @@
 
 .share-analysis-btn {
   padding: 0.5rem 1rem;
-  background: #28a745;
-  color: white;
+  background: #28a745 !important;
+  color: white !important;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -1997,6 +1982,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  opacity: 1 !important;
 }
 
 .share-analysis-btn:hover {
@@ -2016,8 +2002,8 @@
 
 .share-analysis-btn-large {
   padding: 1rem 2rem;
-  background: #28a745;
-  color: white;
+  background: #28a745 !important;
+  color: white !important;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -2028,6 +2014,7 @@
   align-items: center;
   gap: 0.5rem;
   box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+  opacity: 1 !important;
 }
 
 .share-analysis-btn-large:hover {

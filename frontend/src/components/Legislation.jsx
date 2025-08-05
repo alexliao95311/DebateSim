@@ -1554,27 +1554,6 @@ const Legislation = ({ user }) => {
 
 
         
-        {/* Share Modal for Current Analysis */}
-        {showAnalysisShareModal && analysisResult && (
-          <ShareModal 
-            isOpen={showAnalysisShareModal}
-            onClose={() => setShowAnalysisShareModal(false)}
-            transcript={{
-              transcript: analysisResult,
-              topic: selectedBill ? (
-                billSource === 'recommended' ? 
-                  `Bill Analysis: ${selectedBill.title}` : 
-                  `Bill Analysis: ${selectedBill.name}`
-              ) : 'Bill Analysis',
-              mode: 'analysis',
-              activityType: 'Analyze Bill',
-              grades: analysisGrades,
-              model: selectedModel,
-              createdAt: new Date().toISOString()
-            }}
-            transcriptId={null}
-          />
-        )}
         
         {/* Bill Link Confirmation Modal */}
         {showLinkConfirmation && linkParsedBill && (
@@ -2364,31 +2343,6 @@ const Legislation = ({ user }) => {
             </div>
           )}
           
-          {/* Analysis Loading Skeleton */}
-          {loadingState && (
-            <div className="analysis-loading-skeleton">
-              <div className="skeleton-header">
-                <div className="skeleton-title"></div>
-                <div className="skeleton-subtitle"></div>
-              </div>
-              <div className="skeleton-grading-grid">
-                {[...Array(6)].map((_, index) => (
-                  <div key={index} className="skeleton-grade-card">
-                    <div className="skeleton-grade-icon"></div>
-                    <div className="skeleton-grade-circle"></div>
-                    <div className="skeleton-grade-text"></div>
-                  </div>
-                ))}
-              </div>
-              <div className="skeleton-analysis-text">
-                <div className="skeleton-text-line long"></div>
-                <div className="skeleton-text-line medium"></div>
-                <div className="skeleton-text-line long"></div>
-                <div className="skeleton-text-line short"></div>
-                <div className="skeleton-text-line long"></div>
-              </div>
-            </div>
-          )}
           
           {/* Results Section with Staged Loading */}
           {analysisResult && (
@@ -2406,8 +2360,8 @@ const Legislation = ({ user }) => {
                     className="share-analysis-btn" 
                     onClick={handleShareAnalysis}
                     style={{
-                      opacity: analysisContentReady ? 1 : 0.5,
-                      pointerEvents: analysisContentReady ? 'auto' : 'none'
+                      opacity: 1,
+                      pointerEvents: 'auto'
                     }}
                   >
                     📤 Share Analysis
@@ -2416,8 +2370,8 @@ const Legislation = ({ user }) => {
                     className="download-analysis-btn" 
                     onClick={handleDownloadAnalysisPDF}
                     style={{
-                      opacity: analysisContentReady ? 1 : 0.5,
-                      pointerEvents: analysisContentReady ? 'auto' : 'none'
+                      opacity: 1,
+                      pointerEvents: 'auto'
                     }}
                   >
                     📄 Download PDF
@@ -2492,6 +2446,28 @@ const Legislation = ({ user }) => {
           <Footer />
         </div>
       </div>
+
+      {/* Share Modal for Current Analysis - Outside container for proper centering */}
+      {showAnalysisShareModal && analysisResult && (
+        <ShareModal 
+          isOpen={showAnalysisShareModal}
+          onClose={() => setShowAnalysisShareModal(false)}
+          transcript={{
+            transcript: analysisResult,
+            topic: selectedBill ? (
+              billSource === 'recommended' ? 
+                `Bill Analysis: ${selectedBill.title}` : 
+                `Bill Analysis: ${selectedBill.name}`
+            ) : 'Bill Analysis',
+            mode: 'analysis',
+            activityType: 'Analyze Bill',
+            grades: analysisGrades,
+            model: selectedModel,
+            createdAt: new Date().toISOString()
+          }}
+          transcriptId={null}
+        />
+      )}
 
       <HistorySidebar 
         user={user}
