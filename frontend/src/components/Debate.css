@@ -25,6 +25,144 @@ html, body {
   color: var(--text-main);
 }
 
+/* Voice Input Styles */
+.voice-input-container {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.voice-input-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.voice-input-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.voice-input-button.start {
+  background: #28a745;
+  color: white;
+}
+
+.voice-input-button.stop {
+  background: #dc3545;
+  color: white;
+}
+
+.voice-input-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.voice-input-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.voice-input-clear {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.voice-input-clear:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.voice-input-listening {
+  padding: 0.5rem;
+  background: rgba(40, 167, 69, 0.1);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.voice-input-listening p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.voice-input-transcript {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.voice-input-transcript p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: white;
+  font-style: italic;
+}
+
+.voice-input-transcript strong {
+  color: #4a90e2;
+}
+
+.voice-input-placeholder {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.voice-input-error {
+  padding: 1rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  color: #c33;
+}
+
+.voice-input-error p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.voice-input-error button {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #c33;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Container spans full viewport with glass-morphism theme */
 .debate-container {
   width: 100vw;

@@ -9,6 +9,7 @@ import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
 import Presentation from "./components/Presentation";
+import SpeechTest from "./components/SpeechTest";
 
 // Component to handle scroll reset on route changes
 function ScrollToTop() {
@@ -98,6 +99,7 @@ function App() {
         {/* Public routes - accessible without login */}
         <Route path="/shared/:shareId" element={<PublicTranscriptView />} />
         <Route path="/presentation" element={<Presentation />} />
+        <Route path="/speech-test" element={<SpeechTest />} />
         
         {!user ? (
           <Route path="*" element={<Login onLogin={setUser} />} />

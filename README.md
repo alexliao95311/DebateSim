@@ -27,6 +27,31 @@
 *For quick access to specific sections, see the [Documentation Navigation Guide](docs/README.md#quick-navigation)*
 
 ---
+
+## **Voice-to-Text Integration**
+
+**Real-time speech recognition** is now available in the [`speech_utils/`](speech_utils/) folder:
+
+- **[Speech Utilities README](speech_utils/README.md)** - Complete setup and usage guide
+- **Google Cloud Speech-to-Text** - High-accuracy real-time transcription
+- **Easy Integration** - Simple API for adding voice input to debates
+- **Testing Tools** - Comprehensive test suite and examples
+
+*Quick test: `cd speech_utils && python3 test_v2t.py`*
+
+### **Frontend Voice Input**
+
+**Browser-based speech recognition** is now integrated into the debate interface:
+
+- **🎤 Voice Input Component** - Real-time speech-to-text in debates
+- **AI vs User Mode** - Speak your arguments instead of typing
+- **User vs User Mode** - Voice input for both debaters
+- **Chrome/Edge Support** - Uses Web Speech API for browser compatibility
+- **Live Transcription** - See your speech transcribed in real-time
+
+*Available in all debate modes with microphone access*
+
+---
 ## Problem Statement and Motivation
 
 ### The Challenge of Democratic Discourse
@@ -73,6 +98,12 @@ DebateSim addresses these challenges by democratizing access to high-quality deb
 - **AI vs User**: Practice and improve your debate skills
 - **User vs User**: Human debates with AI moderation and analysis
 
+### **Voice-to-Text Support**
+- **Real-time Transcription**: Live speech-to-text during debates
+- **Google Cloud Integration**: High-accuracy recognition
+- **Browser Speech API**: Client-side voice input for immediate feedback
+- **Easy Integration**: Simple API for voice input features
+
 *For detailed technical implementation, see [Technical Project Report](docs/PROJECT_REPORT.md)*
 
 ---
@@ -83,7 +114,8 @@ DebateSim addresses these challenges by democratizing access to high-quality deb
 1. **Visit**: [debatesim.us](https://debatesim.us)
 2. **Sign Up**: Create account with Google authentication
 3. **Start Debating**: Choose AI vs AI, AI vs User, or User vs User
-4. **Analyze Bills**: Upload PDFs or search live Congressional data
+4. **Use Voice Input**: Click the microphone button to speak your arguments
+5. **Analyze Bills**: Upload PDFs or search live Congressional data
 
 ### For Developers
 ```bash
