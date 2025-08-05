@@ -304,7 +304,14 @@ function HistorySidebar({
             <div className={`${componentPrefix}-transcript-viewer`}>
               {/* Show grading section for bill analysis */}
               {selectedHistory.activityType === 'Analyze Bill' && selectedHistory.grades && (
-                <div style={{ marginBottom: '2rem' }}>
+                <div className="grading-stage-container grading-loaded" style={{ 
+                  marginBottom: '2rem',
+                  position: 'relative',
+                  zIndex: 1,
+                  backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                  borderRadius: '20px',
+                  padding: '2rem'
+                }}>
                   <BillGradingSection grades={selectedHistory.grades} />
                 </div>
               )}
@@ -361,12 +368,14 @@ function HistorySidebar({
       )}
 
       {/* Share Modal */}
-      <ShareModal 
-        isOpen={showShareModal && !!selectedHistory}
-        onClose={() => setShowShareModal(false)}
-        transcript={selectedHistory}
-        transcriptId={selectedHistory?.id}
-      />
+      {selectedHistory && (
+        <ShareModal 
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          transcript={selectedHistory}
+          transcriptId={selectedHistory.id}
+        />
+      )}
 
       {/* Hidden PDF content for export */}
       {selectedHistory && (
