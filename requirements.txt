@@ -35,3 +35,8 @@ typing-extensions
 
 # Search
 rapidfuzz
+
+#Voice2Text
+google-cloud-speech 
+pyaudio 
+six
