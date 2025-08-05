@@ -27,6 +27,19 @@
 *For quick access to specific sections, see the [Documentation Navigation Guide](docs/README.md#quick-navigation)*
 
 ---
+
+## **Voice-to-Text Integration**
+
+**Real-time speech recognition** is now available in the [`speech_utils/`](speech_utils/) folder:
+
+- **[Speech Utilities README](speech_utils/README.md)** - Complete setup and usage guide
+- **Google Cloud Speech-to-Text** - High-accuracy real-time transcription
+- **Easy Integration** - Simple API for adding voice input to debates
+- **Testing Tools** - Comprehensive test suite and examples
+
+*Quick test: `cd speech_utils && python3 test_v2t.py`*
+
+---
 ## Problem Statement and Motivation
 
 ### The Challenge of Democratic Discourse
@@ -72,6 +85,11 @@ DebateSim addresses these challenges by democratizing access to high-quality deb
 - **AI vs AI**: Watch sophisticated AI arguments unfold
 - **AI vs User**: Practice and improve your debate skills
 - **User vs User**: Human debates with AI moderation and analysis
+
+### **Voice-to-Text Support**
+- **Real-time Transcription**: Live speech-to-text during debates
+- **Google Cloud Integration**: High-accuracy recognition
+- **Easy Integration**: Simple API for voice input features
 
 *For detailed technical implementation, see [Technical Project Report](docs/PROJECT_REPORT.md)*
 

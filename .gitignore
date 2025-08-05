@@ -13,3 +13,24 @@ __pycache__/
 .gradio/
 
 node_modules
+
+# Google Cloud credentials
+credentials/
+*.json
+!package.json
+!package-lock.json
+
+# Audio files
+*.wav
+*.mp3
+*.m4a
+*.flac
+
+# Logs
+*.log
+*.pid
+nohup.out
+
+# OS files
+.DS_Store
+Thumbs.db
