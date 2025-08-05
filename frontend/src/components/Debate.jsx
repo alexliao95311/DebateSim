@@ -426,13 +426,39 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
+      // Add the user's message to the messageList
       appendMessage(
         userSide === "pro" ? "Pro (User)" : "Con (User)",
         userInput
       );
+      
+      // Clear the input
       setUserInput("");
       setCurrentRound(prev => prev + 1);
-      await handleEndDebate();
+      
+      // Build transcript with the current messageList plus the new user message
+      const userMessage = {
+        speaker: userSide === "pro" ? "Pro (User)" : "Con (User)",
+        text: userInput.trim(),
+        round: currentRound
+      };
+      
+      const finalTranscript = [...messageList, userMessage]
+        .map(({ speaker, text, model }) => {
+          const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+          return `## ${speaker}\n${modelInfo}${text}`;
+        })
+        .join("\n\n---\n\n");
+      
+      // Navigate to judge with the complete transcript
+      navigate("/judge", { 
+        state: { 
+          transcript: finalTranscript, 
+          topic, 
+          mode: isBillDebate ? 'bill-debate' : actualMode, 
+          judgeModel 
+        } 
+      });
     } catch (err) {
       setError("Failed to send final user argument.");
     } finally {
