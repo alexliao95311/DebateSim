@@ -347,7 +347,6 @@ const Legislation = ({ user }) => {
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
-  const [pdfError, setPdfError] = useState("");
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -358,7 +357,6 @@ const Legislation = ({ user }) => {
 
   const billNameInputRef = useRef(null);
   const resultsRef = useRef(null);
-  const pdfContentRef = useRef(null);
   const navigate = useNavigate();
 
   // Fetch debate history function
@@ -1069,37 +1067,6 @@ const Legislation = ({ user }) => {
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!selectedHistory) return;
-    
-    setPdfError("");
-    try {
-      const pdfData = {
-        topic: selectedHistory.topic || "Debate Transcript",
-        transcript: selectedHistory.transcript || "No transcript available.",
-        mode: selectedHistory.mode,
-        activityType: selectedHistory.activityType,
-        model: selectedHistory.model,
-        createdAt: selectedHistory.createdAt
-      };
-
-      // sees what type is used if its a debate or an analysis
-      if (selectedHistory.activityType === 'Analyze Bill') {
-        PDFGenerator.generateAnalysisPDF({
-          topic: selectedHistory.topic,
-          content: selectedHistory.transcript,
-          grades: selectedHistory.grades,
-          model: selectedHistory.model,
-          createdAt: selectedHistory.createdAt
-        });
-      } else {
-        PDFGenerator.generateDebatePDF(pdfData);
-      }
-    } catch (err) {
-      setPdfError("Failed to generate PDF. Please try again.");
-      console.error("PDF generation error:", err);
-    }
-  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBills, setFilteredBills] = useState([]);
@@ -1517,7 +1484,8 @@ const Legislation = ({ user }) => {
                 className="legislation-history-button"
                 onClick={() => setShowHistorySidebar(!showHistorySidebar)}
               >
-                History
+                <History size={16} />
+                <span>History</span>
               </button>
             </div>
 
@@ -1585,209 +1553,19 @@ const Legislation = ({ user }) => {
           </div>
 
 
-      {/* Modal to view selected history transcript */}
-      {selectedHistory && (
-        <div className="debatesim-history-modal" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 2100,
-          backdropFilter: 'blur(5px)',
-          padding: '2rem'
-        }}>
-          <div className="debatesim-modal-content" style={{
-            background: 'rgba(30, 41, 59, 0.95)',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '900px',
-            maxHeight: 'calc(100vh - 4rem)',
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            animation: 'slideUp 0.3s ease-out',
-            margin: 'auto',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div className="debatesim-modal-header" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '1.5rem',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              backgroundColor: 'rgba(30, 41, 59, 0.8)'
-            }}>
-              <button 
-                className="debatesim-modal-header-share" 
-                onClick={() => setShowShareModal(true)}
-                title="Share this transcript"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#f8fafc',
-                  cursor: 'pointer',
-                  padding: '0.5rem',
-                  borderRadius: '4px',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                <Share2 size={18} />
-              </button>
-              <h2 style={{
-                margin: 0,
-                color: '#f8fafc',
-                fontSize: '1.3rem',
-                fontWeight: 600,
-                textAlign: 'center',
-                flex: 1
-              }}>{selectedHistory.topic ? selectedHistory.topic : "Untitled Topic"}</h2>
-              <button 
-                className="debatesim-modal-header-close" 
-                onClick={() => setSelectedHistory(null)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#f8fafc',
-                  cursor: 'pointer',
-                  padding: '0.5rem',
-                  borderRadius: '4px',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="debatesim-transcript-viewer" style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: '1.5rem',
-              backgroundColor: 'rgba(30, 41, 59, 0.6)'
-            }}>
-              <ReactMarkdown
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
-                  ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
-                  ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
-                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
-                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
-                  hr: ({node, ...props}) => <hr className="divider" {...props} />
-                }}
-              >
-                {selectedHistory.transcript
-                  ? selectedHistory.transcript
-                  : "No transcript available."}
-              </ReactMarkdown>
-            </div>
-            
-            {/* Error message and download button */}
-            {pdfError && <p className="error-text" style={{ color: '#dc3545', padding: '0 1.5rem' }}>{pdfError}</p>}
-            <div className="debatesim-modal-button-group" style={{
-              display: 'flex',
-              gap: '0.75rem',
-              padding: '1.5rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              backgroundColor: 'rgba(30, 41, 59, 0.8)',
-              justifyContent: 'center'
-            }}>
-              <button 
-                className="debatesim-share-button" 
-                onClick={() => setShowShareModal(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#4a90e2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Share2 size={16} />
-                Share
-              </button>
-              <button 
-                className="debatesim-download-button" 
-                onClick={handleDownloadPDF}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Download size={16} />
-                Download PDF
-              </button>
-              <button 
-                className="debatesim-close-button" 
-                onClick={() => setSelectedHistory(null)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <X size={16} />
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-        {/* Share Modal */}
-        {selectedHistory && (
-          <ShareModal 
-            isOpen={showShareModal}
-            onClose={() => setShowShareModal(false)}
-            transcript={selectedHistory}
-            transcriptId={selectedHistory.id}
-          />
-        )}
         
         {/* Share Modal for Current Analysis */}
-        {showAnalysisShareModal && analysisResult && selectedBill && (
+        {showAnalysisShareModal && analysisResult && (
           <ShareModal 
             isOpen={showAnalysisShareModal}
             onClose={() => setShowAnalysisShareModal(false)}
             transcript={{
               transcript: analysisResult,
-              topic: billSource === 'recommended' ? 
-                `Bill Analysis: ${selectedBill.title}` : 
-                `Bill Analysis: ${selectedBill.name}`,
+              topic: selectedBill ? (
+                billSource === 'recommended' ? 
+                  `Bill Analysis: ${selectedBill.title}` : 
+                  `Bill Analysis: ${selectedBill.name}`
+              ) : 'Bill Analysis',
               mode: 'analysis',
               activityType: 'Analyze Bill',
               grades: analysisGrades,
@@ -1861,6 +1639,8 @@ const Legislation = ({ user }) => {
         )}
       </header>
 
+      {/* Main content wrapper for centering */}
+      <div className="legislation-main-content">
         {/* 3-Step Process UI with fade-in animation */}
         <div className={`legislation-step-by-step-container ${componentsLoaded.steps ? 'component-visible' : 'component-hidden'}`}>
           {/* Progress Indicator */}
@@ -2655,16 +2435,9 @@ const Legislation = ({ user }) => {
                 </div>
               </div>
               
-              {/* Grading Infographic Section with Staged Loading */}
-              {analysisGrades && showGradingSection && (
-                <div 
-                  className={`grading-stage-container ${gradingSectionLoaded ? 'grading-loaded' : 'grading-loading'}`}
-                  style={{
-                    opacity: gradingSectionLoaded ? 1 : 0,
-                    transform: gradingSectionLoaded ? 'translateY(0)' : 'translateY(20px)',
-                    transition: 'opacity 0.6s ease-out, transform 0.6s ease-out'
-                  }}
-                >
+              {/* Show grading section for bill analysis */}
+              {analysisGrades && (
+                <div className="grading-stage-container grading-loaded" style={{ marginBottom: '2rem' }}>
                   <BillGradingSection grades={analysisGrades} />
                 </div>
               )}
@@ -2718,86 +2491,15 @@ const Legislation = ({ user }) => {
         <div className={`footer-wrapper ${componentsLoaded.footer ? 'component-visible' : 'component-hidden'}`}>
           <Footer />
         </div>
-
-        {/* History Sidebar */}
-        <div className={`legislation-history-sidebar ${showHistorySidebar ? 'legislation-expanded' : ''}`}>
-        <h2>Activity History</h2>
-        <ul className="legislation-history-list">
-          {history.length > 0 ? (
-            history.map((item) => (
-              <li
-                key={item.id}
-                className="legislation-history-item"
-                onClick={() => setSelectedHistory(item)}
-                title="Click to view full transcript"
-              >
-                <div className="legislation-history-title">{item.topic || "Untitled Topic"}</div>
-                <div className="legislation-history-meta">
-                  <span className={`legislation-history-type ${getActivityTypeClass(item)}`}>
-                    {getActivityTypeDisplay(item)}
-                  </span>
-                  <span className="legislation-history-date">{new Date(item.createdAt).toLocaleDateString()}</span>
-                </div>
-              </li>
-            ))
-          ) : (
-            <li className="legislation-history-item" style={{ textAlign: 'center', color: '#94a3b8' }}>
-              <MessageSquare size={24} style={{ margin: '0 auto 0.5rem auto' }} />
-              No history available
-            </li>
-          )}
-        </ul>
-        <button 
-          className="legislation-close-sidebar-button"
-          onClick={() => setShowHistorySidebar(false)}
-        >
-          Close History
-        </button>
       </div>
 
-      {/* Hidden PDF content for export */}
-      {selectedHistory && (
-        <div style={{ position: "absolute", left: "-9999px" }}>
-          <div
-            ref={pdfContentRef}
-            className="pdf-container"
-            style={{
-              width: "7.5in",
-              wordBreak: "break-word",
-              overflowWrap: "break-word",
-              whiteSpace: "normal",
-              lineHeight: "1.4",
-            }}
-          >
-            <style>
-              {`
-                li, p, h2, h3 {
-                  page-break-inside: avoid;
-                  break-inside: avoid-page;
-                }
-              `}
-            </style>
-            <p style={{ fontStyle: "italic", color: "#555", fontSize: "10pt" }}>
-              Generated on: {new Date().toLocaleString()}
-            </p>
-            <h1 style={{ textAlign: "center", marginTop: 0, fontSize: "18pt" }}>
-              Debate Transcript
-            </h1>
-            <hr />
-            <h2 style={{ fontSize: "16pt" }}>
-              Topic: {selectedHistory.topic || "Untitled Topic"}
-            </h2>
-            {selectedHistory.mode && (
-              <h3 style={{ fontSize: "14pt" }}>Mode: {selectedHistory.mode}</h3>
-            )}
-            <div className="page-break" style={{ pageBreakBefore: "always" }} />
-            <h2 style={{ fontSize: "16pt" }}>Debate Content</h2>
-            <ReactMarkdown rehypePlugins={[rehypeRaw]} style={{ fontSize: "12pt" }}>
-              {selectedHistory.transcript || "No transcript available."}
-            </ReactMarkdown>
-          </div>
-        </div>
-      )}
+      <HistorySidebar 
+        user={user}
+        history={history}
+        showHistorySidebar={showHistorySidebar}
+        setShowHistorySidebar={setShowHistorySidebar}
+        componentPrefix="legislation"
+      />
       </div>
     </>
   );

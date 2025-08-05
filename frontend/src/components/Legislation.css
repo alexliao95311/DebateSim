@@ -15,6 +15,18 @@
   padding-left: 320px !important;
 }
 
+/* Main content centering to match Home.jsx */
+.legislation-main-content {
+  flex: 1 !important;
+  width: 100% !important;
+  max-width: 1800px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 /* Header styles matching Home.jsx exactly */
 .legislation-header {
   position: fixed !important;
@@ -3356,78 +3368,6 @@
   }
 }
 
-/* History modal dark theme styles */
-.history-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 2rem;
-}
-
-.history-modal .modal-content {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(15px) !important;
-  border: 1px solid rgba(71, 85, 105, 0.3) !important;
-  border-radius: 16px !important;
-  color: #f8fafc !important;
-  max-width: 90vw;
-  max-height: 90vh;
-  width: 800px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.history-modal .transcript-viewer {
-  color: #e2e8f0 !important;
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
-  line-height: 1.6;
-}
-
-.history-modal .transcript-viewer h1,
-.history-modal .transcript-viewer h2,
-.history-modal .transcript-viewer h3,
-.history-modal .transcript-viewer h4 {
-  color: #f8fafc !important;
-  font-weight: 600;
-  margin: 1.5rem 0 1rem 0;
-}
-
-.history-modal .transcript-viewer p {
-  color: #e2e8f0 !important;
-  margin-bottom: 1rem;
-  line-height: 1.6;
-}
-
-.history-modal .transcript-viewer ul,
-.history-modal .transcript-viewer ol {
-  color: #e2e8f0 !important;
-}
-
-.history-modal .transcript-viewer li {
-  color: #e2e8f0 !important;
-  margin-bottom: 0.5rem;
-}
-
-.history-modal .transcript-viewer strong {
-  color: #f8fafc !important;
-  font-weight: 600;
-}
-
-.history-modal .transcript-viewer em {
-  color: #cbd5e1 !important;
-  font-style: italic;
-}
 
 /* Bill Link Confirmation Modal - Maximum specificity */
 div.bill-link-modal {
