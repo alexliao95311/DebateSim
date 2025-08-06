@@ -6,6 +6,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
@@ -98,8 +99,8 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         resultsLength: event.results.length
       });
       
-      let finalTranscript = '';
-      let interimTranscript = '';
+      let newFinalTranscript = '';
+      let newInterimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -109,21 +110,39 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         logDebug(`Result ${i}:`, { transcript, isFinal, confidence: result[0].confidence });
         
         if (isFinal) {
-          finalTranscript += transcript;
+          newFinalTranscript += transcript;
         } else {
-          interimTranscript += transcript;
+          newInterimTranscript += transcript;
         }
       }
-
-      setTranscript(prevTranscript => {
-        const updatedTranscript = prevTranscript + (finalTranscript ? (prevTranscript ? ' ' : '') + finalTranscript : '');
-        logDebug('Transcript update:', { finalTranscript, interimTranscript, updatedTranscript });
-        return updatedTranscript + interimTranscript;
-      });
-      
-      if (finalTranscript) {
-        logDebug('Calling onTranscript with final transcript:', finalTranscript);
-        onTranscript(finalTranscript);
+      if (newFinalTranscript) {
+        setFinalTranscript(prevFinal => {
+          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
+          logDebug('Final transcript updated:', { prevFinal, newFinalTranscript, updatedFinal });
+          
+          // Also needa the one that displays the transcript
+          const displayTranscript = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
+          setTranscript(displayTranscript);
+          
+          return updatedFinal;
+        });
+        // Call onTranscript w/ new final
+        logDebug('Calling onTranscript with new final transcript:', newFinalTranscript);
+        onTranscript(newFinalTranscript);
+      } else {
+        // does w/ only interim to update
+        setFinalTranscript(currentFinal => {
+          const displayTranscript = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
+          setTranscript(displayTranscript);
+          
+          logDebug('Interim transcript update:', { 
+            currentFinal,
+            newInterimTranscript, 
+            displayTranscript 
+          });
+          
+          return currentFinal; // doesn't change final js adds
+        });
       }
     };
 
@@ -231,6 +250,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     logDebug('Starting speech recognition...');
     setError('');
     setTranscript('');
+    setFinalTranscript('');
     setIsProcessing(true);
     
     // Check microphone permissions
@@ -271,6 +291,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
   const clearTranscript = () => {
     logDebug('Clearing transcript');
     setTranscript('');
+    setFinalTranscript('');
     onTranscript('');
   };
 
@@ -518,5 +539,4 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     </>
   );
 };
-
 export default VoiceInput; 
