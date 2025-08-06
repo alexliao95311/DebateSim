@@ -174,7 +174,7 @@ template = """You are an expert debate judge. Analyze the following debate trans
 DEBATE TRANSCRIPT:
 {transcript}
 
-Please provide your judgment with the following sections:
+Please provide your judgement with the following sections:
 1. Summary of Main Arguments from both sides
 2. Strengths and Weaknesses Analysis for each debater
 3. Decision on who won the debate with reasoning

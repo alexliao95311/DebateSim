@@ -164,8 +164,45 @@ function Debate() {
   };
 
   const scrollToSpeech = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    console.log(`Attempting to scroll to speech: ${id}`);
+    
+    // Add a longer delay to ensure the DOM is fully updated
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      console.log(`Found element for ${id}:`, el);
+      
+      if (el) {
+        // Ensure the element is visible and scrollable
+        el.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "start",
+          inline: "nearest"
+        });
+        console.log(`Successfully scrolled to ${id}`);
+        
+        // Add a visual highlight to confirm the scroll worked
+        el.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        setTimeout(() => {
+          el.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        console.warn(`Element with id ${id} not found`);
+        // List all speech elements for debugging
+        const allSpeechElements = document.querySelectorAll('[id^="speech-"]');
+        console.log('Available speech elements:', Array.from(allSpeechElements).map(el => el.id));
+        
+        // Try to find the element by partial match
+        const partialMatch = Array.from(allSpeechElements).find(el => el.id.includes(id.split('-')[1]));
+        if (partialMatch) {
+          console.log(`Found partial match: ${partialMatch.id}`);
+          partialMatch.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "start",
+            inline: "nearest"
+          });
+        }
+      }
+    }, 200); // Increased delay to 200ms
   };
 
   // Update speechList whenever messageList changes
@@ -173,16 +210,44 @@ function Debate() {
     const newSpeechList = messageList.map((msg, index) => {
       let title = msg.speaker;
       
-      // Add round information for AI debaters in AI vs AI mode
-      if (actualMode === "ai-vs-ai" && (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con")) {
-        title = `${msg.speaker} - Round ${msg.round}/5`;
+      // Calculate round number more accurately
+      const roundNum = msg.round || Math.ceil((index + 1) / 2);
+      
+      // Add round information for ALL speeches
+      if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
+        title = `${msg.speaker} - Round ${roundNum}/5`;
+      } else if (msg.speaker.includes("(AI)")) {
+        // For User vs AI mode, add round info for AI responses
+        title = `${msg.speaker} - Round ${roundNum}`;
+      } else if (msg.speaker.includes("(User)")) {
+        // For User vs AI mode, add round info for user responses
+        title = `${msg.speaker} - Round ${roundNum}`;
+      } else if (msg.speaker.includes("Pro (User)") || msg.speaker.includes("Con (User)")) {
+        // For User vs User mode, add round info
+        title = `${msg.speaker} - Round ${roundNum}`;
+      } else if (msg.speaker.includes("Judge")) {
+        // For judge feedback, don't add round number
+        title = msg.speaker;
+      } else {
+        // For any other speaker, add round number
+        title = `${msg.speaker} - Round ${roundNum}`;
       }
       
-      return {
+      const speechItem = {
         id: `speech-${index}`,
-        title: title
+        title: title,
+        speaker: msg.speaker,
+        round: roundNum,
+        index: index
       };
+      
+      // Debug logging
+      console.log(`Speech ${index}:`, speechItem);
+      
+      return speechItem;
     });
+    
+    console.log('Updated speech list:', newSpeechList);
     setSpeechList(newSpeechList);
   }, [messageList, actualMode]);
 
@@ -211,7 +276,15 @@ function Debate() {
     setLoading(true);
     setError("");
     try {
-      // Get last message text
+      // Get the full debate transcript so far
+      const fullTranscript = messageList
+        .map(({ speaker, text, model }) => {
+          const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+          return `## ${speaker}\n${modelInfo}${text}`;
+        })
+        .join("\n\n---\n\n");
+
+      // Get last message text for immediate rebuttal
       const lastMessage = messageList.length > 0
         ? messageList[messageList.length - 1]
         : null;
@@ -223,29 +296,45 @@ function Debate() {
 
       let aiResponse;
       if (aiSide === "pro") {
-        const isOpening = !lastArgument;
+        const isOpening = messageList.length === 0;
         const proPrompt = `
-             Debate topic: "${topic}"
-             Bill description: "${truncatedDescription}"
-             Round: ${currentRound} of ${maxRounds}
-             Your role: PRO (supporting the topic)
-             ${isOpening ? "This is your opening statement." : `Previous opponent argument to rebut: "${lastArgument}"`}
+You are an AI debater in a 5-round public forum debate on: "${topic}"
 
-             CRITICAL FORMATTING INSTRUCTIONS:
-             - NEVER write "AI Debater Pro" or any speaker name in your response
-             - NEVER write "Round X/Y" or any round information in your response  
-             - NEVER include headers, titles, or speaker identification
-             - Start your response immediately with argument content (no preamble)
-             - Your response will be displayed under a header that already identifies you
-             ${isOpening ? 
-               "- Present a strong opening argument in favor of the topic" :
-               "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-             }
-             - Present 2-3 strong arguments supporting the PRO position
-             - Use specific evidence, examples, or logical reasoning
-             - Keep your response concise (max 500 words)
-             - Be persuasive but respectful
-             - End with a strong concluding statement
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+CURRENT ROUND: ${currentRound} of ${maxRounds}
+YOUR ROLE: PRO (supporting the topic)
+
+${isOpening ? 
+  "This is your opening statement. Present a strong opening argument in favor of the topic." :
+  `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
+  
+  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+}
+
+CRITICAL FORMATTING INSTRUCTIONS:
+- NEVER write "AI Debater Pro" or any speaker name in your response
+- NEVER write "Round X/Y" or any round information in your response  
+- NEVER include headers, titles, or speaker identification
+- Start your response immediately with argument content (no preamble)
+- Your response will be displayed under a header that already identifies you
+
+CONTENT REQUIREMENTS:
+${isOpening ? 
+  "- Present a strong opening argument in favor of the topic" :
+  "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+}
+- Present 2-3 strong arguments supporting the PRO position
+- Use specific evidence, examples, or logical reasoning
+- Keep your response concise (max 500 words)
+- Be persuasive but respectful
+- End with a strong concluding statement
+
+IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
         aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
         // Remove any headers the AI might have generated (aggressive cleaning)
@@ -263,29 +352,45 @@ function Debate() {
         appendMessage("AI Debater Pro", cleanedResponse, proModel);
         setAiSide("con");
       } else {
-        const isOpening = !lastArgument;
+        const isOpening = messageList.length === 0;
         const conPrompt = `
-             Debate topic: "${topic}"
-             Bill description: "${truncatedDescription}"
-             Round: ${currentRound} of ${maxRounds}
-             Your role: CON (opposing the topic)
-             ${isOpening ? "This is your opening statement." : `Previous opponent argument to rebut: "${lastArgument}"`}
+You are an AI debater in a 5-round public forum debate on: "${topic}"
 
-             CRITICAL FORMATTING INSTRUCTIONS:
-             - NEVER write "AI Debater Pro" or any speaker name in your response
-             - NEVER write "Round X/Y" or any round information in your response  
-             - NEVER include headers, titles, or speaker identification
-             - Start your response immediately with argument content (no preamble)
-             - Your response will be displayed under a header that already identifies you
-             ${isOpening ? 
-               "- Present a strong opening argument against the topic" :
-               "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-             }
-             - Present 2-3 strong arguments supporting the CON position
-             - Use specific evidence, examples, or logical reasoning
-             - Keep your response concise (max 500 words)
-             - Be persuasive but respectful
-             - End with a strong concluding statement
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+CURRENT ROUND: ${currentRound} of ${maxRounds}
+YOUR ROLE: CON (opposing the topic)
+
+${isOpening ? 
+  "This is your opening statement. Present a strong opening argument against the topic." :
+  `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
+  
+  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+}
+
+CRITICAL FORMATTING INSTRUCTIONS:
+- NEVER write "AI Debater Con" or any speaker name in your response
+- NEVER write "Round X/Y" or any round information in your response  
+- NEVER include headers, titles, or speaker identification
+- Start your response immediately with argument content (no preamble)
+- Your response will be displayed under a header that already identifies you
+
+CONTENT REQUIREMENTS:
+${isOpening ? 
+  "- Present a strong opening argument against the topic" :
+  "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+}
+- Present 2-3 strong arguments supporting the CON position
+- Use specific evidence, examples, or logical reasoning
+- Keep your response concise (max 500 words)
+- Be persuasive but respectful
+- End with a strong concluding statement
+
+IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
         aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription);
         // Remove any headers the AI might have generated (aggressive cleaning)
@@ -305,7 +410,8 @@ function Debate() {
         setCurrentRound(prev => prev + 1);
       }
     } catch (err) {
-      setError("Failed to fetch AI response for AI vs AI mode.");
+      console.error("Error in AI debate:", err);
+      setError("Failed to generate AI response.");
     } finally {
       setLoading(false);
     }
@@ -377,37 +483,64 @@ function Debate() {
       );
       setUserInput("");
 
-      const recentMessages = messageList
-        .slice(-3)
-        .map(msg => `${msg.speaker}: ${msg.text}`)
-        .join("\n");
+      // Get the full debate transcript so far
+      const fullTranscript = messageList
+        .map(({ speaker, text, model }) => {
+          const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+          return `## ${speaker}\n${modelInfo}${text}`;
+        })
+        .join("\n\n---\n\n");
 
       const truncatedDescription = description?.length > 3000
         ? `${description.substring(0, 3000)}... (bill text continues)`
         : description;
 
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
+      const isOpening = messageList.length === 0;
 
       const prompt = `
-           Debate topic: "${topic}"
-           Bill description: "${truncatedDescription}"
-           Recent exchanges:
-           ${recentMessages}
+You are an AI debater in a public forum debate on: "${topic}"
 
-           The user just argued for the ${userSide.toUpperCase()} side.
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
 
-           Instructions:
-           1. You are on the ${aiSideLocal.toUpperCase()} side
-           2. Directly rebut the user's key points
-           3. Present 1-2 strong counterarguments
-           4. Keep your response concise (max 400 words)
-           5. Be persuasive but respectful
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+YOUR ROLE: ${aiSideLocal.toUpperCase()} (opposing the user's ${userSide.toUpperCase()} position)
+
+${isOpening ? 
+  "This is your opening statement. Present a strong opening argument against the topic." :
+  `MANDATORY REBUTTAL: The user just argued for the ${userSide.toUpperCase()} side. You must begin by directly addressing and rebutting specific points from their argument: "${userInput}"
+  
+  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+}
+
+CRITICAL FORMATTING INSTRUCTIONS:
+- NEVER write "AI Debater" or any speaker name in your response
+- NEVER include headers, titles, or speaker identification
+- Start your response immediately with argument content (no preamble)
+- Your response will be displayed under a header that already identifies you
+
+CONTENT REQUIREMENTS:
+${isOpening ? 
+  "- Present a strong opening argument against the topic" :
+  "- MANDATORY: Begin by directly addressing and rebutting specific points from the user's argument above. Quote their exact words and explain why they are wrong."
+}
+- Present 1-2 strong counterarguments supporting the ${aiSideLocal.toUpperCase()} position
+- Use specific evidence, examples, or logical reasoning
+- Keep your response concise (max 400 words)
+- Be persuasive but respectful
+- End with a strong concluding statement
+
+IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the user's argument before presenting your own points.
          `;
 
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setCurrentRound(prev => prev + 1);
     } catch (err) {
+      console.error("Error in User vs AI debate:", err);
       setError("Failed to fetch AI rebuttal.");
     } finally {
       setLoading(false);
@@ -584,31 +717,37 @@ function Debate() {
             </div>
           )}
         {/* Render each speech as its own block */}
-        {messageList.map(({ speaker, text, model }, i) => (
-          <div key={i} className="debate-speech-block" id={`speech-${i}`}>
-            <h3 className="debate-speech-title">{speechList[i]?.title || speaker}</h3>
-            {model && <div className="debate-model-info">Model: {model}</div>}
-            <div className="debate-speech-content">
-              <ReactMarkdown
-                components={{
-                  h1: ({node, ...props}) => <h1 className="debate-markdown-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="debate-markdown-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="debate-markdown-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="debate-markdown-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="debate-markdown-p" {...props} />,
-                  ul: ({node, ...props}) => <ul className="debate-markdown-ul" {...props} />,
-                  ol: ({node, ...props}) => <ol className="debate-markdown-ol" {...props} />,
-                  li: ({node, ...props}) => <li className="debate-markdown-li" {...props} />,
-                  strong: ({node, ...props}) => <strong className="debate-markdown-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="debate-markdown-em" {...props} />,
-                  hr: ({node, ...props}) => <hr className="debate-markdown-hr" {...props} />
-                }}
-              >
-                {text}
-              </ReactMarkdown>
+        {messageList.map(({ speaker, text, model }, i) => {
+          const speechItem = speechList[i];
+          const speechTitle = speechItem?.title || speaker;
+          const speechId = `speech-${i}`;
+          
+          return (
+            <div key={i} className="debate-speech-block" id={speechId}>
+              <h3 className="debate-speech-title">{speechTitle}</h3>
+              {model && <div className="debate-model-info">Model: {model}</div>}
+              <div className="debate-speech-content">
+                <ReactMarkdown
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="debate-markdown-h1" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="debate-markdown-h2" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="debate-markdown-h3" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="debate-markdown-h4" {...props} />,
+                    p: ({node, ...props}) => <p className="debate-markdown-p" {...props} />,
+                    ul: ({node, ...props}) => <ul className="debate-markdown-ul" {...props} />,
+                    ol: ({node, ...props}) => <ol className="debate-markdown-ol" {...props} />,
+                    li: ({node, ...props}) => <li className="debate-markdown-li" {...props} />,
+                    strong: ({node, ...props}) => <strong className="debate-markdown-strong" {...props} />,
+                    em: ({node, ...props}) => <em className="debate-markdown-em" {...props} />,
+                    hr: ({node, ...props}) => <hr className="debate-markdown-hr" {...props} />
+                  }}
+                >
+                  {text}
+                </ReactMarkdown>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
           {actualMode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
               {!autoMode ? (

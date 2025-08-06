@@ -338,7 +338,7 @@ ethical_framework = {
 **Risk**: Users may substitute AI analysis for critical thinking.
 
 **Mitigation Strategies**:
-- Educational messaging about AI as a tool, not replacement for human judgment
+- Educational messaging about AI as a tool, not replacement for human judgement
 - Encouragement of independent research and verification
 - Integration of human debate modes (User vs User)
 - Transparency about AI limitations and uncertainty
