@@ -1,5 +1,5 @@
 // components/PublicTranscriptView.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -208,6 +208,13 @@ function PublicTranscriptView() {
   const [error, setError] = useState("");
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const processedHeadersRef = useRef(new Map());
+
+  // Reset processed headers when speechList changes
+  useEffect(() => {
+    processedHeadersRef.current = new Map();
+    console.log('Reset processed headers');
+  }, [speechList]);
 
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
@@ -215,39 +222,138 @@ function PublicTranscriptView() {
     
     const speeches = [];
     const lines = transcriptText.split('\n');
-    let currentSpeech = null;
     let speechIndex = 0;
+    
+    console.log('Generating speech list from transcript with', lines.length, 'lines');
     
     lines.forEach((line, lineIndex) => {
       // Look for headers (## Speaker Name)
       if (line.startsWith('## ')) {
         const speaker = line.replace('## ', '').trim();
-        if (currentSpeech) {
-          speeches.push(currentSpeech);
+        console.log(`Found header at line ${lineIndex}: "${speaker}"`);
+        
+        // Don't skip duplicates - each occurrence should be a separate speech
+        // Calculate round number based on speaker occurrences
+        const sameSpeekerCount = speeches.filter(s => s.speaker === speaker).length;
+        const roundNum = sameSpeekerCount + 1;
+        
+        // Add round information to the title
+        let title = speaker;
+        
+        // Add round information for ALL speeches
+        if (speaker === "AI Debater Pro" || speaker === "AI Debater Con") {
+          title = `${speaker} - Round ${roundNum}/5`;
+        } else if (speaker.includes("(AI)")) {
+          // For User vs AI mode, add round info for AI responses
+          title = `${speaker} - Round ${roundNum}`;
+        } else if (speaker.includes("(User)")) {
+          // For User vs AI mode, add round info for user responses
+          title = `${speaker} - Round ${roundNum}`;
+        } else if (speaker.includes("Pro (User)") || speaker.includes("Con (User)")) {
+          // For User vs User mode, add round info
+          title = `${speaker} - Round ${roundNum}`;
+        } else if (speaker.includes("Judge")) {
+          // For judge feedback, don't add round number
+          title = speaker;
+        } else {
+          // For any other speaker, add round number
+          title = `${speaker} - Round ${roundNum}`;
         }
-        currentSpeech = {
+        
+        const speechItem = {
           id: `speech-${speechIndex}`,
-          title: speaker,
+          title: title,
+          speaker: speaker,
+          round: roundNum,
           startLine: lineIndex
         };
+        
+        console.log(`Created speech item:`, speechItem);
+        speeches.push(speechItem);
         speechIndex++;
       }
     });
     
-    // Add the last speech if there is one
-    if (currentSpeech) {
-      speeches.push(currentSpeech);
-    }
-    
+    console.log('Final speech list:', speeches);
     return speeches;
   };
 
   // Scroll to specific speech
   const scrollToSpeech = (speechId) => {
-    const element = document.getElementById(speechId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    console.log(`Attempting to scroll to speech: ${speechId}`);
+    
+    // Add a delay to ensure the DOM is updated
+    setTimeout(() => {
+      const element = document.getElementById(speechId);
+      console.log(`Found element for ${speechId}:`, element);
+      
+      if (element) {
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+        console.log(`Successfully scrolled to ${speechId}`);
+        
+        // Add a visual highlight to confirm the scroll worked
+        element.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        setTimeout(() => {
+          element.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        console.warn(`Element with id ${speechId} not found`);
+        // List all speech elements for debugging
+        const allSpeechElements = document.querySelectorAll('[id^="speech-"]');
+        const allHeaderElements = document.querySelectorAll('[id^="header-"]');
+        console.log('Available speech elements:', Array.from(allSpeechElements).map(el => el.id));
+        console.log('Available header elements:', Array.from(allHeaderElements).map(el => el.id));
+        
+        // Try to find the element by partial match
+        const partialMatch = Array.from(allSpeechElements).find(el => el.id.includes(speechId.split('-')[1]));
+        if (partialMatch) {
+          console.log(`Found partial match: ${partialMatch.id}`);
+          partialMatch.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "start",
+            inline: "nearest"
+          });
+        }
+      }
+    }, 200);
+  };
+
+  // Process transcript to show proper headers with round numbers
+  const processTranscriptContent = (transcriptText, speechList) => {
+    if (!transcriptText || !speechList.length) return transcriptText;
+    
+    const lines = transcriptText.split('\n');
+    let speechIndex = 0;
+    const processedLines = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('## ')) {
+        const speaker = line.replace('## ', '').trim();
+        
+        // Find the corresponding speech in the speech list
+        const speech = speechList[speechIndex];
+        if (speech && speech.speaker === speaker) {
+          // Replace the simple header with the full title including round number
+          const newHeader = `## ${speech.title}`;
+          processedLines.push(newHeader);
+          console.log(`Replaced header: "${line}" with "${newHeader}"`);
+          speechIndex++;
+        } else {
+          processedLines.push(line); // Keep original line if no matching speech
+        }
+      } else {
+        processedLines.push(line); // Keep non-header lines
+      }
     }
+    
+    const processedText = processedLines.join('\n');
+    console.log('Processed transcript content');
+    return processedText;
   };
 
   useEffect(() => {
@@ -260,6 +366,7 @@ function PublicTranscriptView() {
           setTranscript(sharedTranscript);
           // Generate speech list for debate transcripts
           if (sharedTranscript.activityType !== 'Analyze Bill') {
+            console.log('Raw transcript content:', sharedTranscript.transcript);
             const speeches = generateSpeechList(sharedTranscript.transcript);
             setSpeechList(speeches);
           }
@@ -383,18 +490,49 @@ function PublicTranscriptView() {
                   h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
                   h2: ({node, ...props}) => {
                     // Add ID to h2 elements for speech navigation
-                    const speechIndex = speechList.findIndex(speech => 
-                      speech.title === props.children
-                    );
-                    const speechId = speechIndex >= 0 ? speechList[speechIndex].id : null;
+                    const headerText = props.children;
                     
-                    return (
-                      <h2 
-                        className="markdown-h2" 
-                        id={speechId}
-                        {...props} 
-                      />
-                    );
+                    // Check if we've already assigned an ID to this exact header text
+                    if (processedHeadersRef.current.has(headerText)) {
+                      const existingId = processedHeadersRef.current.get(headerText);
+                      console.log(`Reusing ID for duplicate header "${headerText}": ${existingId}`);
+                      return (
+                        <h2 
+                          className="markdown-h2" 
+                          id={existingId}
+                          {...props} 
+                        />
+                      );
+                    }
+                    
+                    // Find the speech that matches this header text exactly
+                    const matchingSpeech = speechList.find(speech => speech.title === headerText);
+                    
+                    if (matchingSpeech) {
+                      console.log(`Header: "${headerText}", Found matching speech:`, matchingSpeech);
+                      processedHeadersRef.current.set(headerText, matchingSpeech.id);
+                      
+                      return (
+                        <h2 
+                          className="markdown-h2" 
+                          id={matchingSpeech.id}
+                          {...props} 
+                        />
+                      );
+                    } else {
+                      // Fallback for headers that don't have corresponding speeches
+                      const fallbackId = `header-${headerText.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+                      console.log(`No matching speech found for header "${headerText}", using fallback ID: ${fallbackId}`);
+                      processedHeadersRef.current.set(headerText, fallbackId);
+                      
+                      return (
+                        <h2 
+                          className="markdown-h2" 
+                          id={fallbackId}
+                          {...props} 
+                        />
+                      );
+                    }
                   },
                   h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
                   h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
@@ -407,7 +545,7 @@ function PublicTranscriptView() {
                   hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
                 }}
               >
-                {transcript.transcript}
+                {processTranscriptContent(transcript.transcript, speechList)}
               </ReactMarkdown>
             </div>
           </div>
