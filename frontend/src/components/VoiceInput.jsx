@@ -6,6 +6,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
