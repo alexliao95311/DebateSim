@@ -115,10 +115,11 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         }
       }
 
-      const fullTranscript = finalTranscript + interimTranscript;
-      logDebug('Transcript update:', { finalTranscript, interimTranscript, fullTranscript });
-      
-      setTranscript(fullTranscript);
+      setTranscript(prevTranscript => {
+        const updatedTranscript = prevTranscript + (finalTranscript ? (prevTranscript ? ' ' : '') + finalTranscript : '');
+        logDebug('Transcript update:', { finalTranscript, interimTranscript, updatedTranscript });
+        return updatedTranscript + interimTranscript;
+      });
       
       if (finalTranscript) {
         logDebug('Calling onTranscript with final transcript:', finalTranscript);
