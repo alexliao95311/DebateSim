@@ -115,12 +115,13 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           newInterimTranscript += transcript;
         }
       }
+
       if (newFinalTranscript) {
         setFinalTranscript(prevFinal => {
           const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
           logDebug('Final transcript updated:', { prevFinal, newFinalTranscript, updatedFinal });
           
-          // Also needa the one that displays the transcript
+          // Also need the one that displays the transcript
           const displayTranscript = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
           setTranscript(displayTranscript);
           
@@ -241,19 +242,12 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     };
   }, [onTranscript]);
 
-  const startListening = () => {
-    if (disabled) {
-      logDebug('VoiceInput is disabled, not starting');
-      return;
-    }
-    
+  const startListening = () => {    
     logDebug('Starting speech recognition...');
     setError('');
-    setTranscript('');
-    setFinalTranscript('');
-    setIsProcessing(true);
-    
-    // Check microphone permissions
+    setTranscript(''); //resets interim but not final/displayed
+
+    // Check mic perms
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         logDebug('Microphone access granted');
@@ -273,6 +267,52 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         setError('Microphone access denied. Please allow microphone access and try again.');
         setIsProcessing(false);
       });
+
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = 'en-US';
+    
+    recognitionRef.current.onresult = event => {
+      logDebug('Speech recognition result:', event);
+
+      let newFinalTranscript = '';
+      let newInterimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        const isFinal = result.isFinal;
+
+        if (isFinal) {
+          newFinalTranscript += transcript.trim();
+        } else {
+          newInterimTranscript += transcript;
+        }
+      }
+
+      setFinalTranscript(prevFinal => {
+        const updatedFinal = prevFinal.trim() + (prevFinal ? ' ' : '') + newFinalTranscript;
+        const fullTranscript = updatedFinal + newInterimTranscript;
+        logDebug('Transcript update:', { finalTranscript: updatedFinal, interimTranscript: newInterimTranscript, fullTranscript });
+        setTranscript(fullTranscript);
+        onTranscript(fullTranscript); // still optional depending on your app
+        return updatedFinal;
+      });
+    };
+
+    recognitionRef.current.onend = () => {
+      logDebug('Speech recognition ended');
+      setIsListening(false);
+    };
+
+    recognitionRef.current.onerror = event => {
+      logDebug('Speech recognition error:', event);
+      setIsListening(false);
+    };
+
+    recognitionRef.current.start();
+    setIsListening(true);
   };
 
   const stopListening = () => {
@@ -421,10 +461,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           )}
           
           <button
-            onClick={() => {
-              console.log('Help button clicked');
-              setShowTroubleshooting(true);
-            }}
+            onClick={() => setShowTroubleshooting(true)}
             style={{
               padding: '0.5rem',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -529,12 +566,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       </div>
       
       {showTroubleshooting && (
-        <VoiceInputTroubleshooting 
-          onClose={() => {
-            console.log('Closing troubleshooting');
-            setShowTroubleshooting(false);
-          }} 
-        />
+        <VoiceInputTroubleshooting onClose={() => setShowTroubleshooting(false)} />
       )}
     </>
   );
