@@ -213,7 +213,6 @@ function PublicTranscriptView() {
   // Reset processed headers when speechList changes
   useEffect(() => {
     processedHeadersRef.current = new Map();
-    console.log('Reset processed headers');
   }, [speechList]);
 
   // Generate speech list from transcript
@@ -224,13 +223,10 @@ function PublicTranscriptView() {
     const lines = transcriptText.split('\n');
     let speechIndex = 0;
     
-    console.log('Generating speech list from transcript with', lines.length, 'lines');
-    
     lines.forEach((line, lineIndex) => {
       // Look for headers (## Speaker Name)
       if (line.startsWith('## ')) {
         const speaker = line.replace('## ', '').trim();
-        console.log(`Found header at line ${lineIndex}: "${speaker}"`);
         
         // Don't skip duplicates - each occurrence should be a separate speech
         // Calculate round number based on speaker occurrences
@@ -268,24 +264,19 @@ function PublicTranscriptView() {
           startLine: lineIndex
         };
         
-        console.log(`Created speech item:`, speechItem);
         speeches.push(speechItem);
         speechIndex++;
       }
     });
     
-    console.log('Final speech list:', speeches);
     return speeches;
   };
 
   // Scroll to specific speech
   const scrollToSpeech = (speechId) => {
-    console.log(`Attempting to scroll to speech: ${speechId}`);
-    
     // Add a delay to ensure the DOM is updated
     setTimeout(() => {
       const element = document.getElementById(speechId);
-      console.log(`Found element for ${speechId}:`, element);
       
       if (element) {
         element.scrollIntoView({ 
@@ -293,31 +284,12 @@ function PublicTranscriptView() {
           block: 'start',
           inline: 'nearest'
         });
-        console.log(`Successfully scrolled to ${speechId}`);
         
         // Add a visual highlight to confirm the scroll worked
         element.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
         setTimeout(() => {
           element.style.backgroundColor = '';
         }, 2000);
-      } else {
-        console.warn(`Element with id ${speechId} not found`);
-        // List all speech elements for debugging
-        const allSpeechElements = document.querySelectorAll('[id^="speech-"]');
-        const allHeaderElements = document.querySelectorAll('[id^="header-"]');
-        console.log('Available speech elements:', Array.from(allSpeechElements).map(el => el.id));
-        console.log('Available header elements:', Array.from(allHeaderElements).map(el => el.id));
-        
-        // Try to find the element by partial match
-        const partialMatch = Array.from(allSpeechElements).find(el => el.id.includes(speechId.split('-')[1]));
-        if (partialMatch) {
-          console.log(`Found partial match: ${partialMatch.id}`);
-          partialMatch.scrollIntoView({ 
-            behavior: "smooth", 
-            block: "start",
-            inline: "nearest"
-          });
-        }
       }
     }, 200);
   };
@@ -341,7 +313,6 @@ function PublicTranscriptView() {
           // Replace the simple header with the full title including round number
           const newHeader = `## ${speech.title}`;
           processedLines.push(newHeader);
-          console.log(`Replaced header: "${line}" with "${newHeader}"`);
           speechIndex++;
         } else {
           processedLines.push(line); // Keep original line if no matching speech
@@ -352,7 +323,6 @@ function PublicTranscriptView() {
     }
     
     const processedText = processedLines.join('\n');
-    console.log('Processed transcript content');
     return processedText;
   };
 
@@ -366,7 +336,6 @@ function PublicTranscriptView() {
           setTranscript(sharedTranscript);
           // Generate speech list for debate transcripts
           if (sharedTranscript.activityType !== 'Analyze Bill') {
-            console.log('Raw transcript content:', sharedTranscript.transcript);
             const speeches = generateSpeechList(sharedTranscript.transcript);
             setSpeechList(speeches);
           }
@@ -495,7 +464,6 @@ function PublicTranscriptView() {
                     // Check if we've already assigned an ID to this exact header text
                     if (processedHeadersRef.current.has(headerText)) {
                       const existingId = processedHeadersRef.current.get(headerText);
-                      console.log(`Reusing ID for duplicate header "${headerText}": ${existingId}`);
                       return (
                         <h2 
                           className="markdown-h2" 
@@ -509,7 +477,6 @@ function PublicTranscriptView() {
                     const matchingSpeech = speechList.find(speech => speech.title === headerText);
                     
                     if (matchingSpeech) {
-                      console.log(`Header: "${headerText}", Found matching speech:`, matchingSpeech);
                       processedHeadersRef.current.set(headerText, matchingSpeech.id);
                       
                       return (
@@ -522,7 +489,6 @@ function PublicTranscriptView() {
                     } else {
                       // Fallback for headers that don't have corresponding speeches
                       const fallbackId = `header-${headerText.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
-                      console.log(`No matching speech found for header "${headerText}", using fallback ID: ${fallbackId}`);
                       processedHeadersRef.current.set(headerText, fallbackId);
                       
                       return (

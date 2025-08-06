@@ -343,7 +343,12 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             "bill_description": lambda inputs: inputs.get("bill_description", ""),
             "round_num": lambda inputs: inputs.get("round_num", round_num),
         }
-        | RunnablePassthrough.assign(**get_debate_context)
+        | RunnablePassthrough.assign(
+            full_transcript=lambda inputs: get_debate_context(inputs)["full_transcript"],
+            opening_instruction=lambda inputs: get_debate_context(inputs)["opening_instruction"],
+            rebuttal_requirement=lambda inputs: get_debate_context(inputs)["rebuttal_requirement"],
+            rebuttal_importance=lambda inputs: get_debate_context(inputs)["rebuttal_importance"]
+        )
         | selected_prompt
         | llm
         | StrOutputParser()
