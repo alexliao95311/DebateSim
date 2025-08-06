@@ -8,6 +8,35 @@ import LoadingSpinner from "./LoadingSpinner";
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
 
+// Speech Sidebar Component for Public Transcript View
+const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded }) => {
+  return (
+    <>
+      <button 
+        className="toggle-sidebar" 
+        onClick={() => setSidebarExpanded(!sidebarExpanded)}
+      >
+        {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
+      </button>
+      
+      <div className={`debate-sidebar ${sidebarExpanded ? "expanded" : ""}`}>
+        <h3 className="sidebar-title">Speeches</h3>
+        <ul className="sidebar-list">
+          {speechList.map((item) => (
+            <li 
+              key={item.id} 
+              className="sidebar-item"
+              onClick={() => scrollToSpeech(item.id)}
+            >
+              <span className="sidebar-text">{item.title}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+};
+
 // Circular Progress Component for grading display
 const CircularProgress = ({ percentage, size = 80, strokeWidth = 8, color = '#4a90e2' }) => {
   const radius = (size - strokeWidth) / 2;
@@ -177,6 +206,49 @@ function PublicTranscriptView() {
   const [transcript, setTranscript] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [speechList, setSpeechList] = useState([]);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  // Generate speech list from transcript
+  const generateSpeechList = (transcriptText) => {
+    if (!transcriptText) return [];
+    
+    const speeches = [];
+    const lines = transcriptText.split('\n');
+    let currentSpeech = null;
+    let speechIndex = 0;
+    
+    lines.forEach((line, lineIndex) => {
+      // Look for headers (## Speaker Name)
+      if (line.startsWith('## ')) {
+        const speaker = line.replace('## ', '').trim();
+        if (currentSpeech) {
+          speeches.push(currentSpeech);
+        }
+        currentSpeech = {
+          id: `speech-${speechIndex}`,
+          title: speaker,
+          startLine: lineIndex
+        };
+        speechIndex++;
+      }
+    });
+    
+    // Add the last speech if there is one
+    if (currentSpeech) {
+      speeches.push(currentSpeech);
+    }
+    
+    return speeches;
+  };
+
+  // Scroll to specific speech
+  const scrollToSpeech = (speechId) => {
+    const element = document.getElementById(speechId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   useEffect(() => {
     const fetchSharedTranscript = async () => {
@@ -186,6 +258,11 @@ function PublicTranscriptView() {
         
         if (sharedTranscript) {
           setTranscript(sharedTranscript);
+          // Generate speech list for debate transcripts
+          if (sharedTranscript.activityType !== 'Analyze Bill') {
+            const speeches = generateSpeechList(sharedTranscript.transcript);
+            setSpeechList(speeches);
+          }
         } else {
           setError("This transcript is no longer available or the link is invalid.");
         }
@@ -261,78 +338,93 @@ function PublicTranscriptView() {
   }
 
   return (
-    <div className="public-transcript-container">
-      {/* Header */}
-      <header className="public-home-header">
-        <div className="public-header-content">
-          <div className="public-header-center">
-            <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
-              Debate Simulator
-            </h1>
-          </div>
-          <div className="public-header-right">
-            <button className="public-home-button" onClick={handleBackToHome}>
-              Try DebateSim
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
+      {/* Try DebateSim button in the top right corner */}
+      <button className="back-to-home" onClick={handleBackToHome}>
+        Try DebateSim
+      </button>
 
-      {/* Content */}
-      <div className="public-main-content">
-        <div className="public-transcript-header">
-          <h1 className="public-main-title">Shared {transcript.activityType === 'Analyze Bill' ? 'Bill Analysis' : 'Debate Transcript'}</h1>
-          <div className="public-transcript-meta">
-            <span className="public-topic">{transcript.topic}</span>
-            <span className="public-mode">{transcript.mode}</span>
-            <span className="public-date">
-              {new Date(transcript.createdAt).toLocaleDateString()}
-            </span>
+      {/* Speech Sidebar - only show for debate transcripts */}
+      {transcript && transcript.activityType !== 'Analyze Bill' && speechList.length > 0 && (
+        <PublicSpeechSidebar 
+          speechList={speechList}
+          scrollToSpeech={scrollToSpeech}
+          sidebarExpanded={sidebarExpanded}
+          setSidebarExpanded={setSidebarExpanded}
+        />
+      )}
+      
+      <div className="debate-wrapper">
+        <div className="debate-content">
+          <div className="topic-header-section">
+            <h2 className="debate-topic-header">
+              Shared {transcript.activityType === 'Analyze Bill' ? 'Bill Analysis' : 'Debate Transcript'}: {transcript.topic}
+            </h2>
+            <div className="public-transcript-meta">
+              <span className="public-mode">{transcript.mode}</span>
+              <span className="public-date">
+                {new Date(transcript.createdAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
-        </div>
-        
-        {/* Show grading for bill analysis */}
-        {transcript.activityType === 'Analyze Bill' && transcript.grades && (
-          <div className="grading-stage-container grading-loaded" style={{ marginBottom: '2rem' }}>
-            <BillGradingSection grades={transcript.grades} />
+          
+          {/* Show grading for bill analysis */}
+          {transcript.activityType === 'Analyze Bill' && transcript.grades && (
+            <div className="grading-stage-container grading-loaded" style={{ marginBottom: '2rem' }}>
+              <BillGradingSection grades={transcript.grades} />
+            </div>
+          )}
+          
+          <div className="transcript-viewer">
+            <div className="transcript-content">
+              <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                  h2: ({node, ...props}) => {
+                    // Add ID to h2 elements for speech navigation
+                    const speechIndex = speechList.findIndex(speech => 
+                      speech.title === props.children
+                    );
+                    const speechId = speechIndex >= 0 ? speechList[speechIndex].id : null;
+                    
+                    return (
+                      <h2 
+                        className="markdown-h2" 
+                        id={speechId}
+                        {...props} 
+                      />
+                    );
+                  },
+                  h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                  ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                  strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                  hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
+                }}
+              >
+                {transcript.transcript}
+              </ReactMarkdown>
+            </div>
           </div>
-        )}
-        
-        <div className="public-transcript-viewer">
-          <div className="public-transcript-content">
-            <ReactMarkdown
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                h1: ({node, ...props}) => <h1 className="public-markdown-h1" {...props} />,
-                h2: ({node, ...props}) => <h2 className="public-markdown-h2" {...props} />,
-                h3: ({node, ...props}) => <h3 className="public-markdown-h3" {...props} />,
-                h4: ({node, ...props}) => <h4 className="public-markdown-h4" {...props} />,
-                p: ({node, ...props}) => <p className="public-markdown-p" {...props} />,
-                ul: ({node, ...props}) => <ul className="public-markdown-ul" {...props} />,
-                ol: ({node, ...props}) => <ol className="public-markdown-ol" {...props} />,
-                li: ({node, ...props}) => <li className="public-markdown-li" {...props} />,
-                strong: ({node, ...props}) => <strong className="public-markdown-strong" {...props} />,
-                em: ({node, ...props}) => <em className="public-markdown-em" {...props} />,
-                hr: ({node, ...props}) => <hr className="public-markdown-hr" {...props} />
-              }}
-            >
-              {transcript.transcript}
-            </ReactMarkdown>
+          
+          {/* Footer */}
+          <div className="public-transcript-footer">
+            <p className="public-footer-text">
+              This debate transcript was generated using{" "}
+              <span className="public-debatesim-link" onClick={handleBackToHome}>
+                DebateSim
+              </span>
+              {" "}— Try creating your own AI-powered debates!
+            </p>
+            <p className="public-shared-info">
+              Shared on {new Date(transcript.sharedAt).toLocaleDateString()}
+            </p>
           </div>
-        </div>
-        
-        {/* Footer */}
-        <div className="public-transcript-footer">
-          <p className="public-footer-text">
-            This debate transcript was generated using{" "}
-            <span className="public-debatesim-link" onClick={handleBackToHome}>
-              DebateSim
-            </span>
-            {" "}— Try creating your own AI-powered debates!
-          </p>
-          <p className="public-shared-info">
-            Shared on {new Date(transcript.sharedAt).toLocaleDateString()}
-          </p>
         </div>
       </div>
     </div>
