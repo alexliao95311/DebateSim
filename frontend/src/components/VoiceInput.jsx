@@ -99,8 +99,8 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         resultsLength: event.results.length
       });
       
-      let finalTranscript = '';
-      let interimTranscript = '';
+      let newFinalTranscript = '';
+      let newInterimTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -110,9 +110,9 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         logDebug(`Result ${i}:`, { transcript, isFinal, confidence: result[0].confidence });
         
         if (isFinal) {
-          finalTranscript += transcript;
+          newFinalTranscript += transcript;
         } else {
-          interimTranscript += transcript;
+          newInterimTranscript += transcript;
         }
       }
 
@@ -231,6 +231,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     logDebug('Starting speech recognition...');
     setError('');
     setTranscript('');
+    setFinalTranscript('');
     setIsProcessing(true);
     
     // Check microphone permissions
@@ -271,6 +272,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
   const clearTranscript = () => {
     logDebug('Clearing transcript');
     setTranscript('');
+    setFinalTranscript('');
     onTranscript('');
   };
 
@@ -510,5 +512,4 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     </>
   );
 };
-
 export default VoiceInput; 
