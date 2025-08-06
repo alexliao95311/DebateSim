@@ -81,7 +81,7 @@ def setup_credentials():
         print(f"✅ Using Google Cloud credentials: {credentials_path}")
         return True
     else:
-        print(f"❌ Google Cloud credentials file not found at: {credentials_path}")
+        print(f"Google Cloud credentials file not found at: {credentials_path}")
         print("Please place your Google Cloud JSON credentials file in the credentials/ directory")
         return False
 
@@ -155,10 +155,10 @@ def test_speech_recognition():
                 return False
 
     except KeyboardInterrupt:
-        print("\n🛑 Speech recognition stopped by user")
+        print("\n Speech recognition stopped by user")
         return True
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -166,6 +166,6 @@ def test_speech_recognition():
     return True
 
 if __name__ == "__main__":
-    print("🎯 Google Cloud Voice-to-Text Test")
+    print("Google Cloud Voice-to-Text Test")
     print("=" * 40)
     test_speech_recognition()
