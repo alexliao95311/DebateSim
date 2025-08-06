@@ -232,6 +232,38 @@ const SpeechTest = () => {
     setError('');
     setTranscript('');
     
+    // Additional Brave-specific checks before starting
+    if (navigator.userAgent.includes('Brave')) {
+      logDebug('=== BRAVE BROWSER TROUBLESHOOTING ===');
+      logDebug('Checking Brave-specific settings...');
+      
+      // Check if we can access navigator.brave
+      if (navigator.brave) {
+        logDebug('Brave API available:', {
+          isBrave: navigator.brave.isBrave(),
+          isBraveName: navigator.brave.isBrave?.name,
+          braveProperties: Object.keys(navigator.brave)
+        });
+      } else {
+        logDebug('Brave API not available');
+      }
+      
+      // Check network connectivity
+      logDebug('Network status:', {
+        online: navigator.onLine,
+        connection: navigator.connection ? {
+          effectiveType: navigator.connection.effectiveType,
+          downlink: navigator.connection.downlink,
+          rtt: navigator.connection.rtt
+        } : 'Not available'
+      });
+      
+      // Check if we can make a test request to Google's servers
+      fetch('https://www.google.com/favicon.ico', { method: 'HEAD' })
+        .then(() => logDebug('✅ Can reach Google servers'))
+        .catch(err => logDebug('❌ Cannot reach Google servers:', err.message));
+    }
+    
     // Check microphone permissions
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
