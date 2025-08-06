@@ -295,7 +295,7 @@ ${feedback}`;
             <div className="judge-scrollable-content">
               {!feedback ? (
                 <LoadingSpinner 
-                  message="Analyzing debate and generating judgment" 
+                  message="Analyzing debate and generating judgement" 
                   showProgress={true}
                   estimatedTime={60000}
                 />
