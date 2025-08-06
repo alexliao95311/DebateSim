@@ -130,11 +130,20 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         // Call onTranscript w/ new final
         logDebug('Calling onTranscript with new final transcript:', newFinalTranscript);
         onTranscript(newFinalTranscript);
-
-      
-      if (finalTranscript) {
-        logDebug('Calling onTranscript with final transcript:', finalTranscript);
-        onTranscript(finalTranscript);
+      } else {
+        // does w/ only interim to update
+        setFinalTranscript(currentFinal => {
+          const displayTranscript = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
+          setTranscript(displayTranscript);
+          
+          logDebug('Interim transcript update:', { 
+            currentFinal,
+            newInterimTranscript, 
+            displayTranscript 
+          });
+          
+          return currentFinal; // doesn't change final js adds
+        });
       }
     };
 
