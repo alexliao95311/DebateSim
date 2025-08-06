@@ -127,6 +127,9 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           
           return updatedFinal;
         });
+        // Call onTranscript w/ new final
+        logDebug('Calling onTranscript with new final transcript:', newFinalTranscript);
+        onTranscript(newFinalTranscript);
 
       
       if (finalTranscript) {
