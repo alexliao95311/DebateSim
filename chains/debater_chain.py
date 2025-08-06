@@ -184,6 +184,14 @@ You are **{debater_role}**, engaged in a 5‑round public‑forum style debate o
 BILL CONTEXT (for reference):
 {bill_description}
 
+FULL DEBATE TRANSCRIPT SO FAR:
+{full_transcript}
+
+CURRENT ROUND: {round_num} of 5
+YOUR ROLE: {debater_role}
+
+{opening_instruction}
+
 EVIDENCE AND CITATION REQUIREMENTS:
 • **MANDATORY**: Support every argument with specific textual evidence from the bill. Quote relevant sections directly to strengthen your position.
 • **Citation format**: When referencing the bill, use phrases like "The bill states..." or "Section X clearly indicates..." or "According to [specific section/paragraph]..." followed by brief, accurate quotes.
@@ -213,19 +221,24 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 
 ------------------------------------------------------------------
 Content Guidelines
-• **REBUTTAL RULES**: Only include a rebuttal if the history section below contains actual opponent arguments. If the history is empty or contains no opponent arguments, start directly with your main arguments.
+{rebuttal_requirement}
 • Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Previous opponent argument (for context only):  
-{history}
-
-IMPORTANT: If the history section above is empty or contains no opponent arguments, do NOT include any rebuttal. Start directly with your main arguments. Only rebut if there are actual opponent arguments to respond to.
+IMPORTANT: {rebuttal_importance}
 """
 
 # Template for topic debates - focuses on general argumentation without bill requirements
 topic_debate_template = """
 You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+
+FULL DEBATE TRANSCRIPT SO FAR:
+{full_transcript}
+
+CURRENT ROUND: {round_num} of 5
+YOUR ROLE: {debater_role}
+
+{opening_instruction}
 
 ARGUMENTATION REQUIREMENTS:
 • **FOCUS**: Present logical, well-reasoned arguments that address the topic directly.
@@ -255,14 +268,11 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 
 ------------------------------------------------------------------
 Content Guidelines
-• **REBUTTAL RULES**: Only include a rebuttal if the history section below contains actual opponent arguments. If the history is empty or contains no opponent arguments, start directly with your main arguments.
+{rebuttal_requirement}
 • Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
-Previous opponent argument (for context only):  
-{history}
-
-IMPORTANT: If the history section above is empty or contains no opponent arguments, do NOT include any rebuttal. Start directly with your main arguments. Only rebut if there are actual opponent arguments to respond to.
+IMPORTANT: {rebuttal_importance}
 """
 
 # Create chat prompt templates for both types
@@ -281,26 +291,46 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
     )
 
     # Use the new langchain pattern with LCEL
-    def get_history(inputs):
+    def get_debate_context(inputs):
         chain_id = f"debater-{inputs['debater_role']}-{inputs['topic'][:20]}"
         
         if chain_id not in memory_map:
             # Initialize memory for this chain
             memory_map[chain_id] = []
-            
-        if 'history' in inputs and inputs['history']:
-            # Add the history to memory
-            memory_map[chain_id].append({"role": "user", "content": inputs['history']})
         
-        # Return the memory formatted as a string
-        history_str = ""
+        # Build full transcript from memory
+        full_transcript = ""
         for entry in memory_map[chain_id]:
-            history_str += f"{entry['role']}: {entry['content']}\n\n"
-            
-        # Update memory with current input
-        memory_map[chain_id].append({"role": "system", "content": f"Context: {inputs['topic']}, {inputs['debater_role']} role"})
+            if entry['role'] == 'assistant':
+                full_transcript += f"## {entry.get('speaker', 'Unknown')}\n{entry['content']}\n\n"
+            elif entry['role'] == 'user':
+                full_transcript += f"## Opponent\n{entry['content']}\n\n"
         
-        return history_str
+        # Determine if this is an opening statement
+        is_opening = len(memory_map[chain_id]) == 0
+        
+        # Set opening instruction
+        if is_opening:
+            opening_instruction = "This is your opening statement. Present a strong opening argument."
+            rebuttal_requirement = "• Present your opening arguments without rebuttal since this is the first speech."
+            rebuttal_importance = "This is the opening statement, so focus on presenting your initial arguments."
+        else:
+            opening_instruction = f"This is round {inputs.get('round_num', round_num)}. You must rebut the opponent's previous argument."
+            rebuttal_requirement = "• **MANDATORY REBUTTAL**: Begin by directly addressing and rebutting specific points from the opponent's most recent argument. Quote their exact words and explain why they are wrong or flawed."
+            rebuttal_importance = "You MUST include a rebuttal of the opponent's last argument before presenting your own points."
+        
+        # Add current input to memory for next round
+        memory_map[chain_id].append({
+            "role": "system", 
+            "content": f"Context: {inputs['topic']}, {inputs['debater_role']} role, Round {inputs.get('round_num', round_num)}"
+        })
+        
+        return {
+            "full_transcript": full_transcript,
+            "opening_instruction": opening_instruction,
+            "rebuttal_requirement": rebuttal_requirement,
+            "rebuttal_importance": rebuttal_importance
+        }
 
     # Select the appropriate prompt template based on debate type
     selected_prompt = bill_debate_prompt if debate_type == "bill" else topic_debate_prompt
@@ -311,9 +341,14 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             "debater_role": lambda inputs: inputs.get("debater_role", ""),
             "topic": lambda inputs: inputs.get("topic", ""),
             "bill_description": lambda inputs: inputs.get("bill_description", ""),
-            "history": lambda inputs: inputs.get("history", ""),
             "round_num": lambda inputs: inputs.get("round_num", round_num),
         }
+        | RunnablePassthrough.assign(
+            full_transcript=lambda inputs: get_debate_context(inputs)["full_transcript"],
+            opening_instruction=lambda inputs: get_debate_context(inputs)["opening_instruction"],
+            rebuttal_requirement=lambda inputs: get_debate_context(inputs)["rebuttal_requirement"],
+            rebuttal_importance=lambda inputs: get_debate_context(inputs)["rebuttal_importance"]
+        )
         | selected_prompt
         | llm
         | StrOutputParser()
@@ -342,7 +377,11 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
             if chain_id not in memory_map:
                 memory_map[chain_id] = []
-            memory_map[chain_id].append({"role": "assistant", "content": response})
+            memory_map[chain_id].append({
+                "role": "assistant", 
+                "content": response,
+                "speaker": kwargs.get('debater_role', 'Unknown')
+            })
 
             return response
     

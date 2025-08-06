@@ -7,6 +7,8 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
   const isBrave = navigator.userAgent.includes('Brave') || 
                   (navigator.brave && navigator.brave.isBrave());
 
+  console.log('VoiceInputTroubleshooting rendered, isBrave:', isBrave);
+
   const troubleshootingSteps = {
     network: [
       'Check your internet connection',
@@ -76,7 +78,14 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1000
-    }}>
+    }}
+    onClick={(e) => {
+      if (e.target === e.currentTarget) {
+        console.log('Modal background clicked, closing');
+        onClose();
+      }
+    }}
+    >
       <div style={{
         backgroundColor: '#1a1a1a',
         borderRadius: '12px',
@@ -86,7 +95,9 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
         maxHeight: '80vh',
         overflow: 'auto',
         border: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
+      }}
+      onClick={(e) => e.stopPropagation()}
+      >
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',

@@ -115,7 +115,6 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           newInterimTranscript += transcript;
         }
       }
-
       if (newFinalTranscript) {
         setFinalTranscript(prevFinal => {
           const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
@@ -422,7 +421,10 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           )}
           
           <button
-            onClick={() => setShowTroubleshooting(true)}
+            onClick={() => {
+              console.log('Help button clicked');
+              setShowTroubleshooting(true);
+            }}
             style={{
               padding: '0.5rem',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -527,7 +529,12 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       </div>
       
       {showTroubleshooting && (
-        <VoiceInputTroubleshooting onClose={() => setShowTroubleshooting(false)} />
+        <VoiceInputTroubleshooting 
+          onClose={() => {
+            console.log('Closing troubleshooting');
+            setShowTroubleshooting(false);
+          }} 
+        />
       )}
     </>
   );
