@@ -116,10 +116,18 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         }
       }
 
-      const fullTranscript = finalTranscript + interimTranscript;
-      logDebug('Transcript update:', { finalTranscript, interimTranscript, fullTranscript });
-      
-      setTranscript(fullTranscript);
+      if (newFinalTranscript) {
+        setFinalTranscript(prevFinal => {
+          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
+          logDebug('Final transcript updated:', { prevFinal, newFinalTranscript, updatedFinal });
+          
+          // Also needa the one that displays the transcript
+          const displayTranscript = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
+          setTranscript(displayTranscript);
+          
+          return updatedFinal;
+        });
+
       
       if (finalTranscript) {
         logDebug('Calling onTranscript with final transcript:', finalTranscript);
