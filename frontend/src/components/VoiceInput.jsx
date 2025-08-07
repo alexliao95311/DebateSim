@@ -209,33 +209,21 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       setIsProcessing(false);
     };
 
-    recognition.onaudiostart = () => {
-      logDebug('Audio capture started');
-    };
+    recognition.onaudiostart = () => logDebug('Audio capture started');
+    recognition.onaudioend = () => logDebug('Audio capture ended');
+    recognition.onsoundstart = () => logDebug('Sound detected');
+    recognition.onsoundend = () => logDebug('Sound ended');
+    recognition.onspeechstart = () => logDebug('Speech started');
+    recognition.onspeechend = () => logDebug('Speech ended');
+    recognition.onnomatch = () => logDebug('No speech match found');
 
-    recognition.onaudioend = () => {
-      logDebug('Audio capture ended');
-    };
+    isInitializedRef.current = true;
+    return true;
+  };
 
-    recognition.onsoundstart = () => {
-      logDebug('Sound detected');
-    };
-
-    recognition.onsoundend = () => {
-      logDebug('Sound ended');
-    };
-
-    recognition.onspeechstart = () => {
-      logDebug('Speech started');
-    };
-
-    recognition.onspeechend = () => {
-      logDebug('Speech ended');
-    };
-
-    recognition.onnomatch = () => {
-      logDebug('No speech match found');
-    };
+  useEffect(() => {
+    logDebug('VoiceInput component mounted');
+    initializeSpeechRecognition();
 
     return () => {
       logDebug('Cleaning up SpeechRecognition');
@@ -246,13 +234,18 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           logDebug('Error stopping recognition during cleanup:', err);
         }
       }
+      isInitializedRef.current = false;
     };
-  }, [onTranscript]);
+  }, []);
 
   const startListening = () => {    
     logDebug('Starting speech recognition...');
     setError('');
-    setTranscript(''); //resets interim but not final/displayed
+    setIsProcessing(true);
+    if (!initializeSpeechRecognition()) {
+      setIsProcessing(false);
+      return;
+    } //resets interim but not final/displayed
 
     // Check mic perms
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -274,53 +267,6 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         setError('Microphone access denied. Please allow microphone access and try again.');
         setIsProcessing(false);
       });
-
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
-    
-    recognitionRef.current.onresult = event => {
-      logDebug('Speech recognition result:', event);
-
-      let newFinalTranscript = '';
-      let newInterimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const transcript = result[0].transcript;
-        const isFinal = result.isFinal;
-
-        if (isFinal) {
-          newFinalTranscript += transcript.trim();
-        } else {
-          newInterimTranscript += transcript;
-        }
-      }
-
-      setFinalTranscript(prevFinal => {
-        const updatedFinal = prevFinal.trim() + (prevFinal ? ' ' : '') + newFinalTranscript;
-        const fullTranscript = updatedFinal + newInterimTranscript;
-        logDebug('Transcript update:', { finalTranscript: updatedFinal, interimTranscript: newInterimTranscript, fullTranscript });
-        setTranscript(fullTranscript);
-        onTranscript(fullTranscript); // still optional depending on your app
-        return updatedFinal;
-      });
-    };
-
-    recognitionRef.current.onend = () => {
-      logDebug('Speech recognition ended');
-      setIsListening(false);
-    };
-
-    recognitionRef.current.onerror = event => {
-      logDebug('Speech recognition error:', event);
-      setIsListening(false);
-    };
-
-    recognitionRef.current.start();
-    setIsListening(true);
-  };
 
   const stopListening = () => {
     logDebug('Stopping speech recognition...');
