@@ -1120,4 +1120,177 @@ div.login-hero-actions {
   .login-github-link {
     padding: 0.35rem 0.7rem !important;
   }
-}/* Cache buster: Mon Jul 28 23:23:00 PDT 2025 */
+}
+
+/* About Us Section */
+.login-about-section {
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.login-about-content {
+  text-align: center;
+}
+
+.login-about-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+  margin: 3rem 0;
+  text-align: left;
+}
+
+.login-about-text p {
+  color: #cbd5e1;
+  line-height: 1.7;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-about-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.login-highlight-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.login-highlight-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.login-highlight-item span:last-child {
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+.login-about-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.login-about-btn {
+  padding: 0.875rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  background: none;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.login-about-btn.primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.login-about-btn.primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+}
+
+.login-about-btn.secondary {
+  background: rgba(30, 41, 59, 0.6);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.login-about-btn.secondary:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.login-about-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Mobile responsiveness for About Us section */
+@media (max-width: 768px) {
+  .login-about-section {
+    padding: 3rem 1.5rem;
+  }
+  
+  .login-about-summary {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .login-about-text p {
+    font-size: 0.95rem;
+  }
+  
+  .login-highlight-item {
+    padding: 0.875rem;
+  }
+  
+  .login-highlight-item span:last-child {
+    font-size: 0.9rem;
+  }
+  
+  .login-about-actions {
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+  
+  .login-about-btn {
+    width: 100%;
+    max-width: 280px;
+    padding: 1rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-about-section {
+    padding: 2.5rem 1rem;
+  }
+  
+  .login-highlight-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .login-highlight-icon {
+    font-size: 1.75rem;
+  }
+}
+
+/* Cache buster: Mon Jul 28 23:23:00 PDT 2025 */
