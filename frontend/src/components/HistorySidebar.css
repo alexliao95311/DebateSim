@@ -311,3 +311,19 @@
     padding-left: 300px !important;
   }
 } 
+
+@media (max-width: 480px) {
+  [class*="-modal-header"] h2 {
+    font-size: 1rem !important;
+    padding: 0.5rem 0.5rem !important;
+    word-break: break-word !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grading-header h2 {
+    font-size: 1.75rem !important;
+    padding: 0.5rem 0.5rem !important;
+    word-break: break-word !important;
+  }
+}
