@@ -9,6 +9,7 @@ import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import HistorySidebar from "./HistorySidebar";
+import VoiceOutput from './VoiceOutput';
 import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
 
@@ -2355,7 +2356,19 @@ const Legislation = ({ user }) => {
                 opacity: showGradingSection ? 1 : 0,
                 transition: 'opacity 0.5s ease-in-out'
               }}>
-                <h2>Analysis Results</h2>
+                <div className="results-header-top">
+                  <h2>Analysis Results</h2>
+                  <div className="analysis-voice-controls">
+                    <VoiceOutput 
+                      text={analysisResult}
+                      buttonStyle="default"
+                      showLabel={true}
+                      onSpeechStart={() => console.log('Started playing analysis')}
+                      onSpeechEnd={() => console.log('Finished playing analysis')}
+                      onSpeechError={(error) => console.error('Analysis speech error:', error)}
+                    />
+                  </div>
+                </div>
                 <div className="results-actions">
                   <button 
                     className="share-analysis-btn" 
