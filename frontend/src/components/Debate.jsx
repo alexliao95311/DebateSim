@@ -739,17 +739,33 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             const speechTitle = speechItem?.title || speaker;
             const speechId = `speech-${i}`;
 
+            const handlePlay = () => {
+              const synth = window.speechSynthesis;
+              synth.cancel(); // Stop any current speech
+              const utterance = new SpeechSynthesisUtterance(text);
+              synth.speak(utterance);
+            };
+
+            const handleStop = () => {
+              window.speechSynthesis.cancel(); // Immediately stops speech
+            };
+
             return (
               <div key={i} className="debate-speech-block relative" id={speechId}>
-                {/* Voice Output Controls in Top Right */}
-                <div className="absolute top-2 right-2">
-                  <VoiceOutput 
-                    text={text}
-                    buttonStyle="compact"
-                    onSpeechStart={() => console.log(`Started playing speech ${i}`)}
-                    onSpeechEnd={() => console.log(`Finished playing speech ${i}`)}
-                    onSpeechError={(error) => console.error(`Speech error for speech ${i}:`, error)}
-                  />
+                {/* Play/Stop Buttons in Top Right */}
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                    onClick={handlePlay}
+                    className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    🔊
+                  </button>
+                  <button
+                    onClick={handleStop}
+                    className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    ⏹️
+                  </button>
                 </div>
 
                 <h3 className="debate-speech-title">{speechTitle}</h3>
