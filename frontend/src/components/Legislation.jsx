@@ -120,8 +120,8 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
       </div>
       <CircularProgress 
         percentage={percentage} 
-        size={isOverall ? 90 : 75}
-        strokeWidth={isOverall ? 8 : 6}
+        size={isOverall ? 90 : 90}
+        strokeWidth={isOverall ? 8 : 8}
         color={gradeColor}
       />
       <div className="grade-description">{description}</div>
@@ -140,7 +140,7 @@ const BillGradingSection = ({ grades }) => {
     economicImpact: {
       label: 'Economic Impact',
       description: 'Fiscal responsibility & benefits',
-      tooltip: 'Evaluates the bill\'s economic benefits, cost-effectiveness, and fiscal impact on government budgets and the economy.',
+      tooltip: 'Economic benefits and fiscal impact',
       icon: '💰',
       category: 'moderate',
       order: 1
@@ -148,7 +148,7 @@ const BillGradingSection = ({ grades }) => {
     publicBenefit: {
       label: 'Public Benefit',
       description: 'Benefits to citizens',
-      tooltip: 'Assesses how much the bill addresses public needs and benefits different segments of the population.',
+      tooltip: 'Addresses public needs effectively',
       icon: '👥',
       category: 'positive',
       order: 2
@@ -156,7 +156,7 @@ const BillGradingSection = ({ grades }) => {
     feasibility: {
       label: 'Implementation Feasibility',
       description: 'Practicality of execution',
-      tooltip: 'Examines whether the bill can be realistically implemented with available resources and existing infrastructure.',
+      tooltip: 'Can be realistically implemented',
       icon: '🛠',
       category: 'caution',
       order: 3
@@ -164,7 +164,7 @@ const BillGradingSection = ({ grades }) => {
     legalSoundness: {
       label: 'Legal Soundness',
       description: 'Constitutional compliance',
-      tooltip: 'Reviews the bill\'s compliance with constitutional principles and existing legal frameworks.',
+      tooltip: 'Constitutional and legal compliance',
       icon: '⚖️',
       category: 'positive',
       order: 4
@@ -172,7 +172,7 @@ const BillGradingSection = ({ grades }) => {
     effectiveness: {
       label: 'Goal Effectiveness',
       description: 'Achievement of stated objectives',
-      tooltip: 'Measures how well the bill addresses its stated problems and achieves its intended objectives.',
+      tooltip: 'Achieves stated objectives well',
       icon: '🎯',
       category: 'moderate',
       order: 5
@@ -180,7 +180,7 @@ const BillGradingSection = ({ grades }) => {
     overall: {
       label: 'Overall Rating',
       description: 'Comprehensive assessment',
-      tooltip: 'A weighted average of all criteria with emphasis on effectiveness and public benefit.',
+      tooltip: 'Weighted average of all criteria',
       icon: '📊',
       category: 'overall',
       order: 6
