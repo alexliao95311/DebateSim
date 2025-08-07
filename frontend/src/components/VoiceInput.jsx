@@ -535,4 +535,5 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     </>
   );
 };
+
 export default VoiceInput; 
