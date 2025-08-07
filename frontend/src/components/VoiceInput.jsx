@@ -22,8 +22,12 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     setDebugInfo(prev => prev + debugMessage + '\n');
   };
 
-  useEffect(() => {
-    logDebug('VoiceInput component mounted');
+  const initializeSpeechRecognition = () => {
+    if (isInitializedRef.current) {
+      logDebug('SpeechRecognition already initialized');
+      return true;
+    }
+    logDebug('Initializing SpeechRecognition');
     logDebug('User agent:', navigator.userAgent);
     logDebug('Browser language:', navigator.language);
     logDebug('Online status:', navigator.onLine);
@@ -43,7 +47,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       const errorMsg = 'Speech recognition is not supported in this browser. Please use Chrome or Edge.';
       logDebug('ERROR: ' + errorMsg);
       setError(errorMsg);
-      return;
+      return false;
     }
 
     // Initialize speech recognition
@@ -56,7 +60,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     } catch (err) {
       logDebug('ERROR: Failed to create SpeechRecognition instance:', err);
       setError(`Failed to initialize speech recognition: ${err.message}`);
-      return;
+      return false;
     }
     
     const recognition = recognitionRef.current;
@@ -70,7 +74,6 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     // Brave-specific settings
     if (isBrave) {
       logDebug('Applying Brave-specific settings');
-      // Try to set additional properties that might help with Brave
       try {
         recognition.grammars = null; // Clear any grammars
         logDebug('Cleared grammars for Brave');
@@ -90,6 +93,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     recognition.onstart = () => {
       logDebug('SpeechRecognition started');
       setIsListening(true);
+      setIsProcessing(false);
       setError('');
       setRetryCount(0);
     };
@@ -118,28 +122,31 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       }
       if (newFinalTranscript) {
         setFinalTranscript(prevFinal => {
-          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
+          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript.trim();
           logDebug('Final transcript updated:', { prevFinal, newFinalTranscript, updatedFinal });
           
           // Also need the one that displays the transcript
-          const displayTranscript = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
-          setTranscript(displayTranscript);
+          const newDisplay = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
+          setDisplayTranscript(newDisplay);
+          
+          // Send only the NEW final transcript to parent (not the full accumulated)
+          logDebug('Calling onTranscript with new final transcript:', newFinalTranscript.trim());
+          if (onTranscript) {
+            onTranscript(newFinalTranscript.trim());
+          }
           
           return updatedFinal;
         });
-        // Call onTranscript w/ new final
-        logDebug('Calling onTranscript with new final transcript:', newFinalTranscript);
-        onTranscript(newFinalTranscript);
-      } else {
+      } else if (newInterimTranscript) {
         // does w/ only interim to update
         setFinalTranscript(currentFinal => {
-          const displayTranscript = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
-          setTranscript(displayTranscript);
+          const newDisplay = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
+          setDisplayTranscript(newDisplay);
           
           logDebug('Interim transcript update:', { 
             currentFinal,
             newInterimTranscript, 
-            displayTranscript 
+            newDisplay 
           });
           
           return currentFinal; // doesn't change final js adds
