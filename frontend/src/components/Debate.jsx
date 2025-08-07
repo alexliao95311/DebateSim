@@ -336,7 +336,7 @@ ${isOpening ?
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Pro.*?\n/gi, '')
@@ -392,7 +392,7 @@ ${isOpening ?
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription);
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Con.*?\n/gi, '')
@@ -440,7 +440,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription);
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "");
         appendMessage("Con (AI)", conResponse, singleAIModel);
       } else if (firstSide === "pro" && side === "con") {
         const proPrompt = `
@@ -455,7 +455,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription);
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "");
         appendMessage("Pro (AI)", proResponse, singleAIModel);
       }
     } catch (err) {
@@ -536,7 +536,24 @@ ${isOpening ?
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the user's argument before presenting your own points.
          `;
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription);
+      // Build the full transcript to send to the AI
+      const updatedMessageList = [...messageList, {
+        speaker: userSide === "pro" ? "Pro (User)" : "Con (User)",
+        text: userInput,
+        round: currentRound
+      }];
+      
+      const fullTranscriptForAI = updatedMessageList
+        .map(({ speaker, text, model }) => {
+          const modelInfo = model ? `*Model: ${model}*\n\n` : "";
+          return `## ${speaker}\n${modelInfo}${text}`;
+        })
+        .join("\n\n---\n\n");
+      
+      console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
+      console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
+      
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setCurrentRound(prev => prev + 1);
     } catch (err) {

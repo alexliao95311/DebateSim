@@ -126,11 +126,20 @@ class GenerateResponseRequest(BaseModel):
     prompt: str   # Expected format: "debate topic. opponent's argument"
     model: str = DEFAULT_MODEL  # Use the global default model
     bill_description: str = ""  # Full bill text for evidence-based arguments
+    full_transcript: str = ""  # Full debate transcript for context
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
     start_time = time.time()
     logger.info(f"📩 /generate-response called with debater={request.debater!r}, model={request.model}")
+    
+    # DEBUG: Print what transcript data we're receiving
+    logger.info(f"🔍 DEBUG: Full transcript length: {len(request.full_transcript)} chars")
+    if request.full_transcript:
+        logger.info(f"🔍 DEBUG: Full transcript preview: {request.full_transcript[:300]}...")
+    else:
+        logger.info("🔍 DEBUG: No full transcript provided")
+    
     # Determine role: "Pro" or "Con" - ensure AI is properly capitalized
     debater_role = request.debater.strip().title().replace("Ai ", "AI ")
     
@@ -143,6 +152,10 @@ async def generate_response(request: GenerateResponseRequest):
         else:
             topic = request.prompt.strip()
             opponent_arg = ""
+        
+        # DEBUG: Show what we parsed
+        logger.info(f"🔍 DEBUG: Parsed topic: {topic}")
+        logger.info(f"🔍 DEBUG: Opponent argument: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: No opponent argument")
         
         # Determine debate type based on bill_description content
         has_bill_text = bool(request.bill_description.strip())
@@ -164,12 +177,21 @@ async def generate_response(request: GenerateResponseRequest):
         # Get a debater chain with the specified model and debate type
         model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type)
         
-        # Call the run method
+        # DEBUG: Print what we're sending to the LangChain model
+        logger.info(f"🔍 DEBUG: Sending to LangChain:")
+        logger.info(f"🔍 DEBUG: - debater_role: {debater_role}")
+        logger.info(f"🔍 DEBUG: - topic: {topic}")
+        logger.info(f"🔍 DEBUG: - bill_description length: {len(bill_description)}")
+        logger.info(f"🔍 DEBUG: - history: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: - history: None")
+        logger.info(f"🔍 DEBUG: - full_transcript: {request.full_transcript[:200]}..." if request.full_transcript else "🔍 DEBUG: - full_transcript: None")
+        
+        # Call the run method - pass full transcript for context
         ai_output = model_specific_debater_chain.run(
             debater_role=debater_role,
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
-            history=opponent_arg
+            history=opponent_arg,
+            full_transcript=request.full_transcript  # Pass the full transcript for proper context
         )
         
     except Exception as e:

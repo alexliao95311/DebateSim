@@ -298,16 +298,30 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             # Initialize memory for this chain
             memory_map[chain_id] = []
         
-        # Build full transcript from memory
-        full_transcript = ""
-        for entry in memory_map[chain_id]:
-            if entry['role'] == 'assistant':
-                full_transcript += f"## {entry.get('speaker', 'Unknown')}\n{entry['content']}\n\n"
-            elif entry['role'] == 'user':
-                full_transcript += f"## Opponent\n{entry['content']}\n\n"
+        # DEBUG: Print what we're getting in inputs
+        print(f"🔍 DEBUG [debater_chain]: get_debate_context called with inputs: {list(inputs.keys())}")
+        print(f"🔍 DEBUG [debater_chain]: debater_role: {inputs.get('debater_role')}")
+        print(f"🔍 DEBUG [debater_chain]: topic: {inputs.get('topic')}")
+        print(f"🔍 DEBUG [debater_chain]: history: {inputs.get('history', '')[:200]}..." if inputs.get('history') else "🔍 DEBUG [debater_chain]: history: None")
         
-        # Determine if this is an opening statement
-        is_opening = len(memory_map[chain_id]) == 0
+        # Use the provided full transcript if available, otherwise build from memory
+        if inputs.get('full_transcript'):
+            full_transcript = inputs['full_transcript']
+            print(f"🔍 DEBUG [debater_chain]: Using provided full_transcript ({len(full_transcript)} chars)")
+            print(f"🔍 DEBUG [debater_chain]: Full transcript preview: {full_transcript[:300]}...")
+        else:
+            # Fallback to memory-based transcript building
+            full_transcript = ""
+            for entry in memory_map[chain_id]:
+                if entry['role'] == 'assistant':
+                    full_transcript += f"## {entry.get('speaker', 'Unknown')}\n{entry['content']}\n\n"
+                elif entry['role'] == 'user':
+                    full_transcript += f"## Opponent\n{entry['content']}\n\n"
+            print(f"🔍 DEBUG [debater_chain]: Built transcript from memory ({len(full_transcript)} chars)")
+        
+        # Determine if this is an opening statement based on transcript content
+        is_opening = not bool(full_transcript.strip())
+        print(f"🔍 DEBUG [debater_chain]: Is opening statement: {is_opening}")
         
         # Set opening instruction
         if is_opening:
@@ -319,11 +333,19 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             rebuttal_requirement = "• **MANDATORY REBUTTAL**: Begin by directly addressing and rebutting specific points from the opponent's most recent argument. Quote their exact words and explain why they are wrong or flawed."
             rebuttal_importance = "You MUST include a rebuttal of the opponent's last argument before presenting your own points."
         
+        # Add user input to context if provided (this represents opponent's argument)
+        if inputs.get('history') and not is_opening:
+            print(f"🔍 DEBUG [debater_chain]: Adding user history to transcript context")
+            # Add the user's argument to the full transcript for context
+            full_transcript += f"## User Argument\n{inputs['history']}\n\n"
+        
         # Add current input to memory for next round
         memory_map[chain_id].append({
             "role": "system", 
             "content": f"Context: {inputs['topic']}, {inputs['debater_role']} role, Round {inputs.get('round_num', round_num)}"
         })
+        
+        print(f"🔍 DEBUG [debater_chain]: Final full_transcript length: {len(full_transcript)}")
         
         return {
             "full_transcript": full_transcript,
@@ -342,6 +364,8 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             "topic": lambda inputs: inputs.get("topic", ""),
             "bill_description": lambda inputs: inputs.get("bill_description", ""),
             "round_num": lambda inputs: inputs.get("round_num", round_num),
+            "history": lambda inputs: inputs.get("history", ""),  # Add support for opponent's argument history
+            "full_transcript": lambda inputs: inputs.get("full_transcript", ""),  # Add support for full transcript
         }
         | RunnablePassthrough.assign(
             full_transcript=lambda inputs: get_debate_context(inputs)["full_transcript"],
@@ -366,12 +390,26 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
             specify `round_num`; otherwise we fall back to the default captured
             in the closure.
             """
+            # DEBUG: Print what arguments we're receiving
+            print(f"🔍 DEBUG [ChainWrapper]: run() called with kwargs: {list(kwargs.keys())}")
+            for key, value in kwargs.items():
+                if isinstance(value, str) and len(value) > 200:
+                    print(f"🔍 DEBUG [ChainWrapper]: {key}: {value[:200]}... ({len(value)} chars)")
+                else:
+                    print(f"🔍 DEBUG [ChainWrapper]: {key}: {value}")
+            
             local_round = kwargs.get("round_num", round_num)
             input_dict = dict(kwargs)
             input_dict["round_num"] = local_round
 
+            print(f"🔍 DEBUG [ChainWrapper]: Final input_dict keys: {list(input_dict.keys())}")
+            print(f"🔍 DEBUG [ChainWrapper]: About to invoke chain with full_transcript: {bool(input_dict.get('full_transcript'))}")
+
             # Invoke the chain
             response = self.chain.invoke(input_dict)
+            
+            print(f"🔍 DEBUG [ChainWrapper]: Chain response length: {len(response)} chars")
+            print(f"🔍 DEBUG [ChainWrapper]: Chain response preview: {response[:200]}...")
 
             # Persist assistant output to memory
             chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
