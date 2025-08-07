@@ -5,13 +5,14 @@ import VoiceInputTroubleshooting from './VoiceInputTroubleshooting';
 const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to start speaking..." }) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [displayTranscript, setDisplayTranscript] = useState(''); 
   const [finalTranscript, setFinalTranscript] = useState('');
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   const recognitionRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
   // Debug function to log information
   const logDebug = (message, data = null) => {
@@ -21,8 +22,12 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     setDebugInfo(prev => prev + debugMessage + '\n');
   };
 
-  useEffect(() => {
-    logDebug('VoiceInput component mounted');
+  const initializeSpeechRecognition = () => {
+    if (isInitializedRef.current) {
+      logDebug('SpeechRecognition already initialized');
+      return true;
+    }
+    logDebug('Initializing SpeechRecognition');
     logDebug('User agent:', navigator.userAgent);
     logDebug('Browser language:', navigator.language);
     logDebug('Online status:', navigator.onLine);
@@ -42,7 +47,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       const errorMsg = 'Speech recognition is not supported in this browser. Please use Chrome or Edge.';
       logDebug('ERROR: ' + errorMsg);
       setError(errorMsg);
-      return;
+      return false;
     }
 
     // Initialize speech recognition
@@ -55,7 +60,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     } catch (err) {
       logDebug('ERROR: Failed to create SpeechRecognition instance:', err);
       setError(`Failed to initialize speech recognition: ${err.message}`);
-      return;
+      return false;
     }
     
     const recognition = recognitionRef.current;
@@ -69,7 +74,6 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     // Brave-specific settings
     if (isBrave) {
       logDebug('Applying Brave-specific settings');
-      // Try to set additional properties that might help with Brave
       try {
         recognition.grammars = null; // Clear any grammars
         logDebug('Cleared grammars for Brave');
@@ -89,6 +93,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
     recognition.onstart = () => {
       logDebug('SpeechRecognition started');
       setIsListening(true);
+      setIsProcessing(false);
       setError('');
       setRetryCount(0);
     };
@@ -115,31 +120,33 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           newInterimTranscript += transcript;
         }
       }
-
       if (newFinalTranscript) {
         setFinalTranscript(prevFinal => {
-          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript;
+          const updatedFinal = prevFinal + (prevFinal ? ' ' : '') + newFinalTranscript.trim();
           logDebug('Final transcript updated:', { prevFinal, newFinalTranscript, updatedFinal });
           
           // Also need the one that displays the transcript
-          const displayTranscript = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
-          setTranscript(displayTranscript);
+          const newDisplay = updatedFinal + (newInterimTranscript ? (updatedFinal ? ' ' : '') + newInterimTranscript : '');
+          setDisplayTranscript(newDisplay);
+          
+          // Send only the NEW final transcript to parent (not the full accumulated)
+          logDebug('Calling onTranscript with new final transcript:', newFinalTranscript.trim());
+          if (onTranscript) {
+            onTranscript(newFinalTranscript.trim());
+          }
           
           return updatedFinal;
         });
-        // Call onTranscript w/ new final
-        logDebug('Calling onTranscript with new final transcript:', newFinalTranscript);
-        onTranscript(newFinalTranscript);
-      } else {
+      } else if (newInterimTranscript) {
         // does w/ only interim to update
         setFinalTranscript(currentFinal => {
-          const displayTranscript = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
-          setTranscript(displayTranscript);
+          const newDisplay = currentFinal + (newInterimTranscript ? (currentFinal ? ' ' : '') + newInterimTranscript : '');
+          setDisplayTranscript(newDisplay);
           
           logDebug('Interim transcript update:', { 
             currentFinal,
             newInterimTranscript, 
-            displayTranscript 
+            newDisplay 
           });
           
           return currentFinal; // doesn't change final js adds
@@ -202,33 +209,21 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       setIsProcessing(false);
     };
 
-    recognition.onaudiostart = () => {
-      logDebug('Audio capture started');
-    };
+    recognition.onaudiostart = () => logDebug('Audio capture started');
+    recognition.onaudioend = () => logDebug('Audio capture ended');
+    recognition.onsoundstart = () => logDebug('Sound detected');
+    recognition.onsoundend = () => logDebug('Sound ended');
+    recognition.onspeechstart = () => logDebug('Speech started');
+    recognition.onspeechend = () => logDebug('Speech ended');
+    recognition.onnomatch = () => logDebug('No speech match found');
 
-    recognition.onaudioend = () => {
-      logDebug('Audio capture ended');
-    };
+    isInitializedRef.current = true;
+    return true;
+  };
 
-    recognition.onsoundstart = () => {
-      logDebug('Sound detected');
-    };
-
-    recognition.onsoundend = () => {
-      logDebug('Sound ended');
-    };
-
-    recognition.onspeechstart = () => {
-      logDebug('Speech started');
-    };
-
-    recognition.onspeechend = () => {
-      logDebug('Speech ended');
-    };
-
-    recognition.onnomatch = () => {
-      logDebug('No speech match found');
-    };
+  useEffect(() => {
+    logDebug('VoiceInput component mounted');
+    initializeSpeechRecognition();
 
     return () => {
       logDebug('Cleaning up SpeechRecognition');
@@ -239,13 +234,18 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           logDebug('Error stopping recognition during cleanup:', err);
         }
       }
+      isInitializedRef.current = false;
     };
-  }, [onTranscript]);
+  }, []);
 
   const startListening = () => {    
     logDebug('Starting speech recognition...');
     setError('');
-    setTranscript(''); //resets interim but not final/displayed
+    setIsProcessing(true);
+    if (!initializeSpeechRecognition()) {
+      setIsProcessing(false);
+      return;
+    } //resets interim but not final/displayed
 
     // Check mic perms
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -267,52 +267,6 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         setError('Microphone access denied. Please allow microphone access and try again.');
         setIsProcessing(false);
       });
-
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
-    
-    recognitionRef.current.onresult = event => {
-      logDebug('Speech recognition result:', event);
-
-      let newFinalTranscript = '';
-      let newInterimTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const transcript = result[0].transcript;
-        const isFinal = result.isFinal;
-
-        if (isFinal) {
-          newFinalTranscript += transcript.trim();
-        } else {
-          newInterimTranscript += transcript;
-        }
-      }
-
-      setFinalTranscript(prevFinal => {
-        const updatedFinal = prevFinal.trim() + (prevFinal ? ' ' : '') + newFinalTranscript;
-        const fullTranscript = updatedFinal + newInterimTranscript;
-        logDebug('Transcript update:', { finalTranscript: updatedFinal, interimTranscript: newInterimTranscript, fullTranscript });
-        setTranscript(fullTranscript);
-        onTranscript(fullTranscript); // still optional depending on your app
-        return updatedFinal;
-      });
-    };
-
-    recognitionRef.current.onend = () => {
-      logDebug('Speech recognition ended');
-      setIsListening(false);
-    };
-
-    recognitionRef.current.onerror = event => {
-      logDebug('Speech recognition error:', event);
-      setIsListening(false);
-    };
-
-    recognitionRef.current.start();
-    setIsListening(true);
   };
 
   const stopListening = () => {
@@ -330,9 +284,11 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
 
   const clearTranscript = () => {
     logDebug('Clearing transcript');
-    setTranscript('');
+    setDisplayTranscript('');
     setFinalTranscript('');
-    onTranscript('');
+    if (onTranscript) {
+      onTranscript('');
+    }
   };
 
   const retrySpeechRecognition = () => {
@@ -451,7 +407,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
             {isProcessing ? 'Starting...' : isListening ? 'Stop Recording' : 'Start Voice Input'}
           </button>
           
-          {transcript && (
+          {displayTranscript && (
             <button
               onClick={clearTranscript}
               className="voice-input-clear"
@@ -461,7 +417,10 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           )}
           
           <button
-            onClick={() => setShowTroubleshooting(true)}
+            onClick={() => {
+              console.log('Help button clicked');
+              setShowTroubleshooting(true);
+            }}
             style={{
               padding: '0.5rem',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -503,15 +462,15 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           </div>
         )}
         
-        {transcript && (
+        {displayTranscript && (
           <div className="voice-input-transcript">
             <p>
-              <strong>Transcript:</strong> {transcript}
+              <strong>Transcript:</strong> {displayTranscript}
             </p>
           </div>
         )}
         
-        {!isListening && !transcript && (
+        {!isListening && !displayTranscript && (
           <p className="voice-input-placeholder">
             {placeholder}
           </p>
@@ -566,7 +525,12 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
       </div>
       
       {showTroubleshooting && (
-        <VoiceInputTroubleshooting onClose={() => setShowTroubleshooting(false)} />
+        <VoiceInputTroubleshooting 
+          onClose={() => {
+            console.log('Closing troubleshooting');
+            setShowTroubleshooting(false);
+          }} 
+        />
       )}
     </>
   );
