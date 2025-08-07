@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Github, ExternalLink, Code, Users, Zap, Target, Linkedin, Instagram } from "lucide-react";
-import "./Presentation.css";
+import "./AboutUs.css";
 import Footer from "./Footer.jsx";
 
 function AboutUs() {
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const teamCardsRef = useRef(null);
+  const sectionsRef = useRef([]);
 
   const updateArrowVisibility = () => {
     const container = teamCardsRef.current;
@@ -44,6 +45,29 @@ function AboutUs() {
   };
 
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    sectionsRef.current.forEach(section => {
+      if (section) observer.observe(section);
+    });
+
+    return () => {
+      sectionsRef.current.forEach(section => {
+        if (section) observer.unobserve(section);
+      });
+    };
+  }, []);
+
+  useEffect(() => {
     const container = teamCardsRef.current;
     if (!container) return;
 
@@ -76,7 +100,9 @@ function AboutUs() {
         <div className="presentation-navbar-left">
           <div className="presentation-logo-container">
             <img src="/images/logo.png" alt="Logo" className="presentation-logo" />
-            <span className="presentation-brand">DebateSim</span>
+            <a href="/" className="presentation-brand" style={{ textDecoration: 'none', color: 'inherit' }}>
+              DebateSim
+            </a>
           </div>
         </div>
         <div className="presentation-navbar-right">
@@ -90,7 +116,7 @@ function AboutUs() {
 
       <main className="presentation-main">
         {/* Technology Overview */}
-        <section className="presentation-section" id="technology">
+        <section className="presentation-section presentation-fade-section" ref={el => (sectionsRef.current[0] = el)} id="technology">
           <div className="presentation-section-header">
             <h2 className="presentation-section-title">Technology Overview</h2>
             <p className="presentation-section-subtitle">
@@ -131,7 +157,8 @@ function AboutUs() {
 
         {/* Impact & Testimonials Section */}
         <section
-          className="presentation-section"
+          className="presentation-section presentation-fade-section"
+          ref={el => (sectionsRef.current[1] = el)}
           id="impact"
         >
           <div className="presentation-section-header">
@@ -177,7 +204,7 @@ function AboutUs() {
                   "Before trying DebateSim, I wasn't into politics. Now, I see why civic engagement 
                   is important and understand what our government is doing."
                 </p>
-                <cite>— Sanjana, Student User</cite>
+                <cite>— Gautham, Student User</cite>
               </blockquote>
             </div>
 
@@ -195,7 +222,7 @@ function AboutUs() {
         </section>
 
         {/* About the Team Section */}
-        <section className="presentation-section" id="team">
+        <section className="presentation-section presentation-fade-section" ref={el => (sectionsRef.current[2] = el)} id="team">
           <div className="presentation-section-header">
             <h2 className="presentation-section-title">About the Team</h2>
             <p className="presentation-section-subtitle">
@@ -219,23 +246,19 @@ function AboutUs() {
             <div className="presentation-team-cards" ref={teamCardsRef}>
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
-                <div className="presentation-photo-placeholder">
-                  <Users size={48} />
-                </div>
+                <img src="/images/alex.png" alt="Alex Liao" className="presentation-member-image" />
               </div>
               <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
+                <h3>Alex Liao</h3>
+                <p className="presentation-member-role">Founder and Developer</p>
                 <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
+                Alex is a backend developer from Emerald High (Dublin, CA). As the founder and lead developer of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
                 </p>
                 <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
+                  <a href="https://www.linkedin.com/in/alex-liao-184832356/" className="presentation-social-link" title="LinkedIn">
                     <Linkedin size={20} />
                   </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
+                  <a href="https://www.instagram.com/alezl5311/" className="presentation-social-link" title="Instagram">
                     <Instagram size={20} />
                   </a>
                 </div>
@@ -347,7 +370,8 @@ function AboutUs() {
 
         {/* Roadmap Section */}
         <section
-          className="presentation-section"
+          className="presentation-section presentation-fade-section"
+          ref={el => (sectionsRef.current[3] = el)}
           id="roadmap"
         >
           <div className="presentation-section-header">
@@ -432,7 +456,8 @@ function AboutUs() {
 
         {/* Call to Action Section */}
         <section
-          className="presentation-section presentation-cta-section"
+          className="presentation-section presentation-cta-section presentation-fade-section"
+          ref={el => (sectionsRef.current[4] = el)}
           id="call-to-action"
         >
           <div className="presentation-cta-content">
@@ -457,21 +482,6 @@ function AboutUs() {
                 <Github size={20} />
                 Star on GitHub
               </a>
-            </div>
-
-            <div className="presentation-final-links">
-              <div className="presentation-link-card">
-                <h3>🌐 Live Platform</h3>
-                <a href="https://debatesim.us">debatesim.us</a>
-              </div>
-              <div className="presentation-link-card">
-                <h3>💻 Open Source</h3>
-                <a href="https://github.com/alexliao95311/DebateSim">GitHub Repository</a>
-              </div>
-              <div className="presentation-link-card">
-                <h3>📖 Documentation</h3>
-                <a href="/docs">Technical Docs</a>
-              </div>
             </div>
           </div>
         </section>

@@ -496,14 +496,7 @@ function Login({ onLogin }) {
                 className="login-about-btn primary"
                 onClick={() => window.location.href = '/about'}
               >
-                Learn About Our Technology
-              </button>
-              <button 
-                className="login-about-btn secondary"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-              >
-                {loading ? 'Signing in...' : 'Start Debating Now'}
+                About Us
               </button>
             </div>
           </div>

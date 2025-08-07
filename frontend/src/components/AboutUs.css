@@ -83,9 +83,30 @@
 }
 
 .presentation-section {
-  padding: 4rem 2rem !important;
+  padding: 4rem 4rem !important;
   max-width: 1200px !important;
   margin: 0 auto !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Fade animations matching Login.jsx */
+.presentation-fade-section {
+  min-height: 80vh !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-direction: column !important;
+  padding: 4rem 4rem !important;
+  text-align: center !important;
+  position: relative !important;
+  opacity: 0 !important;
+  transform: translateY(100px) !important;
+  transition: opacity 1.4s ease-out, transform 1.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  will-change: transform, opacity !important;
+}
+
+.presentation-fade-section.visible {
   opacity: 1 !important;
   transform: translateY(0) !important;
 }
@@ -626,7 +647,7 @@
 
 /* Call to Action Section */
 .presentation-cta-section {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(30, 41, 59, 0.08) 100%) !important;
+  
   border: 1px solid rgba(239, 68, 68, 0.2) !important;
   text-align: center !important;
 }
@@ -734,7 +755,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .presentation-section {
-    padding: 2rem 1rem !important;
+    padding: 2rem 2rem !important;
   }
   
   .presentation-section-title {
@@ -1058,9 +1079,25 @@
 }
 
 /* Team Section - Horizontal Scrolling */
+#team {
+  max-width: none !important;
+  padding: 4rem 0 !important;
+}
+
+#team .presentation-section-header {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 4rem;
+}
+
 .presentation-team-container {
   position: relative;
   margin-top: 3rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 4rem;
 }
 
 /* Scroll arrows matching Login.jsx style */
@@ -1102,11 +1139,11 @@
 }
 
 .presentation-scroll-arrow-left {
-  left: -15px !important;
+  left: 10px !important;
 }
 
 .presentation-scroll-arrow-right {
-  right: -15px !important;
+  right: 10px !important;
 }
 
 .presentation-team-cards {
@@ -1162,6 +1199,14 @@
 
 .presentation-photo-placeholder svg {
   color: #60a5fa;
+}
+
+.presentation-member-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(96, 165, 250, 0.3);
 }
 
 .presentation-member-info h3 {
@@ -1306,12 +1351,17 @@
   }
   
   /* Team section mobile adjustments */
+  #team .presentation-section-header,
+  .presentation-team-container {
+    padding: 0 2rem;
+  }
+  
   .presentation-scroll-arrow-left {
-    left: -10px !important;
+    left: 5px !important;
   }
   
   .presentation-scroll-arrow-right {
-    right: -10px !important;
+    right: 5px !important;
   }
   
   .presentation-scroll-arrow {
@@ -1329,11 +1379,11 @@
 
 @media (max-width: 480px) {
   .presentation-scroll-arrow-left {
-    left: -7px !important;
+    left: 2px !important;
   }
   
   .presentation-scroll-arrow-right {
-    right: -7px !important;
+    right: 2px !important;
   }
   
   .presentation-scroll-arrow {

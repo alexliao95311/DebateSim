@@ -8,7 +8,6 @@ import Debate from "./components/Debate";
 import Judge from "./components/Judge";
 import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
-import Presentation from "./components/Presentation";
 import AboutUs from "./components/AboutUs";
 import SpeechTest from "./components/SpeechTest";
 
@@ -99,7 +98,6 @@ function App() {
       <Routes>
         {/* Public routes - accessible without login */}
         <Route path="/shared/:shareId" element={<PublicTranscriptView />} />
-        <Route path="/presentation" element={<Presentation />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/speech-test" element={<SpeechTest />} />
         
