@@ -1882,7 +1882,6 @@
   
   .legislation-step-arrow {
     font-size: 1.2rem;
-    transform: rotate(90deg);
     margin: 0.25rem 0;
   }
 }
