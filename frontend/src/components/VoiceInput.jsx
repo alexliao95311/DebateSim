@@ -12,6 +12,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   const recognitionRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
   // Debug function to log information
   const logDebug = (message, data = null) => {
