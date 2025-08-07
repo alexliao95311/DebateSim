@@ -566,7 +566,7 @@ const SpeechTest = () => {
             <div>
               <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Method 2: Allow Cookies</h4>
               <ol style={{ margin: 0, fontSize: '0.9rem', color: '#856404' }}>
-                <li>Go to Settings > Shields > Site and shield settings</li>
+                <li>Go to Settings &gt; Shields &gt; Site and shield settings</li>
                 <li>Set "Cookies and site data" to "Allow all"</li>
                 <li>Refresh the page</li>
                 <li>Try speech recognition again</li>
@@ -590,7 +590,7 @@ const SpeechTest = () => {
               <div>
                 <h5 style={{ margin: '0 0 0.25rem 0', color: '#856404', fontSize: '0.9rem' }}>Check These Settings:</h5>
                 <ul style={{ margin: 0, fontSize: '0.8rem', color: '#856404' }}>
-                  <li>Settings > Privacy and security > Site and shield settings</li>
+                  <li>Settings &gt; Privacy and security &gt; Site and shield settings</li>
                   <li>Set "Fingerprinting" to "Allow all"</li>
                   <li>Set "HTTPS Everywhere" to "Off"</li>
                   <li>Set "Scripts" to "Allow all"</li>
