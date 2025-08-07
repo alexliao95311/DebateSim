@@ -267,6 +267,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         setError('Microphone access denied. Please allow microphone access and try again.');
         setIsProcessing(false);
       });
+  };
 
   const stopListening = () => {
     logDebug('Stopping speech recognition...');
@@ -283,9 +284,11 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
 
   const clearTranscript = () => {
     logDebug('Clearing transcript');
-    setTranscript('');
+    setDisplayTranscript('');
     setFinalTranscript('');
-    onTranscript('');
+    if (onTranscript) {
+      onTranscript('');
+    }
   };
 
   const retrySpeechRecognition = () => {
@@ -404,7 +407,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
             {isProcessing ? 'Starting...' : isListening ? 'Stop Recording' : 'Start Voice Input'}
           </button>
           
-          {transcript && (
+          {displayTranscript && (
             <button
               onClick={clearTranscript}
               className="voice-input-clear"
@@ -459,15 +462,15 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
           </div>
         )}
         
-        {transcript && (
+        {displayTranscript && (
           <div className="voice-input-transcript">
             <p>
-              <strong>Transcript:</strong> {transcript}
+              <strong>Transcript:</strong> {displayTranscript}
             </p>
           </div>
         )}
         
-        {!isListening && !transcript && (
+        {!isListening && !displayTranscript && (
           <p className="voice-input-placeholder">
             {placeholder}
           </p>
