@@ -450,6 +450,58 @@ function Login({ onLogin }) {
           </div>
         </section>
 
+        <section className="login-fade-section login-about-section" ref={el => (sectionsRef.current[3] = el)}>
+          <div className="login-about-content">
+            <h2 className="login-section-title">About DebateSim</h2>
+            <p className="login-section-description">
+              The future of debate education powered by artificial intelligence
+            </p>
+            
+            <div className="login-about-summary">
+              <div className="login-about-text">
+                <p>
+                  DebateSim combines cutting-edge AI technology with real congressional data to create 
+                  the most advanced debate simulation platform ever built. Our LangChain-orchestrated 
+                  system provides intelligent opponents, comprehensive analysis, and real-time feedback 
+                  to help you master the art of argumentation.
+                </p>
+                <p>
+                  Whether you're a student preparing for competitions, a professional honing presentation 
+                  skills, or someone passionate about civic engagement, DebateSim offers personalized 
+                  AI opponents that adapt to your style and challenge your thinking.
+                </p>
+              </div>
+              <div className="login-about-highlights">
+                <div className="login-highlight-item">
+                  <span className="login-highlight-icon">🧠</span>
+                  <span>Advanced AI orchestration with LangChain</span>
+                </div>
+                <div className="login-highlight-item">
+                  <span className="login-highlight-icon">⚡</span>
+                  <span>Sub-500ms response times with intelligent caching</span>
+                </div>
+                <div className="login-highlight-item">
+                  <span className="login-highlight-icon">📊</span>
+                  <span>Comprehensive analysis and grading system</span>
+                </div>
+                <div className="login-highlight-item">
+                  <span className="login-highlight-icon">⚖️</span>
+                  <span>Real congressional bill integration</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="login-about-actions">
+              <button 
+                className="login-about-btn primary"
+                onClick={() => window.location.href = '/about'}
+              >
+                About Us
+              </button>
+            </div>
+          </div>
+        </section>
+
         {error && (
           <div className="login-error-section">
             <div className="login-error-message">
