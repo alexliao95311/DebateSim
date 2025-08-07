@@ -9,7 +9,7 @@ import DebateSidebar from "./DebateSidebar";
 import SimpleFileUpload from "./SimpleFileUpload";
 import VoiceInput from './VoiceInput';
 import { Code, MessageSquare, Download, Share2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
-import "./Debate.css"; 
+import "./Debate.css";
 
 const modelOptions = [
   "openai/gpt-4o",
@@ -28,7 +28,7 @@ function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
   const { mode, debateMode, topic, description, billText, billTitle, selectedModel } = useLocation().state || {};
   const navigate = useNavigate();
-  
+
   // For bill debates, use billText as description if available
   // Truncate very large bill texts on frontend to prevent API errors
   let actualDescription = billText || description;
@@ -36,21 +36,21 @@ function Debate() {
     console.log(`Bill text very long (${actualDescription.length} chars), truncating for API safety`);
     actualDescription = actualDescription.substring(0, 90000) + "\n\n[NOTE: Bill text truncated due to length. Key sections preserved for debate context.]";
   }
-  
+
   // Debug logging
-  console.log('Debate component received:', { 
-    mode, 
-    debateMode, 
-    topic, 
+  console.log('Debate component received:', {
+    mode,
+    debateMode,
+    topic,
     billText: billText ? `${billText.length} chars` : 'none',
     billTitle,
     description: description ? `${description.length} chars` : 'none'
   });
-  
+
   // Handle both old format (direct mode) and new format (bill-debate with debateMode)
   const actualMode = mode === 'bill-debate' ? debateMode : mode;
   const isBillDebate = mode === 'bill-debate';
-  
+
   if (!actualMode || !topic) {
     navigate("/debatesim");
     return null;
@@ -96,7 +96,7 @@ function Debate() {
     const scrollTimer = setTimeout(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, 0);
-    
+
     return () => clearTimeout(scrollTimer);
   }, []);
 
@@ -115,13 +115,13 @@ function Debate() {
     // We want 5 complete rounds (10 total speeches: 5 Pro + 5 Con)
     const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
     const shouldContinue = aiSpeeches < (maxRounds * 2); // 10 speeches total for 5 rounds
-    
+
     if (autoMode && !loading && messageList.length > 0 && shouldContinue) {
       // Clear any existing timer
       if (autoTimer) {
         clearTimeout(autoTimer);
       }
-      
+
       const timer = setTimeout(() => {
         handleAIDebate();
       }, 3000); // 3 second delay for reading
@@ -165,21 +165,21 @@ function Debate() {
 
   const scrollToSpeech = (id) => {
     console.log(`Attempting to scroll to speech: ${id}`);
-    
+
     // Add a longer delay to ensure the DOM is fully updated
     setTimeout(() => {
       const el = document.getElementById(id);
       console.log(`Found element for ${id}:`, el);
-      
+
       if (el) {
         // Ensure the element is visible and scrollable
-        el.scrollIntoView({ 
-          behavior: "smooth", 
+        el.scrollIntoView({
+          behavior: "smooth",
           block: "start",
           inline: "nearest"
         });
         console.log(`Successfully scrolled to ${id}`);
-        
+
         // Add a visual highlight to confirm the scroll worked
         el.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
         setTimeout(() => {
@@ -190,13 +190,13 @@ function Debate() {
         // List all speech elements for debugging
         const allSpeechElements = document.querySelectorAll('[id^="speech-"]');
         console.log('Available speech elements:', Array.from(allSpeechElements).map(el => el.id));
-        
+
         // Try to find the element by partial match
         const partialMatch = Array.from(allSpeechElements).find(el => el.id.includes(id.split('-')[1]));
         if (partialMatch) {
           console.log(`Found partial match: ${partialMatch.id}`);
-          partialMatch.scrollIntoView({ 
-            behavior: "smooth", 
+          partialMatch.scrollIntoView({
+            behavior: "smooth",
             block: "start",
             inline: "nearest"
           });
@@ -209,10 +209,10 @@ function Debate() {
   useEffect(() => {
     const newSpeechList = messageList.map((msg, index) => {
       let title = msg.speaker;
-      
+
       // Calculate round number more accurately
       const roundNum = msg.round || Math.ceil((index + 1) / 2);
-      
+
       // Add round information for ALL speeches
       if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
         title = `${msg.speaker} - Round ${roundNum}/5`;
@@ -232,7 +232,7 @@ function Debate() {
         // For any other speaker, add round number
         title = `${msg.speaker} - Round ${roundNum}`;
       }
-      
+
       const speechItem = {
         id: `speech-${index}`,
         title: title,
@@ -240,13 +240,13 @@ function Debate() {
         round: roundNum,
         index: index
       };
-      
+
       // Debug logging
       console.log(`Speech ${index}:`, speechItem);
-      
+
       return speechItem;
     });
-    
+
     console.log('Updated speech list:', newSpeechList);
     setSpeechList(newSpeechList);
   }, [messageList, actualMode]);
@@ -309,12 +309,12 @@ ${fullTranscript}
 CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: PRO (supporting the topic)
 
-${isOpening ? 
-  "This is your opening statement. Present a strong opening argument in favor of the topic." :
-  `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
+${isOpening ?
+            "This is your opening statement. Present a strong opening argument in favor of the topic." :
+            `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
   
   Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
-}
+          }
 
 CRITICAL FORMATTING INSTRUCTIONS:
 - NEVER write "AI Debater Pro" or any speaker name in your response
@@ -324,10 +324,10 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ? 
-  "- Present a strong opening argument in favor of the topic" :
-  "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-}
+${isOpening ?
+            "- Present a strong opening argument in favor of the topic" :
+            "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+          }
 - Present 2-3 strong arguments supporting the PRO position
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
@@ -365,12 +365,12 @@ ${fullTranscript}
 CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: CON (opposing the topic)
 
-${isOpening ? 
-  "This is your opening statement. Present a strong opening argument against the topic." :
-  `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
+${isOpening ?
+            "This is your opening statement. Present a strong opening argument against the topic." :
+            `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
   
   Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
-}
+          }
 
 CRITICAL FORMATTING INSTRUCTIONS:
 - NEVER write "AI Debater Con" or any speaker name in your response
@@ -380,10 +380,10 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ? 
-  "- Present a strong opening argument against the topic" :
-  "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-}
+${isOpening ?
+            "- Present a strong opening argument against the topic" :
+            "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
+          }
 - Present 2-3 strong arguments supporting the CON position
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
@@ -509,12 +509,12 @@ ${fullTranscript}
 
 YOUR ROLE: ${aiSideLocal.toUpperCase()} (opposing the user's ${userSide.toUpperCase()} position)
 
-${isOpening ? 
-  "This is your opening statement. Present a strong opening argument against the topic." :
-  `MANDATORY REBUTTAL: The user just argued for the ${userSide.toUpperCase()} side. You must begin by directly addressing and rebutting specific points from their argument: "${userInput}"
+${isOpening ?
+          "This is your opening statement. Present a strong opening argument against the topic." :
+          `MANDATORY REBUTTAL: The user just argued for the ${userSide.toUpperCase()} side. You must begin by directly addressing and rebutting specific points from their argument: "${userInput}"
   
   Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
-}
+        }
 
 CRITICAL FORMATTING INSTRUCTIONS:
 - NEVER write "AI Debater" or any speaker name in your response
@@ -523,10 +523,10 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ? 
-  "- Present a strong opening argument against the topic" :
-  "- MANDATORY: Begin by directly addressing and rebutting specific points from the user's argument above. Quote their exact words and explain why they are wrong."
-}
+${isOpening ?
+          "- Present a strong opening argument against the topic" :
+          "- MANDATORY: Begin by directly addressing and rebutting specific points from the user's argument above. Quote their exact words and explain why they are wrong."
+        }
 - Present 1-2 strong counterarguments supporting the ${aiSideLocal.toUpperCase()} position
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 400 words)
@@ -542,17 +542,17 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         text: userInput,
         round: currentRound
       }];
-      
+
       const fullTranscriptForAI = updatedMessageList
         .map(({ speaker, text, model }) => {
           const modelInfo = model ? `*Model: ${model}*\n\n` : "";
           return `## ${speaker}\n${modelInfo}${text}`;
         })
         .join("\n\n---\n\n");
-      
+
       console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
       console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
-      
+
       const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI);
       appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
       setCurrentRound(prev => prev + 1);
@@ -581,33 +581,33 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         userSide === "pro" ? "Pro (User)" : "Con (User)",
         userInput
       );
-      
+
       // Clear the input
       setUserInput("");
       setCurrentRound(prev => prev + 1);
-      
+
       // Build transcript with the current messageList plus the new user message
       const userMessage = {
         speaker: userSide === "pro" ? "Pro (User)" : "Con (User)",
         text: userInput.trim(),
         round: currentRound
       };
-      
+
       const finalTranscript = [...messageList, userMessage]
         .map(({ speaker, text, model }) => {
           const modelInfo = model ? `*Model: ${model}*\n\n` : "";
           return `## ${speaker}\n${modelInfo}${text}`;
         })
         .join("\n\n---\n\n");
-      
+
       // Navigate to judge with the complete transcript
-      navigate("/judge", { 
-        state: { 
-          transcript: finalTranscript, 
-          topic, 
-          mode: isBillDebate ? 'bill-debate' : actualMode, 
-          judgeModel 
-        } 
+      navigate("/judge", {
+        state: {
+          transcript: finalTranscript,
+          topic,
+          mode: isBillDebate ? 'bill-debate' : actualMode,
+          judgeModel
+        }
       });
     } catch (err) {
       setError("Failed to send final user argument.");
@@ -621,14 +621,14 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       alert("Input field cannot be blank. Please enter your argument.");
       return;
     }
-    
+
     const currentUserName = userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser;
     const speakerLabel = `${userVsUserSide.toUpperCase()} (${currentUserName})`;
-    
+
     appendMessage(speakerLabel, userInput.trim());
     setUserInput("");
     setError("");
-    
+
     // Switch turns
     setUserVsUserSide(userVsUserSide === "pro" ? "con" : "pro");
   };
@@ -654,7 +654,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         Back to Home
       </button>
 
-      <DebateSidebar 
+      <DebateSidebar
         sidebarExpanded={sidebarExpanded}
         setSidebarExpanded={setSidebarExpanded}
         speechList={speechList}
@@ -733,44 +733,72 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </label>
             </div>
           )}
-        {/* Render each speech as its own block */}
-        {messageList.map(({ speaker, text, model }, i) => {
-          const speechItem = speechList[i];
-          const speechTitle = speechItem?.title || speaker;
-          const speechId = `speech-${i}`;
-          
-          return (
-            <div key={i} className="debate-speech-block" id={speechId}>
-              <h3 className="debate-speech-title">{speechTitle}</h3>
-              {model && <div className="debate-model-info">Model: {model}</div>}
-              <div className="debate-speech-content">
-                <ReactMarkdown
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="debate-markdown-h1" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="debate-markdown-h2" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="debate-markdown-h3" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="debate-markdown-h4" {...props} />,
-                    p: ({node, ...props}) => <p className="debate-markdown-p" {...props} />,
-                    ul: ({node, ...props}) => <ul className="debate-markdown-ul" {...props} />,
-                    ol: ({node, ...props}) => <ol className="debate-markdown-ol" {...props} />,
-                    li: ({node, ...props}) => <li className="debate-markdown-li" {...props} />,
-                    strong: ({node, ...props}) => <strong className="debate-markdown-strong" {...props} />,
-                    em: ({node, ...props}) => <em className="debate-markdown-em" {...props} />,
-                    hr: ({node, ...props}) => <hr className="debate-markdown-hr" {...props} />
-                  }}
-                >
-                  {text}
-                </ReactMarkdown>
+          {/* Render each speech as its own block */}
+          {messageList.map(({ speaker, text, model }, i) => {
+            const speechItem = speechList[i];
+            const speechTitle = speechItem?.title || speaker;
+            const speechId = `speech-${i}`;
+
+            const handlePlay = () => {
+              const synth = window.speechSynthesis;
+              synth.cancel(); // Stop any current speech
+              const utterance = new SpeechSynthesisUtterance(text);
+              synth.speak(utterance);
+            };
+
+            const handleStop = () => {
+              window.speechSynthesis.cancel(); // Immediately stops speech
+            };
+
+            return (
+              <div key={i} className="debate-speech-block relative" id={speechId}>
+                {/* Play/Stop Buttons in Top Right */}
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                    onClick={handlePlay}
+                    className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    🔊
+                  </button>
+                  <button
+                    onClick={handleStop}
+                    className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    ⏹️
+                  </button>
+                </div>
+
+                <h3 className="debate-speech-title">{speechTitle}</h3>
+                {model && <div className="debate-model-info">Model: {model}</div>}
+
+                <div className="debate-speech-content">
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ node, ...props }) => <h1 className="debate-markdown-h1" {...props} />,
+                      h2: ({ node, ...props }) => <h2 className="debate-markdown-h2" {...props} />,
+                      h3: ({ node, ...props }) => <h3 className="debate-markdown-h3" {...props} />,
+                      h4: ({ node, ...props }) => <h4 className="debate-markdown-h4" {...props} />,
+                      p: ({ node, ...props }) => <p className="debate-markdown-p" {...props} />,
+                      ul: ({ node, ...props }) => <ul className="debate-markdown-ul" {...props} />,
+                      ol: ({ node, ...props }) => <ol className="debate-markdown-ol" {...props} />,
+                      li: ({ node, ...props }) => <li className="debate-markdown-li" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="debate-markdown-strong" {...props} />,
+                      em: ({ node, ...props }) => <em className="debate-markdown-em" {...props} />,
+                      hr: ({ node, ...props }) => <hr className="debate-markdown-hr" {...props} />
+                    }}
+                  >
+                    {text}
+                  </ReactMarkdown>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
           {actualMode === "ai-vs-ai" && (
             <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
               {!autoMode ? (
                 <>
-                  <button 
-                    onClick={handleAIDebate} 
+                  <button
+                    onClick={handleAIDebate}
                     disabled={loading || (() => {
                       const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
                       return aiSpeeches >= (maxRounds * 2);
@@ -800,8 +828,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         : `Generate Con Round ${currentRound}/${maxRounds}`;
                     })()}
                   </button>
-                  <button 
-                    onClick={startAutoDebate} 
+                  <button
+                    onClick={startAutoDebate}
                     disabled={loading || (() => {
                       const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
                       return aiSpeeches >= (maxRounds * 2);
@@ -826,7 +854,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </button>
                 </>
               ) : (
-                <button 
+                <button
                   onClick={stopAutoDebate}
                   style={{
                     background: "#dc3545",
@@ -849,7 +877,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <h3>Setup Your Debate</h3>
                   <p style={{ color: '#fff' }}>Choose your SIDE and SPEAKING ORDER</p>
                   <div className="side-selection-cards">
-                    <div 
+                    <div
                       className={`side-card ${selectedSide === 'pro' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("pro")}
                     >
@@ -859,8 +887,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         You will go {firstSide === 'pro' ? 'FIRST' : 'SECOND'}
                       </p>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className={`side-card ${selectedSide === 'con' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("con")}
                     >
@@ -871,17 +899,17 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="order-selection">
                     <label>Speaking Order</label>
                     <div className="order-buttons">
-                      <button 
+                      <button
                         className={`order-button ${firstSide === 'pro' ? 'selected' : ''}`}
                         onClick={() => setFirstSide('pro')}
                       >
                         PRO speaks first
                       </button>
-                      <button 
+                      <button
                         className={`order-button ${firstSide === 'con' ? 'selected' : ''}`}
                         onClick={() => setFirstSide('con')}
                       >
@@ -889,9 +917,9 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="confirm-section">
-                    <button 
+                    <button
                       className="confirm-button"
                       disabled={!selectedSide}
                       onClick={() => handleChooseSide(selectedSide)}
@@ -904,7 +932,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {userSide && (
                 <div className="ai-vs-user-setup">
                   <h3>Debate as {userSide.toUpperCase()} vs AI</h3>
-                  
+
                   <div className="debate-model-selection" style={{ marginBottom: "1rem" }}>
                     <label className="debate-model-label">
                       AI Opponent Model:
@@ -917,18 +945,18 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       </select>
                     </label>
                   </div>
-                  
-                  <SimpleFileUpload 
+
+                  <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
                     disabled={loading}
                   />
-                  
-                  <VoiceInput 
+
+                  <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
                     disabled={loading}
                     placeholder={`Speak your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                   />
-                  
+
                   <textarea
                     placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
@@ -942,10 +970,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       }
                     }}
                   />
-                  
+
                   <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-                    <button 
-                      onClick={handleUserVsAISubmit} 
+                    <button
+                      onClick={handleUserVsAISubmit}
                       disabled={loading || !userInput.trim()}
                       style={{
                         background: "#4a90e2",
@@ -959,11 +987,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     >
                       {loading ? "Generating Response..." : "Send & Get AI Reply"}
                     </button>
-                    
+
                     {(firstSide === "con" && userSide === "pro") ||
-                     (firstSide === "pro" && userSide === "con") ? (
-                      <button 
-                        onClick={handleUserVsAISubmitAndEnd} 
+                      (firstSide === "pro" && userSide === "con") ? (
+                      <button
+                        onClick={handleUserVsAISubmitAndEnd}
                         disabled={loading || !userInput.trim()}
                         style={{
                           background: "#6c757d",
@@ -978,7 +1006,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         Send & End (No AI Reply)
                       </button>
                     ) : null}
-                    
+
                   </div>
                 </div>
               )}
@@ -989,7 +1017,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {!userVsUserSetup.confirmed && (
                 <div className="ai-vs-user-setup">
                   <h3>Setup User vs User Debate</h3>
-                  
+
                   <div className="user-name-inputs">
                     <div className="name-input-group">
                       <label>Pro Debater Name:</label>
@@ -1008,7 +1036,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         }}
                       />
                     </div>
-                    
+
                     <div className="name-input-group">
                       <label>Con Debater Name:</label>
                       <input
@@ -1027,17 +1055,17 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       />
                     </div>
                   </div>
-                  
+
                   <div className="order-selection">
                     <label>Who speaks first?</label>
                     <div className="order-buttons">
-                      <button 
+                      <button
                         className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
                         onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
                       >
                         {userVsUserSetup.proUser || 'Pro'} speaks first
                       </button>
-                      <button 
+                      <button
                         className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
                         onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
                       >
@@ -1045,7 +1073,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="debate-model-selection" style={{ marginBottom: "1.5rem" }}>
                     <label className="debate-model-label">
                       Judge Model:
@@ -1058,22 +1086,22 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       </select>
                     </label>
                   </div>
-                  
+
                   <div className="confirm-section">
-                    <button 
+                    <button
                       className="confirm-button"
                       disabled={!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()}
                       onClick={handleUserVsUserConfirm}
                     >
-                      {userVsUserSetup.proUser.trim() && userVsUserSetup.conUser.trim() 
-                        ? 'Start Debate' 
+                      {userVsUserSetup.proUser.trim() && userVsUserSetup.conUser.trim()
+                        ? 'Start Debate'
                         : 'Enter both debater names first'
                       }
                     </button>
                   </div>
                 </div>
               )}
-              
+
               {userVsUserSetup.confirmed && (
                 <div className="user-vs-user-setup">
                   <h3>User vs User Debate</h3>
@@ -1082,26 +1110,26 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </strong> ({userVsUserSide.toUpperCase()})
                   </p>
-                  
-                  <SimpleFileUpload 
+
+                  <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
                     disabled={loading}
                   />
-                  
-                  <VoiceInput 
+
+                  <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
                     disabled={loading}
                     placeholder={`Speak your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                   />
-                  
+
                   <textarea
                     placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
-                    style={{ 
-                      width: "100%", 
-                      resize: "vertical", 
+                    style={{
+                      width: "100%",
+                      resize: "vertical",
                       marginBottom: "1rem",
                       padding: "0.75rem",
                       borderRadius: "6px",
@@ -1115,10 +1143,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       }
                     }}
                   />
-                  
+
                   <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-                    <button 
-                      onClick={handleUserVsUser} 
+                    <button
+                      onClick={handleUserVsUser}
                       disabled={loading || !userInput.trim()}
                       style={{
                         background: "#4a90e2",
@@ -1133,8 +1161,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     >
                       Send as {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => setUserVsUserSetup(prev => ({ ...prev, confirmed: false }))}
                       style={{
                         background: "rgba(255,255,255,0.1)",
@@ -1155,8 +1183,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           )}
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && (
-            <LoadingSpinner 
-              message="Generating AI response" 
+            <LoadingSpinner
+              message="Generating AI response"
               showProgress={true}
               estimatedTime={45000}
             />
@@ -1172,7 +1200,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           </div>
         </div>
       </div>
-      
+
       <footer className="bottom-text">
         <div className="footer-links">
           <a
