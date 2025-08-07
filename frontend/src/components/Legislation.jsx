@@ -1492,7 +1492,8 @@ const Legislation = ({ user }) => {
             {/* CENTER SECTION: Title */}
             <div className="legislation-header-center">
               <h1 className="legislation-site-title" onClick={() => navigate("/")}>
-                Bill and Legislation Debate
+                <span className="legislation-title-full">Bill and Legislation Debate</span>
+                <span className="legislation-title-mobile">Bill Debate</span>
               </h1>
             </div>
 
