@@ -1907,7 +1907,7 @@ const Legislation = ({ user }) => {
                   Upload PDF
                 </label>
                 <span className="or-text">or</span>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
+                <div className="congress-link" style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
                   <input
                     type="url"
                     value={billLink}

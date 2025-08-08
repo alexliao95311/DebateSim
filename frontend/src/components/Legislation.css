@@ -5012,4 +5012,22 @@ div[style*="backgroundColor: #d"] * {
   }
 }
 
+@media (max-width: 480px) {
+  .upload-btn,
+  .upload-container form button[type="submit"] {
+    width: 100% !important;
+    font-size: 1rem !important;
+    padding: 0.7rem 1rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .congress-link {
+    display: none !important;
+  }
+
+  .or-text {
+    margin-bottom: 0.5rem !important;
+  }
+}
+
 /* END: Voice Output Integration */
