@@ -90,15 +90,21 @@ class AnalysisRequest(BaseModel):
     text: str
     model: str = DEFAULT_MODEL  # Use the global default model
 
-# Connection pooling with optimizations
-connector = aiohttp.TCPConnector(
-    limit=30,
-    limit_per_host=20,
-    ttl_dns_cache=300,
-    use_dns_cache=True,
-    keepalive_timeout=60,
-    enable_cleanup_closed=True
-)
+# Connection pooling with optimizations - will be initialized lazily
+connector = None
+
+def get_connector():
+    global connector
+    if connector is None:
+        connector = aiohttp.TCPConnector(
+            limit=30,
+            limit_per_host=20,
+            ttl_dns_cache=300,
+            use_dns_cache=True,
+            keepalive_timeout=60,
+            enable_cleanup_closed=True
+        )
+    return connector
 
 # Cache for AI responses (key now includes model_override and skip_formatting)
 cache = TTLCache(maxsize=200, ttl=600)  # Cache up to 200 items for 10 minutes
@@ -110,7 +116,7 @@ bill_searcher = None
 @app.on_event("startup")
 async def startup_event():
     global session, bill_searcher
-    session = aiohttp.ClientSession(connector=connector)
+    session = aiohttp.ClientSession(connector=get_connector())
     bill_searcher = BillSearcher(session)
 
 @app.on_event("shutdown")
@@ -127,11 +133,12 @@ class GenerateResponseRequest(BaseModel):
     model: str = DEFAULT_MODEL  # Use the global default model
     bill_description: str = ""  # Full bill text for evidence-based arguments
     full_transcript: str = ""  # Full debate transcript for context
+    round_num: int = 1  # Current round number
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
     start_time = time.time()
-    logger.info(f"📩 /generate-response called with debater={request.debater!r}, model={request.model}")
+    logger.info(f"📩 /generate-response called with debater={request.debater!r}, model={request.model}, round={request.round_num}")
     
     # DEBUG: Print what transcript data we're receiving
     logger.info(f"🔍 DEBUG: Full transcript length: {len(request.full_transcript)} chars")
@@ -182,6 +189,7 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - debater_role: {debater_role}")
         logger.info(f"🔍 DEBUG: - topic: {topic}")
         logger.info(f"🔍 DEBUG: - bill_description length: {len(bill_description)}")
+        logger.info(f"🔍 DEBUG: - round_num: {request.round_num}")
         logger.info(f"🔍 DEBUG: - history: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: - history: None")
         logger.info(f"🔍 DEBUG: - full_transcript: {request.full_transcript[:200]}..." if request.full_transcript else "🔍 DEBUG: - full_transcript: None")
         
@@ -191,7 +199,8 @@ async def generate_response(request: GenerateResponseRequest):
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
             history=opponent_arg,
-            full_transcript=request.full_transcript  # Pass the full transcript for proper context
+            full_transcript=request.full_transcript,  # Pass the full transcript for proper context
+            round_num=request.round_num  # Pass the current round number
         )
         
     except Exception as e:
