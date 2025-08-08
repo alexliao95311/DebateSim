@@ -250,7 +250,7 @@ function AboutUs() {
               </div>
               <div className="presentation-member-info">
                 <h3>Alex Liao</h3>
-                <p className="presentation-member-role">Founder and Developer</p>
+                <p className="presentation-member-role">Founder and CTO</p>
                 <p className="presentation-member-bio">
                 Alex is a backend developer from Emerald High (Dublin, CA). As the founder and lead developer of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
                 </p>
