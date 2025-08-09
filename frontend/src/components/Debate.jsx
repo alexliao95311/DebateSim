@@ -310,17 +310,17 @@ ${fullTranscript}
 CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: PRO (supporting the topic)
 
-${currentRound === 1 && messageList.length === 0 ? 
-            `SPEECH 1 - PRO CONSTRUCTIVE:
-RIGID FORMAT REQUIREMENT:
+SPEECH ${messageList.length + 1} - PRO ${isOpening ? 'CONSTRUCTIVE' : 'REBUTTAL + FRONTLINE'}:
+${isOpening ?
+            `RIGID FORMAT REQUIREMENT:
 • Present exactly 3 main arguments in favor of the topic
 • Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]  
 • These will be your ONLY contentions for the entire debate
 • Build each argument with evidence, reasoning, and impact
-• Do NOT address opponent arguments (they haven't spoken yet)` :
-            currentRound === 2 ? 
-            `SPEECH 3 - PRO REBUTTAL + FRONTLINE:
-RIGID FORMAT REQUIREMENT:
+• Do NOT address opponent arguments (they haven't spoken yet)
+• Do NOT include any "PART 1" or "PART 2" sections - just present your 3 arguments
+• Do NOT mention frontlining, rebutting, or attacking - just build your case` :
+            `RIGID FORMAT REQUIREMENT:
 PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
 • Rebuild Pro Argument 1 against Con's attacks from their previous speech
 • Rebuild Pro Argument 2 against Con's attacks from their previous speech
@@ -329,20 +329,9 @@ PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
 PART 2 - CONTINUE ATTACKING CON'S CASE:
 • Further refute Con Argument 1 with new analysis/evidence
 • Further refute Con Argument 2 with new analysis/evidence  
-• Further refute Con Argument 3 with new analysis/evidence` :
-            `SPEECH ${currentRound * 2 - 1} - PRO REBUTTAL + FRONTLINE:
-RIGID FORMAT REQUIREMENT:
-PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
-• Rebuild Pro Argument 1 against Con's latest attacks
-• Rebuild Pro Argument 2 against Con's latest attacks
-• Rebuild Pro Argument 3 against Con's latest attacks
+• Further refute Con Argument 3 with new analysis/evidence
 
-PART 2 - CONTINUE ATTACKING CON'S CASE:
-• Further refute Con Argument 1 with deeper analysis
-• Further refute Con Argument 2 with deeper analysis
-• Further refute Con Argument 3 with deeper analysis
-
-${currentRound >= 4 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
+${messageList.length >= 6 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
           }
 
 CRITICAL FORMATTING INSTRUCTIONS:
@@ -353,11 +342,13 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
+- STAY STRICTLY ON THE DEBATE TOPIC: "${topic}"
 - Follow the RIGID FORMAT exactly as specified above
 - Use clear structural markers (PART 1, PART 2, etc.)
 - Address arguments by their specific titles/content
 - Quote opponent's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
+- DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -396,9 +387,9 @@ ${fullTranscript}
 CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: CON (opposing the topic)
 
+SPEECH ${messageList.length + 1} - CON ${isOpening ? 'CONSTRUCTIVE + REBUTTAL' : 'REBUTTAL + FRONTLINE'}:
 ${isOpening ?
-            `SPEECH 2 - CON CONSTRUCTIVE + REBUTTAL:
-RIGID FORMAT REQUIREMENT:
+            `RIGID FORMAT REQUIREMENT:
 PART 1 - PRESENT YOUR CASE (3 arguments against the topic):
 • 1. [Con Argument Title] - Build with evidence, reasoning, and impact
 • 2. [Con Argument Title] - Build with evidence, reasoning, and impact  
@@ -409,9 +400,7 @@ PART 2 - REFUTE PRO'S CASE (from Pro's previous speech):
 • Address Pro's Argument 1: Quote their exact words, explain why it's wrong
 • Address Pro's Argument 2: Quote their exact words, explain why it's wrong  
 • Address Pro's Argument 3: Quote their exact words, explain why it's wrong` :
-            currentRound === 2 ? 
-            `SPEECH 4 - CON REBUTTAL + FRONTLINE:
-RIGID FORMAT REQUIREMENT:
+            `RIGID FORMAT REQUIREMENT:
 PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
 • Rebuild Con Argument 1 against Pro's attacks from their previous speech
 • Rebuild Con Argument 2 against Pro's attacks from their previous speech
@@ -420,20 +409,9 @@ PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
 PART 2 - CONTINUE ATTACKING PRO'S CASE:
 • Further refute Pro Argument 1 with new analysis/evidence
 • Further refute Pro Argument 2 with new analysis/evidence
-• Further refute Pro Argument 3 with new analysis/evidence` :
-            `SPEECH ${currentRound * 2} - CON REBUTTAL + FRONTLINE:
-RIGID FORMAT REQUIREMENT:
-PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
-• Rebuild Con Argument 1 against Pro's latest attacks
-• Rebuild Con Argument 2 against Pro's latest attacks
-• Rebuild Con Argument 3 against Pro's latest attacks
+• Further refute Pro Argument 3 with new analysis/evidence
 
-PART 2 - CONTINUE ATTACKING PRO'S CASE:
-• Further refute Pro Argument 1 with deeper analysis
-• Further refute Pro Argument 2 with deeper analysis
-• Further refute Pro Argument 3 with deeper analysis
-
-${currentRound >= 4 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
+${messageList.length >= 7 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
           }
 
 CRITICAL FORMATTING INSTRUCTIONS:
@@ -444,11 +422,13 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
+- STAY STRICTLY ON THE DEBATE TOPIC: "${topic}"
 - Follow the RIGID FORMAT exactly as specified above
 - Use clear structural markers (PART 1, PART 2, etc.)
 - Address arguments by their specific titles/content
 - Quote opponent's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
+- DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -619,11 +599,13 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
+- STAY STRICTLY ON THE DEBATE TOPIC: "${topic}"
 - Follow the RIGID FORMAT exactly as specified above
 - Use clear structural markers (PART 1, PART 2, etc.)
 - Address arguments by their specific titles/content
 - Quote user's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
+- DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 400 words)
 - Be persuasive but respectful
