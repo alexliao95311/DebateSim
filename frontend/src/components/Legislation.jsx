@@ -15,7 +15,7 @@ import Footer from "./Footer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
-  "openai/gpt-4o", 
+  "openai/gpt-5-mini", 
   "meta-llama/llama-3.3-70b-instruct", 
   "google/gemini-2.0-flash-001",
   "anthropic/claude-3.5-sonnet",
@@ -1907,7 +1907,7 @@ const Legislation = ({ user }) => {
                   Upload PDF
                 </label>
                 <span className="or-text">or</span>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
+                <div className="congress-link" style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
                   <input
                     type="url"
                     value={billLink}

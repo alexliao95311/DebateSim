@@ -12,7 +12,7 @@ import { Code, MessageSquare, Download, Share2, ArrowLeft, Volume2, VolumeX } fr
 import "./Debate.css";
 
 const modelOptions = [
-  "openai/gpt-4o",
+  "openai/gpt-5-mini",
   "meta-llama/llama-3.3-70b-instruct",
   "google/gemini-2.0-flash-001",
   "anthropic/claude-3.5-sonnet",
@@ -296,9 +296,10 @@ function Debate() {
 
       let aiResponse;
       if (aiSide === "pro") {
+        // Pro's opening is when no messages exist
         const isOpening = messageList.length === 0;
         const proPrompt = `
-You are an AI debater in a 5-round public forum debate on: "${topic}"
+You are an AI debater in a 5-round structured debate on: "${topic}"
 
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
@@ -309,11 +310,39 @@ ${fullTranscript}
 CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: PRO (supporting the topic)
 
-${isOpening ?
-            "This is your opening statement. Present a strong opening argument in favor of the topic." :
-            `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
-  
-  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+${currentRound === 1 && messageList.length === 0 ? 
+            `SPEECH 1 - PRO CONSTRUCTIVE:
+RIGID FORMAT REQUIREMENT:
+• Present exactly 3 main arguments in favor of the topic
+• Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]  
+• These will be your ONLY contentions for the entire debate
+• Build each argument with evidence, reasoning, and impact
+• Do NOT address opponent arguments (they haven't spoken yet)` :
+            currentRound === 2 ? 
+            `SPEECH 3 - PRO REBUTTAL + FRONTLINE:
+RIGID FORMAT REQUIREMENT:
+PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
+• Rebuild Pro Argument 1 against Con's attacks from their previous speech
+• Rebuild Pro Argument 2 against Con's attacks from their previous speech
+• Rebuild Pro Argument 3 against Con's attacks from their previous speech
+
+PART 2 - CONTINUE ATTACKING CON'S CASE:
+• Further refute Con Argument 1 with new analysis/evidence
+• Further refute Con Argument 2 with new analysis/evidence  
+• Further refute Con Argument 3 with new analysis/evidence` :
+            `SPEECH ${currentRound * 2 - 1} - PRO REBUTTAL + FRONTLINE:
+RIGID FORMAT REQUIREMENT:
+PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
+• Rebuild Pro Argument 1 against Con's latest attacks
+• Rebuild Pro Argument 2 against Con's latest attacks
+• Rebuild Pro Argument 3 against Con's latest attacks
+
+PART 2 - CONTINUE ATTACKING CON'S CASE:
+• Further refute Con Argument 1 with deeper analysis
+• Further refute Con Argument 2 with deeper analysis
+• Further refute Con Argument 3 with deeper analysis
+
+${currentRound >= 4 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
           }
 
 CRITICAL FORMATTING INSTRUCTIONS:
@@ -324,11 +353,11 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ?
-            "- Present a strong opening argument in favor of the topic" :
-            "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-          }
-- Present 2-3 strong arguments supporting the PRO position
+- Follow the RIGID FORMAT exactly as specified above
+- Use clear structural markers (PART 1, PART 2, etc.)
+- Address arguments by their specific titles/content
+- Quote opponent's exact words when refuting
+- Provide evidence, reasoning, and impact for all points
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -352,9 +381,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         appendMessage("AI Debater Pro", cleanedResponse, proModel);
         setAiSide("con");
       } else {
-        const isOpening = messageList.length === 0;
+        // Con's opening is when Con hasn't spoken yet (check if any Con messages exist)
+        const conHasSpoken = messageList.some(msg => msg.speaker.includes("Con"));
+        const isOpening = !conHasSpoken;
         const conPrompt = `
-You are an AI debater in a 5-round public forum debate on: "${topic}"
+You are an AI debater in a 5-round structured debate on: "${topic}"
 
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
@@ -366,10 +397,43 @@ CURRENT ROUND: ${currentRound} of ${maxRounds}
 YOUR ROLE: CON (opposing the topic)
 
 ${isOpening ?
-            "This is your opening statement. Present a strong opening argument against the topic." :
-            `MANDATORY REBUTTAL: You must begin by directly addressing and rebutting specific points from the opponent's most recent argument: "${lastArgument}"
-  
-  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+            `SPEECH 2 - CON CONSTRUCTIVE + REBUTTAL:
+RIGID FORMAT REQUIREMENT:
+PART 1 - PRESENT YOUR CASE (3 arguments against the topic):
+• 1. [Con Argument Title] - Build with evidence, reasoning, and impact
+• 2. [Con Argument Title] - Build with evidence, reasoning, and impact  
+• 3. [Con Argument Title] - Build with evidence, reasoning, and impact
+These will be your ONLY contentions for the entire debate.
+
+PART 2 - REFUTE PRO'S CASE (from Pro's previous speech):
+• Address Pro's Argument 1: Quote their exact words, explain why it's wrong
+• Address Pro's Argument 2: Quote their exact words, explain why it's wrong  
+• Address Pro's Argument 3: Quote their exact words, explain why it's wrong` :
+            currentRound === 2 ? 
+            `SPEECH 4 - CON REBUTTAL + FRONTLINE:
+RIGID FORMAT REQUIREMENT:
+PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
+• Rebuild Con Argument 1 against Pro's attacks from their previous speech
+• Rebuild Con Argument 2 against Pro's attacks from their previous speech
+• Rebuild Con Argument 3 against Pro's attacks from their previous speech
+
+PART 2 - CONTINUE ATTACKING PRO'S CASE:
+• Further refute Pro Argument 1 with new analysis/evidence
+• Further refute Pro Argument 2 with new analysis/evidence
+• Further refute Pro Argument 3 with new analysis/evidence` :
+            `SPEECH ${currentRound * 2} - CON REBUTTAL + FRONTLINE:
+RIGID FORMAT REQUIREMENT:
+PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
+• Rebuild Con Argument 1 against Pro's latest attacks
+• Rebuild Con Argument 2 against Pro's latest attacks
+• Rebuild Con Argument 3 against Pro's latest attacks
+
+PART 2 - CONTINUE ATTACKING PRO'S CASE:
+• Further refute Pro Argument 1 with deeper analysis
+• Further refute Pro Argument 2 with deeper analysis
+• Further refute Pro Argument 3 with deeper analysis
+
+${currentRound >= 4 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
           }
 
 CRITICAL FORMATTING INSTRUCTIONS:
@@ -380,11 +444,11 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ?
-            "- Present a strong opening argument against the topic" :
-            "- MANDATORY: Begin by directly addressing and rebutting specific points from the opponent's argument above. Quote their exact words and explain why they are wrong."
-          }
-- Present 2-3 strong arguments supporting the CON position
+- Follow the RIGID FORMAT exactly as specified above
+- Use clear structural markers (PART 1, PART 2, etc.)
+- Address arguments by their specific titles/content
+- Quote opponent's exact words when refuting
+- Provide evidence, reasoning, and impact for all points
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -496,10 +560,12 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         : description;
 
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
-      const isOpening = messageList.length === 0;
+      // Check if this AI side has spoken before
+      const aiHasSpoken = messageList.some(msg => msg.speaker.includes(aiSideLocal));
+      const isOpening = !aiHasSpoken;
 
       const prompt = `
-You are an AI debater in a public forum debate on: "${topic}"
+You are an AI debater in a structured debate on: "${topic}"
 
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
@@ -509,11 +575,41 @@ ${fullTranscript}
 
 YOUR ROLE: ${aiSideLocal.toUpperCase()} (opposing the user's ${userSide.toUpperCase()} position)
 
-${isOpening ?
-          "This is your opening statement. Present a strong opening argument against the topic." :
-          `MANDATORY REBUTTAL: The user just argued for the ${userSide.toUpperCase()} side. You must begin by directly addressing and rebutting specific points from their argument: "${userInput}"
-  
-  Quote their exact words and explain why they are wrong or flawed. Then present your own arguments.`
+RIGID DEBATE FORMAT:
+${isOpening && messageList.length === 1 ? 
+          `AI CONSTRUCTIVE + REBUTTAL:
+RIGID FORMAT REQUIREMENT:
+PART 1 - PRESENT YOUR CASE (3 arguments for ${aiSideLocal.toUpperCase()}):
+• 1. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact
+• 2. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact  
+• 3. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact
+These will be your ONLY contentions for the entire debate.
+
+PART 2 - REFUTE USER'S CASE (from their previous speech):
+• Address User's Argument 1: Quote their exact words, explain why it's wrong
+• Address User's Argument 2: Quote their exact words, explain why it's wrong  
+• Address User's Argument 3: Quote their exact words, explain why it's wrong` :
+          isOpening ?
+          `AI CONSTRUCTIVE:
+RIGID FORMAT REQUIREMENT:
+• Present exactly 3 main arguments for the ${aiSideLocal.toUpperCase()} position
+• Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]  
+• These will be your ONLY contentions for the entire debate
+• Build each argument with evidence, reasoning, and impact
+• Do NOT address user arguments (they haven't spoken yet)` :
+          `AI REBUTTAL + FRONTLINE:
+RIGID FORMAT REQUIREMENT:
+PART 1 - FRONTLINE YOUR CASE (defend your 3 original arguments):
+• Rebuild ${aiSideLocal} Argument 1 against User's attacks from their previous speech
+• Rebuild ${aiSideLocal} Argument 2 against User's attacks from their previous speech
+• Rebuild ${aiSideLocal} Argument 3 against User's attacks from their previous speech
+
+PART 2 - CONTINUE ATTACKING USER'S CASE:
+• Further refute User Argument 1 with new analysis/evidence
+• Further refute User Argument 2 with new analysis/evidence
+• Further refute User Argument 3 with new analysis/evidence
+
+${messageList.length >= 6 ? 'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points' : ''}`
         }
 
 CRITICAL FORMATTING INSTRUCTIONS:
@@ -523,11 +619,11 @@ CRITICAL FORMATTING INSTRUCTIONS:
 - Your response will be displayed under a header that already identifies you
 
 CONTENT REQUIREMENTS:
-${isOpening ?
-          "- Present a strong opening argument against the topic" :
-          "- MANDATORY: Begin by directly addressing and rebutting specific points from the user's argument above. Quote their exact words and explain why they are wrong."
-        }
-- Present 1-2 strong counterarguments supporting the ${aiSideLocal.toUpperCase()} position
+- Follow the RIGID FORMAT exactly as specified above
+- Use clear structural markers (PART 1, PART 2, etc.)
+- Address arguments by their specific titles/content
+- Quote user's exact words when refuting
+- Provide evidence, reasoning, and impact for all points
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 400 words)
 - Be persuasive but respectful
