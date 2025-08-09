@@ -1882,7 +1882,6 @@
   
   .legislation-step-arrow {
     font-size: 1.2rem;
-    transform: rotate(90deg);
     margin: 0.25rem 0;
   }
 }
@@ -4987,6 +4986,47 @@ div[style*="backgroundColor: #d"] * {
   
   .analysis-voice-controls {
     align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-wrapper {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .search-bar {
+    flex: 1 1 auto !important;
+    font-size: 1rem !important;
+    min-width: 0 !important;
+  }
+
+  .search-wrapper button {
+    flex: 0 0 auto !important;
+    font-size: 1rem !important;
+    padding: 0.6rem 1rem !important;
+    margin-left: 0.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-btn,
+  .upload-container form button[type="submit"] {
+    width: 100% !important;
+    font-size: 1rem !important;
+    padding: 0.7rem 1rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .congress-link {
+    display: none !important;
+  }
+
+  .or-text {
+    margin-bottom: 0.5rem !important;
   }
 }
 
