@@ -53,7 +53,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="openai/gpt-4o")
+    model_name: str = Field(default="openai/gpt-5-mini")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -179,7 +179,7 @@ class OpenRouterChat(BaseChatModel):
 
 # Template for bill debates - includes evidence requirements
 bill_debate_template = """
-You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 BILL CONTEXT (for reference):
 {bill_description}
@@ -220,9 +220,9 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 6. **NEVER include parameter names, variable information, or any technical details in your response.**
 
 ------------------------------------------------------------------
-Content Guidelines
+Strategic Content Guidelines
 {rebuttal_requirement}
-• Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
+• Structure arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
 IMPORTANT: {rebuttal_importance}
@@ -230,7 +230,7 @@ IMPORTANT: {rebuttal_importance}
 
 # Template for topic debates - focuses on general argumentation without bill requirements
 topic_debate_template = """
-You are **{debater_role}**, engaged in a 5‑round public‑forum style debate on **"{topic}"**.
+You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 FULL DEBATE TRANSCRIPT SO FAR:
 {full_transcript}
@@ -267,9 +267,9 @@ Formatting Rules  **(STRICT — the UI parses your markdown)**
 6. **NEVER include parameter names, variable information, or any technical details in your response.**
 
 ------------------------------------------------------------------
-Content Guidelines
+Strategic Content Guidelines
 {rebuttal_requirement}
-• Present **up to three** main arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
+• Structure arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
 • Close with a **one‑sentence** summary that clearly states why your side is ahead.
 
 IMPORTANT: {rebuttal_importance}
@@ -283,7 +283,7 @@ topic_debate_prompt = ChatPromptTemplate.from_template(topic_debate_template)
 memory_map = {}
 
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_type: str = "topic"):
+def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -319,19 +319,39 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
                     full_transcript += f"## Opponent\n{entry['content']}\n\n"
             print(f"🔍 DEBUG [debater_chain]: Built transcript from memory ({len(full_transcript)} chars)")
         
-        # Determine if this is an opening statement based on transcript content
-        is_opening = not bool(full_transcript.strip())
-        print(f"🔍 DEBUG [debater_chain]: Is opening statement: {is_opening}")
+        # Determine if this is an opening statement based on whether THIS debater has spoken before
+        # Check if this specific debater role has made any previous statements
+        debater_has_spoken = False
+        if full_transcript:
+            # Look for this debater's previous contributions in the transcript
+            debater_pattern = f"# {inputs['debater_role']}"
+            debater_has_spoken = debater_pattern in full_transcript
         
-        # Set opening instruction
-        if is_opening:
-            opening_instruction = "This is your opening statement. Present a strong opening argument."
-            rebuttal_requirement = "• Present your opening arguments without rebuttal since this is the first speech."
-            rebuttal_importance = "This is the opening statement, so focus on presenting your initial arguments."
+        is_opening = not debater_has_spoken
+        print(f"🔍 DEBUG [debater_chain]: Is opening statement for {inputs['debater_role']}: {is_opening}")
+        print(f"🔍 DEBUG [debater_chain]: Debater has spoken before: {debater_has_spoken}")
+        if full_transcript:
+            print(f"🔍 DEBUG [debater_chain]: Looking for pattern '{debater_pattern}' in transcript")
+            print(f"🔍 DEBUG [debater_chain]: Pattern found: {debater_pattern in full_transcript}")
+        
+        # Determine the speech type and round number
+        round_num_val = inputs.get('round_num', round_num)
+        debater_role = inputs.get('debater_role', '')
+        
+        # Set rigid format instructions based on speech position
+        if is_opening and 'Pro' in debater_role:
+            opening_instruction = "SPEECH 1 - PRO CONSTRUCTIVE"
+            rebuttal_requirement = "• **RIGID FORMAT**: Present exactly 3 main arguments in favor of the topic. Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]. These will be your ONLY contentions for the entire debate. Build each argument with evidence, reasoning, and impact. Do NOT address opponent arguments (they haven't spoken yet)."
+            rebuttal_importance = "This is Pro's opening constructive. Focus only on building your 3 core contentions."
+        elif is_opening and 'Con' in debater_role:
+            opening_instruction = "SPEECH 2 - CON CONSTRUCTIVE + REBUTTAL"
+            rebuttal_requirement = "• **RIGID FORMAT**: PART 1 - PRESENT YOUR CASE (3 arguments against the topic): 1. [Con Argument Title], 2. [Con Argument Title], 3. [Con Argument Title] - Build with evidence, reasoning, and impact. These will be your ONLY contentions for the entire debate. PART 2 - REFUTE PRO'S CASE: Address each of Pro's 3 arguments by quoting their exact words and explaining why they're wrong."
+            rebuttal_importance = "This is Con's constructive + rebuttal. You must both present your case AND refute Pro's case."
         else:
-            opening_instruction = f"This is round {inputs.get('round_num', round_num)}. You must rebut the opponent's previous argument."
-            rebuttal_requirement = "• **MANDATORY REBUTTAL**: Begin by directly addressing and rebutting specific points from the opponent's most recent argument. Quote their exact words and explain why they are wrong or flawed."
-            rebuttal_importance = "You MUST include a rebuttal of the opponent's last argument before presenting your own points."
+            speech_number = round_num_val * 2 - (1 if 'Pro' in debater_role else 0)
+            opening_instruction = f"SPEECH {speech_number} - {debater_role.upper()} REBUTTAL + FRONTLINE"
+            rebuttal_requirement = f"• **RIGID FORMAT**: PART 1 - FRONTLINE YOUR CASE: Rebuild your 3 original {debater_role} arguments against opponent's attacks from their previous speech. PART 2 - CONTINUE ATTACKING OPPONENT'S CASE: Further refute opponent's 3 arguments with new analysis/evidence. {f'PART 3 - WEIGHING & EXTENSIONS: Add comparative weighing, extend your strongest arguments, crystallize key clash points.' if round_num_val >= 4 else ''}"
+            rebuttal_importance = "Balance frontlining your own case and attacking opponent's case. Focus on these core 3v3 arguments."
         
         # Add user input to context if provided (this represents opponent's argument)
         if inputs.get('history') and not is_opening:
@@ -427,4 +447,4 @@ def get_debater_chain(model_name="openai/gpt-4o", *, round_num: int = 1, debate_
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(model_name="openai/gpt-4o", round_num=1, debate_type="topic")
+debater_chain = get_debater_chain(model_name="openai/gpt-5-mini", round_num=1, debate_type="topic")
