@@ -1079,6 +1079,25 @@
   color: #94a3b8 !important;
 }
 
+.debatesim-persona-image {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 3px solid rgba(74, 144, 226, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.debatesim-persona-card:hover .debatesim-persona-image {
+  border-color: #4a90e2 !important;
+  transform: scale(1.05) !important;
+}
+
+.debatesim-persona-card.debatesim-selected .debatesim-persona-image {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.3) !important;
+}
+
 .debatesim-persona-info h3 {
   font-size: 1.2rem !important;
   font-weight: 600 !important;

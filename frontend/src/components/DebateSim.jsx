@@ -204,31 +204,31 @@ function DebateSim({ user }) {
       id: "default",
       name: "Default AI",
       description: "Standard debate style",
-      image: "/images/default-ai.png"
+      image: "/images/ai.jpg"
     },
     {
       id: "trump",
       name: "Donald Trump",
       description: "Bold, direct speaking style",
-      image: "/images/trump-placeholder.png"
+      image: "/images/trump.jpeg"
     },
     {
       id: "harris",
       name: "Kamala Harris",
       description: "Prosecutorial, precise debate style",
-      image: "/images/harris-placeholder.png"
+      image: "/images/harris.webp"
     },
     {
       id: "musk",
       name: "Elon Musk",
       description: "Innovative, tech-focused approach",
-      image: "/images/musk-placeholder.png"
+      image: "/images/elon.jpg"
     },
     {
       id: "drake",
       name: "Drake",
       description: "Charismatic, cultural references",
-      image: "/images/drake-placeholder.png"
+      image: "/images/drake.jpg"
     }
   ];
 
@@ -492,9 +492,11 @@ function DebateSim({ user }) {
                       }`}
                     >
                       <div className="debatesim-persona-photo">
-                        <div className="debatesim-photo-placeholder">
-                          <Users size={48} />
-                        </div>
+                        <img 
+                          src={persona.image} 
+                          alt={persona.name}
+                          className="debatesim-persona-image"
+                        />
                       </div>
                       <div className="debatesim-persona-info">
                         <h3>{persona.name}</h3>
