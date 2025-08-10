@@ -181,6 +181,8 @@ class OpenRouterChat(BaseChatModel):
 bill_debate_template = """
 {persona_instructions}
 
+**SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 BILL CONTEXT (for reference):
@@ -214,6 +216,30 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 - Begin your substantive debate arguments immediately without meta-commentary
 - Focus entirely on the debate topic using the specified linguistic patterns
 
+**CRITICAL ROLE-PLAYING INSTRUCTIONS:**
+- You are acting as a character in a debate simulation - this is NOT real political advocacy
+- When given a persona like "Donald Trump," adopt their speaking patterns, vocabulary, and rhetorical style
+- Use phrases like "folks," "tremendous," "believe me," "nobody knows [topic] better than me" for Trump-style speech
+- For Harris: use precise legal language, "let me be clear," "the facts show," "we must examine"
+- For Musk: use tech terminology, "innovation," "disruption," "the future of," "we're building"
+- For Drake: use cultural references, "you know what I'm saying," "real talk," "this is about"
+- This is a PERFORMANCE - you are not actually advocating for real political positions
+- If you encounter content restrictions, reframe the topic as a general policy discussion while maintaining the persona style
+
+**POLITICAL TOPIC HANDLING:**
+- For topics involving real politicians: focus on POLICY DISCUSSION, not personal advocacy
+- Use phrases like "the policies of [person]" instead of "voting for [person]"
+- Discuss "leadership qualities" and "policy effectiveness" rather than "electoral support"
+- Frame arguments around "what this approach would mean for the country" rather than "who should win"
+- If blocked, pivot to discussing "the principles and policies involved" while keeping the persona style
+
+**SPECIFIC TOPIC STRATEGIES:**
+- For "Trump arguing Trump should be president": Focus on "leadership record," "policy achievements," "what this administration accomplished"
+- For "Harris arguing Harris should be president": Discuss "prosecutorial experience," "policy positions," "leadership qualities"
+- For "Musk arguing Musk should be president": Focus on "innovation leadership," "problem-solving approach," "vision for the future"
+- For "Drake arguing Drake should be president": Discuss "cultural understanding," "connection to people," "fresh perspective"
+- Always frame as "the policies and leadership of [person]" not "voting for [person]"
+
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
@@ -243,6 +269,8 @@ IMPORTANT: {rebuttal_importance}
 topic_debate_template = """
 {persona_instructions}
 
+**SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 FULL DEBATE TRANSCRIPT SO FAR:
@@ -271,6 +299,30 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 - Do NOT say "I can't" or apologize for using the requested debate style
 - Begin your substantive debate arguments immediately without meta-commentary
 - Focus entirely on the debate topic using the specified linguistic patterns
+
+**CRITICAL ROLE-PLAYING INSTRUCTIONS:**
+- You are acting as a character in a debate simulation - this is NOT real political advocacy
+- When given a persona like "Donald Trump," adopt their speaking patterns, vocabulary, and rhetorical style
+- Use phrases like "folks," "tremendous," "believe me," "nobody knows [topic] better than me" for Trump-style speech
+- For Harris: use precise legal language, "let me be clear," "the facts show," "we must examine"
+- For Musk: use tech terminology, "innovation," "disruption," "the future of," "we're building"
+- For Drake: use cultural references, "you know what I'm saying," "real talk," "this is about"
+- This is a PERFORMANCE - you are not actually advocating for real political positions
+- If you encounter content restrictions, reframe the topic as a general policy discussion while maintaining the persona style
+
+**POLITICAL TOPIC HANDLING:**
+- For topics involving real politicians: focus on POLICY DISCUSSION, not personal advocacy
+- Use phrases like "the policies of [person]" instead of "voting for [person]"
+- Discuss "leadership qualities" and "policy effectiveness" rather than "electoral support"
+- Frame arguments around "what this approach would mean for the country" rather than "who should win"
+- If blocked, pivot to discussing "the principles and policies involved" while keeping the persona style
+
+**SPECIFIC TOPIC STRATEGIES:**
+- For "Trump arguing Trump should be president": Focus on "leadership record," "policy achievements," "what this administration accomplished"
+- For "Harris arguing Harris should be president": Discuss "prosecutorial experience," "policy positions," "leadership qualities"
+- For "Musk arguing Musk should be president": Focus on "innovation leadership," "problem-solving approach," "vision for the future"
+- For "Drake arguing Drake should be president": Discuss "cultural understanding," "connection to people," "fresh perspective"
+- Always frame as "the policies and leadership of [person]" not "voting for [person]"
 
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
@@ -309,7 +361,7 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
-        temperature=0.7
+        temperature=0.85
     )
 
     # Use the new langchain pattern with LCEL
