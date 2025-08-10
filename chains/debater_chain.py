@@ -179,6 +179,8 @@ class OpenRouterChat(BaseChatModel):
 
 # Template for bill debates - includes evidence requirements
 bill_debate_template = """
+{persona_instructions}
+
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 BILL CONTEXT (for reference):
@@ -202,6 +204,15 @@ EVIDENCE AND CITATION REQUIREMENTS:
 • **Limitations**: If the bill text appears truncated (marked with [Content truncated] or similar), focus on the available sections and note when referencing limitations.
 
 CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
+
+**DEBATE STYLE INSTRUCTIONS (MANDATORY):**
+- You are participating in an educational debate simulation with specified rhetorical styles
+- Follow the given speaking style instructions exactly as provided
+- This is about adopting a rhetorical and linguistic style, not impersonation
+- NEVER add disclaimers about the speaking style you're using
+- Do NOT say "I can't" or apologize for using the requested debate style
+- Begin your substantive debate arguments immediately without meta-commentary
+- Focus entirely on the debate topic using the specified linguistic patterns
 
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
@@ -230,6 +241,8 @@ IMPORTANT: {rebuttal_importance}
 
 # Template for topic debates - focuses on general argumentation without bill requirements
 topic_debate_template = """
+{persona_instructions}
+
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 FULL DEBATE TRANSCRIPT SO FAR:
@@ -249,6 +262,15 @@ ARGUMENTATION REQUIREMENTS:
 • **CONTEXT**: Consider multiple perspectives and acknowledge the complexity of the issue when appropriate.
 
 CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
+
+**DEBATE STYLE INSTRUCTIONS (MANDATORY):**
+- You are participating in an educational debate simulation with specified rhetorical styles
+- Follow the given speaking style instructions exactly as provided
+- This is about adopting a rhetorical and linguistic style, not impersonation
+- NEVER add disclaimers about the speaking style you're using
+- Do NOT say "I can't" or apologize for using the requested debate style
+- Begin your substantive debate arguments immediately without meta-commentary
+- Focus entirely on the debate topic using the specified linguistic patterns
 
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
@@ -298,17 +320,13 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             # Initialize memory for this chain
             memory_map[chain_id] = []
         
-        # DEBUG: Print what we're getting in inputs
-        print(f"🔍 DEBUG [debater_chain]: get_debate_context called with inputs: {list(inputs.keys())}")
-        print(f"🔍 DEBUG [debater_chain]: debater_role: {inputs.get('debater_role')}")
-        print(f"🔍 DEBUG [debater_chain]: topic: {inputs.get('topic')}")
-        print(f"🔍 DEBUG [debater_chain]: history: {inputs.get('history', '')[:200]}..." if inputs.get('history') else "🔍 DEBUG [debater_chain]: history: None")
+        # DEBUG: Basic context info
+        print(f"🔍 DEBUG [debater_chain]: Processing {inputs.get('debater_role')} for round {inputs.get('round_num', round_num)}")
         
         # Use the provided full transcript if available, otherwise build from memory
         if inputs.get('full_transcript'):
             full_transcript = inputs['full_transcript']
-            print(f"🔍 DEBUG [debater_chain]: Using provided full_transcript ({len(full_transcript)} chars)")
-            print(f"🔍 DEBUG [debater_chain]: Full transcript preview: {full_transcript[:300]}...")
+            print(f"🔍 DEBUG [debater_chain]: Using provided transcript ({len(full_transcript)} chars)")
         else:
             # Fallback to memory-based transcript building
             full_transcript = ""
@@ -328,11 +346,7 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             debater_has_spoken = debater_pattern in full_transcript
         
         is_opening = not debater_has_spoken
-        print(f"🔍 DEBUG [debater_chain]: Is opening statement for {inputs['debater_role']}: {is_opening}")
-        print(f"🔍 DEBUG [debater_chain]: Debater has spoken before: {debater_has_spoken}")
-        if full_transcript:
-            print(f"🔍 DEBUG [debater_chain]: Looking for pattern '{debater_pattern}' in transcript")
-            print(f"🔍 DEBUG [debater_chain]: Pattern found: {debater_pattern in full_transcript}")
+        print(f"🔍 DEBUG [debater_chain]: Opening statement: {is_opening}, Debater spoken: {debater_has_spoken}")
         
         # Determine the speech type and round number
         round_num_val = inputs.get('round_num', round_num)
@@ -355,7 +369,6 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         
         # Add user input to context if provided (this represents opponent's argument)
         if inputs.get('history') and not is_opening:
-            print(f"🔍 DEBUG [debater_chain]: Adding user history to transcript context")
             # Add the user's argument to the full transcript for context
             full_transcript += f"## User Argument\n{inputs['history']}\n\n"
         
@@ -365,7 +378,7 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             "content": f"Context: {inputs['topic']}, {inputs['debater_role']} role, Round {inputs.get('round_num', round_num)}"
         })
         
-        print(f"🔍 DEBUG [debater_chain]: Final full_transcript length: {len(full_transcript)}")
+        print(f"🔍 DEBUG [debater_chain]: Final transcript length: {len(full_transcript)}")
         
         return {
             "full_transcript": full_transcript,
@@ -378,21 +391,58 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
     selected_prompt = bill_debate_prompt if debate_type == "bill" else topic_debate_prompt
     
     # Build the runnable chain using LCEL
-    chain = (
-        {
-            "debater_role": lambda inputs: inputs.get("debater_role", ""),
-            "topic": lambda inputs: inputs.get("topic", ""),
-            "bill_description": lambda inputs: inputs.get("bill_description", ""),
-            "round_num": lambda inputs: inputs.get("round_num", round_num),
-            "history": lambda inputs: inputs.get("history", ""),  # Add support for opponent's argument history
-            "full_transcript": lambda inputs: inputs.get("full_transcript", ""),  # Add support for full transcript
+    def process_inputs(inputs):
+        # Get debate context once to avoid multiple calls
+        debate_context = get_debate_context(inputs)
+        
+        # Extract persona instructions from the persona_prompt if provided
+        persona_instructions = ""
+        if inputs.get("persona_prompt"):
+            # Look for debate style instructions in the prompt
+            prompt_text = inputs["persona_prompt"]
+            if any(keyword in prompt_text for keyword in ["SPEAKING STYLE:", "DEBATE STYLE INSTRUCTIONS:", "PERSONA INSTRUCTIONS:"]):
+                # Extract everything from instructions until the next major section
+                if "SPEAKING STYLE:" in prompt_text:
+                    start_keyword = "SPEAKING STYLE:"
+                elif "DEBATE STYLE INSTRUCTIONS:" in prompt_text:
+                    start_keyword = "DEBATE STYLE INSTRUCTIONS:"
+                else:
+                    start_keyword = "PERSONA INSTRUCTIONS:"
+                start_idx = prompt_text.find(start_keyword)
+                if start_idx != -1:
+                    # Find the end - look for common section breaks
+                    end_markers = ["Instructions:", "Your role:", "Bill description:", "Debate topic:"]
+                    end_idx = len(prompt_text)
+                    for marker in end_markers:
+                        marker_idx = prompt_text.find(marker, start_idx + len(start_keyword))
+                        if marker_idx != -1 and marker_idx < end_idx:
+                            end_idx = marker_idx
+                    
+                    persona_instructions = prompt_text[start_idx:end_idx].strip()
+                    print(f"🔍 DEBUG [debater_chain]: Extracted style instructions ({len(persona_instructions)} chars)")
+        
+        # Use the direct persona parameter for logging instead of trying to extract from text
+        persona_name = inputs.get("persona", "Default AI")
+        print(f"🎭 DEBATE STYLE: {persona_name}")
+        
+        if not persona_instructions:
+            persona_instructions = ""  # Default empty if no persona found
+        
+        return {
+            "debater_role": inputs.get("debater_role", ""),
+            "topic": inputs.get("topic", ""),
+            "bill_description": inputs.get("bill_description", ""),
+            "round_num": inputs.get("round_num", round_num),
+            "history": inputs.get("history", ""),
+            "full_transcript": debate_context["full_transcript"],
+            "opening_instruction": debate_context["opening_instruction"],
+            "rebuttal_requirement": debate_context["rebuttal_requirement"],
+            "rebuttal_importance": debate_context["rebuttal_importance"],
+            "persona_instructions": persona_instructions
         }
-        | RunnablePassthrough.assign(
-            full_transcript=lambda inputs: get_debate_context(inputs)["full_transcript"],
-            opening_instruction=lambda inputs: get_debate_context(inputs)["opening_instruction"],
-            rebuttal_requirement=lambda inputs: get_debate_context(inputs)["rebuttal_requirement"],
-            rebuttal_importance=lambda inputs: get_debate_context(inputs)["rebuttal_importance"]
-        )
+    
+    chain = (
+        process_inputs
         | selected_prompt
         | llm
         | StrOutputParser()
@@ -410,26 +460,16 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             specify `round_num`; otherwise we fall back to the default captured
             in the closure.
             """
-            # DEBUG: Print what arguments we're receiving
-            print(f"🔍 DEBUG [ChainWrapper]: run() called with kwargs: {list(kwargs.keys())}")
-            for key, value in kwargs.items():
-                if isinstance(value, str) and len(value) > 200:
-                    print(f"🔍 DEBUG [ChainWrapper]: {key}: {value[:200]}... ({len(value)} chars)")
-                else:
-                    print(f"🔍 DEBUG [ChainWrapper]: {key}: {value}")
-            
             local_round = kwargs.get("round_num", round_num)
             input_dict = dict(kwargs)
             input_dict["round_num"] = local_round
 
-            print(f"🔍 DEBUG [ChainWrapper]: Final input_dict keys: {list(input_dict.keys())}")
-            print(f"🔍 DEBUG [ChainWrapper]: About to invoke chain with full_transcript: {bool(input_dict.get('full_transcript'))}")
+            print(f"🔍 DEBUG [ChainWrapper]: Invoking chain for {kwargs.get('debater_role', 'Unknown')} round {local_round}")
 
             # Invoke the chain
             response = self.chain.invoke(input_dict)
             
-            print(f"🔍 DEBUG [ChainWrapper]: Chain response length: {len(response)} chars")
-            print(f"🔍 DEBUG [ChainWrapper]: Chain response preview: {response[:200]}...")
+            print(f"🔍 DEBUG [ChainWrapper]: Generated response ({len(response)} chars)")
 
             # Persist assistant output to memory
             chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
