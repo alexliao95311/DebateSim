@@ -1422,3 +1422,7 @@ async def extract_bill_from_url(request: BillFromUrlRequest):
     except Exception as e:
         logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
