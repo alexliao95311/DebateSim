@@ -933,19 +933,6 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 <div className="ai-vs-user-setup">
                   <h3>Debate as {userSide.toUpperCase()} vs AI</h3>
 
-                  <div className="debate-model-selection" style={{ marginBottom: "1rem" }}>
-                    <label className="debate-model-label">
-                      AI Opponent Model:
-                      <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
-                        {modelOptions.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
                   <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
                     disabled={loading}

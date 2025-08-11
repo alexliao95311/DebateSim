@@ -854,7 +854,6 @@ button:disabled {
   .ai-vs-user-setup {
     margin-top: 0;
     padding-top: 0;
-    background: rgba(52, 115, 215, 0.6) !important;
   }
 
   .ai-vs-user-setup p {
@@ -903,6 +902,7 @@ button:disabled {
   .confirm-button {
     padding: 0.8rem 1.5rem;
     font-size: 1rem;
+
   }
   
   /* Speech blocks - make more compact */
@@ -1203,7 +1203,6 @@ button:disabled {
 }
 
 .confirm-button {
-  background: linear-gradient(145deg, #059669 0%, #047857 100%);
   color: #ffffff !important;
   border: none;
   padding: 1.2rem 3rem;
