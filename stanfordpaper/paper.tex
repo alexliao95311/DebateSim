@@ -74,6 +74,41 @@ Our prompt architecture creates distinct, specialized behaviors for each agent r
 
 The system implements a structured 5-round format: Pro constructive (3 points), Con constructive + rebuttal, Pro rebuttal + extension, Con rebuttal + extension, and final weighing. Each round builds upon previous exchanges, with agents required to reference and respond to opponent arguments. Context persistence is achieved through chain-specific memory maps and intelligent transcript building.
 
+\subsection{Quality Metrics and Drift Analysis}
+
+We introduce a metrics pipeline that evaluates both computational performance and debate quality, and additionally measures \emph{drift}—how quality evolves across rounds.
+
+\paragraph{Legislative citation validity and density.} We count and normalize explicit references to statutes and bill sections (e.g., ``Section X'', ``U.S.C.'', ``H.R. N'') to compute citation count and legislative reference density (per 1{,}000 characters). This operationalizes citation validity by requiring grounded references and enabling outlier detection during review.
+
+\paragraph{Consistency across rounds.} We approximate rebuttal engagement via a rebuttal-reference rate: the fraction of sentences that explicitly address the opponent (e.g., ``your argument'', ``my opponent claimed''). Higher values indicate stronger cross-round linkage and responsiveness.
+
+\paragraph{Coverage of legislative aspects.} We quantify evidence usage through a proxy score combining numeric mentions, percentages, years, and citations, normalized by text length. This provides a lightweight coverage signal over fiscal, stakeholder, and implementation dimensions without external models.
+
+\paragraph{Judge agreement and decision extraction.} After each 5-round debate, the full transcript is sent to the AI judge. We capture the free-form evaluation and, when present, automatically extract a winner label (Pro/Con). Agreement can be computed by running multiple judges or repeated evaluations; in this work we report judge outcomes and qualitative alignment.
+
+\paragraph{Structural compliance and weighing.} We verify opening-round structural compliance (exactly three labeled arguments) and detect final-round weighing using a domain-specific lexicon (e.g., ``impact'', ``probability'', ``magnitude'', ``timeframe'').
+
+\paragraph{Drift functions.} To assess improvement over the debate, we compute deltas between Round 1 and Round 5 for key metrics: legislative reference density, evidence usage, and readability. For rebuttal quality, we track trends in rebuttal-reference rate across Rounds 2--4, and report final weighing presence in Round 5.
+
+\subsection{Data Pipeline and JSON Generation}
+
+All raw round-level data, transcripts, derived metrics, drift statistics, and judge feedback are emitted in a structured JSON artifact produced by a dedicated generator module (\texttt{json\_generator.py}). The monitor (\texttt{performance\_monitor.py}) records per-round system metrics (latency, memory deltas, CPU), text outputs, and quality features, then consolidates them into an organized schema:
+
+\begin{itemize}
+    \item metadata (topic, description, timestamp)
+    \item rounds (system metrics, text, quality metrics for each round)
+    \item transcript (chronological, role-tagged)
+    \item judge (free-form feedback and extracted decision when available)
+    \item summary (time, memory, completion)
+    \item drift (metric deltas and trends)
+\end{itemize}
+
+This artifact supports reproducibility, downstream statistical analysis, and easy ablation comparisons without re-running the debates.
+
+\subsection{Uniqueness of Approach}
+
+Our approach is distinctive in three ways: (1) it integrates multi-round, role-specialized prompting with \emph{explicit} transcript conditioning at every step, (2) it pairs lightweight, interpretable debate-quality measures (citation density, rebuttal engagement, weighing detection) with traditional system metrics to enable real-time monitoring, and (3) it performs drift analysis within a single debate session, quantifying how argumentative quality improves or degrades over rounds without external labeling. This combination enables efficient, auditable evaluation of multi-agent debate systems in realistic, time-constrained settings.
+
 \section{Experimental Design}
 
 \subsection{Research Questions}
