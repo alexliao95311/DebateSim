@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const generateAIResponse = async (debater, prompt, model, billDescription = '', fullTranscript = '', roundNum = 1, persona = 'default') => {
+export const generateAIResponse = async (debater, prompt, model, billDescription = '', fullTranscript = '', roundNum = 1, persona = 'default', debateFormat = 'default', speakingOrder = 'pro-first') => {
   try {
     console.log(`🚀 Generating AI response for ${debater} using ${model} (Round ${roundNum})`);
     console.log(`🔍 DEBUG [frontend]: Full transcript length: ${fullTranscript.length} chars`);
@@ -54,6 +54,8 @@ export const generateAIResponse = async (debater, prompt, model, billDescription
       full_transcript: fullTranscript, // Pass the full debate transcript for context
       round_num: roundNum, // Pass the current round number
       persona: persona, // Pass the persona name for logging
+      debate_format: debateFormat, // Pass the debate format
+      speaking_order: speakingOrder, // Pass the speaking order for public forum
     });
     
     const duration = Date.now() - startTime;

@@ -135,6 +135,8 @@ class GenerateResponseRequest(BaseModel):
     full_transcript: str = ""  # Full debate transcript for context
     round_num: int = 1  # Current round number
     persona: str = "Default AI"  # Persona name for logging
+    debate_format: str = "default"  # Debate format (default, public-forum)
+    speaking_order: str = "pro-first"  # Speaking order for public forum (pro-first, con-first)
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
@@ -182,8 +184,8 @@ async def generate_response(request: GenerateResponseRequest):
             logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
             logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model and debate type
-        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type)
+        # Get a debater chain with the specified model, debate type, and format
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order)
         
         # DEBUG: Print what we're sending to the LangChain model
         logger.info(f"🔍 DEBUG: Sending to LangChain:")
