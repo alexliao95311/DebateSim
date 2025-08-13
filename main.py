@@ -37,7 +37,7 @@ if not CONGRESS_API_KEY:
     logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
 
 # Global model configuration
-DEFAULT_MODEL = "openai/gpt-5-mini"
+DEFAULT_MODEL = "openai/gpt-4o-mini"
 FALLBACK_MODEL = "meta-llama/llama-3.3-70b-instruct"
 
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
