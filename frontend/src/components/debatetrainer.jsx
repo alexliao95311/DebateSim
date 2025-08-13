@@ -48,6 +48,30 @@ const PROMPT_PRESETS = [
 ];
 
 
+function SectionTitle({ title, subtitle, right }) {
+  return (
+    <div className="dt-title" style={{ justifyContent: 'space-between' }}>
+      <div>
+        <div style={{ fontSize: 16 }}>{title}</div>
+        {subtitle && <div className="dt-subtle" style={{ fontSize: 12 }}>{subtitle}</div>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+function Labeled({ label, children, hint }) {
+  return (
+    <div>
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      {children}
+      {hint && <div className="dt-inline-help" style={{ marginTop: 6 }}>{hint}</div>}
+    </div>
+  );
+}
+
+
+
 }
 
 window.DebateTrainer = { mountDebateTrainer };
