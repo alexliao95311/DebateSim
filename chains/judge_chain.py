@@ -47,7 +47,7 @@ class OpenRouterChat(BaseChatModel):
         provider = provider_map.get(root_token)
         return f"{provider}/{name}" if provider else name
 
-    model_name: str = Field(default="openai/gpt-5-mini")
+    model_name: str = Field(default="openai/gpt-4o-mini")
     temperature: float = Field(default=0.5)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -186,7 +186,7 @@ Format your response with clear headings using markdown (###).
 chat_prompt = ChatPromptTemplate.from_template(template)
 
 # Function to get a judge chain with a specific model
-def get_judge_chain(model_name="openai/gpt-5-mini"):
+def get_judge_chain(model_name="openai/gpt-4o-mini"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
