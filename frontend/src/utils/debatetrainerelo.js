@@ -34,6 +34,20 @@
     listBots() {
       return Array.from(this.bots.values()).sort((a, b) => b.rating - a.rating);
     }
+    
+    recordMatch(botAId, botBId, scoreA, kFactor = DEFAULT_K) {
+      const a = this.bots.get(botAId);
+      const b = this.bots.get(botBId);
+      if (!a || !b) throw new Error('Both bots must exist to record a match');
+      const scoreB = 1 - scoreA;
+      const newA = updateElo(a.rating, b.rating, scoreA, kFactor);
+      const newB = updateElo(b.rating, a.rating, scoreB, kFactor);
+      a.games += 1; b.games += 1;
+      if (scoreA === 1) { a.wins += 1; b.losses += 1; } else { b.wins += 1; a.losses += 1; }
+      this.history.push({ ts: Date.now(), a: a.id, b: b.id, scoreA, beforeA: a.rating, beforeB: b.rating, afterA: newA, afterB: newB });
+      a.rating = newA; b.rating = newB;
+      return { a: { ...a }, b: { ...b } };
+    }
   }
 
   global.DebateElo = { expectedScore, updateElo, EloLadder };
