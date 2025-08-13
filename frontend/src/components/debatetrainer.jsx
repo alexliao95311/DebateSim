@@ -70,6 +70,24 @@ function Labeled({ label, children, hint }) {
   );
 }
 
+function BotRow({ bot, onChallenge }) {
+  return (
+    <div className="dt-card dt-bot-row">
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 700 }}>{bot.name}</span>
+          <span className="dt-tag">Games {bot.games}</span>
+          <span className="dt-tag">W {bot.wins} / L {bot.losses}</span>
+        </div>
+        <div className="dt-subtle" style={{ marginTop: 6 }}>Elo <span className="dt-elo-badge">{bot.rating}</span></div>
+      </div>
+      <div>
+        <button className="dt-btn primary" onClick={() => onChallenge(bot)}>Debate</button>
+      </div>
+    </div>
+  );
+}
+
 
 
 }
