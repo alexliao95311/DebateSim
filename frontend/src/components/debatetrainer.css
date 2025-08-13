@@ -15,3 +15,33 @@
   --chip: #1b2230;
 }
 
+.dt-root {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 920px) {
+  .dt-root { grid-template-columns: 1fr; }
+}
+
+.dt-pane {
+  background: linear-gradient(180deg, var(--card), var(--card-2));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.dt-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.dt-subtle { color: var(--muted); }
+
+.dt-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+
