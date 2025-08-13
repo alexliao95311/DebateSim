@@ -1,0 +1,17 @@
+/* Debate Trainer UI styles */
+
+:root {
+  --bg: #0b0e14;
+  --panel: #111520;
+  --muted: #8a93a6;
+  --text: #eaeef7;
+  --primary: #5b8cff;
+  --primary-600: #3e6fec;
+  --accent: #22c55e;
+  --danger: #ef4444;
+  --card: #141a26;
+  --card-2: #0f1420;
+  --border: #1f2633;
+  --chip: #1b2230;
+}
+
