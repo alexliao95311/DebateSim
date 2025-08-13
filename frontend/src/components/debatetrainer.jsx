@@ -47,7 +47,6 @@ const PROMPT_PRESETS = [
   },
 ];
 
-
 function SectionTitle({ title, subtitle, right }) {
   return (
     <div className="dt-title" style={{ justifyContent: 'space-between' }}>
@@ -110,6 +109,9 @@ function DebateTrainerApp() {
   const [myElo, setMyElo] = useState(1500);
   const [kFactor, setKFactor] = useState(24);
 
+  const [model, setModel] = useState(window.OPENAI_MODEL || 'gpt-4o');
+  const [apiKey, setApiKey] = useState(window.OPENAI_API_KEY || '');
+
   const bots = ladderRef.current.listBots();
   const coachOptions = PROMPT_PRESETS.filter(p => p.id.startsWith('coach'));
 
@@ -129,9 +131,51 @@ function DebateTrainerApp() {
     return `System:\n${botPreset.system}\n\nYou are debating ${side.toUpperCase()} on: "${topic}".\nGenerate a single ${side === 'pro' ? 'Constructive' : 'Constructive (Con)'} speech with 2-3 contentions, clear warrants, and impact calculus. Avoid fluff.`;
   }
 
-  // need to integrate openapi calls
+  // Mock LLM call: replace with real API integration if available
   async function callModel(prompt) {
-    // Deterministic-ish placeholder for now
+    // Prefer a backend proxy if available
+    try {
+      if (window.fetch) {
+        const resp = await fetch('/llm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, model: window.OPENAI_MODEL || 'gpt-4o' }),
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.text) return data.text;
+        }
+      }
+    } catch (e) {
+      // fallthrough to direct
+    }
+
+    // Direct OpenAI API call if key is provided on window
+    if (window.OPENAI_API_KEY) {
+      try {
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: window.OPENAI_MODEL || 'gpt-4o',
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+          }),
+        });
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (text) return text;
+      } catch (err) {
+        // ignore and fallback
+      }
+    }
+
+    // Deterministic-ish placeholder fallback
     const hash = [...prompt].reduce((a, c) => (a + c.charCodeAt(0)) % 100000, 0);
     const sample = (seed, variants) => variants[seed % variants.length];
     const variant = sample(hash, [
@@ -212,10 +256,52 @@ function DebateTrainerApp() {
     ladderRef.current.addBot('me', 'You', myElo);
   }, []);
 
+  useEffect(() => {
+    // Persist and expose for callModel
+    try {
+      if (apiKey) localStorage.setItem('OPENAI_API_KEY', apiKey);
+      const storedKey = localStorage.getItem('OPENAI_API_KEY');
+      if (!apiKey && storedKey) setApiKey(storedKey);
+    } catch {}
+    window.OPENAI_API_KEY = apiKey;
+  }, [apiKey]);
+
+  useEffect(() => {
+    try {
+      if (model) localStorage.setItem('OPENAI_MODEL', model);
+      const storedModel = localStorage.getItem('OPENAI_MODEL');
+      if (!model && storedModel) setModel(storedModel);
+    } catch {}
+    window.OPENAI_MODEL = model;
+  }, [model]);
+
   return (
     <div className="dt-root">
       <div className="dt-pane">
-        <SectionTitle title="Debate Trainer" subtitle="Critique by speech type, drill tips, iterative review" right={<span className="dt-tag">Coach</span>} />
+        <SectionTitle
+          title="Debate Trainer"
+          subtitle="Critique by speech type, drill tips, iterative review"
+          right={(
+            <div className="dt-chip-row">
+              <span className="dt-tag">Coach</span>
+              <div className="dt-chip">Model
+                <select className="dt-select" style={{ width: 130, marginLeft: 8 }} value={model} onChange={(e) => setModel(e.target.value)}>
+                  {['gpt-4o','gpt-4o-mini'].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="dt-chip">Key
+                <input
+                  type="password"
+                  className="dt-input"
+                  style={{ width: 200, marginLeft: 8, padding: '6px 8px' }}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-..."
+                />
+              </div>
+            </div>
+          )}
+        />
         <div className="dt-split">
           <Labeled label="Speech Type" hint="Choose which speech to get critiqued">
             <select className="dt-select" value={speechType} onChange={(e) => setSpeechType(e.target.value)}>
@@ -358,14 +444,13 @@ function ChatComposer({ onSend }) {
   );
 }
 
-// Mount on demand from features row
+// Mount on demand from the features row
 function mountDebateTrainer() {
   const rootEl = document.getElementById('feature-panel');
   if (!rootEl) return;
   rootEl.style.display = 'block';
   const root = ReactDOM.createRoot(rootEl);
   root.render(<DebateTrainerApp />);
-
 }
 
 window.DebateTrainer = { mountDebateTrainer };
