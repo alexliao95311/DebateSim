@@ -23,6 +23,17 @@
       initialBots.forEach(b => this.addBot(b.id, b.name, b.rating));
       this.history = [];
     }
+
+ addBot(id, name, rating = 1500) {
+      if (this.bots.has(id)) return this.bots.get(id);
+      const bot = { id, name, rating, games: 0, wins: 0, losses: 0 };
+      this.bots.set(id, bot);
+      return bot;
+    }
+
+    listBots() {
+      return Array.from(this.bots.values()).sort((a, b) => b.rating - a.rating);
+    }
   }
 
   global.DebateElo = { expectedScore, updateElo, EloLadder };
