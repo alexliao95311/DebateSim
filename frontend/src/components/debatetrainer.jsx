@@ -358,6 +358,13 @@ function ChatComposer({ onSend }) {
   );
 }
 
+// Mount on demand from features row
+function mountDebateTrainer() {
+  const rootEl = document.getElementById('feature-panel');
+  if (!rootEl) return;
+  rootEl.style.display = 'block';
+  const root = ReactDOM.createRoot(rootEl);
+  root.render(<DebateTrainerApp />);
 
 }
 
