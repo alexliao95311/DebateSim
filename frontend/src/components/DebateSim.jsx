@@ -23,6 +23,7 @@ import Footer from "./Footer.jsx";
 
 function DebateSim({ user }) {
   const [mode, setMode] = useState("");
+  const [debateFormat, setDebateFormat] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
@@ -43,6 +44,7 @@ function DebateSim({ user }) {
   const topicSectionRef = useRef(null);
   const personaCardsRef = useRef(null);
   const personaSectionRef = useRef(null);
+  const formatSectionRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
@@ -96,9 +98,59 @@ function DebateSim({ user }) {
     fetchHistory();
   }, [user]);
 
-  // Auto-scroll to persona section when mode is selected
+
+  // Persona cards scroll behavior
   useEffect(() => {
-    if (mode && personaSectionRef.current) {
+    const container = personaCardsRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      requestAnimationFrame(() => updateArrowVisibility());
+    };
+    
+    const handleResize = () => {
+      // Force a reflow to ensure accurate measurements
+      setTimeout(() => {
+        if (container && personaCardsRef.current) {
+          updateArrowVisibility();
+        }
+      }, 150);
+    };
+
+    // Add event listeners
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    
+    // Initial checks with multiple timeouts to ensure proper initialization
+    setTimeout(() => updateArrowVisibility(), 100);
+    setTimeout(() => updateArrowVisibility(), 300);
+    setTimeout(() => updateArrowVisibility(), 600);
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Auto-scroll to format section when mode is selected
+  useEffect(() => {
+    if (mode && formatSectionRef.current) {
+      // Add a small delay to ensure the UI has updated
+      setTimeout(() => {
+        formatSectionRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }, 300);
+    }
+  }, [mode]);
+
+  // Auto-scroll to persona section when format is selected
+  useEffect(() => {
+    if (debateFormat && personaSectionRef.current) {
       // Add a small delay to ensure the UI has updated
       setTimeout(() => {
         personaSectionRef.current?.scrollIntoView({ 
@@ -108,7 +160,7 @@ function DebateSim({ user }) {
         });
       }, 300);
     }
-  }, [mode]);
+  }, [debateFormat]);
 
   // Auto-scroll to topic section when personas are selected
   useEffect(() => {
@@ -198,6 +250,26 @@ function DebateSim({ user }) {
       color: "from-orange-500 to-red-600"
     }
   ];
+
+  const debateFormats = [
+    {
+      id: "default",
+      title: "Default Format",
+      description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+      icon: <Award size={48} />,
+      tags: ["Academic", "Structured"],
+      color: "from-indigo-500 to-blue-600"
+    },
+    {
+      id: "public-forum",
+      title: "Public Forum",
+      description: "Public Forum debate style with 4 rounds exactly: Constructive, Rebuttal, Summary, Final Focus",
+      icon: <Users size={48} />,
+      tags: ["Accessible", "Structured"],
+      color: "from-emerald-500 to-green-600"
+    }
+  ];
+
 
   const personas = [
     {
@@ -290,9 +362,13 @@ function DebateSim({ user }) {
       alert("Please enter a debate topic.");
       return;
     }
+    // Default to "default" format if none selected
+    const finalDebateFormat = debateFormat || "default";
+    
     navigate("/debate", { 
       state: { 
         mode, 
+        debateFormat: finalDebateFormat,
         topic: debateTopic,
         proPersona,
         conPersona,
@@ -457,91 +533,148 @@ function DebateSim({ user }) {
           </div>
         </div>
 
+        {/* Debate Format Selection Section */}
+        <div ref={formatSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.3s' }}>
+          <h2 className="debatesim-section-title">Select Debate Format</h2>
+          <div className="debatesim-mode-grid">
+            {debateFormats.map((formatOption, index) => (
+              <div
+                key={formatOption.id}
+                className={`debatesim-mode-card ${debateFormat === formatOption.id ? 'debatesim-selected' : ''}`}
+                style={{ animationDelay: `${0.4 + index * 0.1}s` }}
+              >
+                <div className="debatesim-mode-icon">
+                  {formatOption.icon}
+                </div>
+                <h3 className="debatesim-mode-title">{formatOption.title}</h3>
+                <p className="debatesim-mode-description">{formatOption.description}</p>
+                <div className="debatesim-mode-tags">
+                  {formatOption.tags.map((tag, tagIndex) => (
+                    <span key={tagIndex} className="debatesim-mode-tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <button 
+                  className={`debatesim-mode-select-btn ${debateFormat === formatOption.id ? 'debatesim-selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDebateFormat(formatOption.id);
+                  }}
+                >
+                  {debateFormat === formatOption.id ? (
+                    <>
+                      <span>✓ Selected</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Select Format</span>
+                      <ChevronRight size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Persona Selection Section */}
         <div ref={personaSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.4s' }}>
           <h2 className="debatesim-section-title">Select Debate Personas</h2>
           <p className="debatesim-section-subtitle">
-            {!mode ? 'Select a debate mode first to choose personas' :
-             mode === 'ai-vs-ai' ? 'Choose personas for both sides of the debate' : 
-             mode === 'ai-vs-user' ? 'Choose a persona for your AI opponent' : 
-             'No persona selection needed for user vs user mode'}
+            Choose personas for your debate participants. Different personas will be available based on your selected mode.
           </p>
           
-          {mode && (mode === 'ai-vs-ai' || mode === 'ai-vs-user') && (
-              <div className="debatesim-persona-container">
-                <button 
-                  className={`debatesim-scroll-arrow debatesim-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
-                  onClick={() => scrollPersonas('left')}
+          <div className="debatesim-persona-container">
+            <button 
+              className={`debatesim-scroll-arrow debatesim-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
+              onClick={() => scrollPersonas('left')}
+            >
+              ←
+            </button>
+            <button 
+              className={`debatesim-scroll-arrow debatesim-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
+              onClick={() => scrollPersonas('right')}
+            >
+              →
+            </button>
+            
+            <div className="debatesim-persona-cards" ref={personaCardsRef}>
+              {personas.map((persona) => (
+                <div
+                  key={persona.id}
+                  className={`debatesim-persona-card ${
+                    (mode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
+                    (mode === 'ai-vs-user' && aiPersona === persona.id) ? 'debatesim-selected' : ''
+                  }`}
                 >
-                  ←
-                </button>
-                <button 
-                  className={`debatesim-scroll-arrow debatesim-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
-                  onClick={() => scrollPersonas('right')}
-                >
-                  →
-                </button>
-                
-                <div className="debatesim-persona-cards" ref={personaCardsRef}>
-                  {personas.map((persona) => (
-                    <div
-                      key={persona.id}
-                      className={`debatesim-persona-card ${
-                        (mode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
-                        (mode === 'ai-vs-user' && aiPersona === persona.id) ? 'debatesim-selected' : ''
-                      }`}
-                    >
-                      <div className="debatesim-persona-photo">
-                        <img 
-                          src={persona.image} 
-                          alt={persona.name}
-                          className="debatesim-persona-image"
-                        />
+                  <div className="debatesim-persona-photo">
+                    <img 
+                      src={persona.image} 
+                      alt={persona.name}
+                      className="debatesim-persona-image"
+                    />
+                  </div>
+                  <div className="debatesim-persona-info">
+                    <h3>{persona.name}</h3>
+                    <p className="debatesim-persona-description">{persona.description}</p>
+                    
+                    {mode === 'ai-vs-ai' && (
+                      <div className="debatesim-persona-buttons">
+                        <button 
+                          className={`debatesim-persona-select-btn ${proPersona === persona.id ? 'debatesim-selected' : ''}`}
+                          onClick={() => {
+                            setProPersona(persona.id);
+                            setTimeout(() => updateArrowVisibility(), 100);
+                          }}
+                        >
+                          {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                        </button>
+                        <button 
+                          className={`debatesim-persona-select-btn ${conPersona === persona.id ? 'debatesim-selected' : ''}`}
+                          onClick={() => {
+                            setConPersona(persona.id);
+                            setTimeout(() => updateArrowVisibility(), 100);
+                          }}
+                        >
+                          {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                        </button>
                       </div>
+                    )}
+                    
+                    {mode === 'ai-vs-user' && (
+                      <button 
+                        className={`debatesim-persona-select-btn ${aiPersona === persona.id ? 'debatesim-selected' : ''}`}
+                        onClick={() => {
+                          setAiPersona(persona.id);
+                          setTimeout(() => updateArrowVisibility(), 100);
+                        }}
+                      >
+                        {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                      </button>
+                    )}
+
+                    {mode === 'user-vs-user' && (
                       <div className="debatesim-persona-info">
-                        <h3>{persona.name}</h3>
-                        <p className="debatesim-persona-description">{persona.description}</p>
-                        
-                        {mode === 'ai-vs-ai' && (
-                          <div className="debatesim-persona-buttons">
-                            <button 
-                              className={`debatesim-persona-select-btn ${proPersona === persona.id ? 'debatesim-selected' : ''}`}
-                              onClick={() => {
-                                setProPersona(persona.id);
-                                setTimeout(() => updateArrowVisibility(), 100);
-                              }}
-                            >
-                              {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
-                            </button>
-                            <button 
-                              className={`debatesim-persona-select-btn ${conPersona === persona.id ? 'debatesim-selected' : ''}`}
-                              onClick={() => {
-                                setConPersona(persona.id);
-                                setTimeout(() => updateArrowVisibility(), 100);
-                              }}
-                            >
-                              {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
-                            </button>
-                          </div>
-                        )}
-                        
-                        {mode === 'ai-vs-user' && (
-                          <button 
-                            className={`debatesim-persona-select-btn ${aiPersona === persona.id ? 'debatesim-selected' : ''}`}
-                            onClick={() => {
-                              setAiPersona(persona.id);
-                              setTimeout(() => updateArrowVisibility(), 100);
-                            }}
-                          >
-                            {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
-                          </button>
-                        )}
+                        <p className="debatesim-persona-disabled">No AI personas needed for user vs user mode</p>
                       </div>
-                    </div>
-                  ))}
+                    )}
+
+                    {!mode && (
+                      <div className="debatesim-persona-buttons">
+                        <button 
+                          className="debatesim-persona-select-btn debatesim-disabled"
+                          disabled
+                        >
+                          Select a mode first
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Topic Input Section */}

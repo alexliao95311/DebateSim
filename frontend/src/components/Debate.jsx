@@ -120,7 +120,7 @@ Adopt this smooth Toronto communication style completely for your debate respons
 
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, debateMode, topic, description, billText, billTitle, selectedModel, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
+  const { mode, debateMode, topic, description, billText, billTitle, selectedModel, debateFormat, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
   const navigate = useNavigate();
 
   // For bill debates, use billText as description if available
@@ -183,6 +183,10 @@ function Debate() {
   const [selectedSide, setSelectedSide] = useState(""); // For confirmation step
   const [autoMode, setAutoMode] = useState(false);
   const [autoTimer, setAutoTimer] = useState(null);
+  
+  // Public Forum speaking order state
+  const [pfSpeakingOrder, setPfSpeakingOrder] = useState("pro-first");
+  const [pfOrderSelected, setPfOrderSelected] = useState(false);
 
   // Handler for the back to home button
   const handleBackToHome = () => {
@@ -367,7 +371,7 @@ function Debate() {
     }
   };
 
-  const maxRounds = 5;
+  const maxRounds = debateFormat === "public-forum" ? 4 : 5;
   const handleAIDebate = async () => {
     // Check if we have completed all speeches (5 rounds = 10 speeches)
     const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
@@ -395,9 +399,244 @@ function Debate() {
 
       let aiResponse;
       if (aiSide === "pro") {
-        // Pro's opening is when no messages exist
-        const isOpening = messageList.length === 0;
-        const proPrompt = `
+        let proPrompt;
+        
+        if (debateFormat === "public-forum") {
+          // Public Forum format with 4 rounds: Constructive, Rebuttal, Summary, Final Focus
+          const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+          const proSpeeches = messageList.filter(m => m.speaker.includes("Pro")).length;
+          const roundNumber = proSpeeches + 1; // Which round this Pro speech is
+          const isFirstSpeaker = (pfSpeakingOrder === "pro-first");
+          
+          let speechType, wordLimit, timeLimit, minWords;
+          if (roundNumber === 1) {
+            speechType = "CONSTRUCTIVE";
+            wordLimit = 600;
+            minWords = 550;
+            timeLimit = "4 minutes";
+          } else if (roundNumber === 2) {
+            speechType = "REBUTTAL";
+            wordLimit = 600;
+            minWords = 550;
+            timeLimit = "4 minutes";
+          } else if (roundNumber === 3) {
+            speechType = "SUMMARY";
+            wordLimit = 450;
+            minWords = 400;
+            timeLimit = "3 minutes";
+          } else {
+            speechType = "FINAL FOCUS";
+            wordLimit = 300;
+            minWords = 250;
+            timeLimit = "2 minutes";
+          }
+          
+          proPrompt = `
+You are competing in a Public Forum debate on: "${topic}"
+
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+CURRENT SPEECH: PRO ${speechType} (${timeLimit})
+YOUR ROLE: PRO (supporting the topic)
+
+CRITICAL WORD COUNT REQUIREMENT: 
+- MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
+- Your response WILL BE REJECTED if under ${minWords} words
+- Write substantial, detailed arguments - NOT brief summaries
+
+${roundNumber === 1 ? `
+=== PRO CONSTRUCTIVE SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE - Follow EXACTLY:
+
+1. BRIEF INTRODUCTION (30-50 words):
+   - State your side and the resolution
+   - Preview your two contentions
+
+2. CONTENTION 1: [Insert compelling title] (250-300 words):
+   
+   A. UNIQUENESS (80-100 words):
+   - Explain the current problem/status quo failure in detail
+   - Provide specific statistics, examples, or evidence
+   - Explain why this problem persists now
+   
+   B. LINK (80-100 words):
+   - Explain HOW the topic/resolution solves this problem
+   - Provide the mechanism/causal chain
+   - Include multiple pathways if possible
+   
+   C. IMPACT (80-100 words):
+   - Explain the specific benefits that result
+   - Include magnitude (how many people affected)
+   - Include timeframe (when benefits occur)
+   - Include probability (likelihood of success)
+
+3. CONTENTION 2: [Insert compelling title] (250-300 words):
+   
+   Follow same A-B-C structure as Contention 1
+   
+4. CONCLUSION (50-70 words):
+   - Tie contentions together with value framework
+   - Strong closing statement
+
+EXAMPLE STRUCTURE:
+"We affirm the resolution. Today we present two contentions...
+
+Contention 1: Economic Growth
+A. Uniqueness: Currently, the economy faces stagnation with GDP growth at only 1.2%... [detailed explanation with evidence]
+B. Link: The resolution creates economic growth through three mechanisms... [detailed causal chain]  
+C. Impact: This generates $500 billion in economic activity, affecting 2 million jobs... [specific impacts]
+
+Contention 2: [Title]
+[Same A-B-C structure]
+
+In conclusion, we affirm because..."
+
+WORD COUNT: Must be ${minWords}-${wordLimit} words - write detailed, substantive arguments.` :
+
+roundNumber === 2 ? `
+=== PRO REBUTTAL SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE - Line-by-line refutation ONLY:
+
+For EACH of opponent's contentions, provide systematic refutation:
+
+CONTENTION 1: [Quote opponent's title]
+
+1. UNIQUENESS ATTACKS (labeled "NU"):
+   - "NU: [Opponent's uniqueness claim is wrong because...]"
+   - Provide counter-evidence that problem doesn't exist
+   - Show trend is improving, not worsening
+   - Must be 80-120 words of detailed refutation
+
+2. LINK ATTACKS (labeled "DL" - De-Link):
+   - "DL: [Opponent's link is wrong because...]" 
+   - Explain why their solution doesn't solve
+   - Show alternative causes or barriers
+   - Must be 80-120 words of detailed refutation
+
+3. IMPACT ATTACKS (labeled "No Impact"):
+   - "No Impact: [Opponent's impact is wrong because...]"
+   - Challenge magnitude, timeframe, or probability
+   - Provide counter-evidence
+   - Must be 80-120 words of detailed refutation
+
+4. TURNS (labeled "T"):
+   - "T: [Their plan actually makes things worse because...]"
+   - Explain how their solution backfires
+   - Must be 60-100 words
+
+CONTENTION 2: [Quote opponent's title]
+[Repeat same structure: NU, DL, No Impact, T]
+
+REQUIREMENTS:
+- Quote opponent's exact words before refuting
+- Label every attack (NU, DL, No Impact, T)  
+- Be systematic and thorough
+- Do NOT defend your own case - pure offense only
+- WORD COUNT: Must be ${minWords}-${wordLimit} words
+
+EXAMPLE:
+"On opponent's Contention 1: Economic Benefits
+
+NU: Opponent claims the economy is stagnating, but this is false. The latest Federal Reserve data shows... [detailed counter-evidence]
+
+DL: Even if the economy needs help, opponent's mechanism fails because... [detailed link refutation]
+
+No Impact: Opponent's $500 billion figure is vastly overstated because... [detailed impact refutation]
+
+T: Opponent's plan actually hurts the economy by... [detailed turn argument]"` :
+
+roundNumber === 3 ? `
+=== PRO SUMMARY SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE:
+
+1. STRATEGIC COLLAPSE (50-80 words):
+   - "We're collapsing to our strongest argument: Contention [X]"
+   - Explain why this argument is most important
+   
+2. EXTEND CHOSEN CONTENTION (150-180 words):
+   - Briefly re-explain the UQ/Link/Impact
+   - Address opponent's attacks from their rebuttal
+   - Explain why your responses succeed
+   
+3. FRONTLINE/DEFENSE (100-120 words):
+   - Answer opponent's specific NU/DL/Impact attacks
+   - Provide new evidence or analysis
+   - Explain why attacks fail
+   
+4. OFFENSIVE REFUTATION (80-100 words):
+   - Extend your best attacks on opponent's case
+   - Add new analysis from rebuttal speech
+   
+5. WEIGHING ANALYSIS (100-150 words):
+   - Explicitly state weighing mechanism: "We outweigh on [magnitude/timeframe/probability]"
+   - Compare your impact to opponent's impact
+   - Warrant why your impact comes first
+   - Use phrases: "We outweigh because..." "Even if they win..."
+   
+WEIGHING EXAMPLE:
+"We outweigh on magnitude. Even if opponent wins their economic argument affecting 100,000 people, our environmental impact affects 50 million people globally. Prefer magnitude because a policy that helps more people creates greater net benefit. Additionally, we outweigh on timeframe - our benefits occur immediately while theirs take decades to materialize."
+
+WORD COUNT: Must be ${minWords}-${wordLimit} words` :
+
+`
+=== PRO FINAL FOCUS REQUIREMENTS ===
+
+MANDATORY STRUCTURE:
+
+1. ARGUMENT SELECTION (30-50 words):
+   - Choose ONE contention to focus on
+   - "In this final focus, we're extending our [X] argument"
+   
+2. BRIEF EXTENSION (80-100 words):
+   - Quickly re-explain UQ/Link/Impact
+   - Address 1-2 key opponent attacks
+   - Keep this section brief
+   
+3. WEIGHING CRYSTALLIZATION (150-200 words):
+   - Respond to opponent's weighing from their summary
+   - Explain why your weighing mechanism is superior
+   - Use comparative language: "prefer," "outweighs," "comes first"
+   - Provide warrants for your weighing
+   - This should be 70% of your speech
+   
+WEIGHING EXAMPLE:
+"Opponent argues we should prefer timeframe, but magnitude is the superior weighing mechanism. First, certainty of impact matters more than speed - saving 50 million lives certainly outweighs potentially helping 100,000 people quickly. Second, even on timeframe, our benefits begin within months while opponent's economic effects require years of implementation. Third, prefer scope - our global impact creates positive precedent worldwide while opponent's benefits remain localized."
+
+4. FINAL APPEAL (30-50 words):
+   - Strong closing statement
+   - Clear voting rationale
+   
+RESTRICTIONS:
+- NO new arguments allowed
+- Focus only on crystallizing existing arguments
+- WORD COUNT: Must be ${minWords}-${wordLimit} words`}
+
+CRITICAL REQUIREMENTS:
+- WORD COUNT: ${minWords}-${wordLimit} words (responses under ${minWords} words will be rejected)
+- Write detailed, substantive arguments with specific evidence
+- Quote opponents exactly before refuting
+- Label all attacks in rebuttals (NU, DL, No Impact, T)
+- Follow the exact structure outlined above
+- Use accessible language for general audiences
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Display will show: "Pro (AI) - ${speechType}"
+
+${getPersonaPrompt(proPersona)}
+`;
+        } else {
+          // Default 5-round format
+          const isOpening = messageList.length === 0;
+          proPrompt = `
 You are an AI debater in a 5-round structured debate on: "${topic}"
 
 BILL CONTEXT:
@@ -457,7 +696,8 @@ ${getPersonaPrompt(proPersona)}
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona));
+        }
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Pro.*?\n/gi, '')
@@ -470,16 +710,265 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
-        const proDisplayName = proPersona !== "default" ? 
-          `AI Debater Pro (${getPersonaName(proPersona)})` : 
-          "AI Debater Pro";
+        let proDisplayName;
+        if (debateFormat === "public-forum") {
+          const proSpeeches = messageList.filter(m => m.speaker.includes("Pro")).length;
+          const roundNumber = proSpeeches + 1;
+          let speechType;
+          if (roundNumber === 1) speechType = "CONSTRUCTIVE";
+          else if (roundNumber === 2) speechType = "REBUTTAL";
+          else if (roundNumber === 3) speechType = "SUMMARY";
+          else speechType = "FINAL FOCUS";
+          
+          proDisplayName = proPersona !== "default" ? 
+            `Pro (${getPersonaName(proPersona)}) - ${speechType}` : 
+            `Pro (AI) - ${speechType}`;
+        } else {
+          proDisplayName = proPersona !== "default" ? 
+            `AI Debater Pro (${getPersonaName(proPersona)})` : 
+            "AI Debater Pro";
+        }
         appendMessage(proDisplayName, cleanedResponse, proModel);
         setAiSide("con");
       } else {
-        // Con's opening is when Con hasn't spoken yet (check if any Con messages exist)
-        const conHasSpoken = messageList.some(msg => msg.speaker.includes("Con"));
-        const isOpening = !conHasSpoken;
-        const conPrompt = `
+        let conPrompt;
+        
+        if (debateFormat === "public-forum") {
+          // Public Forum format for Con
+          const conSpeeches = messageList.filter(m => m.speaker.includes("Con")).length;
+          const roundNumber = conSpeeches + 1; // Which round this Con speech is
+          const isFirstSpeaker = (pfSpeakingOrder === "con-first");
+          
+          let speechType, wordLimit, timeLimit, minWords;
+          if (roundNumber === 1) {
+            speechType = "CONSTRUCTIVE";
+            wordLimit = 600;
+            minWords = 550;
+            timeLimit = "4 minutes";
+          } else if (roundNumber === 2) {
+            speechType = "REBUTTAL";
+            wordLimit = 600;
+            minWords = 550;
+            timeLimit = "4 minutes";
+          } else if (roundNumber === 3) {
+            speechType = "SUMMARY";
+            wordLimit = 450;
+            minWords = 400;
+            timeLimit = "3 minutes";
+          } else {
+            speechType = "FINAL FOCUS";
+            wordLimit = 300;
+            minWords = 250;
+            timeLimit = "2 minutes";
+          }
+          
+          conPrompt = `
+You are competing in a Public Forum debate on: "${topic}"
+
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+CURRENT SPEECH: CON ${speechType} (${timeLimit})
+YOUR ROLE: CON (opposing the topic)
+
+CRITICAL WORD COUNT REQUIREMENT: 
+- MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
+- Your response WILL BE REJECTED if under ${minWords} words
+- Write substantial, detailed arguments - NOT brief summaries
+
+${roundNumber === 1 ? `
+=== CON CONSTRUCTIVE SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE - Follow EXACTLY:
+
+1. BRIEF INTRODUCTION (30-50 words):
+   - State your side and opposition to the resolution
+   - Preview your two contentions
+
+2. CONTENTION 1: [Insert compelling title] (250-300 words):
+   
+   A. UNIQUENESS (80-100 words):
+   - Explain why the current situation is good/stable
+   - Provide specific statistics, examples, or evidence
+   - Show why status quo is working/improving
+   
+   B. LINK (80-100 words):
+   - Explain HOW the topic/resolution disrupts this stability
+   - Provide the harm mechanism/causal chain
+   - Include multiple pathways of harm if possible
+   
+   C. IMPACT (80-100 words):
+   - Explain the specific negative outcomes that result
+   - Include magnitude (how many people harmed)
+   - Include timeframe (when harms occur)
+   - Include probability (likelihood of harm)
+
+3. CONTENTION 2: [Insert compelling title] (250-300 words):
+   
+   Follow same A-B-C structure as Contention 1
+   
+4. CONCLUSION (50-70 words):
+   - Tie contentions together with value framework
+   - Strong closing statement
+
+EXAMPLE STRUCTURE:
+"We negate the resolution. Today we present two contentions...
+
+Contention 1: Economic Destruction
+A. Uniqueness: Currently, our economy is in a period of stable growth with unemployment at historic lows... [detailed explanation with evidence]
+B. Link: The resolution destroys this stability through three mechanisms... [detailed causal chain]  
+C. Impact: This causes $2 trillion in economic losses, affecting 5 million jobs... [specific harms]
+
+Contention 2: [Title]
+[Same A-B-C structure]
+
+In conclusion, we negate because..."
+
+WORD COUNT: Must be ${minWords}-${wordLimit} words - write detailed, substantive arguments.` :
+
+roundNumber === 2 ? `
+=== CON REBUTTAL SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE - Line-by-line refutation ONLY:
+
+For EACH of opponent's contentions, provide systematic refutation:
+
+CONTENTION 1: [Quote opponent's title]
+
+1. UNIQUENESS ATTACKS (labeled "NU"):
+   - "NU: [Opponent's uniqueness claim is wrong because...]"
+   - Provide counter-evidence that problem doesn't exist
+   - Show trend is improving, not worsening
+   - Must be 80-120 words of detailed refutation
+
+2. LINK ATTACKS (labeled "DL" - De-Link):
+   - "DL: [Opponent's link is wrong because...]" 
+   - Explain why their solution doesn't solve
+   - Show alternative causes or barriers
+   - Must be 80-120 words of detailed refutation
+
+3. IMPACT ATTACKS (labeled "No Impact"):
+   - "No Impact: [Opponent's impact is wrong because...]"
+   - Challenge magnitude, timeframe, or probability
+   - Provide counter-evidence
+   - Must be 80-120 words of detailed refutation
+
+4. TURNS (labeled "T"):
+   - "T: [Their plan actually makes things worse because...]"
+   - Explain how their solution backfires
+   - Must be 60-100 words
+
+CONTENTION 2: [Quote opponent's title]
+[Repeat same structure: NU, DL, No Impact, T]
+
+REQUIREMENTS:
+- Quote opponent's exact words before refuting
+- Label every attack (NU, DL, No Impact, T)  
+- Be systematic and thorough
+- Do NOT defend your own case - pure offense only
+- WORD COUNT: Must be ${minWords}-${wordLimit} words
+
+EXAMPLE:
+"On opponent's Contention 1: Economic Benefits
+
+NU: Opponent claims the economy is stagnating, but this is false. The latest Federal Reserve data shows... [detailed counter-evidence]
+
+DL: Even if the economy needs help, opponent's mechanism fails because... [detailed link refutation]
+
+No Impact: Opponent's $500 billion figure is vastly overstated because... [detailed impact refutation]
+
+T: Opponent's plan actually hurts the economy by... [detailed turn argument]"` :
+
+roundNumber === 3 ? `
+=== CON SUMMARY SPEECH REQUIREMENTS ===
+
+MANDATORY STRUCTURE:
+
+1. STRATEGIC COLLAPSE (50-80 words):
+   - "We're collapsing to our strongest argument: Contention [X]"
+   - Explain why this argument is most important
+   
+2. EXTEND CHOSEN CONTENTION (150-180 words):
+   - Briefly re-explain the UQ/Link/Impact
+   - Address opponent's attacks from their rebuttal
+   - Explain why your responses succeed
+   
+3. FRONTLINE/DEFENSE (100-120 words):
+   - Answer opponent's specific NU/DL/Impact attacks
+   - Provide new evidence or analysis
+   - Explain why attacks fail
+   
+4. OFFENSIVE REFUTATION (80-100 words):
+   - Extend your best attacks on opponent's case
+   - Add new analysis from rebuttal speech
+   
+5. WEIGHING ANALYSIS (100-150 words):
+   - Explicitly state weighing mechanism: "We outweigh on [magnitude/timeframe/probability]"
+   - Compare your impact to opponent's impact
+   - Warrant why your impact comes first
+   - Use phrases: "We outweigh because..." "Even if they win..."
+   
+WEIGHING EXAMPLE:
+"We outweigh on certainty. Even if opponent wins their environmental argument affecting millions theoretically, our economic harm affecting 100,000 people is guaranteed and immediate. Prefer certainty because speculative benefits cannot justify concrete costs. Additionally, we outweigh on timeframe - our harms begin immediately while their benefits require decades of uncertain implementation."
+
+WORD COUNT: Must be ${minWords}-${wordLimit} words` :
+
+`
+=== CON FINAL FOCUS REQUIREMENTS ===
+
+MANDATORY STRUCTURE:
+
+1. ARGUMENT SELECTION (30-50 words):
+   - Choose ONE contention to focus on
+   - "In this final focus, we're extending our [X] argument"
+   
+2. BRIEF EXTENSION (80-100 words):
+   - Quickly re-explain UQ/Link/Impact
+   - Address 1-2 key opponent attacks
+   - Keep this section brief
+   
+3. WEIGHING CRYSTALLIZATION (150-200 words):
+   - Respond to opponent's weighing from their summary
+   - Explain why your weighing mechanism is superior
+   - Use comparative language: "prefer," "outweighs," "comes first"
+   - Provide warrants for your weighing
+   - This should be 70% of your speech
+   
+WEIGHING EXAMPLE:
+"Opponent argues we should prefer magnitude, but certainty is the superior weighing mechanism. First, concrete harms outweigh speculative benefits - our economic damage is guaranteed while opponent's environmental benefits are uncertain. Second, even on magnitude, our economic impact creates ripple effects affecting millions indirectly. Third, prefer timeframe - our immediate harms require urgent prevention while opponent's distant benefits allow time for alternative solutions."
+
+4. FINAL APPEAL (30-50 words):
+   - Strong closing statement
+   - Clear voting rationale
+   
+RESTRICTIONS:
+- NO new arguments allowed
+- Focus only on crystallizing existing arguments
+- WORD COUNT: Must be ${minWords}-${wordLimit} words`}
+
+CRITICAL REQUIREMENTS:
+- WORD COUNT: ${minWords}-${wordLimit} words (responses under ${minWords} words will be rejected)
+- Write detailed, substantive arguments with specific evidence
+- Quote opponents exactly before refuting
+- Label all attacks in rebuttals (NU, DL, No Impact, T)
+- Follow the exact structure outlined above
+- Use accessible language for general audiences
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Display will show: "Con (AI) - ${speechType}"
+
+${getPersonaPrompt(conPersona)}
+`;
+        } else {
+          // Default 5-round format
+          const conHasSpoken = messageList.some(msg => msg.speaker.includes("Con"));
+          const isOpening = !conHasSpoken;
+          conPrompt = `
 You are an AI debater in a 5-round structured debate on: "${topic}"
 
 BILL CONTEXT:
@@ -542,7 +1031,8 @@ ${getPersonaPrompt(conPersona)}
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound, getPersonaName(conPersona));
+        }
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Con.*?\n/gi, '')
@@ -555,9 +1045,24 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
-        const conDisplayName = conPersona !== "default" ? 
-          `AI Debater Con (${getPersonaName(conPersona)})` : 
-          "AI Debater Con";
+        let conDisplayName;
+        if (debateFormat === "public-forum") {
+          const conSpeeches = messageList.filter(m => m.speaker.includes("Con")).length;
+          const roundNumber = conSpeeches + 1;
+          let speechType;
+          if (roundNumber === 1) speechType = "CONSTRUCTIVE";
+          else if (roundNumber === 2) speechType = "REBUTTAL";
+          else if (roundNumber === 3) speechType = "SUMMARY";
+          else speechType = "FINAL FOCUS";
+          
+          conDisplayName = conPersona !== "default" ? 
+            `Con (${getPersonaName(conPersona)}) - ${speechType}` : 
+            `Con (AI) - ${speechType}`;
+        } else {
+          conDisplayName = conPersona !== "default" ? 
+            `AI Debater Con (${getPersonaName(conPersona)})` : 
+            "AI Debater Con";
+        }
         appendMessage(conDisplayName, cleanedResponse, conModel);
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
@@ -595,7 +1100,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona));
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
         const aiDisplayName = aiPersona !== "default" ? 
           `Con (AI - ${getPersonaName(aiPersona)})` : 
           "Con (AI)";
@@ -615,7 +1120,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona));
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
         const aiDisplayName = aiPersona !== "default" ? 
           `Pro (AI - ${getPersonaName(aiPersona)})` : 
           "Pro (AI)";
@@ -752,7 +1257,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
       console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI, currentRound, getPersonaName(aiPersona));
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI, currentRound, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
       const aiDisplayName = aiPersona !== "default" ? 
         `${aiSideLocal} (AI - ${getPersonaName(aiPersona)})` : 
         `${aiSideLocal} (AI)`;
@@ -997,7 +1502,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </div>
             );
           })}
-          {actualMode === "ai-vs-ai" && (
+          {actualMode === "ai-vs-ai" && (debateFormat !== "public-forum" || pfOrderSelected) && (
             <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
               {!autoMode ? (
                 <>
@@ -1072,6 +1577,54 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   ⏸️ Stop Auto-Generation
                 </button>
               )}
+            </div>
+          )}
+          {debateFormat === "public-forum" && actualMode === "ai-vs-ai" && !pfOrderSelected && (
+            <div className="ai-vs-user-setup">
+              <h3>Public Forum Debate Setup</h3>
+              <p style={{ color: '#fff' }}>Choose the speaking order for all 4 rounds</p>
+              <div className="order-selection">
+                <label>Speaking Order</label>
+                <div className="order-buttons">
+                  <button
+                    className={`order-button ${pfSpeakingOrder === 'pro-first' ? 'selected' : ''}`}
+                    onClick={() => setPfSpeakingOrder('pro-first')}
+                  >
+                    PRO speaks first in each round
+                  </button>
+                  <button
+                    className={`order-button ${pfSpeakingOrder === 'con-first' ? 'selected' : ''}`}
+                    onClick={() => setPfSpeakingOrder('con-first')}
+                  >
+                    CON speaks first in each round
+                  </button>
+                </div>
+              </div>
+              <div className="pf-format-info">
+                <h4>Public Forum Structure (4 Rounds):</h4>
+                <div className="round-structure">
+                  <div className="round-item">
+                    <strong>Round 1:</strong> Constructive Speeches
+                  </div>
+                  <div className="round-item">
+                    <strong>Round 2:</strong> Rebuttal Speeches
+                  </div>
+                  <div className="round-item">
+                    <strong>Round 3:</strong> Summary Speeches
+                  </div>
+                  <div className="round-item">
+                    <strong>Round 4:</strong> Final Focus Speeches
+                  </div>
+                </div>
+              </div>
+              <div className="confirm-section">
+                <button
+                  className="confirm-button"
+                  onClick={() => setPfOrderSelected(true)}
+                >
+                  Start Public Forum Debate
+                </button>
+              </div>
             </div>
           )}
           {actualMode === "ai-vs-user" && (
