@@ -20,13 +20,107 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+
 function sanitizeUserInput(str) {
   return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function getPersonaName(persona) {
+  const personaMap = {
+    "default": "Default AI",
+    "trump": "Donald Trump",
+    "harris": "Kamala Harris", 
+    "musk": "Elon Musk",
+    "drake": "Drake"
+  };
+  return personaMap[persona] || "Default AI";
+}
+
+function getPersonaPrompt(persona) {
+  switch (persona) {
+    case "trump":
+      return `
+SPEAKING STYLE: Bold, confident, repetitive rhetoric with superlatives and simple language.
+
+REQUIRED LANGUAGE PATTERNS:
+- Start with: "Look," "Listen," "You know what?" "Let me tell you"
+- Use frequently: "believe me," "tremendous," "incredible," "the best," "like you wouldn't believe"
+- Superlatives: "the greatest," "the worst," "nobody's ever seen anything like it"
+- Repetition: "It's true, it's true, it's very true"
+- End with: "okay?" "believe me"
+- Personal references: "I've made incredible deals," "I know more about X than anyone"
+- Indirect attacks: "some people say," "a lot of people are saying"
+- Simple, direct sentences with bold claims
+- Words: "disaster," "catastrophe," "phenomenal," "fantastic," "winners," "billions," "millions"
+
+Adopt this rhetorical style completely for your debate response.`;
+
+    case "harris":
+      return `
+SPEAKING STYLE: Prosecutorial, structured, evidence-focused with emphatic delivery.
+
+REQUIRED LANGUAGE PATTERNS:
+- Start with: "Let me be very clear," "The reality is," "Here's the thing"
+- Use frequently: "What we know to be true," "We must speak truth," "We cannot be deterred"
+- Direct challenges: "That is simply not accurate," "I think you're confused about the facts"
+- Structure: "First, Second, Third" - like court cases
+- Evidence focus: "The data shows," "The facts are clear"
+- Rhetorical questions: "Are we really going to accept that?"
+- Experience references: "As a prosecutor," "In my time as Attorney General"
+- Pause phrases: "And let me pause there..." "And THAT is why..."
+- Values language: "our democracy," "our values," "our future," "The American people deserve"
+- Challenge language: "false choice," "that's a false premise"
+
+Adopt this prosecutorial speaking style completely for your debate response.`;
+
+    case "musk":
+      return `
+SPEAKING STYLE: Analytical, engineering-focused, with technical tangents and first principles thinking.
+
+REQUIRED LANGUAGE PATTERNS:
+- Start with: "Well," "I mean," "Obviously," "The thing is"
+- Technical focus: "From a physics standpoint," "If you think about it fundamentally"
+- Thinking aloud: "So if you consider... no wait, actually..."
+- Confidence phrases: "To be totally frank," "I think probably," "I'm fairly confident that"
+- Self-correction: "Actually, let me rephrase that"
+- First principles: "If you go back to first principles"
+- Engineering perspective: "It's really just an optimization problem"
+- Math focus: "If you do the math," "The numbers don't lie"
+- Direct assessment: "That's obviously wrong," "That makes no sense"
+- Technical vocabulary: "optimize," "efficiency," "sustainable," "exponential," "asymptotic"
+- Physics references: "laws of physics," "thermodynamics," "mass production"
+- Solution focus: practical implementation and rapid iteration
+
+Adopt this analytical engineering communication style completely for your debate response.`;
+
+    case "drake":
+      return `
+SPEAKING STYLE: Smooth, introspective Toronto style with confidence, vulnerability, and authenticity themes.
+
+REQUIRED LANGUAGE PATTERNS:
+- Start with: "You know what I'm saying," "For real," "At the end of the day"
+- Honesty phrases: "I'm just being honest," "Real talk," "No cap," "That's facts"
+- Common starters: "Listen," "Look," "I mean," "The thing is"
+- Experience references: "I've been through," "I understand," "I know firsthand"
+- Journey themes: "Started from the bottom," "came a long way"
+- Loyalty language: "I ride for my people," "family first," "trust issues"
+- Success terms: "grinding," "hustle," "blessed," "grateful"
+- Toronto references: "the 6," "my city," "where I'm from shaped me"
+- Authenticity: "keeping it 100," "being real," "staying true"
+- Vulnerability: "I'll be honest," "opening up," "showing love"
+- Key vocabulary: "blessed," "grateful," "energy," "vibes," "passionate," "real ones," "day ones"
+- Storytelling: "Let me tell you about..." "Life taught me..."
+
+Adopt this smooth Toronto communication style completely for your debate response.`;
+
+    default:
+      return "";
+  }
+}
+
 function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
-  const { mode, debateMode, topic, description, billText, billTitle, selectedModel } = useLocation().state || {};
+  const { mode, debateMode, topic, description, billText, billTitle, selectedModel, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
   const navigate = useNavigate();
 
   // For bill debates, use billText as description if available
@@ -72,6 +166,11 @@ function Debate() {
   const [conModel, setConModel] = useState(modelOptions[0]);
   const [singleAIModel, setSingleAIModel] = useState(modelOptions[0]);
   const [aiSide, setAiSide] = useState("pro");
+  
+  // Persona states (received from navigation)
+  const proPersona = initialProPersona || "default";
+  const conPersona = initialConPersona || "default";
+  const aiPersona = initialAiPersona || "default";
   const [userSide, setUserSide] = useState("");
   const [userVsUserSide, setUserVsUserSide] = useState("");
   const [userVsUserSetup, setUserVsUserSetup] = useState({
@@ -349,6 +448,8 @@ CONTENT REQUIREMENTS:
 - Quote opponent's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
 - DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
+
+${getPersonaPrompt(proPersona)}
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -356,7 +457,7 @@ CONTENT REQUIREMENTS:
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona));
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Pro.*?\n/gi, '')
@@ -369,7 +470,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
-        appendMessage("AI Debater Pro", cleanedResponse, proModel);
+        const proDisplayName = proPersona !== "default" ? 
+          `AI Debater Pro (${getPersonaName(proPersona)})` : 
+          "AI Debater Pro";
+        appendMessage(proDisplayName, cleanedResponse, proModel);
         setAiSide("con");
       } else {
         // Con's opening is when Con hasn't spoken yet (check if any Con messages exist)
@@ -429,6 +533,8 @@ CONTENT REQUIREMENTS:
 - Quote opponent's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
 - DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
+
+${getPersonaPrompt(conPersona)}
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 500 words)
 - Be persuasive but respectful
@@ -436,7 +542,7 @@ CONTENT REQUIREMENTS:
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
-        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound);
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound, getPersonaName(conPersona));
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Con.*?\n/gi, '')
@@ -449,7 +555,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         if (!cleanedResponse.match(/^(\d+\.|[A-Z])/)) {
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
-        appendMessage("AI Debater Con", cleanedResponse, conModel);
+        const conDisplayName = conPersona !== "default" ? 
+          `AI Debater Con (${getPersonaName(conPersona)})` : 
+          "AI Debater Con";
+        appendMessage(conDisplayName, cleanedResponse, conModel);
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
       }
@@ -477,6 +586,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              Bill description: "${truncatedDescription}"
              Your role: Opening speaker for the CON side
 
+             ${getPersonaPrompt(aiPersona)}
+
              Instructions:
              1. Provide an opening argument against the topic
              2. Present 2-3 strong arguments for the CON position
@@ -484,13 +595,18 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1);
-        appendMessage("Con (AI)", conResponse, singleAIModel);
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona));
+        const aiDisplayName = aiPersona !== "default" ? 
+          `Con (AI - ${getPersonaName(aiPersona)})` : 
+          "Con (AI)";
+        appendMessage(aiDisplayName, conResponse, singleAIModel);
       } else if (firstSide === "pro" && side === "con") {
         const proPrompt = `
              Debate topic: "${topic}"
              Bill description: "${truncatedDescription}"
              Your role: Opening speaker for the PRO side
+
+             ${getPersonaPrompt(aiPersona)}
 
              Instructions:
              1. Provide an opening argument in favor of the topic
@@ -499,8 +615,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1);
-        appendMessage("Pro (AI)", proResponse, singleAIModel);
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona));
+        const aiDisplayName = aiPersona !== "default" ? 
+          `Pro (AI - ${getPersonaName(aiPersona)})` : 
+          "Pro (AI)";
+        appendMessage(aiDisplayName, proResponse, singleAIModel);
       }
     } catch (err) {
       setError(`Failed to fetch AI's ${side === "pro" ? "Pro" : "Con"} opening argument.`);
@@ -606,6 +725,8 @@ CONTENT REQUIREMENTS:
 - Quote user's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
 - DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
+
+${getPersonaPrompt(aiPersona)}
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 400 words)
 - Be persuasive but respectful
@@ -631,8 +752,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
       console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI, currentRound);
-      appendMessage(`${aiSideLocal} (AI)`, aiResponse, singleAIModel);
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI, currentRound, getPersonaName(aiPersona));
+      const aiDisplayName = aiPersona !== "default" ? 
+        `${aiSideLocal} (AI - ${getPersonaName(aiPersona)})` : 
+        `${aiSideLocal} (AI)`;
+      appendMessage(aiDisplayName, aiResponse, singleAIModel);
       setCurrentRound(prev => prev + 1);
     } catch (err) {
       console.error("Error in User vs AI debate:", err);
@@ -788,16 +912,18 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 </>
               )}
               {actualMode === "ai-vs-user" && (
-                <label className="debate-model-label">
-                  AI Model:
-                  <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
-                    {modelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <>
+                  <label className="debate-model-label">
+                    AI Model:
+                    <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                      {modelOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
               )}
               <label className="debate-model-label">
                 Judge Model:
