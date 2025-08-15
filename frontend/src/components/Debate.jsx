@@ -12,11 +12,10 @@ import { Code, MessageSquare, Download, Share2, ArrowLeft, Volume2, VolumeX } fr
 import "./Debate.css";
 
 const modelOptions = [
-  "openai/gpt-5-mini",
+  "openai/gpt-4o-mini",
   "meta-llama/llama-3.3-70b-instruct",
   "google/gemini-2.0-flash-001",
   "anthropic/claude-3.5-sonnet",
-  "openai/gpt-4o-mini",
   "openai/gpt-4o-mini-search-preview"
 ];
 
