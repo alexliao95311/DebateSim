@@ -195,6 +195,10 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - round_num: {request.round_num}")
         logger.info(f"🔍 DEBUG: - history: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: - history: None")
         logger.info(f"🔍 DEBUG: - full_transcript: {request.full_transcript[:200]}..." if request.full_transcript else "🔍 DEBUG: - full_transcript: None")
+        logger.info(f"🔍 DEBUG: - persona_prompt length: {len(request.prompt)}")
+        logger.info(f"🔍 DEBUG: - persona_prompt preview: {request.prompt[:300]}...")
+        logger.info(f"🔍 DEBUG: - debate_format: {request.debate_format}")
+        logger.info(f"🔍 DEBUG: - speaking_order: {request.speaking_order}")
         
         # Call the run method - pass full transcript for context and the original prompt for persona instructions
         ai_output = model_specific_debater_chain.run(
@@ -205,7 +209,8 @@ async def generate_response(request: GenerateResponseRequest):
             full_transcript=request.full_transcript,  # Pass the full transcript for proper context
             round_num=request.round_num,  # Pass the current round number
             persona_prompt=request.prompt,  # Pass the full prompt which contains persona instructions
-            persona=request.persona  # Pass the persona name directly for logging
+            persona=request.persona,  # Pass the persona name directly for logging
+            prompt=request.prompt  # Also pass the prompt directly for direct prompt detection
         )
         
     except Exception as e:

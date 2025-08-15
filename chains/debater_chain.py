@@ -585,17 +585,30 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             "rebuttal_importance": rebuttal_importance
         }
 
-    # Select the appropriate prompt template based on debate type and format
-    if debate_format == "public-forum":
-        selected_prompt = public_forum_prompt
-    elif debate_type == "bill":
-        selected_prompt = bill_debate_prompt
-    else:
-        selected_prompt = topic_debate_prompt
-    
     # Build the runnable chain using LCEL
+    from langchain_core.runnables import RunnableLambda
+    from langchain_core.prompts import PromptTemplate
+    
     def process_inputs(inputs):
-        # Get debate context once to avoid multiple calls
+        # Debug: Log what we received
+        print(f"🔍 DEBUG [process_inputs]: Received inputs keys: {list(inputs.keys())}")
+        print(f"🔍 DEBUG [process_inputs]: Prompt length: {len(inputs.get('prompt', ''))}")
+        print(f"🔍 DEBUG [process_inputs]: Prompt preview: {inputs.get('prompt', '')[:200]}...")
+        
+        # Check if we should use the frontend prompt directly for detailed Public Forum prompts
+        incoming_prompt = inputs.get('prompt', '')
+        use_direct_prompt = len(incoming_prompt) > 500 and "CRITICAL WORD COUNT" in incoming_prompt
+        
+        print(f"🔍 DEBUG [process_inputs]: Using direct prompt: {use_direct_prompt}")
+        
+        if use_direct_prompt:
+            # Return the prompt directly for detailed frontend prompts
+            print(f"🔍 DEBUG [process_inputs]: Using direct frontend prompt ({len(incoming_prompt)} chars)")
+            # Mark this as a direct prompt for the selector
+            return {"_direct_prompt": incoming_prompt, "prompt": incoming_prompt}
+        
+        # Otherwise, get debate context for template-based prompts
+        print(f"🔍 DEBUG [process_inputs]: Using template-based prompt")
         debate_context = get_debate_context(inputs)
         
         # Extract persona instructions from the persona_prompt if provided
@@ -641,12 +654,34 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             "opening_instruction": debate_context["opening_instruction"],
             "rebuttal_requirement": debate_context["rebuttal_requirement"],
             "rebuttal_importance": debate_context["rebuttal_importance"],
-            "persona_instructions": persona_instructions
+            "persona_instructions": persona_instructions,
+            "_direct_prompt": False  # Mark as template-based
         }
     
+    def select_prompt(inputs):
+        # Check if this is a direct prompt case
+        if inputs.get("_direct_prompt"):
+            print(f"🔍 DEBUG [select_prompt]: Using direct prompt")
+            return inputs["_direct_prompt"]
+        
+        # Otherwise use template-based approach
+        print(f"🔍 DEBUG [select_prompt]: Using template-based prompt")
+        if debate_format == "public-forum":
+            selected_template = public_forum_prompt
+        elif debate_type == "bill":
+            selected_template = bill_debate_prompt
+        else:
+            selected_template = topic_debate_prompt
+            
+        return selected_template.invoke(inputs)
+    
+    # Convert functions to proper LangChain runnables
+    process_inputs_runnable = RunnableLambda(process_inputs)
+    select_prompt_runnable = RunnableLambda(select_prompt)
+    
     chain = (
-        process_inputs
-        | selected_prompt
+        process_inputs_runnable
+        | select_prompt_runnable
         | llm
         | StrOutputParser()
     )
