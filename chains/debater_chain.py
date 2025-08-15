@@ -53,7 +53,7 @@ class OpenRouterChat(BaseChatModel):
         # Fall‑back: return the original string unchanged.
         return name
 
-    model_name: str = Field(default="openai/gpt-5-mini")
+    model_name: str = Field(default="openai/gpt-4o-mini")
     temperature: float = Field(default=0.7)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -449,6 +449,7 @@ memory_map = {}
 
 # Function to create a debater chain with a specific model
 def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic", debate_format: str = "default", speaking_order: str = "pro-first"):
+
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
@@ -725,4 +726,4 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
     return ChainWrapper(chain)
 
 # Create a default debater chain for backward compatibility
-debater_chain = get_debater_chain(model_name="openai/gpt-5-mini", round_num=1, debate_type="topic")
+    debater_chain = get_debater_chain(model_name="openai/gpt-4o-mini", round_num=1, debate_type="topic")
