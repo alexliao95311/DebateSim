@@ -215,9 +215,9 @@ function Debate() {
   // Auto-continue when loading finishes in auto mode
   useEffect(() => {
     // Check if we should continue auto-generation
-    // We want 5 complete rounds (10 total speeches: 5 Pro + 5 Con)
+    const maxRounds = debateFormat === "public-forum" ? 4 : 5;
     const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
-    const shouldContinue = aiSpeeches < (maxRounds * 2); // 10 speeches total for 5 rounds
+    const shouldContinue = aiSpeeches < (maxRounds * 2); // 8 speeches total for PF, 10 for regular
 
     if (autoMode && !loading && messageList.length > 0 && shouldContinue) {
       // Clear any existing timer
@@ -233,7 +233,7 @@ function Debate() {
       // Auto-generation complete, stop auto mode
       setAutoMode(false);
     }
-  }, [loading, autoMode, messageList.length]);
+  }, [loading, autoMode, messageList.length, debateFormat]);
 
   const startAutoDebate = () => {
     setAutoMode(true);
@@ -403,9 +403,19 @@ function Debate() {
         
         if (debateFormat === "public-forum") {
           // Public Forum format with 4 rounds: Constructive, Rebuttal, Summary, Final Focus
-          const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
           const proSpeeches = messageList.filter(m => m.speaker.includes("Pro")).length;
-          const roundNumber = proSpeeches + 1; // Which round this Pro speech is
+          
+          // Determine speech type based on total number of speeches
+          // Speech 1&2: Constructive, Speech 3&4: Rebuttal, Speech 5&6: Summary, Speech 7&8: Final Focus
+          let speechTypeIndex;
+          if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
+          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round  
+          else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
+          else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
+          else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
+          
+          const roundNumber = speechTypeIndex;
           const isFirstSpeaker = (pfSpeakingOrder === "pro-first");
           
           let speechType, wordLimit, timeLimit, minWords;
@@ -431,6 +441,8 @@ function Debate() {
             timeLimit = "2 minutes";
           }
           
+          console.log(`🔍 DEBUG: Pro Speech - Total speeches: ${totalSpeeches}, Speech type index: ${speechTypeIndex}, Round: ${roundNumber}, Speech Type: ${speechType}`);
+          
           proPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
 
@@ -445,8 +457,9 @@ YOUR ROLE: PRO (supporting the topic)
 
 CRITICAL WORD COUNT REQUIREMENT: 
 - MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
-- Your response WILL BE REJECTED if under ${minWords} words
-- Write substantial, detailed arguments - NOT brief summaries
+- Your response WILL BE REJECTED if under ${minWords} words OR over ${wordLimit} words
+- This is a ${timeLimit} speech - STAY WITHIN ${wordLimit} words (150 words per minute)
+- Write substantial, detailed arguments within the strict word limit
 
 ${roundNumber === 1 ? `
 === PRO CONSTRUCTIVE SPEECH REQUIREMENTS ===
@@ -496,12 +509,12 @@ Contention 2: [Title]
 
 In conclusion, we affirm because..."
 
-WORD COUNT: Must be ${minWords}-${wordLimit} words - write detailed, substantive arguments.` :
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully. Responses over ${wordLimit} words or under ${minWords} words will be rejected.` :
 
 roundNumber === 2 ? `
 === PRO REBUTTAL SPEECH REQUIREMENTS ===
 
-MANDATORY STRUCTURE - Line-by-line refutation ONLY:
+${totalSpeeches <= 3 ? `MANDATORY STRUCTURE - Line-by-line refutation ONLY:
 
 For EACH of opponent's contentions, provide systematic refutation:
 
@@ -536,20 +549,28 @@ CONTENTION 2: [Quote opponent's title]
 REQUIREMENTS:
 - Quote opponent's exact words before refuting
 - Label every attack (NU, DL, No Impact, T)  
+- Provide evidence for each refutation
 - Be systematic and thorough
-- Do NOT defend your own case - pure offense only
-- WORD COUNT: Must be ${minWords}-${wordLimit} words
+- Do NOT defend your own case - pure offense only` 
 
-EXAMPLE:
-"On opponent's Contention 1: Economic Benefits
+: `SECOND REBUTTAL (1AR) - Frontline AND Respond:
 
-NU: Opponent claims the economy is stagnating, but this is false. The latest Federal Reserve data shows... [detailed counter-evidence]
+STRUCTURE:
+1. FRONTLINES (50% of speech - 275-300 words):
+   Defend your case against their attacks:
+   - Address their strongest attacks on your contentions
+   - Provide new evidence or analysis
+   - Explain why their refutations fail
+   - Extend your impacts: "Even post-refutation, we still win [X] because..."
 
-DL: Even if the economy needs help, opponent's mechanism fails because... [detailed link refutation]
+2. RESPONSES TO THEIR CASE (50% of speech - 275-300 words):
+   Continue attacking their contentions:
+   - Extend your best attacks from their 1NR
+   - Add new refutations if time permits
+   - Use labels: "NU, DL, No Impact, T"
+   - Include comparative weighing
 
-No Impact: Opponent's $500 billion figure is vastly overstated because... [detailed impact refutation]
-
-T: Opponent's plan actually hurts the economy by... [detailed turn argument]"` :
+SPLIT MANAGEMENT: Divide time roughly equally between defense and offense. Prioritize your strongest arguments and their weakest points.`}` :
 
 roundNumber === 3 ? `
 === PRO SUMMARY SPEECH REQUIREMENTS ===
@@ -583,7 +604,7 @@ MANDATORY STRUCTURE:
 WEIGHING EXAMPLE:
 "We outweigh on magnitude. Even if opponent wins their economic argument affecting 100,000 people, our environmental impact affects 50 million people globally. Prefer magnitude because a policy that helps more people creates greater net benefit. Additionally, we outweigh on timeframe - our benefits occur immediately while theirs take decades to materialize."
 
-WORD COUNT: Must be ${minWords}-${wordLimit} words` :
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. This is a ${timeLimit} speech. Count your words carefully. Responses over ${wordLimit} words or under ${minWords} words will be rejected.` :
 
 `
 === PRO FINAL FOCUS REQUIREMENTS ===
@@ -616,10 +637,11 @@ WEIGHING EXAMPLE:
 RESTRICTIONS:
 - NO new arguments allowed
 - Focus only on crystallizing existing arguments
-- WORD COUNT: Must be ${minWords}-${wordLimit} words`}
+- Focus only on crystallizing existing arguments
+- CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. This is a ${timeLimit} speech. Count your words carefully.`}
 
 CRITICAL REQUIREMENTS:
-- WORD COUNT: ${minWords}-${wordLimit} words (responses under ${minWords} words will be rejected)
+- STRICT WORD LIMIT: ${minWords}-${wordLimit} words (responses under ${minWords} words OR over ${wordLimit} words will be rejected)
 - Write detailed, substantive arguments with specific evidence
 - Quote opponents exactly before refuting
 - Label all attacks in rebuttals (NU, DL, No Impact, T)
@@ -697,6 +719,7 @@ ${getPersonaPrompt(proPersona)}
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
         }
+        console.log(`🔍 DEBUG: Pro Prompt Preview: ${proPrompt.substring(0, 200)}...`);
         aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
@@ -712,12 +735,20 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         }
         let proDisplayName;
         if (debateFormat === "public-forum") {
-          const proSpeeches = messageList.filter(m => m.speaker.includes("Pro")).length;
-          const roundNumber = proSpeeches + 1;
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
+          
+          // Determine speech type based on total number of speeches
+          let speechTypeIndex;
+          if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
+          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round  
+          else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
+          else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
+          else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
+          
           let speechType;
-          if (roundNumber === 1) speechType = "CONSTRUCTIVE";
-          else if (roundNumber === 2) speechType = "REBUTTAL";
-          else if (roundNumber === 3) speechType = "SUMMARY";
+          if (speechTypeIndex === 1) speechType = "CONSTRUCTIVE";
+          else if (speechTypeIndex === 2) speechType = "REBUTTAL";
+          else if (speechTypeIndex === 3) speechType = "SUMMARY";
           else speechType = "FINAL FOCUS";
           
           proDisplayName = proPersona !== "default" ? 
@@ -735,8 +766,19 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         
         if (debateFormat === "public-forum") {
           // Public Forum format for Con
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
           const conSpeeches = messageList.filter(m => m.speaker.includes("Con")).length;
-          const roundNumber = conSpeeches + 1; // Which round this Con speech is
+          
+          // Determine speech type based on total number of speeches
+          // Speech 1&2: Constructive, Speech 3&4: Rebuttal, Speech 5&6: Summary, Speech 7&8: Final Focus  
+          let speechTypeIndex;
+          if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
+          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round
+          else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
+          else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
+          else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
+          
+          const roundNumber = speechTypeIndex;
           const isFirstSpeaker = (pfSpeakingOrder === "con-first");
           
           let speechType, wordLimit, timeLimit, minWords;
@@ -762,6 +804,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             timeLimit = "2 minutes";
           }
           
+          console.log(`🔍 DEBUG: Con Speech - Total speeches: ${totalSpeeches}, Speech type index: ${speechTypeIndex}, Round: ${roundNumber}, Speech Type: ${speechType}`);
+          
           conPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
 
@@ -776,8 +820,9 @@ YOUR ROLE: CON (opposing the topic)
 
 CRITICAL WORD COUNT REQUIREMENT: 
 - MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
-- Your response WILL BE REJECTED if under ${minWords} words
-- Write substantial, detailed arguments - NOT brief summaries
+- Your response WILL BE REJECTED if under ${minWords} words OR over ${wordLimit} words
+- This is a ${timeLimit} speech - STAY WITHIN ${wordLimit} words (150 words per minute)
+- Write substantial, detailed arguments within the strict word limit
 
 ${roundNumber === 1 ? `
 === CON CONSTRUCTIVE SPEECH REQUIREMENTS ===
@@ -827,12 +872,12 @@ Contention 2: [Title]
 
 In conclusion, we negate because..."
 
-WORD COUNT: Must be ${minWords}-${wordLimit} words - write detailed, substantive arguments.` :
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully. Responses over ${wordLimit} words or under ${minWords} words will be rejected.` :
 
 roundNumber === 2 ? `
 === CON REBUTTAL SPEECH REQUIREMENTS ===
 
-MANDATORY STRUCTURE - Line-by-line refutation ONLY:
+${totalSpeeches <= 3 ? `MANDATORY STRUCTURE - Line-by-line refutation ONLY:
 
 For EACH of opponent's contentions, provide systematic refutation:
 
@@ -868,19 +913,28 @@ REQUIREMENTS:
 - Quote opponent's exact words before refuting
 - Label every attack (NU, DL, No Impact, T)  
 - Be systematic and thorough
-- Do NOT defend your own case - pure offense only
-- WORD COUNT: Must be ${minWords}-${wordLimit} words
+- Do NOT defend your own case - pure offense only` 
 
-EXAMPLE:
-"On opponent's Contention 1: Economic Benefits
+: `SECOND REBUTTAL (2NC) - Frontline AND Respond:
 
-NU: Opponent claims the economy is stagnating, but this is false. The latest Federal Reserve data shows... [detailed counter-evidence]
+STRUCTURE:
+1. FRONTLINES (50% of speech - 275-300 words):
+   Defend your case against their attacks:
+   - Address their strongest attacks on your contentions
+   - Provide new evidence or analysis
+   - Explain why their refutations fail
+   - Extend your impacts: "Even post-refutation, we still win [X] because..."
 
-DL: Even if the economy needs help, opponent's mechanism fails because... [detailed link refutation]
+2. RESPONSES TO THEIR CASE (50% of speech - 275-300 words):
+   Continue attacking their contentions:
+   - Extend your best attacks from their 1NC
+   - Add new refutations if time permits
+   - Use labels: "NU, DL, No Impact, T"
+   - Include comparative weighing
 
-No Impact: Opponent's $500 billion figure is vastly overstated because... [detailed impact refutation]
+SPLIT MANAGEMENT: Divide time roughly equally between defense and offense. Prioritize your strongest arguments and their weakest points.`}
 
-T: Opponent's plan actually hurts the economy by... [detailed turn argument]"` :
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully. Responses over ${wordLimit} words or under ${minWords} words will be rejected.` :
 
 roundNumber === 3 ? `
 === CON SUMMARY SPEECH REQUIREMENTS ===
@@ -914,7 +968,7 @@ MANDATORY STRUCTURE:
 WEIGHING EXAMPLE:
 "We outweigh on certainty. Even if opponent wins their environmental argument affecting millions theoretically, our economic harm affecting 100,000 people is guaranteed and immediate. Prefer certainty because speculative benefits cannot justify concrete costs. Additionally, we outweigh on timeframe - our harms begin immediately while their benefits require decades of uncertain implementation."
 
-WORD COUNT: Must be ${minWords}-${wordLimit} words` :
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. This is a ${timeLimit} speech. Count your words carefully. Responses over ${wordLimit} words or under ${minWords} words will be rejected.` :
 
 `
 === CON FINAL FOCUS REQUIREMENTS ===
@@ -947,10 +1001,10 @@ WEIGHING EXAMPLE:
 RESTRICTIONS:
 - NO new arguments allowed
 - Focus only on crystallizing existing arguments
-- WORD COUNT: Must be ${minWords}-${wordLimit} words`}
+- CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. This is a ${timeLimit} speech. Count your words carefully.`}
 
 CRITICAL REQUIREMENTS:
-- WORD COUNT: ${minWords}-${wordLimit} words (responses under ${minWords} words will be rejected)
+- STRICT WORD LIMIT: ${minWords}-${wordLimit} words (responses under ${minWords} words OR over ${wordLimit} words will be rejected)
 - Write detailed, substantive arguments with specific evidence
 - Quote opponents exactly before refuting
 - Label all attacks in rebuttals (NU, DL, No Impact, T)
@@ -1032,6 +1086,7 @@ ${getPersonaPrompt(conPersona)}
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
         }
+        console.log(`🔍 DEBUG: Con Prompt Preview: ${conPrompt.substring(0, 200)}...`);
         aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
@@ -1047,12 +1102,20 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         }
         let conDisplayName;
         if (debateFormat === "public-forum") {
-          const conSpeeches = messageList.filter(m => m.speaker.includes("Con")).length;
-          const roundNumber = conSpeeches + 1;
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
+          
+          // Determine speech type based on total number of speeches
+          let speechTypeIndex;
+          if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
+          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round
+          else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
+          else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
+          else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
+          
           let speechType;
-          if (roundNumber === 1) speechType = "CONSTRUCTIVE";
-          else if (roundNumber === 2) speechType = "REBUTTAL";
-          else if (roundNumber === 3) speechType = "SUMMARY";
+          if (speechTypeIndex === 1) speechType = "CONSTRUCTIVE";
+          else if (speechTypeIndex === 2) speechType = "REBUTTAL";
+          else if (speechTypeIndex === 3) speechType = "SUMMARY";
           else speechType = "FINAL FOCUS";
           
           conDisplayName = conPersona !== "default" ? 
@@ -1532,9 +1595,23 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
                       if (loading) return "Generating Response...";
                       if (aiSpeeches >= (maxRounds * 2)) return "All Rounds Complete";
+                      
+                      // Calculate the correct round number for Public Forum
+                      let displayRound;
+                      if (debateFormat === "public-forum") {
+                        const totalSpeeches = aiSpeeches;
+                        if (totalSpeeches <= 1) displayRound = 1;
+                        else if (totalSpeeches <= 3) displayRound = 2;
+                        else if (totalSpeeches <= 5) displayRound = 3;
+                        else if (totalSpeeches <= 7) displayRound = 4;
+                        else displayRound = 4; // Should never reach here due to disable logic
+                      } else {
+                        displayRound = currentRound;
+                      }
+                      
                       return aiSide === "pro"
-                        ? `Generate Pro Round ${currentRound}/${maxRounds}`
-                        : `Generate Con Round ${currentRound}/${maxRounds}`;
+                        ? `Generate Pro Round ${displayRound}/${maxRounds}`
+                        : `Generate Con Round ${displayRound}/${maxRounds}`;
                     })()}
                   </button>
                   <button

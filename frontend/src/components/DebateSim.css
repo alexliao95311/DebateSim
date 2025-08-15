@@ -1112,6 +1112,13 @@
   margin-bottom: 1.5rem !important;
 }
 
+.debatesim-persona-disabled {
+  color: #94a3b8 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+  margin-bottom: 1.5rem !important;
+}
+
 .debatesim-persona-buttons {
   display: flex !important;
   flex-direction: column !important;
