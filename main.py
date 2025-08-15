@@ -134,6 +134,9 @@ class GenerateResponseRequest(BaseModel):
     bill_description: str = ""  # Full bill text for evidence-based arguments
     full_transcript: str = ""  # Full debate transcript for context
     round_num: int = 1  # Current round number
+    persona: str = "Default AI"  # Persona name for logging
+    debate_format: str = "default"  # Debate format (default, public-forum)
+    speaking_order: str = "pro-first"  # Speaking order for public forum (pro-first, con-first)
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
@@ -181,8 +184,8 @@ async def generate_response(request: GenerateResponseRequest):
             logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
             logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model and debate type
-        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type)
+        # Get a debater chain with the specified model, debate type, and format
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order)
         
         # DEBUG: Print what we're sending to the LangChain model
         logger.info(f"🔍 DEBUG: Sending to LangChain:")
@@ -192,15 +195,22 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - round_num: {request.round_num}")
         logger.info(f"🔍 DEBUG: - history: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: - history: None")
         logger.info(f"🔍 DEBUG: - full_transcript: {request.full_transcript[:200]}..." if request.full_transcript else "🔍 DEBUG: - full_transcript: None")
+        logger.info(f"🔍 DEBUG: - persona_prompt length: {len(request.prompt)}")
+        logger.info(f"🔍 DEBUG: - persona_prompt preview: {request.prompt[:300]}...")
+        logger.info(f"🔍 DEBUG: - debate_format: {request.debate_format}")
+        logger.info(f"🔍 DEBUG: - speaking_order: {request.speaking_order}")
         
-        # Call the run method - pass full transcript for context
+        # Call the run method - pass full transcript for context and the original prompt for persona instructions
         ai_output = model_specific_debater_chain.run(
             debater_role=debater_role,
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
             history=opponent_arg,
             full_transcript=request.full_transcript,  # Pass the full transcript for proper context
-            round_num=request.round_num  # Pass the current round number
+            round_num=request.round_num,  # Pass the current round number
+            persona_prompt=request.prompt,  # Pass the full prompt which contains persona instructions
+            persona=request.persona,  # Pass the persona name directly for logging
+            prompt=request.prompt  # Also pass the prompt directly for direct prompt detection
         )
         
     except Exception as e:
