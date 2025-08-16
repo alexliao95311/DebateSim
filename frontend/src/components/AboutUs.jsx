@@ -252,7 +252,7 @@ function AboutUs() {
                 <h3>Alex Liao</h3>
                 <p className="presentation-member-role">Founder and CTO</p>
                 <p className="presentation-member-bio">
-                Alex is a backend developer from Emerald High (Dublin, CA). As the founder and lead developer of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
+                Alex is a backend developer from Emerald High (Dublin, CA). As the founder and CTO of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
                 </p>
                 <div className="presentation-member-links">
                   <a href="https://www.linkedin.com/in/alex-liao-184832356/" className="presentation-social-link" title="LinkedIn">
@@ -272,18 +272,16 @@ function AboutUs() {
                 </div>
               </div>
               <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
+                <h3>Arnav Kakani</h3>
+                <p className="presentation-member-role">Co-Founder</p>
                 <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
+                Arnav Kakani is a junior at Emerald High School (Dublin, CA) and the co-founder of DebateSim, where he is involved in full-stack development and AI engineering. He has integrated real-time Congressional data, and advanced debate simulations, while creating the mobile UI to ensure a clean, consistent user experience. He is a competitive golfer and pianist with a strong interest in quantum computing, programming, and ethical hacking.
                 </p>
                 <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
+                  <a href="https://www.linkedin.com/in/arnav-kakani-365117236/" className="presentation-social-link" title="LinkedIn">
                     <Linkedin size={20} />
                   </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
+                  <a href="https://www.instagram.com/arnavkakani/" className="presentation-social-link" title="Instagram">
                     <Instagram size={20} />
                   </a>
                 </div>
