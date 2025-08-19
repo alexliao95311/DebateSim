@@ -38,5 +38,6 @@ rapidfuzz
 
 #Voice2Text
 google-cloud-speech 
+google-cloud-texttospeech
 pyaudio 
 six
