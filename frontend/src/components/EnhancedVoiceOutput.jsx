@@ -37,6 +37,22 @@ const stripMarkdown = (text) => {
     .trim();
 };
 
+// Function to add pauses after headings
+const addHeadingPauses = (text) => {
+  if (!text) return '';
+  
+  // Add pauses after numbered headings (1., 2., etc.) and other headings
+  return text
+    // Add pause after numbered headings like "1. Heading"
+    .replace(/(\d+\.\s+[^\n]+)/g, '$1... [PAUSE]')
+    // Add pause after markdown headers
+    .replace(/(#{1,6}\s+[^\n]+)/g, '$1... [PAUSE]')
+    // Add pause after standalone headings (lines that end with colon or are all caps)
+    .replace(/([A-Z][A-Z\s]+:?)\n/g, '$1... [PAUSE]\n')
+    // Add pause after debate structure markers
+    .replace(/(Opening Statement|Closing Statement|Rebuttal|Cross-Examination|Summary)/gi, '$1... [PAUSE]');
+};
+
 const EnhancedVoiceOutput = ({ 
   text, 
   disabled = false, 
@@ -52,6 +68,7 @@ const EnhancedVoiceOutput = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isGoogleTTSAvailable, setIsGoogleTTSAvailable] = useState(false);
@@ -62,6 +79,7 @@ const EnhancedVoiceOutput = ({
   const utteranceRef = useRef(null);
   const synthRef = useRef(null);
   const audioRef = useRef(null);
+  const currentAudioUrl = useRef(null);
 
   // Initialize speech synthesis
   useEffect(() => {
@@ -85,6 +103,10 @@ const EnhancedVoiceOutput = ({
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
+      }
+      // Clean up any existing audio URLs
+      if (currentAudioUrl.current) {
+        URL.revokeObjectURL(currentAudioUrl.current);
       }
     };
   }, [useGoogleTTS, ttsApiUrl, defaultVoice, selectedVoice]);
@@ -128,6 +150,7 @@ const EnhancedVoiceOutput = ({
     utterance.onstart = () => {
       setIsPlaying(true);
       setIsPaused(false);
+      setIsLoading(false);
       setError('');
       if (onSpeechStart) onSpeechStart();
     };
@@ -135,12 +158,14 @@ const EnhancedVoiceOutput = ({
     utterance.onend = () => {
       setIsPlaying(false);
       setIsPaused(false);
+      setIsLoading(false);
       if (onSpeechEnd) onSpeechEnd();
     };
 
     utterance.onerror = (event) => {
       setIsPlaying(false);
       setIsPaused(false);
+      setIsLoading(false);
       const errorMessage = `Speech error: ${event.error}`;
       setError(errorMessage);
       if (onSpeechError) onSpeechError(event.error);
@@ -163,6 +188,9 @@ const EnhancedVoiceOutput = ({
     }
 
     try {
+      // Clear any previous errors
+      setError('');
+      
       // Stop any current speech
       if (synthRef.current) {
         synthRef.current.cancel();
@@ -172,13 +200,23 @@ const EnhancedVoiceOutput = ({
         audioRef.current.src = '';
       }
 
-      // Clean the text by removing markdown syntax
+      // Clean up any existing audio URLs
+      if (currentAudioUrl.current) {
+        URL.revokeObjectURL(currentAudioUrl.current);
+        currentAudioUrl.current = null;
+      }
+
+      // Clean the text by removing markdown syntax and add heading pauses
       const cleanText = stripMarkdown(text);
+      const textWithPauses = addHeadingPauses(cleanText);
+
+      // Set loading state
+      setIsLoading(true);
 
       // Try Google TTS first if available
       if (useGoogleTTS && isGoogleTTSAvailable) {
         try {
-          const success = await playGoogleTTS(cleanText);
+          const success = await playGoogleTTS(textWithPauses);
           if (success) return;
         } catch (googleTTSError) {
           console.log('Google TTS failed, falling back to browser TTS:', googleTTSError);
@@ -188,7 +226,7 @@ const EnhancedVoiceOutput = ({
 
       // Fallback to browser TTS
       if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(cleanText);
+        const utterance = new SpeechSynthesisUtterance(textWithPauses);
         utteranceRef.current = utterance;
         
         // Configure speech settings from context
@@ -207,6 +245,7 @@ const EnhancedVoiceOutput = ({
     } catch (err) {
       const errorMessage = `Failed to start speech: ${err.message}`;
       setError(errorMessage);
+      setIsLoading(false);
       if (onSpeechError) onSpeechError(err.message);
       console.error('Speech synthesis error:', err);
     }
@@ -243,26 +282,42 @@ const EnhancedVoiceOutput = ({
         ], { type: 'audio/mp3' });
         
         const audioUrl = URL.createObjectURL(audioBlob);
+        currentAudioUrl.current = audioUrl;
         
         if (audioRef.current) {
           audioRef.current.src = audioUrl;
           audioRef.current.onloadedmetadata = () => {
             audioRef.current.play();
             setIsPlaying(true);
+            setIsLoading(false);
             if (onSpeechStart) onSpeechStart();
           };
           
           audioRef.current.onended = () => {
             setIsPlaying(false);
+            setIsLoading(false);
             if (onSpeechEnd) onSpeechEnd();
-            URL.revokeObjectURL(audioUrl);
+            // Clean up audio URL
+            if (currentAudioUrl.current === audioUrl) {
+              URL.revokeObjectURL(audioUrl);
+              currentAudioUrl.current = null;
+            }
           };
           
+          // Only show error for actual audio playback failures, not normal stops
           audioRef.current.onerror = () => {
-            setIsPlaying(false);
-            setError('Failed to play audio');
-            if (onSpeechError) onSpeechError('Audio playback failed');
-            URL.revokeObjectURL(audioUrl);
+            // Only show error if we're actually trying to play, not when stopping
+            if (isPlaying && !isLoading) {
+              setIsPlaying(false);
+              setIsLoading(false);
+              setError('Audio playback failed');
+              if (onSpeechError) onSpeechError('Audio playback failed');
+            }
+            // Clean up audio URL
+            if (currentAudioUrl.current === audioUrl) {
+              URL.revokeObjectURL(audioUrl);
+              currentAudioUrl.current = null;
+            }
           };
         }
         
@@ -295,19 +350,28 @@ const EnhancedVoiceOutput = ({
   };
 
   const handleStop = () => {
+    // Clear loading state
+    setIsLoading(false);
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
-      setIsPlaying(false);
-      setIsPaused(false);
-      if (onSpeechEnd) onSpeechEnd();
     }
     if (synthRef.current) {
       synthRef.current.cancel();
-      setIsPlaying(false);
-      setIsPaused(false);
-      if (onSpeechEnd) onSpeechEnd();
     }
+    
+    // Clean up audio URL
+    if (currentAudioUrl.current) {
+      URL.revokeObjectURL(currentAudioUrl.current);
+      currentAudioUrl.current = null;
+    }
+    
+    setIsPlaying(false);
+    setIsPaused(false);
+    // Don't clear errors here - let them persist if they're real errors
+    
+    if (onSpeechEnd) onSpeechEnd();
   };
 
   // Don't render if not supported
@@ -332,16 +396,21 @@ const EnhancedVoiceOutput = ({
   };
 
   return (
-    <div className="voice-output-container">
-      {/* Voice Selector (only show if multiple voices available and Google TTS is enabled) */}
+    <div className={`voice-output-container ${isLoading ? 'voice-output-loading' : ''}`}>
+      {/* Voice Selector - Improved dropdown design */}
       {useGoogleTTS && isGoogleTTSAvailable && availableVoices.length > 1 && (
         <div className="voice-selector-container">
           <button
             onClick={() => setShowVoiceSelector(!showVoiceSelector)}
             className="voice-selector-toggle"
             title="Select voice"
+            aria-label="Select TTS voice"
+            aria-expanded={showVoiceSelector}
+            disabled={isLoading}
           >
-            🎭 {selectedVoice}
+            <span className="voice-selector-icon">🎭</span>
+            <span className="voice-selector-text">{selectedVoice}</span>
+            <span className="voice-selector-arrow">▼</span>
           </button>
           
           {showVoiceSelector && (
@@ -355,7 +424,10 @@ const EnhancedVoiceOutput = ({
                   }}
                   className={`voice-option ${voice.name === selectedVoice ? 'selected' : ''}`}
                 >
-                  {voice.gender === 'FEMALE' ? '👩' : '👨'} {voice.name}
+                  <span className="voice-gender-icon">
+                    {voice.gender === 'FEMALE' ? '👩' : '👨'}
+                  </span>
+                  <span className="voice-name">{voice.name}</span>
                 </button>
               ))}
             </div>
@@ -364,7 +436,7 @@ const EnhancedVoiceOutput = ({
       )}
 
       <div className="voice-output-controls">
-        {!isPlaying ? (
+        {!isPlaying && !isLoading ? (
           <button
             onClick={handlePlay}
             disabled={disabled}
@@ -372,20 +444,18 @@ const EnhancedVoiceOutput = ({
             title="Play speech"
             aria-label="Play text as speech"
           >
-            <img 
-              src="/images/play.png" 
-              alt="Play" 
-              className="voice-output-icon"
-              onError={(e) => {
-                // Fallback to emoji if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline';
-              }}
-            />
-            <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-              🔊
-            </span>
+            <span className="voice-button-icon">▶️</span>
             {showLabel && <span className="voice-output-label">Play</span>}
+          </button>
+        ) : isLoading ? (
+          <button
+            disabled={true}
+            className={`voice-output-play-button ${getButtonClass()}`}
+            title="Loading speech..."
+            aria-label="Loading speech"
+          >
+            <span className="voice-button-icon">⏳</span>
+            {showLabel && <span className="voice-output-label">Loading...</span>}
           </button>
         ) : (
           <div className="voice-output-playing-controls">
@@ -397,18 +467,7 @@ const EnhancedVoiceOutput = ({
                 title="Resume speech"
                 aria-label="Resume speech"
               >
-                <img 
-                  src="/images/play.png" 
-                  alt="Resume" 
-                  className="voice-output-icon"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'inline';
-                  }}
-                />
-                <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-                  ▶️
-                </span>
+                <span className="voice-button-icon">▶️</span>
                 {showLabel && <span className="voice-output-label">Resume</span>}
               </button>
             ) : (
@@ -419,7 +478,7 @@ const EnhancedVoiceOutput = ({
                 title="Pause speech"
                 aria-label="Pause speech"
               >
-                <span className="voice-output-emoji">⏸️</span>
+                <span className="voice-button-icon">⏸️</span>
                 {showLabel && <span className="voice-output-label">Pause</span>}
               </button>
             )}
@@ -431,24 +490,14 @@ const EnhancedVoiceOutput = ({
               title="Stop speech"
               aria-label="Stop speech"
             >
-              <img 
-                src="/images/stop.png" 
-                alt="Stop" 
-                className="voice-output-icon"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'inline';
-                }}
-              />
-              <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-                ⏹️
-              </span>
+              <span className="voice-button-icon">⏹️</span>
               {showLabel && <span className="voice-output-label">Stop</span>}
             </button>
           </div>
         )}
       </div>
       
+      {/* Error Display - Improved styling */}
       {error && (
         <div className="voice-output-error">
           <span className="voice-output-error-text">{error}</span>
@@ -462,6 +511,7 @@ const EnhancedVoiceOutput = ({
         </div>
       )}
       
+      {/* Status Display - Better visual feedback */}
       {isPlaying && (
         <div className="voice-output-status">
           <span className="voice-output-indicator">
