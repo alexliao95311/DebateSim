@@ -1,7 +1,7 @@
 """
 Speech Utilities for DebateSim
 
-This package provides voice-to-text functionality using Google Cloud Speech-to-Text API.
+This package provides voice-to-text and text-to-speech functionality using Google Cloud APIs.
 """
 
 from .v2tgenerator import (
@@ -11,12 +11,18 @@ from .v2tgenerator import (
     print_server
 )
 
-__version__ = "1.0.0"
+from .tts_service import GoogleTTSService
+
+__version__ = "2.0.0"
 __author__ = "DebateSim Team"
 
 __all__ = [
+    # Voice-to-Text (existing)
     "MicStream",
     "setup_credentials", 
     "test_speech_recognition",
-    "print_server"
+    "print_server",
+    
+    # Text-to-Speech (new)
+    "GoogleTTSService"
 ] 
