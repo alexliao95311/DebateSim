@@ -267,7 +267,9 @@ function AboutUs() {
 
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
-                <img src="/images/sanjana.png" alt="Sanana Gowda" className="presentation-member-image" />
+                <div className="presentation-photo-placeholder">
+                  <Users size={48} />
+                </div>
               </div>
               <div className="presentation-member-info">
                 <h3>Arnav Kakani</h3>
@@ -285,12 +287,9 @@ function AboutUs() {
                 </div>
               </div>
             </div>
-
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
-                <div className="presentation-photo-placeholder">
-                  <Users size={48} />
-                </div>
+                <img src="/images/sanjana.png" alt="Sanana Gowda" className="presentation-member-image" />
               </div>
               <div className="presentation-member-info">
                 <h3>Sanjana Gowda</h3>
