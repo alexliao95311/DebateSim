@@ -267,9 +267,7 @@ function AboutUs() {
 
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
-                <div className="presentation-photo-placeholder">
-                  <Users size={48} />
-                </div>
+                <img src="/images/sanjana.png" alt="Sanana Gowda" className="presentation-member-image" />
               </div>
               <div className="presentation-member-info">
                 <h3>Arnav Kakani</h3>
@@ -295,18 +293,16 @@ function AboutUs() {
                 </div>
               </div>
               <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
+                <h3>Sanjana Gowda</h3>
+                <p className="presentation-member-role">Co-Founder</p>
                 <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
+                  Sanjana Gowda is a junior at Emerald High School (Dublin, CA) and co-founder of DebateSim, where she supports UI design, accessibility features, and social media. She focuses on machine learning and full-stack development, strengthened through the COSMOS Machine Learning program at UC Davis, and is a strong advocate for women in STEM. Sanjana is also a competitive swimmer and certified lifeguard.
                 </p>
                 <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
+                  <a href="www.linkedin.com/in/sanjana-gowda-636a73354" className="presentation-social-link" title="LinkedIn">
                     <Linkedin size={20} />
                   </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
+                  <a href="https://www.instagram.com/sanju.gowdaaa/" className="presentation-social-link" title="Instagram">
                     <Instagram size={20} />
                   </a>
                 </div>
