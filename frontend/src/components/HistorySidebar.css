@@ -7,9 +7,9 @@
   left: -300px !important;
   width: 300px !important;
   height: 100vh !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(15px) !important;
-  border-right: 1px solid rgba(71, 85, 105, 0.3) !important;
+  background: #0f172a !important; /* Fully opaque dark blue */
+  backdrop-filter: none !important; /* Remove backdrop blur */
+  border-right: 1px solid #475569 !important; /* Solid border */
   transition: left 0.3s ease !important;
   z-index: 999 !important;
   padding: 6rem 1.5rem 2rem 1.5rem !important;
@@ -115,10 +115,10 @@
 }
 
 [class*="-modal-content"] {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(15px) !important;
+  background: #0f172a !important; /* Fully opaque dark blue */
+  backdrop-filter: none !important; /* Remove backdrop blur */
   border-radius: 16px !important;
-  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  border: 1px solid #475569 !important; /* Solid border */
   max-width: 90vw !important;
   max-height: 90vh !important;
   width: 800px !important;
