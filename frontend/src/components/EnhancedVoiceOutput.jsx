@@ -72,9 +72,7 @@ const EnhancedVoiceOutput = ({
   const [error, setError] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isGoogleTTSAvailable, setIsGoogleTTSAvailable] = useState(false);
-  const [availableVoices, setAvailableVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(defaultVoice || getVoiceForContext(context).voice);
-  const [showVoiceSelector, setShowVoiceSelector] = useState(false);
   
   const utteranceRef = useRef(null);
   const synthRef = useRef(null);
@@ -126,16 +124,9 @@ const EnhancedVoiceOutput = ({
         if (healthData.status === 'healthy') {
           setIsGoogleTTSAvailable(true);
           
-          // Fetch available voices
-          const voicesResponse = await fetch(getTTSEndpoint('voices'));
-          if (voicesResponse.ok) {
-            const voicesData = await voicesResponse.json();
-            setAvailableVoices(voicesData.voices);
-            
-            // Set default voice if not already set
-            if (!selectedVoice) {
-              setSelectedVoice(voicesData.default_voice);
-            }
+          // Set default voice from context
+          if (!selectedVoice) {
+            setSelectedVoice(getVoiceForContext(context).voice);
           }
         }
       }
@@ -397,44 +388,6 @@ const EnhancedVoiceOutput = ({
 
   return (
     <div className={`voice-output-container ${isLoading ? 'voice-output-loading' : ''}`}>
-      {/* Voice Selector - Improved dropdown design */}
-      {useGoogleTTS && isGoogleTTSAvailable && availableVoices.length > 1 && (
-        <div className="voice-selector-container">
-          <button
-            onClick={() => setShowVoiceSelector(!showVoiceSelector)}
-            className="voice-selector-toggle"
-            title="Select voice"
-            aria-label="Select TTS voice"
-            aria-expanded={showVoiceSelector}
-            disabled={isLoading}
-          >
-            <span className="voice-selector-icon">🎭</span>
-            <span className="voice-selector-text">{selectedVoice}</span>
-            <span className="voice-selector-arrow">▼</span>
-          </button>
-          
-          {showVoiceSelector && (
-            <div className="voice-selector-dropdown">
-              {availableVoices.map((voice) => (
-                <button
-                  key={voice.name}
-                  onClick={() => {
-                    setSelectedVoice(voice.name);
-                    setShowVoiceSelector(false);
-                  }}
-                  className={`voice-option ${voice.name === selectedVoice ? 'selected' : ''}`}
-                >
-                  <span className="voice-gender-icon">
-                    {voice.gender === 'FEMALE' ? '👩' : '👨'}
-                  </span>
-                  <span className="voice-name">{voice.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="voice-output-controls">
         {!isPlaying && !isLoading ? (
           <button

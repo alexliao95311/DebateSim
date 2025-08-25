@@ -1514,22 +1514,22 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
             return (
               <div key={i} className="debate-speech-block relative" id={speechId}>
-                {/* Google TTS Voice Output */}
-                <div className="absolute top-2 right-2">
-                  <EnhancedVoiceOutput
-                    text={text}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    buttonStyle="compact"
-                    showLabel={false}
-                    context="debate"
-                    onSpeechStart={() => console.log(`Speech started for ${speaker}`)}
-                    onSpeechEnd={() => console.log(`Speech ended for ${speaker}`)}
-                    onSpeechError={(error) => console.error(`Speech error for ${speaker}:`, error)}
-                  />
+                <div className="debate-speech-header">
+                  <h3 className="debate-speech-title">{speechTitle}</h3>
+                  <div className="debate-speech-tts">
+                    <EnhancedVoiceOutput
+                      text={text}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      buttonStyle="compact"
+                      showLabel={false}
+                      context="debate"
+                      onSpeechStart={() => console.log(`Speech started for ${speaker}`)}
+                      onSpeechEnd={() => console.log(`Speech ended for ${speaker}`)}
+                      onSpeechError={(error) => console.error(`Speech error for ${speaker}:`, error)}
+                    />
+                  </div>
                 </div>
-
-                <h3 className="debate-speech-title">{speechTitle}</h3>
                 {model && <div className="debate-model-info">Model: {model}</div>}
 
                 <div className="debate-speech-content">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
-import { TTS_CONFIG, getVoiceForContext, getAvailableVoices } from '../config/tts';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import './TTSDemo.css';
 
 const TTSDemo = () => {
@@ -80,17 +80,30 @@ const TTSDemo = () => {
   };
 
   const contexts = [
-    { key: 'debate', name: 'Debate', description: 'Authoritative male voice for formal debates' },
-    { key: 'analysis', name: 'Analysis', description: 'Clear female voice for detailed analysis' },
+    { key: 'debate', name: 'Debate', description: 'Authoritative voice for formal debates' },
+    { key: 'analysis', name: 'Analysis', description: 'Clear voice for detailed analysis' },
     { key: 'general', name: 'General', description: 'Default voice for general use' }
   ];
-
-  const voices = getAvailableVoices();
 
   return (
     <div className="tts-demo-container">
       <div className="tts-demo-header">
-        <h1>🎤 Google TTS Demo</h1>
+        <div className="tts-demo-header-title-row">
+          <h1>🎤 Google TTS Demo</h1>
+          <div className="tts-demo-header-play">
+            <EnhancedVoiceOutput
+              text={demoText}
+              useGoogleTTS={useGoogleTTS}
+              ttsApiUrl={ttsApiUrl}
+              context={selectedContext}
+              buttonStyle="compact"
+              showLabel={false}
+              onSpeechStart={() => console.log('Speech started')}
+              onSpeechEnd={() => console.log('Speech ended')}
+              onSpeechError={(error) => console.error('Speech error:', error)}
+            />
+          </div>
+        </div>
         <p>Experience the enhanced text-to-speech system with natural-sounding voices</p>
       </div>
 
@@ -180,7 +193,7 @@ const TTSDemo = () => {
         </button>
       </div>
 
-      {/* Voice Output Component */}
+      {/* Voice Output Component - Simplified */}
       <div className="voice-output-demo">
         <h3>🔊 Test Voice Output</h3>
         <div className="current-context">
