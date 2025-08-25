@@ -13,10 +13,21 @@
   color: white;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tts-demo-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
 }
 
 .tts-demo-header h1 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 2.5rem;
   font-weight: 700;
 }
@@ -25,6 +36,12 @@
   margin: 0;
   font-size: 1.1rem;
   opacity: 0.9;
+}
+
+.tts-demo-header-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tts-demo-controls {

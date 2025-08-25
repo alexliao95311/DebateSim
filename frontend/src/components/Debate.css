@@ -618,6 +618,25 @@ hr.divider {
   position: relative !important;
   z-index: 1 !important;
 }
+
+.debate-speech-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.debate-speech-title {
+  margin: 0 !important;
+  flex: 1;
+}
+
+.debate-speech-tts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .debate-model-info {
   font-size: 0.85rem !important;
   color: #cbd5e1 !important;
