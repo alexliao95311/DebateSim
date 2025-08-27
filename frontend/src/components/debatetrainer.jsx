@@ -1,6 +1,9 @@
 /* global DebateElo */
 
-const { useState, useMemo, useEffect, useRef } = React;
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { createRoot } from "react-dom/client";
+import { generateAIResponse, getAIJudgeFeedback } from "../api";
+import "./debatetrainer.css";
 
 const SPEECH_TYPES = [
   { id: 'constructive', name: 'Constructive' },
@@ -46,6 +49,26 @@ const PROMPT_PRESETS = [
     sparStyle: 'beginner',
   },
 ];
+
+const MODEL_OPTIONS = [
+  "openai/gpt-5-mini",
+  "meta-llama/llama-3.3-70b-instruct",
+  "google/gemini-2.0-flash-001",
+  "anthropic/claude-3.5-sonnet",
+  "openai/gpt-4o-mini",
+  "openai/gpt-4o-mini-search-preview"
+];
+
+const UNIVERSAL_FEEDBACK_RUBRIC = `Score each 1-5 and justify briefly.
+- Clarity: Was structure and signposting clear?
+- Warranting: Were claims backed by reasoning/evidence?
+- Weighing: Did they compare on magnitude, probability, timeframe, reversibility?
+- Responsiveness: Did they front-line and answer opposing arguments directly?
+- Delivery: Pace, tone, emphasis; avoid filler; persuasive style.
+Provide:
+1) Top 3 prioritized fixes (concrete, actionable)
+2) Two exemplar lines they could say next time
+3) One-sentence overall verdict`;
 
 function SectionTitle({ title, subtitle, right }) {
   return (
@@ -109,22 +132,36 @@ function DebateTrainerApp() {
   const [myElo, setMyElo] = useState(1500);
   const [kFactor, setKFactor] = useState(24);
 
-  const [model, setModel] = useState(window.OPENAI_MODEL || 'gpt-4o');
-  const [apiKey, setApiKey] = useState(window.OPENAI_API_KEY || '');
+  const [model, setModel] = useState(MODEL_OPTIONS[0]);
+  const [format, setFormat] = useState('Public Forum');
+  const [feedbackTiming, setFeedbackTiming] = useState('per_speech');
+  const [feedbackOnlyMode, setFeedbackOnlyMode] = useState(false);
+  const [speechFeedbackList, setSpeechFeedbackList] = useState([]);
+  const [finalFeedback, setFinalFeedback] = useState('');
 
   const bots = ladderRef.current.listBots();
   const coachOptions = PROMPT_PRESETS.filter(p => p.id.startsWith('coach'));
 
+    function formatInfo() {
+    if (format === 'Public Forum') {
+      return 'Use PF terminology (constructive, rebuttal, summary, final focus). Emphasize weighing and comparative impacts.';
+    }
+    if (format === 'Congress') {
+      return 'Use Congressional debate style. Reference legislators, policy specifics, and constituent impacts. Maintain decorum; evidence-driven warrants.';
+    }
+    return 'Use standard competitive debate norms. Be direct, structured, and emphasize claim–warrant–impact and weighing.';
+  }
+
   function buildCritiquePrompt() {
     const preset = coachOptions.find(p => p.id === coachPresetId);
     const role = SPEECH_TYPES.find(s => s.id === speechType)?.name || 'Speech';
-    return `System:\n${preset.system}\n\nTask: Critique a ${role} for a ${caseSide.toUpperCase()} case on the topic: "${topic}".\n1) Identify claims, warrants, impacts.\n2) Point out flaws (logic gaps, missing warrants, unclear links, impact calculus issues, weighing mistakes).\n3) Give prioritized, actionable fixes.\n4) Provide a concise improved version of 1 key section.\n5) End with a 3-point checklist for ${role}.\n\nSpeech:\n${speechText}`;
+    return `System:\n${preset.system}\n\nDebate format: ${format}. ${formatInfo()}\n\nTask: Provide universal-rubric feedback on a ${role} for the ${caseSide.toUpperCase()} side on the topic: "${topic}".\n${UNIVERSAL_FEEDBACK_RUBRIC}\n\nThen provide:\n- 3 prioritized, actionable fixes with examples\n- A short improved rewrite of one problematic section\n- A 3-point checklist for the next ${role}\n\nStudent Speech:\n${speechText}`;
   }
 
   function buildTipsPrompt() {
     const preset = coachOptions.find(p => p.id === coachPresetId);
     const role = SPEECH_TYPES.find(s => s.id === speechType)?.name || 'Speech';
-    return `System:\n${preset.system}\n\nTask: Provide targeted training drills and heuristics to improve ${role} performance on ${caseSide.toUpperCase()} for topic "${topic}" based on the provided speech. Include:\n- Weakness-focused drills (with steps and timing)\n- Heuristics for weighing and collapse\n- Rebuttal grouping and frontlining guidance\n- Style/clarity tips\n\nSpeech:\n${speechText}`;
+    return `System:\n${preset.system}\n\nDebate format: ${format}. ${formatDirectives()}\n\nTask: Provide targeted training drills and heuristics to improve ${role} performance on ${caseSide.toUpperCase()} for topic "${topic}" based on the provided speech. Include:\n- Weakness-focused drills (with steps and timing)\n- Heuristics for weighing and collapse\n- Rebuttal grouping and frontlining guidance\n- Style/clarity tips\n\nStudent Speech:\n${speechText}`;
   }
 
   function buildSparOpening(botPreset, side) {
