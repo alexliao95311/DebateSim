@@ -1319,7 +1319,7 @@ button:disabled {
   border-radius: 8px;
   padding: 0.5rem 1rem;
   font-size: 0.95rem;
-  color: #fffdfd;
+  color: #000000;
 }
 
 .round-item strong {
