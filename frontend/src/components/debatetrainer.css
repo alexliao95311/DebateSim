@@ -103,3 +103,24 @@
 .dt-inline-help { font-size: 12px; color: var(--muted); }
 
 .dt-tag { font-size: 12px; padding: 2px 6px; border-radius: 999px; background: #182132; border: 1px solid var(--border); }
+
+.dt-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.dt-option-card {
+  background: linear-gradient(180deg, var(--panel), #0e1320);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dt-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  border-color: var(--primary);
+}
+.dt-option-title { font-weight: 700; margin-bottom: 8px; }
+.dt-option-meta { display: flex; gap: 8px; flex-wrap: wrap; }
