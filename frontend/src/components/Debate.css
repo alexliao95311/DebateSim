@@ -1290,6 +1290,43 @@ button:disabled {
   }
 }
 
+/* Styles for Public Forum structure section */
+.pf-format-info {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.pf-format-info h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+.round-structure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.round-item {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: #fffdfd;
+}
+
+.round-item strong {
+  color: #ffffff;
+  margin-right: 0.3rem;
+}
+
 .loading-message, .loading {
   color: #fff !important;
   font-size: 1.2rem;
