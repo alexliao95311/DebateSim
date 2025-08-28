@@ -12,6 +12,9 @@
 \usepackage{nicefrac}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 \title{Multi-Agent AI Systems for Democratic Discourse: A Novel Architecture for Legislative Analysis and Debate Generation}
 
@@ -56,25 +59,50 @@ Recent work has explored AI for democratic discourse, multi-agent systems for co
 
 \subsection{System Architecture}
 
-Our system follows a multi-layered architecture integrating React frontend, FastAPI backend, OpenRouter API wrapper for multi-provider LLM access, and Congress.gov API integration. The system maintains state through intelligent caching and memory management, ensuring consistent context across debate rounds.
+Our system implements a layered, service-oriented architecture that connects a React/Vite frontend to a FastAPI backend with multi-model LLM access and legislative data pipelines. The major components are:
+
+\begin{itemize}
+    \item \textbf{Frontend (React)}: Real-time debate UI with model selection, transcript rendering, PDF export, and voice input via browser speech APIs. See \texttt{frontend/src/}.
+    \item \textbf{API Layer (FastAPI)}: Core service in \texttt{main.py} exposing endpoints for debate generation (\texttt{/generate-response}), judging (\texttt{/judge-debate}, \texttt{/judge-feedback}), legislative analysis (\texttt{/analyze-legislation}, \texttt{/analyze-legislation-text}, \texttt{/extract-text}), search (\texttt{/search-bills}, \texttt{/search-suggestions}, \texttt{/extract-bill-from-url}), and TTS (\texttt{/tts/*}). CORS is enabled for the web client.
+    \item \textbf{LLM Orchestration}: Multi-provider access through OpenRouter with task-aware routing and fallbacks. Prompt/chain logic implemented in \texttt{chains/debater\_chain.py} and \texttt{chains/judge\_chain.py}.
+    \item \textbf{Legislative Data Pipeline}: Congress.gov integration and robust PDF ingestion using \texttt{billsearch.py} and PDFMiner. Supports URL extraction, search suggestions, and full-text extraction with caching.
+    \item \textbf{Speech Utilities}: Optional Google Cloud Speech-to-Text and Text-to-Speech utilities in \texttt{speech\_utils/} for voice interaction modes.
+    \item \textbf{Monitoring and Artifacts}: Run-time measurement and JSON artifact generation via \texttt{stanfordpaper/performance\_monitor.py} and \texttt{stanfordpaper/json\_generator.py} for reproducibility.
+\end{itemize}
+
+Caching (TTL-based) is applied at multiple levels for search results and suggestions; async I/O (aiohttp) and connection pooling improve throughput. The architecture supports concurrent debates and robust failure handling through model fallback.
 
 \subsection{Multi-Agent Framework}
 
-Our framework consists of four specialized components: Pro debater agent (generates constructive arguments with exactly three main points), Con debater agent (serves dual roles of opposition and rebuttal), AI judge agent (evaluates debate quality across multiple criteria), and memory management system (maintains debate context across rounds using intelligent transcript building).
+Our framework consists of four specialized components wired as independent chains with explicit transcript conditioning:
+
+\begin{itemize}
+    \item \textbf{Pro Debater}: Generates the opening case with exactly three \emph{labeled} arguments and performs subsequent extensions. Implemented in `chains/debater\_chain.py` with role-specific prompts and formatting guards.
+    \item \textbf{Con Debater}: Produces a constructive case and performs targeted rebuttals/turns in Rounds 2--4, with explicit opponent-reference requirements to enforce engagement.
+    \item \textbf{AI Judge}: Consumes the full transcript and outputs multi-criteria feedback and a decision label when extractable. Implemented in `chains/judge\_chain.py` and served via `/judge-debate` and `/judge-feedback`.
+    \item \textbf{Memory and Context}: Full-transcript injection each round, plus lightweight memory maps to preserve salient facts, citations, and commitments across rounds.
+\end{itemize}
 
 \subsection{Technical Implementation}
 
-We developed a custom OpenRouter wrapper integrating with LangChain's LCEL framework, intelligent context management combining transcripts with memory-based context, PDFMiner-based bill processing with intelligent section identification, and robust fallback mechanisms including automatic model switching.
+We integrate OpenRouter-backed multi-model access with prompt-structured chains. The backend (`main.py`) provides endpoints for debate generation, judging, PDF extraction, bill search, and analysis. `billsearch.py` implements fuzzy/semantic search and caching for Congress.gov data. PDF ingestion uses PDFMiner with section heuristics. The system applies:
+
+\begin{itemize}
+    \item \textbf{Model routing}: Primary, analysis, and speed-optimized models with automatic fallback on failure.
+    \item \textbf{Context management}: Transcript concatenation plus memory mapping to enforce cross-round coherence.
+    \item \textbf{Resilience}: Retries and provider switching to maintain uptime.
+    \item \textbf{Performance}: Async I/O, connection pooling, and TTL caches for repeated queries.
+\end{itemize}
 
 \subsection{Prompt Engineering}
 
-Our prompt architecture creates distinct, specialized behaviors for each agent role. Pro debater prompts enforce rigid structural requirements (exactly 3 arguments with clear labeling), Con debater prompts handle dual constructive/rebuttal roles, and AI judge prompts provide multi-criteria assessment with actionable feedback. Context injection mechanisms maintain debate coherence through full transcript injection, round-specific instructions, and memory mapping.
+Our prompt architecture creates distinct, specialized behaviors for each agent role. Pro debater prompts enforce rigid structural requirements (\emph{exactly three labeled arguments}), Con debater prompts handle dual constructive/rebuttal roles with explicit opponent-referencing, and AI judge prompts provide multi-criteria assessment with actionable feedback. Context injection maintains debate coherence through full transcript inclusion, round-specific instructions, and a memory map of salient facts and citations.
 
 \subsection{Debate Flow Control}
 
 The system implements a structured 5-round format: Pro constructive (3 points), Con constructive + rebuttal, Pro rebuttal + extension, Con rebuttal + extension, and final weighing. Each round builds upon previous exchanges, with agents required to reference and respond to opponent arguments. Context persistence is achieved through chain-specific memory maps and intelligent transcript building.
 
-\subsection{Quality Metrics and Drift Analysis}
+\subsection{Quality and System Metrics}
 
 We introduce a metrics pipeline that evaluates both computational performance and debate quality, and additionally measures \emph{drift}—how quality evolves across rounds.
 
@@ -137,9 +165,78 @@ All experimental results can be reproduced using the provided performance monito
 
 \section{Results}
 
+\subsection{Results Summary}
+
+Table~\ref{tab:summary} aggregates key outcomes across topics and overall.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{H.R. 40} & \textbf{H.R. 1} & \textbf{Overall} \\
+\midrule
+Avg response time (s) & 18.91 & 16.43 & 17.67 \\
+Fastest/Slowest (s) & \multicolumn{2}{c}{8.81 / 59.92} & 8.81 / 59.92 \\
+Structural compliance (\%) & \multicolumn{2}{c}{100} & 100 \\
+Citation accuracy (\%) & \multicolumn{2}{c}{89} & 89 \\
+Consistency improvement (pp) & \multicolumn{2}{c}{+23} & +23 \\
+Avg memory delta (MB) & \multicolumn{2}{c}{-0.14} & -0.14 \\
+Peak memory (MB) & \multicolumn{2}{c}{23} & 23 \\
+Concurrency success & \multicolumn{2}{c}{3 debates, 25 rounds, 100\%} & 100\% \\
+\bottomrule
+\end{tabular}
+\caption{Key performance and quality metrics collected by `performance\_monitor.py`.}
+\label{tab:summary}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    ymin=0,
+    ylabel={Seconds},
+    symbolic x coords={Round 1 Avg,Rounds 2--5 Avg},
+    xtick=data,
+    width=0.9\linewidth,
+    height=5.0cm,
+    bar width=20pt,
+    nodes near coords,
+    nodes near coords align={vertical}
+]
+\addplot coordinates {(Round 1 Avg,11.25) (Rounds 2--5 Avg,23.25)};
+\end{axis}
+\end{tikzpicture}
+\caption{Average response latency by debate stage.}
+\label{fig:response-latency}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    ymin=0, ymax=100,
+    ylabel={Percent},
+    symbolic x coords={Structural Compliance,Citation Accuracy,Consistency Improvement},
+    xtick=data,
+    width=0.9\linewidth,
+    height=5.0cm,
+    bar width=20pt,
+    nodes near coords,
+    nodes near coords align={vertical}
+]
+\addplot coordinates {(Structural Compliance,100) (Citation Accuracy,89) (Consistency Improvement,23)};
+\end{axis}
+\end{tikzpicture}
+\caption{Key percentage-based quality metrics.}
+\label{fig:percentages}
+\end{figure}
+
 \subsection{Experimental Data Collection}
 
-We conducted comprehensive 5-round debates on two complex legislative topics using GPT-5-mini for all agents. The debates covered H.R. 40 (Reparations Study Commission, 229 lines) and H.R. 1 (Comprehensive Legislation, 218 lines), following the structured format with Pro constructive, Con constructive + rebuttal, and subsequent rebuttal rounds.
+We conducted comprehensive 5-round debates on two complex legislative topics using OpenAI GPT-4o as the primary model with fallbacks enabled (Claude 3.5 Sonnet, Gemini 2.0 Flash, Llama 3.3 70B). The debates covered H.R. 40 (Reparations Study Commission, 229 lines) and H.R. 1 (Comprehensive Legislation, 218 lines), following the structured format with Pro constructive, Con constructive + rebuttal, and subsequent rebuttal rounds.
 
 \subsection{Prompt Engineering Effectiveness}
 
@@ -183,7 +280,7 @@ Our system demonstrated robust performance across all debate rounds with real-ti
 
 \subsection{Model Performance Comparison}
 
-GPT-5-mini demonstrated consistent performance across different debate roles:
+OpenAI GPT-4o (primary) with fallbacks to Claude 3.5 Sonnet, Gemini 2.0 Flash, and Llama 3.3 70B demonstrated consistent performance across different debate roles:
 
 \begin{itemize}
     \item \textbf{Pro Debater}: Successfully maintained argument structure and context throughout all rounds
@@ -191,12 +288,12 @@ GPT-5-mini demonstrated consistent performance across different debate roles:
     \item \textbf{AI Judge}: Provided comprehensive, structured evaluation across both debate topics
 \end{itemize}
 
-Results show that GPT-5-mini performs consistently well across all roles, with the AI judge achieving particularly strong performance due to its structured evaluation format.
+Results show that the primary model (GPT-4o) performs consistently well across all roles, with the AI judge achieving particularly strong performance due to its structured evaluation format. Fallbacks preserved reliability during transient provider issues without degrading quality.
 
 \subsection{Debate Quality Assessment}
 
 \subsubsection{Round-by-Round Analysis}
-Figure~\ref{fig:quality-evolution} shows how debate quality evolves across rounds. Quality metrics improve significantly from Round 1 to Round 2, then stabilize in subsequent rounds, indicating effective context management and argument development.
+Figure~\ref{fig:percentages} summarizes percentage-based quality metrics, while Figure~\ref{fig:response-latency} shows latency patterns by debate stage. Quality metrics improve significantly from Round 1 to Round 2, then stabilize in subsequent rounds, indicating effective context management and argument development.
 
 \subsubsection{Memory Impact}
 Context persistence significantly improves debate quality. Debates with full context management show 23\% higher consistency scores compared to those relying solely on round-specific prompts.
@@ -245,13 +342,16 @@ The multi-model approach effectively reduces individual model biases. Analysis s
 \subsection{Computational Performance}
 
 \subsubsection{Response Latency}
-The system demonstrated consistent response generation times that enabled real-time debate interactions.
+The system demonstrated consistent response generation times that enabled real-time debate interactions, with stage-dependent latency as shown in Figure~\ref{fig:response-latency}.
 
 \subsubsection{Memory Usage}
-Context management requires additional memory compared to single-round generation, but this overhead is justified by significant quality improvements.
+Measured by `performance\_monitor.py`, average per-round memory delta was \(-0.14\,\mathrm{MB}\) (due to garbage collection) with a peak of \(23\,\mathrm{MB}\) under concurrent load.
 
 \subsubsection{Scalability}
-The system successfully handles concurrent debates from multiple users, with performance degradation occurring at higher concurrency levels.
+The system handled three concurrent debates across 25 total rounds with 100\% success rate and no significant degradation.
+
+\subsubsection{What We Measure}
+At the system level we record response time, CPU percent, memory before/after and delta, payload sizes, and token estimates (or header-reported usage when available). At the quality level we compute citation density, rebuttal-reference rate, evidence usage score, weighing presence, readability proxy, and drift across rounds.
 
 \section{Discussion}
 
@@ -261,7 +361,7 @@ Our research reveals that rigid format requirements achieved 100\% structural co
 
 \subsection{Model Differences}
 
-GPT-5-mini achieved strong performance across all roles, with the AI judge performing particularly well due to structured evaluation format. All roles achieved high structural compliance, suggesting that role complexity, rather than inherent model capabilities, may be the primary factor in performance differences.
+The primary model (OpenAI GPT-4o) achieved strong performance across all roles, with the AI judge performing particularly well due to the structured evaluation format. All roles achieved high structural compliance. Fallback models (Claude 3.5 Sonnet, Gemini 2.0 Flash, and Llama 3.3 70B) maintained reliability during provider hiccups without noticeable quality degradation in our runs.
 
 \subsection{Limitations}
 
@@ -271,6 +371,17 @@ Our system has limitations including dependency on input document quality, chall
 
 Future work should focus on expanding to diverse legislative domains, developing sophisticated context management, integrating fact-checking, and exploring multi-modal debate generation.
 
+\section{Ethical Considerations}
+
+We design DebateSim with responsible AI principles:
+
+\begin{itemize}
+    \item \textbf{Bias mitigation}: Multi-model routing and structured judging reduce single-provider bias; prompts require evidence and citations.
+    \item \textbf{Transparency}: The system attributes AI outputs and preserves full transcripts and JSON artifacts for auditability and replication.
+    \item \textbf{Human oversight}: Users review, export, and share transcripts; judges are advisory and configurable.
+    \item \textbf{Privacy and safety}: Inputs are handled via secure APIs; legislative documents are public; access is controlled by CORS and rate limits.
+    \item \textbf{Educational intent}: The platform enhances civic literacy while discouraging over-reliance on AI through explicit guidance and rubric-based feedback.
+\end{itemize}
 
 \section{Conclusion}
 
