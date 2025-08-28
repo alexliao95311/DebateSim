@@ -124,6 +124,20 @@ function Debate() {
   const { mode, debateMode, topic, description, billText, billTitle, selectedModel, debateFormat, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
   const navigate = useNavigate();
 
+  // Helper function to count AI speeches for both formats
+  const countAISpeeches = (messages) => {
+    if (debateFormat === "public-forum") {
+      return messages.filter(m => 
+        (m.speaker.includes("Pro (AI)") || m.speaker.includes("Pro (") && m.speaker.includes(") -")) ||
+        (m.speaker.includes("Con (AI)") || m.speaker.includes("Con (") && m.speaker.includes(") -"))
+      ).length;
+    } else {
+      return messages.filter(m => 
+        m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con"
+      ).length;
+    }
+  };
+
   // For bill debates, use billText as description if available
   // Truncate very large bill texts on frontend to prevent API errors
   let actualDescription = billText || description;
@@ -218,7 +232,7 @@ function Debate() {
   useEffect(() => {
     // Check if we should continue auto-generation
     const maxRounds = debateFormat === "public-forum" ? 4 : 5;
-    const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+    const aiSpeeches = countAISpeeches(messageList);
     const shouldContinue = aiSpeeches < (maxRounds * 2); // 8 speeches total for PF, 10 for regular
 
     if (autoMode && !loading && messageList.length > 0 && shouldContinue) {
@@ -320,7 +334,7 @@ function Debate() {
 
       // Add round information for ALL speeches
       if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
-        title = `${msg.speaker} - Round ${roundNum}/5`;
+        title = `${msg.speaker} - Round ${roundNum}/${maxRounds}`;
       } else if (msg.speaker.includes("(AI)")) {
         // For User vs AI mode, add round info for AI responses
         title = `${msg.speaker} - Round ${roundNum}`;
@@ -375,8 +389,8 @@ function Debate() {
 
   const maxRounds = debateFormat === "public-forum" ? 4 : 5;
   const handleAIDebate = async () => {
-    // Check if we have completed all speeches (5 rounds = 10 speeches)
-    const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+    // Check if we have completed all speeches (4 rounds = 8 speeches for PF, 5 rounds = 10 speeches for regular)
+    const aiSpeeches = countAISpeeches(messageList);
     if (aiSpeeches >= (maxRounds * 2)) return;
     setLoading(true);
     setError("");
@@ -1562,7 +1576,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <button
                     onClick={handleAIDebate}
                     disabled={loading || (() => {
-                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      const aiSpeeches = countAISpeeches(messageList);
                       return aiSpeeches >= (maxRounds * 2);
                     })()}
                     style={{
@@ -1572,19 +1586,19 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       padding: "0.75rem 1.5rem",
                       borderRadius: "6px",
                       cursor: loading || (() => {
-                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        const aiSpeeches = countAISpeeches(messageList);
                         return aiSpeeches >= (maxRounds * 2);
                       })() ? "not-allowed" : "pointer",
                       opacity: loading || (() => {
-                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        const aiSpeeches = countAISpeeches(messageList);
                         return aiSpeeches >= (maxRounds * 2);
                       })() ? 0.6 : 1
                     }}
                   >
                     {(() => {
-                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      const aiSpeeches = countAISpeeches(messageList);
                       if (loading) return "Generating Response...";
-                      if (aiSpeeches >= (maxRounds * 2)) return "All Rounds Complete";
+                      if (aiSpeeches >= (maxRounds * 2)) return "Round Limit Reached";
                       
                       // Calculate the correct round number for Public Forum
                       let displayRound;
@@ -1607,7 +1621,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <button
                     onClick={startAutoDebate}
                     disabled={loading || (() => {
-                      const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                      const aiSpeeches = countAISpeeches(messageList);
                       return aiSpeeches >= (maxRounds * 2);
                     })()}
                     style={{
@@ -1617,11 +1631,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       padding: "0.75rem 1.5rem",
                       borderRadius: "6px",
                       cursor: loading || (() => {
-                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        const aiSpeeches = countAISpeeches(messageList);
                         return aiSpeeches >= (maxRounds * 2);
                       })() ? "not-allowed" : "pointer",
                       opacity: loading || (() => {
-                        const aiSpeeches = messageList.filter(m => m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con").length;
+                        const aiSpeeches = countAISpeeches(messageList);
                         return aiSpeeches >= (maxRounds * 2);
                       })() ? 0.6 : 1
                     }}
