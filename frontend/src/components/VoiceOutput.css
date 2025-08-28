@@ -1,199 +1,186 @@
-/* VoiceOutput Component Styles */
+/* Voice Output Container */
 .voice-output-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
-}
-
-.voice-output-controls {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-}
-
-/* Button Base Styles */
-.voice-output-play-button,
-.voice-output-stop-button,
-.voice-output-pause-button,
-.voice-output-resume-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  padding: 0;
+  background: transparent;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  outline: none;
+  min-width: auto;
+  max-width: none;
   position: relative;
+  z-index: 10;
 }
 
-.voice-output-play-button:focus,
-.voice-output-stop-button:focus,
-.voice-output-pause-button:focus,
-.voice-output-resume-button:focus {
-  outline: 2px solid #4a90e2;
-  outline-offset: 2px;
+
+
+/* Voice Controls - More spacious */
+.voice-output-controls {
+  display: flex;
+  gap: 6px; /* Increased gap */
+  align-items: center;
+  justify-content: flex-end; /* Align to right */
+}
+
+/* Button Base Styles - Larger and more spacious */
+.voice-output-play-button,
+.voice-output-pause-button,
+.voice-output-resume-button,
+.voice-output-stop-button {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Increased gap */
+  padding: 8px 12px; /* Larger padding */
+  border: none;
+  border-radius: 6px; /* Larger radius */
+  cursor: pointer;
+  font-size: 12px; /* Larger font */
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-width: 40px; /* Increased min-width */
+  justify-content: center;
 }
 
 .voice-output-play-button:disabled,
-.voice-output-stop-button:disabled,
 .voice-output-pause-button:disabled,
-.voice-output-resume-button:disabled {
-  opacity: 0.6;
+.voice-output-resume-button:disabled,
+.voice-output-stop-button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Default Button Style */
-.voice-output-button-default {
-  padding: 0.5rem 0.75rem;
-  background-color: #4a90e2;
+/* Play Button */
+.voice-output-play-button {
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  min-width: 2.5rem;
-  height: 2.5rem;
 }
 
-.voice-output-button-default:hover:not(:disabled) {
-  background-color: #357abd;
+.voice-output-play-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
-.voice-output-button-default:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* Compact Button Style */
-.voice-output-button-compact {
-  padding: 0.25rem 0.5rem;
-  background-color: #4a90e2;
-  color: white;
-  min-width: 2rem;
-  height: 2rem;
-  font-size: 0.75rem;
-}
-
-.voice-output-button-compact:hover:not(:disabled) {
-  background-color: #357abd;
-}
-
-/* Large Button Style */
-.voice-output-button-large {
-  padding: 0.75rem 1rem;
-  background-color: #4a90e2;
-  color: white;
-  min-width: 3rem;
-  height: 3rem;
-  font-size: 1rem;
-}
-
-.voice-output-button-large:hover:not(:disabled) {
-  background-color: #357abd;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
-}
-
-/* Specific Button Colors */
-.voice-output-play-button,
-.voice-output-resume-button {
-  background-color: #28a745;
-}
-
-.voice-output-play-button:hover:not(:disabled),
-.voice-output-resume-button:hover:not(:disabled) {
-  background-color: #218838;
-}
-
+/* Pause Button */
 .voice-output-pause-button {
-  background-color: #ffc107;
-  color: #212529;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
 }
 
 .voice-output-pause-button:hover:not(:disabled) {
-  background-color: #e0a800;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
+/* Resume Button */
+.voice-output-resume-button {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.voice-output-resume-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Stop Button */
 .voice-output-stop-button {
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
 }
 
 .voice-output-stop-button:hover:not(:disabled) {
-  background-color: #c82333;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
-/* Icon Styles */
-.voice-output-icon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
-
-.voice-output-emoji,
-.voice-output-emoji-fallback {
-  font-size: 16px;
+/* Button Icons - Larger */
+.voice-button-icon {
+  font-size: 14px; /* Larger icon */
   line-height: 1;
 }
 
+/* Button Labels - Larger */
 .voice-output-label {
-  font-size: 0.75rem;
+  font-size: 11px; /* Larger font */
   font-weight: 500;
-  margin-left: 0.25rem;
 }
 
-/* Status Indicator */
-.voice-output-status {
+/* Playing Controls Container */
+.voice-output-playing-controls {
   display: flex;
+  gap: 6px; /* Increased gap */
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: #6c757d;
-  margin-top: 0.25rem;
 }
 
-.voice-output-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background-color: rgba(74, 144, 226, 0.1);
-  border: 1px solid rgba(74, 144, 226, 0.2);
+/* Button Size Variants - Larger and more spacious */
+.voice-output-button-compact {
+  padding: 4px 6px;
+  min-width: 28px;
+  max-width: 28px;
+  height: 28px;
   border-radius: 4px;
-  font-size: 0.75rem;
-  color: #4a90e2;
 }
 
-/* Error Styles */
+.voice-output-button-compact .voice-button-icon {
+  font-size: 12px;
+}
+
+.voice-output-button-compact .voice-output-label {
+  display: none;
+}
+
+.voice-output-button-large {
+  padding: 10px 16px; /* Larger padding */
+  min-width: 60px; /* Increased min-width */
+}
+
+.voice-output-button-large .voice-button-icon {
+  font-size: 16px; /* Larger icon */
+}
+
+.voice-output-button-large .voice-output-label {
+  font-size: 12px; /* Larger font */
+}
+
+.voice-output-button-default {
+  padding: 8px 12px; /* Larger padding */
+  min-width: 40px; /* Increased min-width */
+}
+
+/* Error Display - Larger and more spacious */
 .voice-output-error {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
-  color: #721c24;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  max-width: 300px;
+  gap: 8px; /* Increased gap */
+  padding: 8px 12px; /* Larger padding */
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px; /* Larger radius */
+  color: #dc2626;
+  font-size: 11px; /* Larger font */
+  max-width: 100%;
 }
 
 .voice-output-error-text {
   flex: 1;
+  word-break: break-word;
 }
 
 .voice-output-error-dismiss {
   background: none;
   border: none;
-  color: #721c24;
+  color: #dc2626;
   cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
+  font-size: 16px; /* Larger font */
+  font-weight: bold;
   padding: 0;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 20px; /* Larger size */
+  height: 20px; /* Larger size */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,81 +189,86 @@
 }
 
 .voice-output-error-dismiss:hover {
-  background-color: rgba(114, 28, 36, 0.1);
+  background: #fee2e2;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .voice-output-controls {
-    gap: 0.125rem;
-  }
-  
-  .voice-output-button-default {
-    min-width: 2rem;
-    height: 2rem;
-    padding: 0.375rem 0.5rem;
-  }
-  
-  .voice-output-button-compact {
-    min-width: 1.75rem;
-    height: 1.75rem;
-    padding: 0.25rem;
-  }
-  
-  .voice-output-button-large {
-    min-width: 2.5rem;
-    height: 2.5rem;
-    padding: 0.5rem 0.75rem;
-  }
-  
-  .voice-output-icon {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .voice-output-emoji,
-  .voice-output-emoji-fallback {
-    font-size: 14px;
-  }
-  
-  .voice-output-label {
-    display: none; /* Hide labels on mobile to save space */
-  }
-  
-  .voice-output-error {
-    max-width: 250px;
-    font-size: 0.75rem;
-  }
-}
-
-/* Dark theme support */
-@media (prefers-color-scheme: dark) {
-  .voice-output-indicator {
-    background-color: rgba(74, 144, 226, 0.2);
-    border-color: rgba(74, 144, 226, 0.3);
-  }
-}
-
-/* Animation for playing indicator */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+/* Status Display - Larger and more spacious */
+.voice-output-status {
+  padding: 6px 12px; /* Larger padding */
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px; /* Larger radius */
+  color: #059669;
+  font-size: 11px; /* Larger font */
+  font-weight: 500;
+  text-align: center;
 }
 
 .voice-output-indicator {
-  animation: pulse 2s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Increased gap */
 }
 
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .voice-output-play-button,
-  .voice-output-stop-button,
-  .voice-output-pause-button,
-  .voice-output-resume-button {
-    border: 2px solid currentColor;
+/* Loading State */
+.voice-output-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.voice-output-loading .voice-button-icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Loading Button State */
+.voice-output-play-button:disabled {
+  background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.voice-output-play-button:disabled .voice-button-icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive Design - Larger on mobile too */
+@media (max-width: 480px) {
+  .voice-output-container {
+    padding: 0;
+    gap: 0;
+    min-width: auto;
   }
   
-  .voice-output-error {
-    border-width: 2px;
+  .voice-output-controls {
+    gap: 4px;
   }
+  
+  .voice-output-play-button,
+  .voice-output-pause-button,
+  .voice-output-resume-button,
+  .voice-output-stop-button {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-width: 32px;
+  }
+}
+
+/* Focus States for Accessibility */
+.voice-output-play-button:focus,
+.voice-output-pause-button:focus,
+.voice-output-resume-button:focus,
+.voice-output-stop-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles for voice output buttons */
 }

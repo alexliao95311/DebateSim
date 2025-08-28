@@ -1,268 +1,250 @@
-# Speech Utilities
+# Speech Utilities for DebateSim
 
-This folder contains the voice-to-text functionality for the DebateSim project using Google Cloud Speech-to-Text API.
+This folder contains both **voice-to-text** and **text-to-speech** functionality for the DebateSim project using Google Cloud APIs.
 
 ## 📁 Files
 
+### Voice-to-Text (Existing)
 - `v2tgenerator.py` - Main voice-to-text implementation with streaming recognition
-- `test_v2t.py` - Test script to verify the setup and functionality
-- `README.md` - This documentation file
+- `test_v2t.py` - Test script to verify the voice-to-text setup and functionality
+
+### Text-to-Speech (New)
+- `tts_service.py` - Core Google Cloud TTS service with 9 Neural2 voices
+- `tts_api.py` - FastAPI server providing TTS endpoints
+- `test_tts.py` - Comprehensive testing script for TTS functionality
+- `start_tts.py` - Easy startup script for the TTS service
+- `query_voices.py` - Script to query Google Cloud for actual voice information
+
+## 🎤 Text-to-Speech Features
+
+- **9 High-Quality Neural2 Voices** (male and female)
+- **Natural Sounding Speech** with proper intonation and rhythm
+- **Voice Selection** - choose from different personalities
+- **Automatic Fallback** to browser TTS if Google TTS fails
+- **Better Audio Quality** with MP3 encoding
+- **Uses Existing Credentials** - no additional setup needed!
+
+## 🔑 Credentials Setup
+
+The system automatically uses your existing Google Cloud credentials from:
+```
+DebateSim/
+├── credentials/
+│   └── debatesim-6f403-55fd99aa753a-google-cloud.json  # Your existing credentials
+└── speech_utils/
+    ├── tts_service.py
+    ├── tts_api.py
+    ├── test_tts.py
+    ├── start_tts.py
+    └── query_voices.py
+```
+
+**No additional configuration needed** - the system automatically finds your credentials!
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Install Dependencies
 
-1. **Python Environment**: Make sure you have Python 3.9+ and a virtual environment
-2. **Google Cloud Project**: Set up a Google Cloud project with Speech-to-Text API enabled
-3. **Service Account**: Create a service account with Speech-to-Text permissions
-
-### Installation
-
-1. **Install Dependencies**:
-   ```bash
-   pip install pyaudio google-cloud-speech six
-   ```
-
-2. **Set up Credentials**:
-   - Place your Google Cloud service account JSON file in the `credentials/` directory
-   - The file should be named: `debatesim-6f403-55fd99aa753a-google-cloud.json`
-   - Ensure the service account has `Cloud Speech-to-Text User` role
-
-3. **Test the Setup**:
-   ```bash
-   cd speech_utils
-   python3 test_v2t.py
-   ```
-
-## 🔧 Configuration
-
-### Credentials Setup
-
-The system expects Google Cloud credentials at:
-```
-credentials/debatesim-6f403-55fd99aa753a-google-cloud.json
-```
-
-### Environment Variables
-
-The system automatically sets:
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="credentials/debatesim-6f403-55fd99aa753a-google-cloud.json"
+pip install google-cloud-texttospeech fastapi uvicorn
 ```
 
-## 📖 Usage
-
-### Basic Voice-to-Text
-
-```python
-from speech_utils.v2tgenerator import test_speech_recognition
-
-# Test the speech recognition
-success = test_speech_recognition()
-if success:
-    print("Speech recognition is working!")
-```
-
-### Integration with Your Application
-
-```python
-from speech_utils.v2tgenerator import MicStream, setup_credentials
-from google.cloud import speech
-
-# Setup credentials
-setup_credentials()
-
-# Initialize speech client
-client = speech.SpeechClient()
-
-# Configure recognition
-config = speech.RecognitionConfig(
-    encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-    sample_rate_hertz=16000,
-    language_code="en-US",
-    enable_automatic_punctuation=True,
-)
-
-# Use streaming recognition
-streaming_config = speech.StreamingRecognitionConfig(
-    config=config, interim_results=True
-)
-
-# Start microphone stream
-with MicStream(16000, 1600) as stream:
-    def request_generator():
-        for chunk in stream.generator():
-            if isinstance(chunk, bytes):
-                yield speech.StreamingRecognizeRequest(audio_content=chunk)
-    
-    requests = request_generator()
-    responses = client.streaming_recognize(streaming_config, requests)
-    
-    for response in responses:
-        if response.results:
-            result = response.results[0]
-            if result.alternatives:
-                transcript = result.alternatives[0].transcript
-                if result.is_final:
-                    print(f"Final: {transcript}")
-                else:
-                    print(f"Partial: {transcript}")
-```
-
-## 🧪 Testing
-
-### Run the Test Suite
+### 2. Test TTS Service
 
 ```bash
 cd speech_utils
-python3 test_v2t.py
+python test_tts.py
 ```
 
-The test will:
-1. ✅ Check dependencies (PyAudio, Google Cloud Speech, Six)
-2. ✅ Verify credentials are properly set up
-3. ✅ Test real-time speech recognition
-4. ✅ Provide live transcription feedback
+### 3. Start TTS API Server
 
-### Expected Output
-
-```
-🎯 Google Cloud Voice-to-Text Setup Test
-==================================================
-
-1. Checking dependencies...
-✅ PyAudio installed
-✅ Google Cloud Speech installed
-✅ Six library installed
-
-2. Checking credentials...
-✅ Google Cloud credentials file found at: credentials/debatesim-6f403-55fd99aa753a-google-cloud.json
-
-3. Testing speech recognition...
-✅ Using Google Cloud credentials: credentials/debatesim-6f403-55fd99aa753a-google-cloud.json
-✅ Google Cloud Speech client initialized
-🎤 Starting microphone stream...
-Speak into your microphone (press Ctrl+C to stop)
-Partial transcript: Hello, this is a test
-Final transcript: Hello, this is a test of the voice recognition system.
-
-✅ Voice-to-Text setup is working correctly!
+```bash
+cd speech_utils
+python start_tts.py
 ```
 
-## 🔧 Troubleshooting
+### 4. Use in Frontend
+
+```jsx
+import EnhancedVoiceOutput from './components/EnhancedVoiceOutput';
+
+<EnhancedVoiceOutput 
+  text="Hello world" 
+  useGoogleTTS={true}
+  ttsApiUrl="http://localhost:8001"
+/>
+```
+
+## 🎭 Available Voices
+
+### Female Voices 👩
+- **en-US-Neural2-C** - Natural female voice (Neural2)
+- **en-US-Neural2-E** - Natural female voice (Neural2)
+- **en-US-Neural2-F** - Natural female voice (Neural2)
+- **en-US-Neural2-G** - Natural female voice (Neural2)
+- **en-US-Neural2-H** - Natural female voice (Neural2)
+
+### Male Voices 👨
+- **en-US-Neural2-A** - Natural male voice (Neural2) - **Default**
+- **en-US-Neural2-D** - Natural male voice (Neural2)
+- **en-US-Neural2-I** - Natural male voice (Neural2)
+- **en-US-Neural2-J** - Natural male voice (Neural2)
+
+**Total**: 5 Female voices + 4 Male voices = 9 Neural2 voices
+
+## 🔧 API Endpoints
+
+The TTS API provides these endpoints:
+
+- `GET /health` - Check service health
+- `GET /voices` - Get available voices
+- `POST /synthesize` - Synthesize speech from text
+- `GET /test` - Test TTS with sample text
+
+## 🧪 Testing
+
+### Test TTS Service Directly
+
+```bash
+cd speech_utils
+python test_tts.py
+```
+
+### Test TTS API Endpoints
+
+```bash
+cd speech_utils
+python tts_api.py
+# In another terminal:
+curl http://localhost:8001/health
+curl http://localhost:8001/voices
+```
+
+### Query Actual Voice Information
+
+```bash
+cd speech_utils
+python query_voices.py
+```
+
+This will show you the actual voice information from Google Cloud, including correct genders and sample rates.
+
+### Comprehensive Test Suite
+
+```bash
+cd speech_utils
+python test_tts.py
+```
+
+This will test:
+- ✅ Google Cloud credentials
+- ✅ Text-to-Speech API access
+- ✅ Voice synthesis
+- ✅ API endpoints
+
+## 🔒 Security
+
+- **No API keys in frontend** - All credentials stay on the backend
+- **Uses existing service account** - No additional credentials needed
+- **Automatic fallback** - Falls back to browser TTS if Google TTS fails
+
+## 📱 Browser Compatibility
+
+- ✅ **Chrome/Edge**: Full Google TTS support
+- ✅ **Firefox**: Google TTS + fallback to browser TTS
+- ✅ **Safari**: Google TTS + fallback to browser TTS
+- ⚠️ **Mobile browsers**: May have limited TTS support
+
+## 🎨 Customization
+
+### Add Custom Voices
+
+Edit `tts_service.py`:
+
+```python
+self.voices = [
+    # ... existing voices ...
+    {
+        "name": "en-US-Neural2-K",
+        "language": "en-US",
+        "gender": "FEMALE",
+        "description": "Custom voice description"
+    }
+]
+```
+
+### Custom Voice Settings
+
+```python
+audio_content = tts_service.synthesize_speech(
+    text="Custom text",
+    voice_name="en-US-Neural2-A",
+    rate=0.8,        # Slower speech
+    pitch=-2,         # Lower pitch
+    volume=0.9        # Slightly quieter
+)
+```
+
+## 🔄 Migration from Old TTS
+
+Replace the old `VoiceOutput` with `EnhancedVoiceOutput`:
+
+```jsx
+// Before
+<VoiceOutput text="Hello world" />
+
+// After  
+<EnhancedVoiceOutput 
+  text="Hello world" 
+  useGoogleTTS={true}
+  ttsApiUrl="http://localhost:8001"
+/>
+```
+
+## 🛠️ Troubleshooting
 
 ### Common Issues
 
-1. **"No module named 'pyaudio'"**
-   - Install PyAudio: `pip install pyaudio`
-   - On macOS: `brew install portaudio` then `pip install pyaudio`
+1. **"Failed to initialize TTS service"**
+   - Check if `credentials/debatesim-6f403-55fd99aa753a-google-cloud.json` exists in the root directory
+   - Verify the service account has Text-to-Speech permissions
+   - Ensure Text-to-Speech API is enabled in your Google Cloud project
 
-2. **"Credentials file not found"**
-   - Ensure the credentials file exists in the `credentials/` directory
-   - Check the filename matches: `debatesim-6f403-55fd99aa753a-google-cloud.json`
+2. **"Connection test failed"**
+   - Check if Text-to-Speech API is enabled
+   - Verify billing is enabled on your Google Cloud project
+   - Check service account permissions
 
-3. **"401 Request had invalid authentication credentials"**
-   - Verify the service account has Speech-to-Text permissions
-   - Check that the Speech-to-Text API is enabled in your Google Cloud project
+3. **"Could not connect to TTS API"**
+   - Start the TTS API server: `python tts_api.py`
+   - Check if port 8001 is available
+   - Verify the server is running and accessible
 
-4. **"None Exception iterating requests!"**
-   - This usually indicates a credentials permission issue
-   - Use the working credentials file (the one that works for both TTS and STT)
+### Testing Your Setup
 
-### Microphone Issues
+Run the comprehensive test suite:
 
-1. **No audio input detected**
-   - Check microphone permissions in your OS
-   - Ensure the correct input device is selected
-   - Test with: `python3 -c "import pyaudio; print(pyaudio.PyAudio().get_default_input_device_info())"`
-
-2. **Poor recognition quality**
-   - Speak clearly and at a normal pace
-   - Reduce background noise
-   - Ensure microphone is working properly
-
-## 🔗 Integration with DebateSim
-
-### Frontend Integration
-
-The voice-to-text functionality can be integrated into your React frontend by:
-
-1. **Creating an API endpoint** in your backend to handle speech recognition
-2. **Using WebRTC** for browser-based audio capture
-3. **Sending audio data** to the backend for processing
-
-### Backend Integration
-
-```python
-# In your main application
-from speech_utils.v2tgenerator import setup_credentials, MicStream
-from google.cloud import speech
-
-class SpeechRecognitionService:
-    def __init__(self):
-        setup_credentials()
-        self.client = speech.SpeechClient()
-    
-    def start_recognition(self, callback):
-        """Start real-time speech recognition"""
-        # Implementation here
-        pass
-    
-    def stop_recognition(self):
-        """Stop speech recognition"""
-        # Implementation here
-        pass
+```bash
+cd speech_utils
+python test_tts.py
 ```
-
-## 📋 Requirements
-
-### Python Dependencies
-```
-pyaudio>=0.2.14
-google-cloud-speech>=2.33.0
-six>=1.17.0
-```
-
-### System Requirements
-- **OS**: macOS, Linux, or Windows
-- **Python**: 3.9 or higher
-- **Microphone**: Working microphone input
-- **Internet**: Connection to Google Cloud APIs
-
-### Google Cloud Requirements
-- **Project**: Active Google Cloud project
-- **API**: Speech-to-Text API enabled
-- **Service Account**: With appropriate permissions
-- **Billing**: Enabled for the project
-
-## 🔐 Security Notes
-
-- Keep your credentials file secure and never commit it to version control
-- Use environment variables for production deployments
-- Consider using Google Cloud's Application Default Credentials for production
-- Regularly rotate your service account keys
 
 ## 📞 Support
 
 If you encounter issues:
 
-1. **Check the troubleshooting section** above
-2. **Verify your Google Cloud setup** in the Google Cloud Console
-3. **Test with the provided test script** to isolate issues
-4. **Check microphone permissions** in your operating system
+1. Run `python test_tts.py` to diagnose problems
+2. Run `python query_voices.py` to verify voice information
+3. Check the backend TTS API server logs
+4. Verify Google Cloud project settings
+5. Check service account permissions
 
-## 🚀 Next Steps
+## 🎉 What's Next?
 
-Once the basic voice-to-text is working:
+After setting up Google TTS, you can:
 
-1. **Integrate with your debate application**
-2. **Add real-time transcription display**
-3. **Implement speaker identification**
-4. **Add language support for multiple languages**
-5. **Optimize for debate-specific vocabulary**
-
----
-
-**Last Updated**: January 2025  
-**Version**: 1.0.0  
-**Compatibility**: Python 3.9+, Google Cloud Speech API v2 
+1. **Customize voices** for different debate personas
+2. **Add SSML markup** for better speech control
+3. **Implement voice caching** to reduce API calls
+4. **Add multilingual support** for international debates
+5. **Integrate with existing debate components** for enhanced user experience 

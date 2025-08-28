@@ -32,9 +32,9 @@ function DebateSim({ user }) {
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
   
   // Persona selection states
-  const [proPersona, setProPersona] = useState("default");
-  const [conPersona, setConPersona] = useState("default");
-  const [aiPersona, setAiPersona] = useState("default");
+  const [proPersona, setProPersona] = useState("");
+  const [conPersona, setConPersona] = useState("");
+  const [aiPersona, setAiPersona] = useState("");
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const navigate = useNavigate();
@@ -165,9 +165,18 @@ function DebateSim({ user }) {
   // Auto-scroll to topic section when personas are selected
   useEffect(() => {
     if (mode && topicSectionRef.current) {
-      const shouldScroll = mode === 'user-vs-user' || 
-        (mode === 'ai-vs-user' && aiPersona !== 'default') ||
-        (mode === 'ai-vs-ai' && proPersona !== 'default' && conPersona !== 'default');
+      let shouldScroll = false;
+      
+      if (mode === 'user-vs-user') {
+        // For user vs user, scroll immediately since no personas needed
+        shouldScroll = true;
+      } else if (mode === 'ai-vs-user' && aiPersona) {
+        // For AI vs user, scroll when AI persona is selected
+        shouldScroll = true;
+      } else if (mode === 'ai-vs-ai' && proPersona && conPersona) {
+        // For AI vs AI, scroll when both personas are selected
+        shouldScroll = true;
+      }
       
       if (shouldScroll) {
         setTimeout(() => {
