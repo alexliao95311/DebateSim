@@ -142,7 +142,7 @@ function DebateTrainerApp() {
   const bots = ladderRef.current.listBots();
   const coachOptions = PROMPT_PRESETS.filter(p => p.id.startsWith('coach'));
 
-    function formatInfo() {
+  function formatDirectives() {
     if (format === 'Public Forum') {
       return 'Use PF terminology (constructive, rebuttal, summary, final focus). Emphasize weighing and comparative impacts.';
     }
@@ -155,7 +155,7 @@ function DebateTrainerApp() {
   function buildCritiquePrompt() {
     const preset = coachOptions.find(p => p.id === coachPresetId);
     const role = SPEECH_TYPES.find(s => s.id === speechType)?.name || 'Speech';
-    return `System:\n${preset.system}\n\nDebate format: ${format}. ${formatInfo()}\n\nTask: Provide universal-rubric feedback on a ${role} for the ${caseSide.toUpperCase()} side on the topic: "${topic}".\n${UNIVERSAL_FEEDBACK_RUBRIC}\n\nThen provide:\n- 3 prioritized, actionable fixes with examples\n- A short improved rewrite of one problematic section\n- A 3-point checklist for the next ${role}\n\nStudent Speech:\n${speechText}`;
+    return `System:\n${preset.system}\n\nDebate format: ${format}. ${formatDirectives()}\n\nTask: Provide universal-rubric feedback on a ${role} for the ${caseSide.toUpperCase()} side on the topic: "${topic}".\n${UNIVERSAL_FEEDBACK_RUBRIC}\n\nThen provide:\n- 3 prioritized, actionable fixes with examples\n- A short improved rewrite of one problematic section\n- A 3-point checklist for the next ${role}\n\nStudent Speech:\n${speechText}`;
   }
 
   function buildTipsPrompt() {
@@ -165,85 +165,80 @@ function DebateTrainerApp() {
   }
 
   function buildSparOpening(botPreset, side) {
-    return `System:\n${botPreset.system}\n\nYou are debating ${side.toUpperCase()} on: "${topic}".\nGenerate a single ${side === 'pro' ? 'Constructive' : 'Constructive (Con)'} speech with 2-3 contentions, clear warrants, and impact calculus. Avoid fluff.`;
+    const styleDirective = botPreset.sparStyle === 'aggressive'
+      ? 'Be assertive. Press concessions, extend offense, collapse to strongest lines, and do sharp weighing.'
+      : botPreset.sparStyle === 'beginner'
+      ? 'Keep arguments simpler and fewer. Sometimes miss a weighing step, but remain coherent.'
+      : 'Be balanced, organized, and evidence-driven with solid weighing.';
+    return `System:\n${botPreset.system}\n\nDebate format: ${format}. ${formatDirectives()}\nRole: ${side.toUpperCase()}\nStyle: ${botPreset.sparStyle}. ${styleDirective}\n\nTask: Deliver a single ${side === 'pro' ? 'Constructive (Pro)' : 'Constructive (Con)'} on topic: "${topic}" with 2-3 contentions, explicit claims, warrants, and impact calculus. Label clearly. Keep it concise and persuasive.`;
   }
 
-  // Mock LLM call: replace with real API integration if available
-  async function callModel(prompt) {
-    // Prefer a backend proxy if available
-    try {
-      if (window.fetch) {
-        const resp = await fetch('/llm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, model: window.OPENAI_MODEL || 'gpt-4o' }),
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data && data.text) return data.text;
-        }
-      }
-    } catch (e) {
-      // fallthrough to direct
-    }
-
-    // Direct OpenAI API call if key is provided on window
-    if (window.OPENAI_API_KEY) {
-      try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${window.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: window.OPENAI_MODEL || 'gpt-4o',
-            messages: [
-              { role: 'user', content: prompt }
-            ],
-            temperature: 0.7,
-          }),
-        });
-        const data = await resp.json();
-        const text = data?.choices?.[0]?.message?.content;
-        if (text) return text;
-      } catch (err) {
-        // ignore and fallback
-      }
-    }
-
-    // Deterministic-ish placeholder fallback
-    const hash = [...prompt].reduce((a, c) => (a + c.charCodeAt(0)) % 100000, 0);
-    const sample = (seed, variants) => variants[seed % variants.length];
-    const variant = sample(hash, [
-      'Focus on internal link clarity and weighing between magnitude vs probability. Collapse earlier to your strongest contention and pre-empt common turns.',
-      'You need cleaner signposting and to bundle independent responses into grouped answers. Extend warrants, not just taglines.',
-      'Weigh across the round: show why your offense outweighs on scope and irreversibility. Address solvency constraints head-on.',
-    ]);
-    return `Model Feedback:\n${variant}\n\nChecklist:\n- Explicit claim, warrant, impact per argument\n- Do weighing in the body, not only at the end\n- Pre-empt frontline responses with blocks`;
+  function buildSparFollowup(botPreset) {
+    const styleDirective = botPreset.sparStyle === 'aggressive'
+      ? 'Prioritize turns/offense; press drops; weigh magnitude/probability/timeframe.'
+      : botPreset.sparStyle === 'beginner'
+      ? 'Give straightforward responses; may miss some weighing; remain civil.'
+      : 'Provide grouped responses, rebuild attacked positions, and comparative weighing.';
+    return `System:\n${botPreset.system}\n\nDebate format: ${format}. ${formatDirectives()}\nStyle: ${botPreset.sparStyle}. ${styleDirective}\n\nOpponent said: "${lastUserSpeech()}"\nTask: Respond with grouped, line-by-line answers, rebuild any attacked positions, and add weighing. Be concise. No fluff.`;
   }
+
+  // Real API call using our client utilities
+  async function callModel(prompt, debaterLabel = 'Coach') {
+    const response = await generateAIResponse(debaterLabel, prompt, model);
+    return response;
+  }
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleCritique() {
-    const prompt = buildCritiquePrompt();
-    const out = await callModel(prompt);
-    setCritique(out);
-    setReviewHistory((h) => [{ type: 'critique', ts: Date.now(), content: out }, ...h]);
+    setError('');
+    setLoading(true);
+    try {
+      const prompt = buildCritiquePrompt();
+      const out = await callModel(prompt, 'Coach Critique');
+      setCritique(out);
+      setReviewHistory((h) => [{ type: 'critique', ts: Date.now(), content: out }, ...h]);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to fetch critique. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleTips() {
-    const prompt = buildTipsPrompt();
-    const out = await callModel(prompt);
-    setTips(out);
-    setReviewHistory((h) => [{ type: 'tips', ts: Date.now(), content: out }, ...h]);
+    setError('');
+    setLoading(true);
+    try {
+      const prompt = buildTipsPrompt();
+      const out = await callModel(prompt, 'Coach Tips');
+      setTips(out);
+      setReviewHistory((h) => [{ type: 'tips', ts: Date.now(), content: out }, ...h]);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to fetch tips.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleReviseAndReview() {
     if (!revision.trim()) return;
-    const preset = coachOptions.find(p => p.id === coachPresetId);
-    const role = SPEECH_TYPES.find(s => s.id === speechType)?.name || 'Speech';
-    const prompt = `System:\n${preset.system}\n\nTask: Review the student's revised ${role}. Provide delta-focused feedback: what improved, what still breaks, and 3 concrete next edits.\n\nOriginal:\n${speechText}\n\nRevised:\n${revision}`;
-    const out = await callModel(prompt);
-    setReviewHistory((h) => [{ type: 'revise', ts: Date.now(), content: out }, ...h]);
+    setError('');
+    setLoading(true);
+    try {
+      const preset = coachOptions.find(p => p.id === coachPresetId);
+      const role = SPEECH_TYPES.find(s => s.id === speechType)?.name || 'Speech';
+      const prompt = `System:\n${preset.system}\n\nTask: Review the student's revised ${role}. Provide delta-focused feedback: what improved, what still breaks, and 3 concrete next edits.\n\nOriginal:\n${speechText}\n\nRevised:\n${revision}`;
+      const out = await callModel(prompt, 'Coach Revision');
+      setReviewHistory((h) => [{ type: 'revise', ts: Date.now(), content: out }, ...h]);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to review revision.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function startMatch(bot) {
@@ -254,14 +249,46 @@ function DebateTrainerApp() {
       mySide: caseSide,
       status: 'setup',
     });
+    // Auto-begin and focus the live composer
+    setTimeout(() => {
+      beginRound();
+      try { document.getElementById('dt-composer-input')?.focus(); } catch {}
+    }, 0);
   }
 
   async function botSpeaks(opening = false) {
     if (!activeMatch) return;
     const botPreset = PROMPT_PRESETS.find(p => p.id === activeMatch.botId) || PROMPT_PRESETS[2];
-    const prompt = opening ? buildSparOpening(botPreset, activeMatch.mySide === 'pro' ? 'con' : 'pro') : `Continue debate. Opponent said: "${lastUserSpeech()}". Respond with grouped line-by-line and weighing.`;
-    const text = await callModel(prompt);
-    setActiveMatch((m) => ({ ...m, transcript: [...m.transcript, { speaker: 'bot', text }] }));
+    const prompt = opening ? buildSparOpening(botPreset, activeMatch.mySide === 'pro' ? 'con' : 'pro') : buildSparFollowup(botPreset);
+    try {
+      setLoading(true);
+      const text = await callModel(prompt, activeMatch.bot.name);
+      setActiveMatch((m) => ({ ...m, transcript: [...m.transcript, { speaker: 'bot', text }] }));
+    } catch (e) {
+      console.error(e);
+      setError('Bot failed to respond.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function buildMatchTranscriptMarkdown() {
+    const t = activeMatch?.transcript || [];
+    return t.map((m) => `## ${m.speaker === 'me' ? 'You' : 'Bot'}\n${m.text}`).join(`\n\n---\n\n`);
+  }
+
+  async function requestFinalFeedback() {
+    try {
+      setLoading(true);
+      const transcript = buildMatchTranscriptMarkdown();
+      const out = await getAIJudgeFeedback(transcript, model);
+      setFinalFeedback(out);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to get final feedback.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function lastUserSpeech() {
@@ -286,6 +313,9 @@ function DebateTrainerApp() {
     const updated = ladderRef.current.recordMatch('me', activeMatch.botId, won ? 1 : 0, kFactor);
     setMyElo(updated.a ? updated.a.rating : myElo);
     setActiveMatch((m) => ({ ...m, status: won ? 'won' : 'lost' }));
+    if (feedbackTiming === 'end') {
+      requestFinalFeedback();
+    }
   }
 
   // Ensure "me" is registered in ladder
@@ -293,15 +323,7 @@ function DebateTrainerApp() {
     ladderRef.current.addBot('me', 'You', myElo);
   }, []);
 
-  useEffect(() => {
-    // Persist and expose for callModel
-    try {
-      if (apiKey) localStorage.setItem('OPENAI_API_KEY', apiKey);
-      const storedKey = localStorage.getItem('OPENAI_API_KEY');
-      if (!apiKey && storedKey) setApiKey(storedKey);
-    } catch {}
-    window.OPENAI_API_KEY = apiKey;
-  }, [apiKey]);
+  // removed apiKey persistence/UI
 
   useEffect(() => {
     try {
@@ -317,42 +339,71 @@ function DebateTrainerApp() {
       <div className="dt-pane">
         <SectionTitle
           title="Debate Trainer"
-          subtitle="Critique by speech type, drill tips, iterative review"
+          subtitle="Choose format, get feedback, and spar against bots"
           right={(
             <div className="dt-chip-row">
-              <span className="dt-tag">Coach</span>
               <div className="dt-chip">Model
-                <select className="dt-select" style={{ width: 130, marginLeft: 8 }} value={model} onChange={(e) => setModel(e.target.value)}>
-                  {['gpt-4o','gpt-4o-mini'].map(m => <option key={m} value={m}>{m}</option>)}
+                <select className="dt-select" style={{ width: 230, marginLeft: 8 }} value={model} onChange={(e) => setModel(e.target.value)}>
+                  {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
-              <div className="dt-chip">Key
-                <input
-                  type="password"
-                  className="dt-input"
-                  style={{ width: 200, marginLeft: 8, padding: '6px 8px' }}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-..."
-                />
-              </div>
+              {loading && <span className="dt-tag">Loading…</span>}
+              {error && <span className="dt-tag" style={{ color: '#ef4444' }}>Error</span>}
             </div>
           )}
         />
         <div className="dt-split">
-          <Labeled label="Speech Type" hint="Choose which speech to get critiqued">
-            <select className="dt-select" value={speechType} onChange={(e) => setSpeechType(e.target.value)}>
-              {SPEECH_TYPES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          <Labeled label="Format">
+            <select className="dt-select" value={format} onChange={(e) => setFormat(e.target.value)}>
+              {['Public Forum','Congress','Normal'].map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </Labeled>
-          <Labeled label="Side">
-            <select className="dt-select" value={caseSide} onChange={(e) => setCaseSide(e.target.value)}>
-              <option value="pro">Pro / Affirmative</option>
-              <option value="con">Con / Negative</option>
+          <Labeled label="Feedback Timing" hint="Show feedback after each speech or at the end">
+            <select className="dt-select" value={feedbackTiming} onChange={(e) => setFeedbackTiming(e.target.value)}>
+              <option value="per_speech">After each speech</option>
+              <option value="end">All at the end</option>
             </select>
           </Labeled>
         </div>
-        <div style={{ height: 10 }} />
+        <div style={{ height: 8 }} />
+        <div className="dt-row">
+          <button className={`dt-btn ${!feedbackOnlyMode ? 'primary' : ''}`} onClick={() => setFeedbackOnlyMode(false)}>Full Trainer</button>
+          <button className={`dt-btn ${feedbackOnlyMode ? 'primary' : ''}`} onClick={() => setFeedbackOnlyMode(true)}>Feedback Only</button>
+        </div>
+        <div style={{ height: 8 }} />
+        {feedbackOnlyMode ? (
+          <div className="dt-card">
+            <div className="dt-split">
+              <Labeled label="Speech Type">
+                <select className="dt-select" value={speechType} onChange={(e) => setSpeechType(e.target.value)}>
+                  {SPEECH_TYPES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </Labeled>
+              <Labeled label="Side">
+                <select className="dt-select" value={caseSide} onChange={(e) => setCaseSide(e.target.value)}>
+                  <option value="pro">Pro / Affirmative</option>
+                  <option value="con">Con / Negative</option>
+                </select>
+              </Labeled>
+            </div>
+            <div style={{ height: 8 }} />
+            <Labeled label="Paste Your Speech">
+              <textarea className="dt-textarea" value={speechText} onChange={(e) => setSpeechText(e.target.value)} placeholder="Paste or write your speech here..." />
+            </Labeled>
+            <div className="dt-row" style={{ marginTop: 8 }}>
+              <button className="dt-btn primary" disabled={loading || !speechText.trim()} onClick={handleCritique}>Get Feedback</button>
+            </div>
+            <div className="dt-divider" />
+            <div className="dt-card">
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Feedback</div>
+              <div className="dt-scroll">
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{critique}</pre>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <></>
+        )}
         <Labeled label="Topic">
           <input className="dt-input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Resolution or motion" />
         </Labeled>
@@ -369,6 +420,7 @@ function DebateTrainerApp() {
           <button className="dt-btn" onClick={handleTips}>Get Tips</button>
         </div>
         <div style={{ height: 10 }} />
+        {!feedbackOnlyMode && (
         <div className="dt-split">
           <div className="dt-card">
             <div style={{ fontWeight: 700, marginBottom: 8 }}>Critique</div>
@@ -383,30 +435,35 @@ function DebateTrainerApp() {
             </div>
           </div>
         </div>
-        <div className="dt-divider" />
-        <SectionTitle title="Revise and Review" subtitle="Paste a revision and get delta feedback" />
-        <Labeled label="Your Revision">
-          <textarea className="dt-textarea" value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Make edits here and request another review" />
-        </Labeled>
-        <div className="dt-row" style={{ marginTop: 8 }}>
-          <button className="dt-btn" onClick={handleReviseAndReview}>Review Revision</button>
-        </div>
-        <div style={{ height: 10 }} />
-        <div className="dt-card">
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Continuous Review History</div>
-          <div className="dt-scroll dt-list">
-            {reviewHistory.length === 0 && <div className="dt-subtle">No reviews yet</div>}
-            {reviewHistory.map((r, idx) => (
-              <div key={idx} className="dt-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span className="dt-tag">{r.type}</span>
-                  <span className="dt-subtle">{new Date(r.ts).toLocaleString()}</span>
-                </div>
-                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{r.content}</pre>
+        )}
+        {!feedbackOnlyMode && (
+          <>
+            <div className="dt-divider" />
+            <SectionTitle title="Revise and Review" subtitle="Paste a revision and get delta feedback" />
+            <Labeled label="Your Revision">
+              <textarea className="dt-textarea" value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Make edits here and request another review" />
+            </Labeled>
+            <div className="dt-row" style={{ marginTop: 8 }}>
+              <button className="dt-btn" onClick={handleReviseAndReview}>Review Revision</button>
+            </div>
+            <div style={{ height: 10 }} />
+            <div className="dt-card">
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>Continuous Review History</div>
+              <div className="dt-scroll dt-list">
+                {reviewHistory.length === 0 && <div className="dt-subtle">No reviews yet</div>}
+                {reviewHistory.map((r, idx) => (
+                  <div key={idx} className="dt-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span className="dt-tag">{r.type}</span>
+                      <span className="dt-subtle">{new Date(r.ts).toLocaleString()}</span>
+                    </div>
+                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{r.content}</pre>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="dt-pane">
@@ -419,8 +476,16 @@ function DebateTrainerApp() {
             </select>
           </div>
         </div>
-        <div className="dt-list" style={{ marginBottom: 12 }}>
-          {bots.map((b) => <BotRow key={b.id} bot={b} onChallenge={startMatch} />)}
+        <div className="dt-option-grid" style={{ marginBottom: 12 }}>
+          {bots.map((b) => (
+            <div key={b.id} className="dt-option-card" onClick={() => startMatch(b)}>
+              <div className="dt-option-title">{b.name}</div>
+              <div className="dt-option-meta">
+                <span className="dt-tag">Elo {b.rating}</span>
+                <span className="dt-tag">{b.wins}W/{b.losses}L</span>
+              </div>
+            </div>
+          ))}
         </div>
         <div className="dt-divider" />
         <SectionTitle title="Live Match" subtitle="Line-by-line with weighing" />
@@ -449,7 +514,17 @@ function DebateTrainerApp() {
                   ))}
                 </div>
                 {activeMatch.status === 'live' && (
-                  <ChatComposer onSend={async (text) => { await meSpeaks(text); await botSpeaks(false); }} />
+                  <ChatComposer onSend={async (text) => {
+                    await meSpeaks(text);
+                    if (feedbackTiming === 'per_speech') {
+                      try {
+                        const prompt = `System:\nYou are a debate coach. Provide universal-rubric feedback (clarity, warranting, weighing, responsiveness, delivery) for the following speech excerpt in ${format}. Topic: "${topic}". ${UNIVERSAL_FEEDBACK_RUBRIC}\n\nSpeech Excerpt:\n${text}`;
+                        const out = await callModel(prompt, 'Coach Feedback');
+                        setReviewHistory((h) => [{ type: 'per-speech', ts: Date.now(), content: out }, ...h]);
+                      } catch (e) { console.error(e); }
+                    }
+                    await botSpeaks(false);
+                  }} />
                 )}
                 {activeMatch.status === 'live' && (
                   <div className="dt-row" style={{ marginTop: 8 }}>
@@ -465,6 +540,14 @@ function DebateTrainerApp() {
           </div>
         )}
       </div>
+      {error && (
+        <div className="dt-pane" style={{ marginTop: 12 }}>
+          <div className="dt-card" style={{ borderColor: '#ef4444' }}>
+            <div style={{ fontWeight: 700, color: '#ef4444', marginBottom: 6 }}>Error</div>
+            <div className="dt-subtle">{error}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -473,7 +556,7 @@ function ChatComposer({ onSend }) {
   const [text, setText] = useState('');
   return (
     <div className="dt-row" style={{ marginTop: 8 }}>
-      <textarea className="dt-textarea" value={text} onChange={(e) => setText(e.target.value)} placeholder="Your turn: respond with grouped, warranted answers and weighing." />
+      <textarea id="dt-composer-input" className="dt-textarea" value={text} onChange={(e) => setText(e.target.value)} placeholder="Your turn: respond with grouped, warranted answers and weighing." />
       <div style={{ display: 'grid', alignContent: 'start' }}>
         <button className="dt-btn primary" onClick={() => { onSend(text); setText(''); }}>Send</button>
       </div>
@@ -486,7 +569,7 @@ function mountDebateTrainer() {
   const rootEl = document.getElementById('feature-panel');
   if (!rootEl) return;
   rootEl.style.display = 'block';
-  const root = ReactDOM.createRoot(rootEl);
+  const root = createRoot(rootEl);
   root.render(<DebateTrainerApp />);
 }
 
