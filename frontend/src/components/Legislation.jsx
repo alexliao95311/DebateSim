@@ -12,6 +12,7 @@ import HistorySidebar from "./HistorySidebar";
 import VoiceOutput from './VoiceOutput';
 import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -2362,6 +2363,9 @@ const Legislation = ({ user }) => {
                       text={analysisResult}
                       buttonStyle="default"
                       showLabel={true}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      defaultVoice={getVoiceForContext('analysis').voice}
                       onSpeechStart={() => console.log('Started playing analysis')}
                       onSpeechEnd={() => console.log('Finished playing analysis')}
                       onSpeechError={(error) => console.error('Analysis speech error:', error)}

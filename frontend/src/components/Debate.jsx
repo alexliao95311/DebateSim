@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -10,6 +10,8 @@ import SimpleFileUpload from "./SimpleFileUpload";
 import VoiceInput from './VoiceInput';
 import { Code, MessageSquare, Download, Share2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import "./Debate.css";
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 
 const modelOptions = [
   "openai/gpt-4o-mini",
@@ -1510,36 +1512,24 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             const speechTitle = speechItem?.title || speaker;
             const speechId = `speech-${i}`;
 
-            const handlePlay = () => {
-              const synth = window.speechSynthesis;
-              synth.cancel(); // Stop any current speech
-              const utterance = new SpeechSynthesisUtterance(text);
-              synth.speak(utterance);
-            };
-
-            const handleStop = () => {
-              window.speechSynthesis.cancel(); // Immediately stops speech
-            };
-
             return (
               <div key={i} className="debate-speech-block relative" id={speechId}>
-                {/* Play/Stop Buttons in Top Right */}
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <button
-                    onClick={handlePlay}
-                    className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    🔊
-                  </button>
-                  <button
-                    onClick={handleStop}
-                    className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-                  >
-                    ⏹️
-                  </button>
+                <div className="debate-speech-header">
+                  <h3 className="debate-speech-title">{speechTitle}</h3>
+                  <div className="debate-speech-tts">
+                    <EnhancedVoiceOutput
+                      text={text}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      buttonStyle="compact"
+                      showLabel={false}
+                      context="debate"
+                      onSpeechStart={() => console.log(`Speech started for ${speaker}`)}
+                      onSpeechEnd={() => console.log(`Speech ended for ${speaker}`)}
+                      onSpeechError={(error) => console.error(`Speech error for ${speaker}:`, error)}
+                    />
+                  </div>
                 </div>
-
-                <h3 className="debate-speech-title">{speechTitle}</h3>
                 {model && <div className="debate-model-info">Model: {model}</div>}
 
                 <div className="debate-speech-content">

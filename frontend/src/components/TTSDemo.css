@@ -1,0 +1,445 @@
+.tts-demo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tts-demo-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tts-demo-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.tts-demo-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.tts-demo-header p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.tts-demo-header-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tts-demo-controls {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.tts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.tts-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.tts-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #667eea;
+}
+
+.tts-info {
+  margin-left: auto;
+  text-align: right;
+}
+
+.tts-status {
+  display: block;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.tts-info small {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* API Configuration Styles */
+.tts-api-config {
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  margin-top: 1rem;
+}
+
+.tts-api-config label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.api-url-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
+
+.api-url-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.check-api-button {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.check-api-button:hover {
+  background: #138496;
+}
+
+.api-status {
+  margin-top: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.tts-demo-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.tts-demo-text-section,
+.tts-demo-player {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tts-demo-text-section h3,
+.tts-demo-player h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.sample-texts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sample-text-button {
+  background: #e9ecef;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #495057;
+}
+
+.sample-text-button:hover {
+  background: #dee2e6;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.custom-text-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.custom-text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.use-custom-text-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.use-custom-text-button:hover {
+  background: #218838;
+}
+
+.demo-text-display {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.demo-text-display p {
+  margin: 0;
+  line-height: 1.6;
+  color: #495057;
+}
+
+.tts-demo-features {
+  margin-bottom: 3rem;
+}
+
+.tts-demo-features h3 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #495057;
+  font-size: 1.5rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card h4 {
+  margin: 0 0 0.75rem 0;
+  color: #495057;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.tts-demo-setup {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #856404;
+  margin-bottom: 2rem;
+}
+
+.tts-demo-setup h3 {
+  margin: 0 0 1rem 0;
+  color: #856404;
+  font-size: 1.3rem;
+}
+
+.tts-demo-setup p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+
+.tts-demo-setup ol {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.tts-demo-setup li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.tts-demo-setup code {
+  background: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
+
+/* Instructions Section */
+.tts-demo-instructions {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  color: #1565c0;
+}
+
+.tts-demo-instructions h3 {
+  margin: 0 0 1.5rem 0;
+  color: #1565c0;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.instructions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.instruction-step {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #bbdefb;
+}
+
+.instruction-step h4 {
+  margin: 0 0 1rem 0;
+  color: #1565c0;
+  font-size: 1.1rem;
+}
+
+.instruction-step code {
+  background: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  color: #1565c0;
+  display: block;
+  margin: 0.5rem 0;
+}
+
+.instruction-step p {
+  margin: 0.5rem 0 0 0;
+  color: #1976d2;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tts-demo-container {
+    padding: 1rem;
+  }
+  
+  .tts-demo-header {
+    padding: 1.5rem;
+  }
+  
+  .tts-demo-header h1 {
+    font-size: 2rem;
+  }
+  
+  .tts-demo-main {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .tts-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .tts-info {
+    margin-left: 0;
+    text-align: left;
+  }
+  
+  .features-grid,
+  .instructions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tts-api-config label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .api-url-input {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .check-api-button {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tts-demo-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .sample-texts {
+    flex-direction: column;
+  }
+  
+  .sample-text-button {
+    text-align: center;
+  }
+}

@@ -1433,6 +1433,130 @@ async def extract_bill_from_url(request: BillFromUrlRequest):
         logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")
 
+# ============================================================================
+# TEXT-TO-SPEECH ENDPOINTS
+# ============================================================================
+
+# Import TTS service
+import sys
+sys.path.append('speech_utils')
+from speech_utils.tts_service import GoogleTTSService
+
+# Initialize TTS service
+tts_service = GoogleTTSService()
+
+@app.get("/tts/health")
+async def tts_health():
+    """Check TTS service health"""
+    try:
+        if tts_service.client:
+            return {
+                "status": "healthy",
+                "service": "google-tts",
+                "credentials_loaded": True,
+                "message": "TTS service is running and ready"
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "service": "google-tts",
+                "credentials_loaded": False,
+                "message": "TTS service not initialized"
+            }
+    except Exception as e:
+        logger.error(f"TTS health check error: {e}")
+        return {
+            "status": "error",
+            "service": "google-tts",
+            "error": str(e)
+        }
+
+@app.get("/tts/voices")
+async def get_tts_voices():
+    """Get available TTS voices"""
+    try:
+        voices = tts_service.get_available_voices()
+        default_voice = tts_service.get_default_voice()
+        
+        return {
+            "success": True,
+            "voices": voices,
+            "default_voice": default_voice,
+            "total_voices": len(voices)
+        }
+    except Exception as e:
+        logger.error(f"Error getting TTS voices: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting TTS voices: {str(e)}")
+
+class TTSRequest(BaseModel):
+    text: str
+    voice_name: str = None
+    rate: float = 1.0
+    pitch: float = 0.0
+    volume: float = 1.0
+
+@app.post("/tts/synthesize")
+async def synthesize_speech(request: TTSRequest):
+    """Synthesize speech from text"""
+    try:
+        if not request.text or request.text.strip() == "":
+            raise HTTPException(status_code=400, detail="Text is required")
+        
+        # Use default voice if none specified
+        voice_name = request.voice_name or tts_service.get_default_voice()
+        
+        # Synthesize speech
+        audio_content = tts_service.synthesize_speech(
+            text=request.text,
+            voice_name=voice_name,
+            rate=request.rate,
+            pitch=request.pitch,
+            volume=request.volume
+        )
+        
+        if audio_content:
+            return {
+                "success": True,
+                "audio_content": audio_content,
+                "voice_used": voice_name,
+                "text_length": len(request.text),
+                "message": "Speech synthesized successfully"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to synthesize speech")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"TTS synthesis error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS synthesis error: {str(e)}")
+
+@app.get("/tts/test")
+async def test_tts():
+    """Test TTS with sample text"""
+    try:
+        test_text = "Hello! This is a test of the DebateSim text-to-speech system. The voice should sound natural and clear."
+        
+        audio_content = tts_service.synthesize_speech(
+            text=test_text,
+            voice_name=tts_service.get_default_voice()
+        )
+        
+        if audio_content:
+            return {
+                "success": True,
+                "audio_content": audio_content,
+                "test_text": test_text,
+                "voice_used": tts_service.get_default_voice(),
+                "message": "TTS test successful"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="TTS test failed")
+            
+    except Exception as e:
+        logger.error(f"TTS test error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS test error: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
