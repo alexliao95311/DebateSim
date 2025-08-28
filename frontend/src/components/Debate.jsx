@@ -188,6 +188,7 @@ function Debate() {
   // Public Forum speaking order state
   const [pfSpeakingOrder, setPfSpeakingOrder] = useState("pro-first");
   const [pfOrderSelected, setPfOrderSelected] = useState(false);
+  const [showPfInfo, setShowPfInfo] = useState(false);
 
   // Handler for the back to home button
   const handleBackToHome = () => {
@@ -1647,7 +1648,16 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           )}
           {debateFormat === "public-forum" && actualMode === "ai-vs-ai" && !pfOrderSelected && (
             <div className="ai-vs-user-setup">
-              <h3>Public Forum Debate Setup</h3>
+              <div className="setup-header">
+                <h3>Public Forum Debate Setup</h3>
+                <button 
+                  className="info-button"
+                  onClick={() => setShowPfInfo(true)}
+                  title="More information about Public Forum debate format"
+                >
+                  ?
+                </button>
+              </div>
               <p style={{ color: '#fff' }}>Choose the speaking order for all 4 rounds</p>
               <div className="order-selection">
                 <label>Speaking Order</label>
@@ -1666,23 +1676,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </button>
                 </div>
               </div>
-              <div className="pf-format-info">
-                <h4>Public Forum Structure (4 Rounds):</h4>
-                <div className="round-structure">
-                  <div className="round-item">
-                    <strong>Round 1:</strong> Constructive Speeches
-                  </div>
-                  <div className="round-item">
-                    <strong>Round 2:</strong> Rebuttal Speeches
-                  </div>
-                  <div className="round-item">
-                    <strong>Round 3:</strong> Summary Speeches
-                  </div>
-                  <div className="round-item">
-                    <strong>Round 4:</strong> Final Focus Speeches
-                  </div>
-                </div>
-              </div>
+
               <div className="confirm-section">
                 <button
                   className="confirm-button"
@@ -1693,6 +1687,53 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </div>
             </div>
           )}
+
+          {/* Public Forum Info Popup */}
+          {showPfInfo && (
+            <div className="popup-overlay" onClick={() => setShowPfInfo(false)}>
+              <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                <div className="popup-header">
+                  <h3>Public Forum Debate Format</h3>
+                  <button 
+                    className="close-button"
+                    onClick={() => setShowPfInfo(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="popup-body">
+                  <h4>Structure (4 Rounds):</h4>
+                  <div className="round-structure">
+                    <div className="round-item">
+                      <strong>Round 1:</strong> Constructive Speeches
+                      <p>Each side presents their main arguments and evidence. 4 minutes. </p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 2:</strong> Rebuttal Speeches
+                      <p>Each side responds to the opponent's arguments. 4 minutes. </p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 3:</strong> Summary Speeches
+                      <p>Each side summarizes key points and refutes opponent. 3 minutes. </p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 4:</strong> Final Focus Speeches
+                      <p>Each side makes their strongest closing argument. 2 minutes.</p>
+                    </div>
+                  </div>
+                  <div className="format-details">
+                    <h4>Key Features:</h4>
+                    <ul>
+                      <li>Cross-examination periods between speeches (coming soon)</li>
+                      <li>Emphasis on logical reasoning and evidence</li>
+                      <li>Focus on current events and policy issues</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {actualMode === "ai-vs-user" && (
             <>
               {!userSide && (
