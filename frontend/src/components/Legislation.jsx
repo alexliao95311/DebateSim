@@ -307,6 +307,34 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     </div>
   );
 };
+
+// Add this new component after the imports and before the main Legislation component
+const InfoNote = ({ message, expanded, onToggle }) => {
+  return (
+    <div className="info-note">
+      <div className="info-note-content">
+        <span className="info-note-message">{message}</span>
+        <button 
+          className="info-toggle-btn"
+          onClick={onToggle}
+          aria-label={expanded ? "Hide explanation" : "Show explanation"}
+        >
+          {expanded ? "−" : "?"}
+        </button>
+      </div>
+      {expanded && (
+        <div className="info-note-explanation">
+          <p>
+            Congress.gov updates new bills periodically, but many bills are still in the drafting phase. 
+            Lawmakers continue to refine and revise the text before it's officially published and made 
+            available for analysis. This is a normal part of the legislative process.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Legislation = ({ user }) => {
   // NEW: Initial page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -332,6 +360,10 @@ const Legislation = ({ user }) => {
   const [processingStage, setProcessingStage] = useState('');
   const [progressStep, setProgressStep] = useState(0);
   const [totalSteps, setTotalSteps] = useState(4);
+  
+  // Info note state
+  const [showInfoNote, setShowInfoNote] = useState(false);
+  const [infoNoteExpanded, setInfoNoteExpanded] = useState(false);
 
   // Analysis state
   const [analysisResult, setAnalysisResult] = useState('');
@@ -887,7 +919,7 @@ const Legislation = ({ user }) => {
       }
       
     } catch (err) {
-      setError(`Error analyzing bill: ${err.message}`);
+      handleError(err);
     } finally {
       setLoadingState(false);
       setProcessingStage('');
@@ -942,7 +974,7 @@ const Legislation = ({ user }) => {
         });
         
       } catch (err) {
-        setError(`Error extracting text: ${err.message}`);
+        handleError(err);
         setLoadingState(false);
         return;
       }
@@ -991,7 +1023,7 @@ const Legislation = ({ user }) => {
         setLoadingState(false);
         
       } catch (err) {
-        setError(`Error extracting bill text: ${err.message}`);
+        handleError(err);
         setLoadingState(false);
         return;
       }
@@ -1008,6 +1040,19 @@ const Legislation = ({ user }) => {
           debateMode: debateMode
         }
       });
+    }
+  };
+
+  // Helper function to handle errors and show info note for specific cases
+  const handleError = (err) => {
+    const errorMessage = err.message;
+    if (errorMessage.includes('No published text is available for this bill yet') || 
+        errorMessage.includes('Bill Text Unavailable')) {
+      setShowInfoNote(true);
+      setError('');
+    } else {
+      setError(`Error analyzing bill: ${errorMessage}`);
+      setShowInfoNote(false);
     }
   };
 
@@ -1040,6 +1085,10 @@ const Legislation = ({ user }) => {
     setShowAnalysisText(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
+    
+    // Reset info note state
+    setShowInfoNote(false);
+    setInfoNoteExpanded(false);
   };
 
   // Handle sharing current analysis - simplified like Judge.jsx
@@ -2121,6 +2170,13 @@ const Legislation = ({ user }) => {
                 </div>
 
               {error && <p className="error-text">{error}</p>}
+              {showInfoNote && (
+                <InfoNote 
+                  message="No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov."
+                  expanded={infoNoteExpanded}
+                  onToggle={() => setInfoNoteExpanded(!infoNoteExpanded)}
+                />
+              )}
               
               {loadingState && (
                 <div className="loading-container">
@@ -2342,6 +2398,13 @@ const Legislation = ({ user }) => {
               )}
 
               {error && <p className="error-text">{error}</p>}
+              {showInfoNote && (
+                <InfoNote 
+                  message="No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov."
+                  expanded={infoNoteExpanded}
+                  onToggle={() => setInfoNoteExpanded(!infoNoteExpanded)}
+                />
+              )}
             </div>
           )}
           

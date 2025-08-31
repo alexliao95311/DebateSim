@@ -564,6 +564,77 @@
   font-size: 1rem;
 }
 
+/* Info Note Styles */
+.info-note {
+  color: white;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #1e293b;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-note-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.info-note-label {
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.info-note-message {
+  flex: 1;
+  color: #ffffff;
+}
+
+.info-toggle-btn {
+  background: rgba(209, 194, 194, 0.787);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: #475569;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.info-toggle-btn:hover {
+  background: rgba(209, 194, 194, 0.787);
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+.info-toggle-btn:focus {
+  outline: none;
+  background: rgba(209, 194, 194, 0.787);
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+
+
+.info-note-explanation {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+.info-note-explanation p {
+  margin: 0;
+  color: #b3bfd0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 /* History sidebar styles matching DebateSim.jsx */
 .legislation-history-sidebar {
   position: fixed !important;
