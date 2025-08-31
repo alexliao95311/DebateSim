@@ -1234,14 +1234,16 @@
 }
 
 .bill-card.compact::-webkit-scrollbar-thumb:hover {
-  background: #357abd !important;
+  background: #4a90e2 !important;
 }
 
 .bill-card:hover {
-  transform: translateY(-4px) !important;
-  border-color: #4a90e2 !important;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
+  transform: none !important;
+  border-color: inherit !important;
+  box-shadow: none !important;
 }
+
+
 
 /* New bill card layout - separate lines for code and status */
 .bill-header-row {
@@ -1267,11 +1269,7 @@
   transition: background-color 0.2s ease;
 }
 
-.congress-link:hover {
-  color: #357abd;
-  background-color: rgba(74, 144, 226, 0.1);
-  text-decoration: underline;
-}
+
 
 .bill-status-line {
   margin-bottom: 0.75rem;
@@ -4581,15 +4579,10 @@ div[style*="backgroundColor: #d"] * {
 
 /* Enhanced Bill Card Hover Effects */
 .bill-card {
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-  will-change: transform, box-shadow;
+  /* No transitions to prevent text blur */
 }
 
-.bill-card:hover {
-  transform: translateY(-8px) scale(1.02) !important;
-  border-color: #4a90e2 !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(74, 144, 226, 0.2) !important;
-}
+
 
 /* Enhanced Steps Section Animation */
 .legislation-step-by-step-container.component-hidden {
@@ -5001,9 +4994,7 @@ div[style*="backgroundColor: #d"] * {
     background: #4a90e2;
   }
   
-  .bill-card:hover {
-    transform: translateY(-4px) !important;
-  }
+
 }
 
 /* High Performance Mode for Older Devices */

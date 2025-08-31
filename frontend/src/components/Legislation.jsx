@@ -549,6 +549,7 @@ const Legislation = ({ user }) => {
     setExtractedBillData(null); // Clear previous data
     setCurrentStep(2);
     setError('');
+    clearInfoNote(); // Clear any previous info notes
   };
   
   // Extract recommended bill text when needed
@@ -662,6 +663,7 @@ const Legislation = ({ user }) => {
       setExtractedPdfText(null); // Clear previous cached text
       setCurrentStep(2);
       setError('');
+      clearInfoNote(); // Clear any previous info notes
     } else {
       setError('Please upload a valid PDF file.');
     }
@@ -682,6 +684,7 @@ const Legislation = ({ user }) => {
       setDebateTopic(billName);
     }
     
+    clearInfoNote(); // Clear any info notes when changing action
     setCurrentStep(3);
   };
 
@@ -794,6 +797,7 @@ const Legislation = ({ user }) => {
 
   // Step 3: Handle analysis execution with progress updates
   const handleAnalyzeExecution = async () => {
+    clearInfoNote(); // Clear any info notes when starting analysis
     setLoadingState(true);
     setError('');
     setProgressStep(0);
@@ -934,6 +938,8 @@ const Legislation = ({ user }) => {
       return;
     }
     
+    clearInfoNote(); // Clear any info notes when starting debate
+    
     const billText = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.text : null;
     const billTitle = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.title : debateTopic;
     
@@ -1054,6 +1060,18 @@ const Legislation = ({ user }) => {
       setError(`Error analyzing bill: ${errorMessage}`);
       setShowInfoNote(false);
     }
+  };
+
+  // Clear info note when selecting a new bill or changing state
+  const clearInfoNote = () => {
+    setShowInfoNote(false);
+    setInfoNoteExpanded(false);
+  };
+
+  // Step navigation functions that also clear info notes
+  const goToStep = (step) => {
+    setCurrentStep(step);
+    clearInfoNote();
   };
 
   // Reset the entire flow
@@ -2238,12 +2256,12 @@ const Legislation = ({ user }) => {
               </div>
 
               <div className="step-navigation">
-                <button className="nav-button back" onClick={() => setCurrentStep(1)}>
+                <button className="nav-button back" onClick={() => goToStep(1)}>
                   ← Back
                 </button>
                 <button 
                   className="nav-button next" 
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => goToStep(3)}
                   disabled={!actionType}
                 >
                   Next →
@@ -2297,7 +2315,7 @@ const Legislation = ({ user }) => {
                   </div>
                   
                   <div className="button-group">
-                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                    <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
                     <button 
@@ -2363,11 +2381,11 @@ const Legislation = ({ user }) => {
                   </div>
                   
                   <div className="button-group">
-                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                    <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
                     <button 
-                      className="nav-button execute"
+                      className="nav-button next"
                       onClick={handleDebateExecution}
                       disabled={!debateTopic.trim() || !debateMode}
                     >
