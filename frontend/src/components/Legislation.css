@@ -5137,3 +5137,177 @@ div[style*="backgroundColor: #d"] * {
 
 
 /* END: Voice Output Integration */
+
+/* TTS Component Styles */
+.bill-header-with-tts {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.bill-header-with-tts h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.action-card .voice-output-container {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.model-description-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.model-description {
+  margin: 0;
+  flex: 1;
+}
+
+/* Compact TTS button styling */
+.voice-output-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  border-radius: 0.375rem;
+  color: #4a90e2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.voice-output-compact:hover {
+  background: rgba(74, 144, 226, 0.2);
+  border-color: rgba(74, 144, 226, 0.5);
+}
+
+.voice-output-compact:active {
+  transform: scale(0.95);
+}
+
+/* TTS button in action cards */
+.action-card .voice-output-compact {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.action-card:hover .voice-output-compact {
+  opacity: 1;
+}
+
+/* Analysis voice controls styling */
+.analysis-voice-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.analysis-voice-controls .voice-output-container {
+  margin: 0;
+}
+
+/* Bill Text Section Styles */
+.bill-text-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.bill-text-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.bill-text-header h3 {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.bill-text-content {
+  margin-top: 1rem;
+}
+
+.bill-text-preview {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.expand-bill-text-btn {
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.3);
+  color: #4a90e2;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.expand-bill-text-btn:hover {
+  background: rgba(74, 144, 226, 0.2);
+  border-color: rgba(74, 144, 226, 0.5);
+}
+
+.expand-bill-text-btn:active {
+  transform: scale(0.98);
+}
+
+.full-bill-text {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bill-text-markdown {
+  color: #cbd5e1;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.bill-text-markdown h1,
+.bill-text-markdown h2,
+.bill-text-markdown h3,
+.bill-text-markdown h4,
+.bill-text-markdown h5,
+.bill-text-markdown h6 {
+  color: #e2e8f0;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bill-text-markdown p {
+  margin-bottom: 1rem;
+}
+
+.bill-text-markdown ul,
+.bill-text-markdown ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.bill-text-markdown li {
+  margin-bottom: 0.5rem;
+}
