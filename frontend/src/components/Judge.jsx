@@ -9,7 +9,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
 import { MessageSquare, Code, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
-
 function Judge() {
   const location = useLocation();
   const navigate = useNavigate();

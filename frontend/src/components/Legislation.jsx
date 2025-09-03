@@ -9,10 +9,10 @@ import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import HistorySidebar from "./HistorySidebar";
-import VoiceOutput from './VoiceOutput';
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
-import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -1497,6 +1497,7 @@ const Legislation = ({ user }) => {
 
   const [showGradingSection, setShowGradingSection] = useState(false);
   const [showAnalysisText, setShowAnalysisText] = useState(false);
+  const [showFullBillText, setShowFullBillText] = useState(false);
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
@@ -2221,15 +2222,34 @@ const Legislation = ({ user }) => {
             <div className="step-two">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <h3>
-                  {billSource === 'recommended' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : billSource === 'link' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : (
-                    `Selected Bill: 📄 ${selectedBill.name}`
-                  )}
-                </h3>
+                <div className="bill-header-with-tts">
+                  <h3>
+                    {billSource === 'recommended' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'link' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : (
+                      `Selected Bill: 📄 ${selectedBill.name}`
+                    )}
+                  </h3>
+                  <EnhancedVoiceOutput 
+                    text={
+                      billSource === 'recommended' ? (
+                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
+                      ) : billSource === 'link' ? (
+                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
+                      ) : (
+                        `Selected Bill: ${selectedBill.name}`
+                      )
+                    }
+                    buttonStyle="compact"
+                    showLabel={false}
+                    useGoogleTTS={true}
+                    ttsApiUrl={TTS_CONFIG.apiUrl}
+                    defaultVoice={getVoiceForContext('general').voice}
+                    context="debate"
+                  />
+                </div>
               </div>
 
               <h2>Step 2: What would you like to do?</h2>
@@ -2275,15 +2295,34 @@ const Legislation = ({ user }) => {
             <div className="step-three">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <h3>
-                  {billSource === 'recommended' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : billSource === 'link' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : (
-                    `Selected Bill: 📄 ${selectedBill.name}`
-                  )}
-                </h3>
+                <div className="bill-header-with-tts">
+                  <h3>
+                    {billSource === 'recommended' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'link' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : (
+                      `Selected Bill: 📄 ${selectedBill.name}`
+                    )}
+                  </h3>
+                  <EnhancedVoiceOutput 
+                    text={
+                      billSource === 'recommended' ? (
+                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
+                      ) : billSource === 'link' ? (
+                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
+                      ) : (
+                        `Selected Bill: ${selectedBill.name}`
+                      )
+                    }
+                    buttonStyle="compact"
+                    showLabel={false}
+                    useGoogleTTS={true}
+                    ttsApiUrl={TTS_CONFIG.apiUrl}
+                    defaultVoice={getVoiceForContext('general').voice}
+                    context="general"
+                  />
+                </div>
               </div>
               
               <div className="action-display">
@@ -2311,6 +2350,15 @@ const Legislation = ({ user }) => {
                       <p className="model-description">
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
+                      <EnhancedVoiceOutput 
+                        text="Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth."
+                        buttonStyle="compact"
+                        showLabel={false}
+                        useGoogleTTS={true}
+                        ttsApiUrl={TTS_CONFIG.apiUrl}
+                        defaultVoice={getVoiceForContext('general').voice}
+                        context="general"
+                      />
                     </div>
                   </div>
                   
@@ -2440,16 +2488,14 @@ const Legislation = ({ user }) => {
                 <div className="results-header-top">
                   <h2>Analysis Results</h2>
                   <div className="analysis-voice-controls">
-                    <VoiceOutput 
+                    <EnhancedVoiceOutput 
                       text={analysisResult}
-                      buttonStyle="default"
-                      showLabel={true}
+                      buttonStyle="compact"
+                      showLabel={false}
                       useGoogleTTS={true}
                       ttsApiUrl={TTS_CONFIG.apiUrl}
-                      defaultVoice={getVoiceForContext('analysis').voice}
-                      onSpeechStart={() => console.log('Started playing analysis')}
-                      onSpeechEnd={() => console.log('Finished playing analysis')}
-                      onSpeechError={(error) => console.error('Analysis speech error:', error)}
+                      defaultVoice={getVoiceForContext('general').voice}
+                      context="general"
                     />
                   </div>
                 </div>
@@ -2514,6 +2560,53 @@ const Legislation = ({ user }) => {
                 >
                   {`## Detailed Analysis\n\n${analysisResult}`}
                 </ReactMarkdown>
+              )}
+              
+              {/* Bill Text Display Section with TTS */}
+              {extractedBillData?.text && (
+                <div className="bill-text-section" style={{ marginTop: '2rem' }}>
+                  <div className="bill-text-header">
+                    <h3>📄 Bill Text</h3>
+                    <EnhancedVoiceOutput 
+                      text={`Bill Text for ${extractedBillData.title || 'Selected Bill'}. ${extractedBillData.text.substring(0, 200)}...`}
+                      buttonStyle="compact"
+                      showLabel={false}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      defaultVoice={getVoiceForContext('general').voice}
+                      context="general"
+                      onSpeechStart={() => console.log('Started reading bill text')}
+                      onSpeechEnd={() => console.log('Finished reading bill text')}
+                      onSpeechError={(error) => console.error('Bill text speech error:', error)}
+                    />
+                  </div>
+                  <div className="bill-text-content">
+                    <p className="bill-text-preview">
+                      {extractedBillData.text.length > 500 
+                        ? `${extractedBillData.text.substring(0, 500)}...`
+                        : extractedBillData.text
+                      }
+                    </p>
+                    {extractedBillData.text.length > 500 && (
+                      <button 
+                        className="expand-bill-text-btn"
+                        onClick={() => setShowFullBillText(!showFullBillText)}
+                      >
+                        {showFullBillText ? 'Show Less' : 'Show Full Bill Text'}
+                      </button>
+                    )}
+                    {showFullBillText && (
+                      <div className="full-bill-text">
+                        <ReactMarkdown 
+                          rehypePlugins={[rehypeRaw]} 
+                          className="markdown-renderer bill-text-markdown"
+                        >
+                          {extractedBillData.text}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
               
               {/* Action buttons at the bottom - only show when everything is ready */}

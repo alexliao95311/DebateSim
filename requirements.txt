@@ -37,7 +37,9 @@ typing-extensions
 rapidfuzz
 
 #Voice2Text
-google-cloud-speech 
-google-cloud-texttospeech
-pyaudio 
+google-cloud-speech>=2.33.0
+google-cloud-texttospeech>=2.27.0
+google-auth>=2.14.1
+google-api-core>=1.34.1
+pyaudio>=0.2.14
 six
