@@ -264,7 +264,28 @@ function AboutUs() {
                 </div>
               </div>
             </div>
-
+            <div className="presentation-team-member">
+              <div className="presentation-member-photo">
+                <div className="presentation-photo-placeholder">
+                  <Users size={48} />
+                </div>
+              </div>
+              <div className="presentation-member-info">
+                <h3>Mrinal Agarwal</h3>
+                <p className="presentation-member-role">Co-Founder</p>
+                <p className="presentation-member-bio">
+                Mrinal is a junior at Emerald High School and a lead developer on DebateSim. He has created and built backend features including LangChain pipelines, DebateTrainer with prompt engineering and fine-tuning, and the congressional bill analyzer API. Apart from this he is a Machine Learning enthusiast and has created benchmark for deception detection in LLMs, developed safeguards against prompt-based injections. Outside of DebateSim, he is a nationally ranked debater: 2nd in California, top 25 at the Gold TOC, NSDA Nationals breaker, and currently ranked top 50 in the country. He also enjoys competitive math and badminton.
+                </p>
+                <div className="presentation-member-links">
+                  <a href="#" className="https://www.linkedin.com/in/mrinal-agarwal-71017535a/" title="LinkedIn">
+                    <Linkedin size={20} />
+                  </a>
+                  <a href="#" className="https://www.instagram.com/mrinal_a09/" title="Instagram">
+                    <Instagram size={20} />
+                  </a>
+                </div>
+              </div>
+            </div>
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
                 <div className="presentation-photo-placeholder">
