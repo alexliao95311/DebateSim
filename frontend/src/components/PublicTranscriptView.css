@@ -305,6 +305,25 @@
   min-height: 50vh;
 }
 
+/* Remove borders from speech blocks in shared transcript */
+.debate-speech-block {
+  border: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  margin-bottom: 2rem !important;
+}
+
+.debate-speech-block:hover {
+  transform: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.debate-speech-block::before {
+  display: none !important;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .public-main-title {
