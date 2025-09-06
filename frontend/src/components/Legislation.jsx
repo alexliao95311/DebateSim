@@ -10,6 +10,7 @@ import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import HistorySidebar from "./HistorySidebar";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import EnhancedAnalysisTTS, { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
@@ -2350,15 +2351,6 @@ const Legislation = ({ user }) => {
                       <p className="model-description">
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
-                      <EnhancedVoiceOutput 
-                        text="Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth."
-                        buttonStyle="compact"
-                        showLabel={false}
-                        useGoogleTTS={true}
-                        ttsApiUrl={TTS_CONFIG.apiUrl}
-                        defaultVoice={getVoiceForContext('general').voice}
-                        context="general"
-                      />
                     </div>
                   </div>
                   
@@ -2487,17 +2479,6 @@ const Legislation = ({ user }) => {
               }}>
                 <div className="results-header-top">
                   <h2>Analysis Results</h2>
-                  <div className="analysis-voice-controls">
-                    <EnhancedVoiceOutput 
-                      text={analysisResult}
-                      buttonStyle="compact"
-                      showLabel={false}
-                      useGoogleTTS={true}
-                      ttsApiUrl={TTS_CONFIG.apiUrl}
-                      defaultVoice={getVoiceForContext('general').voice}
-                      context="general"
-                    />
-                  </div>
                 </div>
                 <div className="results-actions">
                   <button 
@@ -2540,26 +2521,56 @@ const Legislation = ({ user }) => {
                 </div>
               )}
               
-              {/* Analysis Text Section - Simplified */}
+              {/* Analysis Text Section - Enhanced with TTS */}
               {showAnalysisText && (
-                <ReactMarkdown 
-                  rehypePlugins={[rehypeRaw]} 
-                  className="markdown-renderer"
-                  style={{
-                    marginTop: '2rem'
-                  }}
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                    p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                    ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                    ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                  }}
-                >
-                  {`## Detailed Analysis\n\n${analysisResult}`}
-                </ReactMarkdown>
+                <TTSProvider analysisText={analysisResult}>
+                  <div style={{ marginTop: '2rem' }}>
+                    {/* Enhanced TTS Controls */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <EnhancedAnalysisTTS 
+                        analysisText={analysisResult}
+                        title="Detailed Analysis"
+                      />
+                    </div>
+                    
+                    {/* Markdown Content with Header Play Buttons */}
+                    <ReactMarkdown 
+                      rehypePlugins={[rehypeRaw]} 
+                      className="markdown-renderer"
+                      components={{
+                        h1: ({node, children, ...props}) => (
+                          <h1 className="analysis-heading" {...props}>
+                            {children}
+                            <HeaderPlayButton headerText={children?.toString() || ''} />
+                          </h1>
+                        ),
+                        h2: ({node, children, ...props}) => (
+                          <h2 className="analysis-heading" {...props}>
+                            {children}
+                            <HeaderPlayButton headerText={children?.toString() || ''} />
+                          </h2>
+                        ),
+                        h3: ({node, children, ...props}) => (
+                          <h3 className="analysis-heading" {...props}>
+                            {children}
+                            <HeaderPlayButton headerText={children?.toString() || ''} />
+                          </h3>
+                        ),
+                        h4: ({node, children, ...props}) => (
+                          <h4 className="analysis-heading" {...props}>
+                            {children}
+                            <HeaderPlayButton headerText={children?.toString() || ''} />
+                          </h4>
+                        ),
+                        p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+                        ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+                        ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+                      }}
+                    >
+                      {`## Detailed Analysis\n\n${analysisResult}`}
+                    </ReactMarkdown>
+                  </div>
+                </TTSProvider>
               )}
               
               {/* Bill Text Display Section with TTS */}
