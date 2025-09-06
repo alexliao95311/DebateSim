@@ -1,5 +1,5 @@
 // components/PublicTranscriptView.jsx
-import React, { useState, useEffect, useRef, useMemo, memo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -46,186 +46,138 @@ const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setS
   );
 };
 
-// Stable TTS components to prevent re-renders
-const TTSComponent = memo(({ speechText, context, headerId, headerText }) => (
-  <EnhancedVoiceOutput
-    key={`tts-${headerId}`}
-    text={speechText}
-    showLabel={false}
-    buttonStyle="compact"
-    context={context}
-    useGoogleTTS={true}
-    ttsApiUrl={TTS_CONFIG.apiUrl}
-    onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
-    onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
-    onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
-  />
-));
-
-// Split content into speech blocks similar to Debate.jsx
-const TranscriptContent = memo(({ transcript, speechList, extractSpeechText }) => {
-  const renderSpeechBlocks = () => {
-    if (!transcript.transcript || !speechList.length) {
-      // Fall back to simple ReactMarkdown rendering for non-speech content
-      return (
-        <div className="transcript-content">
-          <ReactMarkdown
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-              h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
-              h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-              h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
-              p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-              ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-              ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-              li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-              strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-              em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-
-            }}
-          >
-            {transcript.transcript}
-          </ReactMarkdown>
-        </div>
-      );
-    }
-
-    const blocks = [];
-    const lines = transcript.transcript.split('\n');
-    let currentSpeechIndex = 0;
-    let currentContent = [];
-    let inSpeech = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      if (line.startsWith('## ') || line.startsWith('# ')) {
-        // Save previous content if any
-        if (currentContent.length > 0) {
-          blocks.push({
-            type: 'content',
-            content: currentContent.join('\n'),
-            key: `content-${blocks.length}`
-          });
-          currentContent = [];
-        }
-
-        const speaker = line.replace(/^#+ /, '').trim();
-        const speech = speechList[currentSpeechIndex];
-        
-        // Check if this matches current speech
-        const isMatch = speech && (
-          speech.speaker === speaker || 
-          (speech.isJudge && (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)))
-        );
-
-        if (isMatch) {
-          // This is a speech header - create speech block
-          const speechText = extractSpeechText(transcript.transcript, speech);
-          const context = speech.isJudge ? 'judge' : 'debate';
-          
-          blocks.push({
-            type: 'speech',
-            speech: speech,
-            speechText: speechText,
-            context: context,
-            key: `speech-${currentSpeechIndex}`
-          });
-          
-          currentSpeechIndex++;
-          inSpeech = true;
-        } else {
-          // Non-speech header, add to content
-          currentContent.push(line);
-          inSpeech = false;
-        }
-      } else if (inSpeech) {
-        // Skip speech content lines as they're handled by speech blocks
-        continue;
-      } else {
-        // Regular content line
-        currentContent.push(line);
-      }
-    }
-
-    // Add remaining content
-    if (currentContent.length > 0) {
-      blocks.push({
-        type: 'content',
-        content: currentContent.join('\n'),
-        key: `content-${blocks.length}`
-      });
-    }
-
-    return (
-      <div className="transcript-content">
-        {blocks.map(block => {
-          if (block.type === 'speech') {
-            return (
-              <div key={block.key} className="debate-speech-block relative" id={block.speech.id}>
+// Memoized Transcript Content Component to prevent re-renders
+const TranscriptContent = memo(({ transcript, speechList, processTranscriptContent, extractSpeechText, processedHeadersRef }) => {
+  return (
+    <div className="transcript-content">
+      <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          h1: ({ node, ...props }) => {
+            const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
+            let headerId;
+            if (processedHeadersRef.current.has(headerText)) {
+              headerId = processedHeadersRef.current.get(headerText);
+            } else {
+              const matchingSpeech = speechList.find(s => s.title === headerText);
+              headerId = matchingSpeech
+                ? matchingSpeech.id
+                : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
+              processedHeadersRef.current.set(headerText, headerId);
+            }
+            
+            // Check if this is any speech section (including AI Judge)
+            let matchingSpeech = speechList.find(s => s.title === headerText);
+            
+            // If not found by title, try to find by speaker name or judge pattern
+            if (!matchingSpeech) {
+              matchingSpeech = speechList.find(s => 
+                s.speaker === headerText || 
+                (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+              );
+            }
+            
+            const isSpeechSection = matchingSpeech !== undefined;
+            
+            if (isSpeechSection) {
+              // Get the speech text using our extraction function
+              const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+              const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+              
+              return (
                 <div className="debate-speech-header">
-                  <h3 className="debate-speech-title">{block.speech.title}</h3>
+                  <h1 className="markdown-h1" id={headerId} {...props} />
                   <div className="debate-speech-tts">
-                    <TTSComponent
-                      speechText={block.speechText}
-                      context={block.context}
-                      headerId={block.speech.id}
-                      headerText={block.speech.title}
+                    <EnhancedVoiceOutput
+                      key={`tts-${headerId}`}
+                      text={speechText}
+                      showLabel={false}
+                      buttonStyle="compact"
+                      context={context}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                      onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                      onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
                     />
                   </div>
                 </div>
-                <div className="debate-speech-content">
-                  <ReactMarkdown
-                    rehypePlugins={[rehypeRaw]}
-                    components={{
-                      h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-                      h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
-                      p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-                      ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-                      ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-                      li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-                      strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-                      em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-                      hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
-                    }}
-                  >
-                    {block.speechText}
-                  </ReactMarkdown>
+              );
+            } else {
+              // Non-speech header, render normally without TTS
+              return <h1 className="markdown-h1" id={headerId} {...props} />;
+            }
+          },
+          h2: ({ node, ...props }) => {
+            const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
+            let headerId;
+            if (processedHeadersRef.current.has(headerText)) {
+              headerId = processedHeadersRef.current.get(headerText);
+            } else {
+              const matchingSpeech = speechList.find(s => s.title === headerText);
+              headerId = matchingSpeech
+                ? matchingSpeech.id
+                : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
+              processedHeadersRef.current.set(headerText, headerId);
+            }
+            
+            // Check if this is any speech section (including AI Judge)
+            let matchingSpeech = speechList.find(s => s.title === headerText);
+            
+            // If not found by title, try to find by speaker name or judge pattern
+            if (!matchingSpeech) {
+              matchingSpeech = speechList.find(s => 
+                s.speaker === headerText || 
+                (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+              );
+            }
+            
+            const isSpeechSection = matchingSpeech !== undefined;
+            
+            if (isSpeechSection) {
+              // Get the speech text using our extraction function
+              const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+              const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+              
+              return (
+                <div className="debate-speech-header">
+                  <h2 className="markdown-h2" id={headerId} {...props} />
+                  <div className="debate-speech-tts">
+                    <EnhancedVoiceOutput
+                      key={`tts-${headerId}`}
+                      text={speechText}
+                      showLabel={false}
+                      buttonStyle="compact"
+                      context={context}
+                      useGoogleTTS={true}
+                      ttsApiUrl={TTS_CONFIG.apiUrl}
+                      onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                      onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                      onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          } else {
-            return (
-              <ReactMarkdown
-                key={block.key}
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-                  ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-                  ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-                  li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-                  strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-                  hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
-                }}
-              >
-                {block.content}
-              </ReactMarkdown>
-            );
-          }
-        })}
-      </div>
-    );
-  };
-
-  return renderSpeechBlocks();
+              );
+            } else {
+              // Non-speech header, render normally without TTS
+              return <h2 className="markdown-h2" id={headerId} {...props} />;
+            }
+          },
+          h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+          h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+          p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+          ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+          ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+          li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+          strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+          em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+          hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
+        }}
+      >
+        {processTranscriptContent(transcript.transcript, speechList)}
+      </ReactMarkdown>
+    </div>
+  );
 });
 
 // Circular Progress Component for grading display
@@ -399,6 +351,12 @@ function PublicTranscriptView() {
   const [error, setError] = useState("");
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const processedHeadersRef = useRef(new Map());
+
+  // Reset processed headers when speechList changes
+  useEffect(() => {
+    processedHeadersRef.current = new Map();
+  }, [speechList]);
 
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
@@ -407,6 +365,7 @@ function PublicTranscriptView() {
     const speeches = [];
     const lines = transcriptText.split('\n');
     let speechIndex = 0;
+    
     
     lines.forEach((line, lineIndex) => {
       // Check for both ## and # headers
@@ -491,6 +450,41 @@ function PublicTranscriptView() {
     }, 200);
   };
 
+  const processTranscriptContent = (transcriptText, speechList) => {
+    if (!transcriptText || !speechList.length) return transcriptText;
+    
+    const lines = transcriptText.split('\n');
+    let speechIndex = 0;
+    const processedLines = [];
+    
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('## ') || line.startsWith('# ')) {
+        const speaker = line.replace(/^#+ /, '').trim();
+        const speech = speechList[speechIndex];
+        
+        
+        // Check for exact match or judge feedback match
+        const isMatch = speech && (
+          speech.speaker === speaker || 
+          (speech.isJudge && (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)))
+        );
+        
+        if (isMatch) {
+          const newHeader = `## ${speech.title}`;
+          processedLines.push(newHeader);
+          speechIndex++;
+        } else {
+          processedLines.push(line);
+        }
+      } else {
+        processedLines.push(line);
+      }
+    }
+    
+    return processedLines.join('\n');
+  };
 
   useEffect(() => {
     const fetchSharedTranscript = async () => {
@@ -577,7 +571,7 @@ function PublicTranscriptView() {
   }
 
   return (
-    <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
+    <div className="debate-container">
       <button className="back-to-home" onClick={handleBackToHome}>
         Try DebateSim
       </button>
@@ -616,8 +610,133 @@ function PublicTranscriptView() {
           <TranscriptContent
             transcript={transcript}
             speechList={speechList}
+            processTranscriptContent={processTranscriptContent}
             extractSpeechText={extractSpeechText}
+            processedHeadersRef={processedHeadersRef}
           />
+                h1: ({ node, ...props }) => {
+                  const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
+                  let headerId;
+                  if (processedHeadersRef.current.has(headerText)) {
+                    headerId = processedHeadersRef.current.get(headerText);
+                  } else {
+                    const matchingSpeech = speechList.find(s => s.title === headerText);
+                    headerId = matchingSpeech
+                      ? matchingSpeech.id
+                      : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
+                    processedHeadersRef.current.set(headerText, headerId);
+                  }
+                  
+                  // Check if this is any speech section (including AI Judge)
+                  let matchingSpeech = speechList.find(s => s.title === headerText);
+                  
+                  // If not found by title, try to find by speaker name or judge pattern
+                  if (!matchingSpeech) {
+                    matchingSpeech = speechList.find(s => 
+                      s.speaker === headerText || 
+                      (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+                    );
+                  }
+                  
+                  const isSpeechSection = matchingSpeech !== undefined;
+                  
+                  if (isSpeechSection) {
+                    // Get the speech text using our extraction function
+                    const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+                    const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+                    
+                    return (
+                      <div className="debate-speech-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', gap: '1rem' }}>
+                        <h1 className="markdown-h1" id={headerId} {...props} />
+                        <div className="debate-speech-tts" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '40px' }}>
+                          <EnhancedVoiceOutput
+                            key={`tts-${headerId}`}
+                            text={speechText}
+                            showLabel={false}
+                            buttonStyle="compact"
+                            context={context}
+                            useGoogleTTS={true}
+                            ttsApiUrl={TTS_CONFIG.apiUrl}
+                            onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                            onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                            onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Non-speech header, render normally without TTS
+                    return <h1 className="markdown-h1" id={headerId} {...props} />;
+                  }
+                },
+                h2: ({ node, ...props }) => {
+                  const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
+                  let headerId;
+                  if (processedHeadersRef.current.has(headerText)) {
+                    headerId = processedHeadersRef.current.get(headerText);
+                  } else {
+                    const matchingSpeech = speechList.find(s => s.title === headerText);
+                    headerId = matchingSpeech
+                      ? matchingSpeech.id
+                      : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
+                    processedHeadersRef.current.set(headerText, headerId);
+                  }
+                  
+                  // Check if this is any speech section (including AI Judge)
+                  let matchingSpeech = speechList.find(s => s.title === headerText);
+                  
+                  // If not found by title, try to find by speaker name or judge pattern
+                  if (!matchingSpeech) {
+                    matchingSpeech = speechList.find(s => 
+                      s.speaker === headerText || 
+                      (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+                    );
+                  }
+                  
+                  
+                  const isSpeechSection = matchingSpeech !== undefined;
+                  
+                  if (isSpeechSection) {
+                    // Get the speech text using our extraction function
+                    const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+                    const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+                    
+                    return (
+                      <div className="debate-speech-header">
+                        <h2 className="markdown-h2" id={headerId} {...props} />
+                        <div className="debate-speech-tts">
+                          <EnhancedVoiceOutput
+                            key={`tts-${headerId}`}
+                            text={speechText}
+                            showLabel={false}
+                            buttonStyle="compact"
+                            context={context}
+                            useGoogleTTS={true}
+                            ttsApiUrl={TTS_CONFIG.apiUrl}
+                            onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                            onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                            onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Non-speech header, render normally without TTS
+                    return <h2 className="markdown-h2" id={headerId} {...props} />;
+                  }
+                },
+                h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
+              }}
+            >
+              {processTranscriptContent(transcript.transcript, speechList)}
           
           <div className="public-transcript-footer">
             <p className="public-footer-text">
