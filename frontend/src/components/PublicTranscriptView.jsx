@@ -9,9 +9,10 @@ import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
+import "./Debate.css"; // For debate speech header and TTS button styles
 
 // Speech Sidebar Component for Public Transcript View
-const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript }) => {
+const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript, extractSpeechText }) => {
   return (
     <>
       <button 
@@ -36,18 +37,6 @@ const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setS
                 >
                   {item.title}
                 </span>
-                {/* TTS button for individual speech */}
-                <div className="sidebar-tts-control">
-                  <EnhancedVoiceOutput
-                    text={extractSpeechText(transcript, item)}
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="general"
-                  />
-                </div>
               </div>
             </li>
           ))}
@@ -243,20 +232,39 @@ function PublicTranscriptView() {
     const lines = transcriptText.split('\n');
     let speechIndex = 0;
     
+    
     lines.forEach((line, lineIndex) => {
-      if (line.startsWith('## ')) {
-        const speaker = line.replace('## ', '').trim();
-        const sameSpeekerCount = speeches.filter(s => s.speaker === speaker).length;
-        const roundNum = sameSpeekerCount + 1;
-        let title = `${speaker} - Round ${roundNum}`;
-        speeches.push({
-          id: `speech-${speechIndex}`,
-          title: title,
-          speaker: speaker,
-          round: roundNum,
-          startLine: lineIndex
-        });
-        speechIndex++;
+      // Check for both ## and # headers
+      if (line.startsWith('## ') || line.startsWith('# ')) {
+        const speaker = line.replace(/^#+ /, '').trim();
+        
+        // Handle AI Judge feedback specially
+        if (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)) {
+          speeches.push({
+            id: `speech-${speechIndex}`,
+            title: 'AI Judge Feedback',
+            speaker: speaker, // Keep original speaker name for matching
+            originalSpeaker: speaker,
+            round: null,
+            startLine: lineIndex,
+            isJudge: true
+          });
+          speechIndex++;
+        } else {
+          // Handle regular debate speeches
+          const sameSpeekerCount = speeches.filter(s => s.speaker === speaker && !s.isJudge).length;
+          const roundNum = sameSpeekerCount + 1;
+          let title = `${speaker} - Round ${roundNum}`;
+          speeches.push({
+            id: `speech-${speechIndex}`,
+            title: title,
+            speaker: speaker,
+            round: roundNum,
+            startLine: lineIndex,
+            isJudge: false
+          });
+          speechIndex++;
+        }
       }
     });
     
@@ -273,17 +281,28 @@ function PublicTranscriptView() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      if (line.startsWith('## ')) {
+      if (line.startsWith('## ') || line.startsWith('# ')) {
         if (isInSpeech) break;
-        const speaker = line.replace('## ', '').trim();
-        const sameSpeakerCount = lines.slice(0, i + 1).filter(l => l.startsWith('## ') && l.replace('## ','').trim() === speaker).length;
-        if (speaker === speechItem.speaker && sameSpeakerCount === speechItem.round) isInSpeech = true;
+        const speaker = line.replace(/^#+ /, '').trim();
+        
+        if (speechItem.isJudge) {
+          // For AI Judge, match any judge-related header or exact speaker match
+          if (speaker.match(/(AI Judge|Judge Feedback|Judge)/i) || speaker === speechItem.speaker) {
+            isInSpeech = true;
+          }
+        } else {
+          // For regular speeches, match by speaker and round
+          const sameSpeakerCount = lines.slice(0, i + 1).filter(l => (l.startsWith('## ') || l.startsWith('# ')) && l.replace(/^#+ /, '').trim() === speaker).length;
+          if (speaker === speechItem.speaker && sameSpeakerCount === speechItem.round) {
+            isInSpeech = true;
+          }
+        }
       } else if (isInSpeech) {
         speechLines.push(line);
       }
     }
     
-    return speechLines.join('\n').trim();
+    return speechLines.join('\n').replace(/\*Model: [^\*]+\*/g, '').trim();
   };
 
   const scrollToSpeech = (speechId) => {
@@ -304,12 +323,21 @@ function PublicTranscriptView() {
     let speechIndex = 0;
     const processedLines = [];
     
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line.startsWith('## ')) {
-        const speaker = line.replace('## ', '').trim();
+      if (line.startsWith('## ') || line.startsWith('# ')) {
+        const speaker = line.replace(/^#+ /, '').trim();
         const speech = speechList[speechIndex];
-        if (speech && speech.speaker === speaker) {
+        
+        
+        // Check for exact match or judge feedback match
+        const isMatch = speech && (
+          speech.speaker === speaker || 
+          (speech.isJudge && (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)))
+        );
+        
+        if (isMatch) {
           const newHeader = `## ${speech.title}`;
           processedLines.push(newHeader);
           speechIndex++;
@@ -421,6 +449,7 @@ function PublicTranscriptView() {
           sidebarExpanded={sidebarExpanded}
           setSidebarExpanded={setSidebarExpanded}
           transcript={transcript.transcript}
+          extractSpeechText={extractSpeechText}
         />
       )}
       
@@ -448,7 +477,60 @@ function PublicTranscriptView() {
             <ReactMarkdown
               rehypePlugins={[rehypeRaw]}
               components={{
-                h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                h1: ({ node, ...props }) => {
+                  const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
+                  let headerId;
+                  if (processedHeadersRef.current.has(headerText)) {
+                    headerId = processedHeadersRef.current.get(headerText);
+                  } else {
+                    const matchingSpeech = speechList.find(s => s.title === headerText);
+                    headerId = matchingSpeech
+                      ? matchingSpeech.id
+                      : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
+                    processedHeadersRef.current.set(headerText, headerId);
+                  }
+                  
+                  // Check if this is any speech section (including AI Judge)
+                  let matchingSpeech = speechList.find(s => s.title === headerText);
+                  
+                  // If not found by title, try to find by speaker name or judge pattern
+                  if (!matchingSpeech) {
+                    matchingSpeech = speechList.find(s => 
+                      s.speaker === headerText || 
+                      (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+                    );
+                  }
+                  
+                  const isSpeechSection = matchingSpeech !== undefined;
+                  
+                  if (isSpeechSection) {
+                    // Get the speech text using our extraction function
+                    const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+                    const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+                    
+                    return (
+                      <div className="debate-speech-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', gap: '1rem' }}>
+                        <h1 className="markdown-h1" id={headerId} {...props} />
+                        <div className="debate-speech-tts" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '40px' }}>
+                          <EnhancedVoiceOutput
+                            text={speechText}
+                            showLabel={false}
+                            buttonStyle="compact"
+                            context={context}
+                            useGoogleTTS={true}
+                            ttsApiUrl={TTS_CONFIG.apiUrl}
+                            onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                            onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                            onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Non-speech header, render normally without TTS
+                    return <h1 className="markdown-h1" id={headerId} {...props} />;
+                  }
+                },
                 h2: ({ node, ...props }) => {
                   const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
                   let headerId;
@@ -461,20 +543,48 @@ function PublicTranscriptView() {
                       : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
                     processedHeadersRef.current.set(headerText, headerId);
                   }
-                  return (
-                    <div className="markdown-h2-wrapper">
-                      <EnhancedVoiceOutput
-                        text={transcript.transcript}
-                        showLabel={false}
-                        buttonStyle="compact"
-                        context="general"
-                        useGoogleTTS={true}
-                        ttsApiUrl={TTS_CONFIG.apiUrl}
-                        defaultVoice={getVoiceForContext('general').voice}
-                      />
-                      <h2 className="markdown-h2" id={headerId} {...props} />
-                    </div>
-                  );
+                  
+                  // Check if this is any speech section (including AI Judge)
+                  let matchingSpeech = speechList.find(s => s.title === headerText);
+                  
+                  // If not found by title, try to find by speaker name or judge pattern
+                  if (!matchingSpeech) {
+                    matchingSpeech = speechList.find(s => 
+                      s.speaker === headerText || 
+                      (s.isJudge && headerText.match(/(AI Judge|Judge Feedback|Judge)/i))
+                    );
+                  }
+                  
+                  
+                  const isSpeechSection = matchingSpeech !== undefined;
+                  
+                  if (isSpeechSection) {
+                    // Get the speech text using our extraction function
+                    const speechText = extractSpeechText(transcript.transcript, matchingSpeech);
+                    const context = matchingSpeech.isJudge ? 'judge' : 'debate';
+                    
+                    return (
+                      <div className="debate-speech-header">
+                        <h2 className="markdown-h2" id={headerId} {...props} />
+                        <div className="debate-speech-tts">
+                          <EnhancedVoiceOutput
+                            text={speechText}
+                            showLabel={false}
+                            buttonStyle="compact"
+                            context={context}
+                            useGoogleTTS={true}
+                            ttsApiUrl={TTS_CONFIG.apiUrl}
+                            onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+                            onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+                            onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    // Non-speech header, render normally without TTS
+                    return <h2 className="markdown-h2" id={headerId} {...props} />;
+                  }
                 },
                 h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
                 h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
