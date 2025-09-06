@@ -24,6 +24,117 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+// Custom H2 Section Renderer Component
+const H2SectionRenderer = ({ analysisText }) => {
+  // Function to extract text content from H2 section until next H2
+  const extractH2SectionText = (fullText, h2HeaderText) => {
+    const lines = fullText.split('\n');
+    const startIndex = lines.findIndex(line => 
+      line.startsWith('## ') && line.toLowerCase().includes(h2HeaderText.toLowerCase())
+    );
+    
+    if (startIndex === -1) return '';
+    
+    // Find next H2 header or end of text
+    let endIndex = lines.length;
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      if (lines[i].startsWith('## ')) {
+        endIndex = i;
+        break;
+      }
+    }
+    
+    // Extract content from start to end (excluding the header itself for TTS)
+    return lines.slice(startIndex + 1, endIndex).join('\n').trim();
+  };
+
+  // Parse the analysis text to find all H2 sections
+  const lines = analysisText.split('\n');
+  const h2Sections = [];
+  
+  lines.forEach((line, index) => {
+    if (line.startsWith('## ')) {
+      const headerText = line.replace('## ', '');
+      const sectionText = extractH2SectionText(analysisText, headerText);
+      h2Sections.push({
+        header: headerText,
+        fullSectionText: sectionText,
+        lineIndex: index
+      });
+    }
+  });
+
+  // Render all sections with proper content separation
+  const renderAnalysisWithTTSButtons = () => {
+    const elements = [];
+    
+    h2Sections.forEach((section, index) => {
+      // Add divider line before each section (except the first)
+      if (index > 0) {
+        elements.push(<hr key={`divider-${index}`} className="section-divider" />);
+      }
+      
+      // Add H2 header with TTS button
+      elements.push(
+        <div key={`header-${index}`} className="analysis-heading-container">
+          <h2 className="analysis-heading">
+            {section.header}
+          </h2>
+          <div style={{ display: 'inline-block', marginLeft: '8px', verticalAlign: 'middle' }}>
+            <EnhancedVoiceOutput
+              text={section.fullSectionText}
+              showLabel={false}
+              buttonStyle="compact"
+              context="analysis"
+              useGoogleTTS={true}
+              ttsApiUrl={TTS_CONFIG.apiUrl}
+              title={`Play ${section.header} section`}
+            />
+          </div>
+        </div>
+      );
+      
+      // Add section content directly rendered as markdown
+      if (section.fullSectionText && section.fullSectionText.trim()) {
+        elements.push(
+          <ReactMarkdown 
+            key={`content-${index}`}
+            rehypePlugins={[rehypeRaw]} 
+            className="markdown-renderer"
+            components={{
+              h1: ({node, children, ...props}) => (
+                <h1 className="analysis-heading" {...props}>{children}</h1>
+              ),
+              h2: ({node, children, ...props}) => (
+                <h2 className="analysis-heading" {...props}>{children}</h2>
+              ),
+              h3: ({node, children, ...props}) => (
+                <h3 className="analysis-heading" {...props}>{children}</h3>
+              ),
+              h4: ({node, children, ...props}) => (
+                <h4 className="analysis-heading" {...props}>{children}</h4>
+              ),
+              p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+              ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+            }}
+          >
+            {section.fullSectionText}
+          </ReactMarkdown>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  return (
+    <div className="h2-sections-container">
+      {renderAnalysisWithTTSButtons()}
+    </div>
+  );
+};
+
 // NEW: Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
   if (!isLoading) return null;
@@ -2223,7 +2334,7 @@ const Legislation = ({ user }) => {
             <div className="step-two">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <div className="bill-header-with-tts">
+                <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
@@ -2233,23 +2344,6 @@ const Legislation = ({ user }) => {
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
-                  <EnhancedVoiceOutput 
-                    text={
-                      billSource === 'recommended' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : billSource === 'link' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : (
-                        `Selected Bill: ${selectedBill.name}`
-                      )
-                    }
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="debate"
-                  />
                 </div>
               </div>
 
@@ -2296,7 +2390,7 @@ const Legislation = ({ user }) => {
             <div className="step-three">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <div className="bill-header-with-tts">
+                <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
@@ -2306,23 +2400,6 @@ const Legislation = ({ user }) => {
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
-                  <EnhancedVoiceOutput 
-                    text={
-                      billSource === 'recommended' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : billSource === 'link' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : (
-                        `Selected Bill: ${selectedBill.name}`
-                      )
-                    }
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="general"
-                  />
                 </div>
               </div>
               
@@ -2533,42 +2610,10 @@ const Legislation = ({ user }) => {
                       />
                     </div>
                     
-                    {/* Markdown Content with Header Play Buttons */}
-                    <ReactMarkdown 
-                      rehypePlugins={[rehypeRaw]} 
-                      className="markdown-renderer"
-                      components={{
-                        h1: ({node, children, ...props}) => (
-                          <h1 className="analysis-heading" {...props}>
-                            {children}
-                            <HeaderPlayButton headerText={children?.toString() || ''} />
-                          </h1>
-                        ),
-                        h2: ({node, children, ...props}) => (
-                          <h2 className="analysis-heading" {...props}>
-                            {children}
-                            <HeaderPlayButton headerText={children?.toString() || ''} />
-                          </h2>
-                        ),
-                        h3: ({node, children, ...props}) => (
-                          <h3 className="analysis-heading" {...props}>
-                            {children}
-                            <HeaderPlayButton headerText={children?.toString() || ''} />
-                          </h3>
-                        ),
-                        h4: ({node, children, ...props}) => (
-                          <h4 className="analysis-heading" {...props}>
-                            {children}
-                            <HeaderPlayButton headerText={children?.toString() || ''} />
-                          </h4>
-                        ),
-                        p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                        ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                        ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                      }}
-                    >
-                      {`## Detailed Analysis\n\n${analysisResult}`}
-                    </ReactMarkdown>
+                    {/* Custom H2 Section Component */}
+                    <H2SectionRenderer 
+                      analysisText={`## Detailed Analysis\n\n${analysisResult}`}
+                    />
                   </div>
                 </TTSProvider>
               )}
