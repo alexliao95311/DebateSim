@@ -1,5 +1,5 @@
 // components/PublicTranscriptView.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, memo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -9,9 +9,10 @@ import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
+import "./Debate.css"; // For debate speech header and TTS button styles
 
 // Speech Sidebar Component for Public Transcript View
-const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript }) => {
+const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript, extractSpeechText }) => {
   return (
     <>
       <button 
@@ -36,18 +37,6 @@ const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setS
                 >
                   {item.title}
                 </span>
-                {/* TTS button for individual speech */}
-                <div className="sidebar-tts-control">
-                  <EnhancedVoiceOutput
-                    text={extractSpeechText(transcript, item)}
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="general"
-                  />
-                </div>
               </div>
             </li>
           ))}
@@ -56,6 +45,188 @@ const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setS
     </>
   );
 };
+
+// Stable TTS components to prevent re-renders
+const TTSComponent = memo(({ speechText, context, headerId, headerText }) => (
+  <EnhancedVoiceOutput
+    key={`tts-${headerId}`}
+    text={speechText}
+    showLabel={false}
+    buttonStyle="compact"
+    context={context}
+    useGoogleTTS={true}
+    ttsApiUrl={TTS_CONFIG.apiUrl}
+    onSpeechStart={() => console.log(`Speech started for ${headerText}`)}
+    onSpeechEnd={() => console.log(`Speech ended for ${headerText}`)}
+    onSpeechError={(error) => console.error(`Speech error for ${headerText}:`, error)}
+  />
+));
+
+// Split content into speech blocks similar to Debate.jsx
+const TranscriptContent = memo(({ transcript, speechList, extractSpeechText }) => {
+  const renderSpeechBlocks = () => {
+    if (!transcript.transcript || !speechList.length) {
+      // Fall back to simple ReactMarkdown rendering for non-speech content
+      return (
+        <div className="transcript-content">
+          <ReactMarkdown
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+              h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+              h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+              h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+              p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+              ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+              ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+              li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+              strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+              em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+
+            }}
+          >
+            {transcript.transcript}
+          </ReactMarkdown>
+        </div>
+      );
+    }
+
+    const blocks = [];
+    const lines = transcript.transcript.split('\n');
+    let currentSpeechIndex = 0;
+    let currentContent = [];
+    let inSpeech = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (line.startsWith('## ') || line.startsWith('# ')) {
+        // Save previous content if any
+        if (currentContent.length > 0) {
+          blocks.push({
+            type: 'content',
+            content: currentContent.join('\n'),
+            key: `content-${blocks.length}`
+          });
+          currentContent = [];
+        }
+
+        const speaker = line.replace(/^#+ /, '').trim();
+        const speech = speechList[currentSpeechIndex];
+        
+        // Check if this matches current speech
+        const isMatch = speech && (
+          speech.speaker === speaker || 
+          (speech.isJudge && (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)))
+        );
+
+        if (isMatch) {
+          // This is a speech header - create speech block
+          const speechText = extractSpeechText(transcript.transcript, speech);
+          const context = speech.isJudge ? 'judge' : 'debate';
+          
+          blocks.push({
+            type: 'speech',
+            speech: speech,
+            speechText: speechText,
+            context: context,
+            key: `speech-${currentSpeechIndex}`
+          });
+          
+          currentSpeechIndex++;
+          inSpeech = true;
+        } else {
+          // Non-speech header, add to content
+          currentContent.push(line);
+          inSpeech = false;
+        }
+      } else if (inSpeech) {
+        // Skip speech content lines as they're handled by speech blocks
+        continue;
+      } else {
+        // Regular content line
+        currentContent.push(line);
+      }
+    }
+
+    // Add remaining content
+    if (currentContent.length > 0) {
+      blocks.push({
+        type: 'content',
+        content: currentContent.join('\n'),
+        key: `content-${blocks.length}`
+      });
+    }
+
+    return (
+      <div className="transcript-content">
+        {blocks.map(block => {
+          if (block.type === 'speech') {
+            return (
+              <div key={block.key} className="debate-speech-block relative" id={block.speech.id}>
+                <div className="debate-speech-header">
+                  <h3 className="debate-speech-title">{block.speech.title}</h3>
+                  <div className="debate-speech-tts">
+                    <TTSComponent
+                      speechText={block.speechText}
+                      context={block.context}
+                      headerId={block.speech.id}
+                      headerText={block.speech.title}
+                    />
+                  </div>
+                </div>
+                <div className="debate-speech-content">
+                  <ReactMarkdown
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                      p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                      ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                      ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                      li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                      strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                      em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                      hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
+                    }}
+                  >
+                    {block.speechText}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <ReactMarkdown
+                key={block.key}
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                  h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+                  h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                  ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                  strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                  hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
+                }}
+              >
+                {block.content}
+              </ReactMarkdown>
+            );
+          }
+        })}
+      </div>
+    );
+  };
+
+  return renderSpeechBlocks();
+});
 
 // Circular Progress Component for grading display
 const CircularProgress = ({ percentage, size = 80, strokeWidth = 8, color = '#4a90e2' }) => {
@@ -228,12 +399,6 @@ function PublicTranscriptView() {
   const [error, setError] = useState("");
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const processedHeadersRef = useRef(new Map());
-
-  // Reset processed headers when speechList changes
-  useEffect(() => {
-    processedHeadersRef.current = new Map();
-  }, [speechList]);
 
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
@@ -244,19 +409,37 @@ function PublicTranscriptView() {
     let speechIndex = 0;
     
     lines.forEach((line, lineIndex) => {
-      if (line.startsWith('## ')) {
-        const speaker = line.replace('## ', '').trim();
-        const sameSpeekerCount = speeches.filter(s => s.speaker === speaker).length;
-        const roundNum = sameSpeekerCount + 1;
-        let title = `${speaker} - Round ${roundNum}`;
-        speeches.push({
-          id: `speech-${speechIndex}`,
-          title: title,
-          speaker: speaker,
-          round: roundNum,
-          startLine: lineIndex
-        });
-        speechIndex++;
+      // Check for both ## and # headers
+      if (line.startsWith('## ') || line.startsWith('# ')) {
+        const speaker = line.replace(/^#+ /, '').trim();
+        
+        // Handle AI Judge feedback specially
+        if (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)) {
+          speeches.push({
+            id: `speech-${speechIndex}`,
+            title: 'AI Judge Feedback',
+            speaker: speaker, // Keep original speaker name for matching
+            originalSpeaker: speaker,
+            round: null,
+            startLine: lineIndex,
+            isJudge: true
+          });
+          speechIndex++;
+        } else {
+          // Handle regular debate speeches
+          const sameSpeekerCount = speeches.filter(s => s.speaker === speaker && !s.isJudge).length;
+          const roundNum = sameSpeekerCount + 1;
+          let title = `${speaker} - Round ${roundNum}`;
+          speeches.push({
+            id: `speech-${speechIndex}`,
+            title: title,
+            speaker: speaker,
+            round: roundNum,
+            startLine: lineIndex,
+            isJudge: false
+          });
+          speechIndex++;
+        }
       }
     });
     
@@ -273,17 +456,28 @@ function PublicTranscriptView() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      if (line.startsWith('## ')) {
+      if (line.startsWith('## ') || line.startsWith('# ')) {
         if (isInSpeech) break;
-        const speaker = line.replace('## ', '').trim();
-        const sameSpeakerCount = lines.slice(0, i + 1).filter(l => l.startsWith('## ') && l.replace('## ','').trim() === speaker).length;
-        if (speaker === speechItem.speaker && sameSpeakerCount === speechItem.round) isInSpeech = true;
+        const speaker = line.replace(/^#+ /, '').trim();
+        
+        if (speechItem.isJudge) {
+          // For AI Judge, match any judge-related header or exact speaker match
+          if (speaker.match(/(AI Judge|Judge Feedback|Judge)/i) || speaker === speechItem.speaker) {
+            isInSpeech = true;
+          }
+        } else {
+          // For regular speeches, match by speaker and round
+          const sameSpeakerCount = lines.slice(0, i + 1).filter(l => (l.startsWith('## ') || l.startsWith('# ')) && l.replace(/^#+ /, '').trim() === speaker).length;
+          if (speaker === speechItem.speaker && sameSpeakerCount === speechItem.round) {
+            isInSpeech = true;
+          }
+        }
       } else if (isInSpeech) {
         speechLines.push(line);
       }
     }
     
-    return speechLines.join('\n').trim();
+    return speechLines.join('\n').replace(/\*Model: [^\*]+\*/g, '').trim();
   };
 
   const scrollToSpeech = (speechId) => {
@@ -297,32 +491,6 @@ function PublicTranscriptView() {
     }, 200);
   };
 
-  const processTranscriptContent = (transcriptText, speechList) => {
-    if (!transcriptText || !speechList.length) return transcriptText;
-    
-    const lines = transcriptText.split('\n');
-    let speechIndex = 0;
-    const processedLines = [];
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('## ')) {
-        const speaker = line.replace('## ', '').trim();
-        const speech = speechList[speechIndex];
-        if (speech && speech.speaker === speaker) {
-          const newHeader = `## ${speech.title}`;
-          processedLines.push(newHeader);
-          speechIndex++;
-        } else {
-          processedLines.push(line);
-        }
-      } else {
-        processedLines.push(line);
-      }
-    }
-    
-    return processedLines.join('\n');
-  };
 
   useEffect(() => {
     const fetchSharedTranscript = async () => {
@@ -421,6 +589,7 @@ function PublicTranscriptView() {
           sidebarExpanded={sidebarExpanded}
           setSidebarExpanded={setSidebarExpanded}
           transcript={transcript.transcript}
+          extractSpeechText={extractSpeechText}
         />
       )}
       
@@ -444,52 +613,11 @@ function PublicTranscriptView() {
             </div>
           )}
 
-          <div className="transcript-content">
-            <ReactMarkdown
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-                h2: ({ node, ...props }) => {
-                  const headerText = React.Children.toArray(props.children).map(c => c.toString()).join('');
-                  let headerId;
-                  if (processedHeadersRef.current.has(headerText)) {
-                    headerId = processedHeadersRef.current.get(headerText);
-                  } else {
-                    const matchingSpeech = speechList.find(s => s.title === headerText);
-                    headerId = matchingSpeech
-                      ? matchingSpeech.id
-                      : `header-${headerText.replace(/[^a-zA-Z0-9]/g,'-').toLowerCase()}`;
-                    processedHeadersRef.current.set(headerText, headerId);
-                  }
-                  return (
-                    <div className="markdown-h2-wrapper">
-                      <EnhancedVoiceOutput
-                        text={transcript.transcript}
-                        showLabel={false}
-                        buttonStyle="compact"
-                        context="general"
-                        useGoogleTTS={true}
-                        ttsApiUrl={TTS_CONFIG.apiUrl}
-                        defaultVoice={getVoiceForContext('general').voice}
-                      />
-                      <h2 className="markdown-h2" id={headerId} {...props} />
-                    </div>
-                  );
-                },
-                h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-                h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
-                p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-                ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-                ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-                li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-                strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-                em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-                hr: ({node, ...props}) => <hr className="markdown-hr" {...props} />
-              }}
-            >
-              {processTranscriptContent(transcript.transcript, speechList)}
-            </ReactMarkdown>
-          </div>
+          <TranscriptContent
+            transcript={transcript}
+            speechList={speechList}
+            extractSpeechText={extractSpeechText}
+          />
           
           <div className="public-transcript-footer">
             <p className="public-footer-text">
