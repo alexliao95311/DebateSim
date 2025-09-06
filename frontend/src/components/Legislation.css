@@ -5334,3 +5334,178 @@ div[style*="backgroundColor: #d"] * {
   border-top: 1px solid rgba(71, 85, 105, 0.3);
   margin: 2rem 0 1rem 0;
 }
+
+/* Debate Format Selection Styles */
+.debate-format-section {
+  margin-top: 1.5rem;
+}
+
+.debate-format-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.debate-format-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 2px solid rgba(71, 85, 105, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.debate-format-card:hover {
+  border-color: rgba(74, 144, 226, 0.5);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.debate-format-card.selected {
+  border-color: #4a90e2;
+  background: rgba(74, 144, 226, 0.1);
+}
+
+.format-content {
+  text-align: left;
+}
+
+.format-title {
+  color: #4a90e2;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.format-description {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.format-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.format-tag {
+  background: rgba(74, 144, 226, 0.2);
+  color: #4a90e2;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.format-description-text {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Persona Selection Styles */
+.debate-persona-section {
+  margin-top: 1.5rem;
+}
+
+.debate-persona-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.debate-persona-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 2px solid rgba(71, 85, 105, 0.3);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 280px;
+}
+
+.debate-persona-card.selected {
+  border-color: #4a90e2;
+  background: rgba(74, 144, 226, 0.1);
+}
+
+.persona-photo {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.persona-image {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(74, 144, 226, 0.3);
+  transition: border-color 0.3s ease;
+}
+
+.debate-persona-card.selected .persona-image {
+  border-color: #4a90e2;
+}
+
+.persona-info {
+  text-align: center;
+  width: 100%;
+}
+
+.persona-name {
+  color: #4a90e2;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.persona-description {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.persona-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.persona-select-btn {
+  background: rgba(74, 144, 226, 0.1);
+  color: #4a90e2;
+  border: 1px solid #4a90e2;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.persona-select-btn:hover {
+  background: rgba(74, 144, 226, 0.2);
+}
+
+.persona-select-btn.selected {
+  background: #4a90e2;
+  color: white;
+}
+
+.persona-description-text {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}

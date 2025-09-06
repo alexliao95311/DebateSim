@@ -24,6 +24,56 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
+// Debate format options
+const debateFormats = [
+  {
+    id: "default",
+    title: "Default Format",
+    description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+    tags: ["Academic", "Structured"]
+  },
+  {
+    id: "public-forum",
+    title: "Public Forum",
+    description: "Accessible format focused on current events and real-world issues, emphasizing clear communication",
+    tags: ["Accessible", "Current Events"]
+  }
+];
+
+// Persona options for debates
+const personas = [
+  {
+    id: "default",
+    name: "Default AI",
+    description: "Standard debate style",
+    image: "/images/ai.jpg"
+  },
+  {
+    id: "trump",
+    name: "Donald Trump",
+    description: "Bold, confident rhetoric with superlatives",
+    image: "/images/trump.jpeg"
+  },
+  {
+    id: "harris",
+    name: "Kamala Harris", 
+    description: "Prosecutorial, structured, evidence-focused",
+    image: "/images/harris.webp"
+  },
+  {
+    id: "musk",
+    name: "Elon Musk",
+    description: "Analytical, engineering-focused, first principles",
+    image: "/images/elon.jpg"
+  },
+  {
+    id: "drake",
+    name: "Drake",
+    description: "Smooth, introspective Toronto style",
+    image: "/images/drake.jpg"
+  }
+];
+
 // Custom H2 Section Renderer Component
 const H2SectionRenderer = ({ analysisText }) => {
   // Function to extract text content from H2 section until next H2
@@ -485,6 +535,10 @@ const Legislation = ({ user }) => {
   // Debate state
   const [debateTopic, setDebateTopic] = useState('');
   const [debateMode, setDebateMode] = useState('');
+  const [debateFormat, setDebateFormat] = useState('');
+  const [proPersona, setProPersona] = useState('');
+  const [conPersona, setConPersona] = useState('');
+  const [aiPersona, setAiPersona] = useState('');
   
   // History state
   const [history, setHistory] = useState([]);
@@ -1087,7 +1141,11 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: billTitle,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
@@ -1134,7 +1192,11 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: data.title,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
@@ -1155,7 +1217,11 @@ const Legislation = ({ user }) => {
           topic: debateTopic,
           billText: '',
           billTitle: debateTopic,
-          debateMode: debateMode
+          debateMode: debateMode,
+          debateFormat: debateFormat,
+          proPersona: proPersona,
+          conPersona: conPersona,
+          aiPersona: aiPersona
         }
       });
     }
@@ -1198,6 +1264,10 @@ const Legislation = ({ user }) => {
     setAnalysisGrades(null);
     setDebateTopic('');
     setDebateMode('');
+    setDebateFormat('');
+    setProPersona('');
+    setConPersona('');
+    setAiPersona('');
     setError('');
     setLoadingState(false);
     setProcessingStage('');
@@ -1219,6 +1289,21 @@ const Legislation = ({ user }) => {
     // Reset info note state
     setShowInfoNote(false);
     setInfoNoteExpanded(false);
+  };
+
+  // Check if debate configuration is complete
+  const isDebateConfigComplete = () => {
+    if (!debateTopic.trim() || !debateMode || !debateFormat) return false;
+    
+    if (debateMode === 'ai-vs-ai') {
+      return proPersona && conPersona;
+    } else if (debateMode === 'ai-vs-user') {
+      return aiPersona;
+    } else if (debateMode === 'user-vs-user') {
+      return true; // No personas needed
+    }
+    
+    return false;
   };
 
   // Handle sharing current analysis - simplified like Judge.jsx
@@ -2449,6 +2534,8 @@ const Legislation = ({ user }) => {
               {actionType === 'debate' && (
                 <div className="debate-config">
                   <h2>Step 3: Configure Debate</h2>
+                  
+                  {/* Bill Name Section */}
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
@@ -2466,7 +2553,10 @@ const Legislation = ({ user }) => {
                         This will be the topic displayed during the debate session.
                       </p>
                     </div>
-                    
+                  </div>
+
+                  {/* Debate Mode Selection */}
+                  <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
                         <span className="label-icon">⚔️</span>
@@ -2496,6 +2586,108 @@ const Legislation = ({ user }) => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Debate Format Selection */}
+                  {debateMode && (
+                    <div className="config-section">
+                      <div className="debate-format-section">
+                        <label className="debate-label">
+                          <span className="label-icon">📋</span>
+                          Select Debate Format
+                        </label>
+                        <div className="debate-format-cards">
+                          {debateFormats.map((formatOption) => (
+                            <div 
+                              key={formatOption.id}
+                              className={`debate-format-card ${debateFormat === formatOption.id ? 'selected' : ''}`}
+                              onClick={() => setDebateFormat(formatOption.id)}
+                            >
+                              <div className="format-content">
+                                <h4 className="format-title">{formatOption.title}</h4>
+                                <p className="format-description">{formatOption.description}</p>
+                                <div className="format-tags">
+                                  {formatOption.tags.map((tag, index) => (
+                                    <span key={index} className="format-tag">{tag}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="format-description-text">
+                          Choose the structure and style of your debate.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Persona Selection */}
+                  {debateMode && debateFormat && (debateMode === 'ai-vs-ai' || debateMode === 'ai-vs-user') && (
+                    <div className="config-section">
+                      <div className="debate-persona-section">
+                        <label className="debate-label">
+                          <span className="label-icon">🎭</span>
+                          Select AI Personas
+                        </label>
+                        <p className="persona-description-text">
+                          {debateMode === 'ai-vs-ai' 
+                            ? 'Choose personas for both Pro and Con sides of the debate.'
+                            : 'Choose a persona for the AI opponent.'
+                          }
+                        </p>
+                        
+                        <div className="debate-persona-cards">
+                          {personas.map((persona) => (
+                            <div 
+                              key={persona.id}
+                              className={`debate-persona-card ${
+                                (debateMode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
+                                (debateMode === 'ai-vs-user' && aiPersona === persona.id) ? 'selected' : ''
+                              }`}
+                            >
+                              <div className="persona-photo">
+                                <img 
+                                  src={persona.image} 
+                                  alt={persona.name}
+                                  className="persona-image"
+                                />
+                              </div>
+                              <div className="persona-info">
+                                <h4 className="persona-name">{persona.name}</h4>
+                                <p className="persona-description">{persona.description}</p>
+                                
+                                {debateMode === 'ai-vs-ai' && (
+                                  <div className="persona-buttons">
+                                    <button 
+                                      className={`persona-select-btn ${proPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setProPersona(persona.id)}
+                                    >
+                                      {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                                    </button>
+                                    <button 
+                                      className={`persona-select-btn ${conPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setConPersona(persona.id)}
+                                    >
+                                      {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {debateMode === 'ai-vs-user' && (
+                                  <button 
+                                    className={`persona-select-btn ${aiPersona === persona.id ? 'selected' : ''}`}
+                                    onClick={() => setAiPersona(persona.id)}
+                                  >
+                                    {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
@@ -2504,7 +2696,7 @@ const Legislation = ({ user }) => {
                     <button 
                       className="nav-button next"
                       onClick={handleDebateExecution}
-                      disabled={!debateTopic.trim() || !debateMode}
+                      disabled={!isDebateConfigComplete()}
                     >
                       Start Debate
                     </button>
