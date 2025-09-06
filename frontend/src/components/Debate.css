@@ -177,7 +177,8 @@ html, body {
   position: relative;
 }
 
-.debate-container.sidebar-open {
+.debate-container.sidebar-open,
+.debate-container[data-sidebar-expanded="true"] {
   padding-left: 260px;
 }
 
@@ -567,11 +568,6 @@ html, body {
   line-height: 1.6;
   margin-bottom: 1rem;
   color: #e2e8f0 !important;
-}
-hr.divider {
-  margin: 1.5rem 0;
-  border: none;
-  border-top: 1px solid var(--card-border);
 }
 
 /* Speech blocks with glass-morphism */

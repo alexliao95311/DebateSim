@@ -10,6 +10,7 @@ import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import HistorySidebar from "./HistorySidebar";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import EnhancedAnalysisTTS, { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 import Footer from "./Footer";
@@ -22,6 +23,167 @@ const modelOptions = [
   "anthropic/claude-3.5-sonnet",
   "openai/gpt-4o-mini-search-preview"
 ];
+
+// Debate format options
+const debateFormats = [
+  {
+    id: "default",
+    title: "Default Format",
+    description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+    tags: ["Academic", "Structured"]
+  },
+  {
+    id: "public-forum",
+    title: "Public Forum",
+    description: "Accessible format focused on current events and real-world issues, emphasizing clear communication",
+    tags: ["Accessible", "Current Events"]
+  }
+];
+
+// Persona options for debates
+const personas = [
+  {
+    id: "default",
+    name: "Default AI",
+    description: "Standard debate style",
+    image: "/images/ai.jpg"
+  },
+  {
+    id: "trump",
+    name: "Donald Trump",
+    description: "Bold, confident rhetoric with superlatives",
+    image: "/images/trump.jpeg"
+  },
+  {
+    id: "harris",
+    name: "Kamala Harris", 
+    description: "Prosecutorial, structured, evidence-focused",
+    image: "/images/harris.webp"
+  },
+  {
+    id: "musk",
+    name: "Elon Musk",
+    description: "Analytical, engineering-focused, first principles",
+    image: "/images/elon.jpg"
+  },
+  {
+    id: "drake",
+    name: "Drake",
+    description: "Smooth, introspective Toronto style",
+    image: "/images/drake.jpg"
+  }
+];
+
+// Custom H2 Section Renderer Component
+const H2SectionRenderer = ({ analysisText }) => {
+  // Function to extract text content from H2 section until next H2
+  const extractH2SectionText = (fullText, h2HeaderText) => {
+    const lines = fullText.split('\n');
+    const startIndex = lines.findIndex(line => 
+      line.startsWith('## ') && line.toLowerCase().includes(h2HeaderText.toLowerCase())
+    );
+    
+    if (startIndex === -1) return '';
+    
+    // Find next H2 header or end of text
+    let endIndex = lines.length;
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      if (lines[i].startsWith('## ')) {
+        endIndex = i;
+        break;
+      }
+    }
+    
+    // Extract content from start to end (excluding the header itself for TTS)
+    return lines.slice(startIndex + 1, endIndex).join('\n').trim();
+  };
+
+  // Parse the analysis text to find all H2 sections
+  const lines = analysisText.split('\n');
+  const h2Sections = [];
+  
+  lines.forEach((line, index) => {
+    if (line.startsWith('## ')) {
+      const headerText = line.replace('## ', '');
+      const sectionText = extractH2SectionText(analysisText, headerText);
+      h2Sections.push({
+        header: headerText,
+        fullSectionText: sectionText,
+        lineIndex: index
+      });
+    }
+  });
+
+  // Render all sections with proper content separation
+  const renderAnalysisWithTTSButtons = () => {
+    const elements = [];
+    
+    h2Sections.forEach((section, index) => {
+      // Add divider line before each section (except the first)
+      if (index > 0) {
+        elements.push(<hr key={`divider-${index}`} className="section-divider" />);
+      }
+      
+      // Add H2 header with TTS button
+      elements.push(
+        <div key={`header-${index}`} className="analysis-heading-container">
+          <h2 className="analysis-heading">
+            {section.header}
+          </h2>
+          <div style={{ display: 'inline-block', marginLeft: '8px', verticalAlign: 'middle' }}>
+            <EnhancedVoiceOutput
+              text={section.fullSectionText}
+              showLabel={false}
+              buttonStyle="compact"
+              context="analysis"
+              useGoogleTTS={true}
+              ttsApiUrl={TTS_CONFIG.apiUrl}
+              title={`Play ${section.header} section`}
+            />
+          </div>
+        </div>
+      );
+      
+      // Add section content directly rendered as markdown
+      if (section.fullSectionText && section.fullSectionText.trim()) {
+        elements.push(
+          <ReactMarkdown 
+            key={`content-${index}`}
+            rehypePlugins={[rehypeRaw]} 
+            className="markdown-renderer"
+            components={{
+              h1: ({node, children, ...props}) => (
+                <h1 className="analysis-heading" {...props}>{children}</h1>
+              ),
+              h2: ({node, children, ...props}) => (
+                <h2 className="analysis-heading" {...props}>{children}</h2>
+              ),
+              h3: ({node, children, ...props}) => (
+                <h3 className="analysis-heading" {...props}>{children}</h3>
+              ),
+              h4: ({node, children, ...props}) => (
+                <h4 className="analysis-heading" {...props}>{children}</h4>
+              ),
+              p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+              ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+            }}
+          >
+            {section.fullSectionText}
+          </ReactMarkdown>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  return (
+    <div className="h2-sections-container">
+      {renderAnalysisWithTTSButtons()}
+    </div>
+  );
+};
 
 // NEW: Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
@@ -373,6 +535,10 @@ const Legislation = ({ user }) => {
   // Debate state
   const [debateTopic, setDebateTopic] = useState('');
   const [debateMode, setDebateMode] = useState('');
+  const [debateFormat, setDebateFormat] = useState('');
+  const [proPersona, setProPersona] = useState('');
+  const [conPersona, setConPersona] = useState('');
+  const [aiPersona, setAiPersona] = useState('');
   
   // History state
   const [history, setHistory] = useState([]);
@@ -975,7 +1141,11 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: billTitle,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
@@ -1022,7 +1192,11 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: data.title,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
@@ -1043,7 +1217,11 @@ const Legislation = ({ user }) => {
           topic: debateTopic,
           billText: '',
           billTitle: debateTopic,
-          debateMode: debateMode
+          debateMode: debateMode,
+          debateFormat: debateFormat,
+          proPersona: proPersona,
+          conPersona: conPersona,
+          aiPersona: aiPersona
         }
       });
     }
@@ -1086,6 +1264,10 @@ const Legislation = ({ user }) => {
     setAnalysisGrades(null);
     setDebateTopic('');
     setDebateMode('');
+    setDebateFormat('');
+    setProPersona('');
+    setConPersona('');
+    setAiPersona('');
     setError('');
     setLoadingState(false);
     setProcessingStage('');
@@ -1107,6 +1289,21 @@ const Legislation = ({ user }) => {
     // Reset info note state
     setShowInfoNote(false);
     setInfoNoteExpanded(false);
+  };
+
+  // Check if debate configuration is complete
+  const isDebateConfigComplete = () => {
+    if (!debateTopic.trim() || !debateMode || !debateFormat) return false;
+    
+    if (debateMode === 'ai-vs-ai') {
+      return proPersona && conPersona;
+    } else if (debateMode === 'ai-vs-user') {
+      return aiPersona;
+    } else if (debateMode === 'user-vs-user') {
+      return true; // No personas needed
+    }
+    
+    return false;
   };
 
   // Handle sharing current analysis - simplified like Judge.jsx
@@ -2222,7 +2419,7 @@ const Legislation = ({ user }) => {
             <div className="step-two">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <div className="bill-header-with-tts">
+                <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
@@ -2232,23 +2429,6 @@ const Legislation = ({ user }) => {
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
-                  <EnhancedVoiceOutput 
-                    text={
-                      billSource === 'recommended' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : billSource === 'link' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : (
-                        `Selected Bill: ${selectedBill.name}`
-                      )
-                    }
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="debate"
-                  />
                 </div>
               </div>
 
@@ -2295,7 +2475,7 @@ const Legislation = ({ user }) => {
             <div className="step-three">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <div className="bill-header-with-tts">
+                <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
@@ -2305,23 +2485,6 @@ const Legislation = ({ user }) => {
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
-                  <EnhancedVoiceOutput 
-                    text={
-                      billSource === 'recommended' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : billSource === 'link' ? (
-                        `Selected Bill: ${selectedBill.type} ${selectedBill.number}. ${selectedBill.title}`
-                      ) : (
-                        `Selected Bill: ${selectedBill.name}`
-                      )
-                    }
-                    buttonStyle="compact"
-                    showLabel={false}
-                    useGoogleTTS={true}
-                    ttsApiUrl={TTS_CONFIG.apiUrl}
-                    defaultVoice={getVoiceForContext('general').voice}
-                    context="general"
-                  />
                 </div>
               </div>
               
@@ -2350,15 +2513,6 @@ const Legislation = ({ user }) => {
                       <p className="model-description">
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
-                      <EnhancedVoiceOutput 
-                        text="Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth."
-                        buttonStyle="compact"
-                        showLabel={false}
-                        useGoogleTTS={true}
-                        ttsApiUrl={TTS_CONFIG.apiUrl}
-                        defaultVoice={getVoiceForContext('general').voice}
-                        context="general"
-                      />
                     </div>
                   </div>
                   
@@ -2380,6 +2534,8 @@ const Legislation = ({ user }) => {
               {actionType === 'debate' && (
                 <div className="debate-config">
                   <h2>Step 3: Configure Debate</h2>
+                  
+                  {/* Bill Name Section */}
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
@@ -2397,7 +2553,10 @@ const Legislation = ({ user }) => {
                         This will be the topic displayed during the debate session.
                       </p>
                     </div>
-                    
+                  </div>
+
+                  {/* Debate Mode Selection */}
+                  <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
                         <span className="label-icon">⚔️</span>
@@ -2427,6 +2586,108 @@ const Legislation = ({ user }) => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Debate Format Selection */}
+                  {debateMode && (
+                    <div className="config-section">
+                      <div className="debate-format-section">
+                        <label className="debate-label">
+                          <span className="label-icon">📋</span>
+                          Select Debate Format
+                        </label>
+                        <div className="debate-format-cards">
+                          {debateFormats.map((formatOption) => (
+                            <div 
+                              key={formatOption.id}
+                              className={`debate-format-card ${debateFormat === formatOption.id ? 'selected' : ''}`}
+                              onClick={() => setDebateFormat(formatOption.id)}
+                            >
+                              <div className="format-content">
+                                <h4 className="format-title">{formatOption.title}</h4>
+                                <p className="format-description">{formatOption.description}</p>
+                                <div className="format-tags">
+                                  {formatOption.tags.map((tag, index) => (
+                                    <span key={index} className="format-tag">{tag}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="format-description-text">
+                          Choose the structure and style of your debate.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Persona Selection */}
+                  {debateMode && debateFormat && (debateMode === 'ai-vs-ai' || debateMode === 'ai-vs-user') && (
+                    <div className="config-section">
+                      <div className="debate-persona-section">
+                        <label className="debate-label">
+                          <span className="label-icon">🎭</span>
+                          Select AI Personas
+                        </label>
+                        <p className="persona-description-text">
+                          {debateMode === 'ai-vs-ai' 
+                            ? 'Choose personas for both Pro and Con sides of the debate.'
+                            : 'Choose a persona for the AI opponent.'
+                          }
+                        </p>
+                        
+                        <div className="debate-persona-cards">
+                          {personas.map((persona) => (
+                            <div 
+                              key={persona.id}
+                              className={`debate-persona-card ${
+                                (debateMode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
+                                (debateMode === 'ai-vs-user' && aiPersona === persona.id) ? 'selected' : ''
+                              }`}
+                            >
+                              <div className="persona-photo">
+                                <img 
+                                  src={persona.image} 
+                                  alt={persona.name}
+                                  className="persona-image"
+                                />
+                              </div>
+                              <div className="persona-info">
+                                <h4 className="persona-name">{persona.name}</h4>
+                                <p className="persona-description">{persona.description}</p>
+                                
+                                {debateMode === 'ai-vs-ai' && (
+                                  <div className="persona-buttons">
+                                    <button 
+                                      className={`persona-select-btn ${proPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setProPersona(persona.id)}
+                                    >
+                                      {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                                    </button>
+                                    <button 
+                                      className={`persona-select-btn ${conPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setConPersona(persona.id)}
+                                    >
+                                      {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {debateMode === 'ai-vs-user' && (
+                                  <button 
+                                    className={`persona-select-btn ${aiPersona === persona.id ? 'selected' : ''}`}
+                                    onClick={() => setAiPersona(persona.id)}
+                                  >
+                                    {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
@@ -2435,7 +2696,7 @@ const Legislation = ({ user }) => {
                     <button 
                       className="nav-button next"
                       onClick={handleDebateExecution}
-                      disabled={!debateTopic.trim() || !debateMode}
+                      disabled={!isDebateConfigComplete()}
                     >
                       Start Debate
                     </button>
@@ -2487,17 +2748,6 @@ const Legislation = ({ user }) => {
               }}>
                 <div className="results-header-top">
                   <h2>Analysis Results</h2>
-                  <div className="analysis-voice-controls">
-                    <EnhancedVoiceOutput 
-                      text={analysisResult}
-                      buttonStyle="compact"
-                      showLabel={false}
-                      useGoogleTTS={true}
-                      ttsApiUrl={TTS_CONFIG.apiUrl}
-                      defaultVoice={getVoiceForContext('general').voice}
-                      context="general"
-                    />
-                  </div>
                 </div>
                 <div className="results-actions">
                   <button 
@@ -2540,26 +2790,24 @@ const Legislation = ({ user }) => {
                 </div>
               )}
               
-              {/* Analysis Text Section - Simplified */}
+              {/* Analysis Text Section - Enhanced with TTS */}
               {showAnalysisText && (
-                <ReactMarkdown 
-                  rehypePlugins={[rehypeRaw]} 
-                  className="markdown-renderer"
-                  style={{
-                    marginTop: '2rem'
-                  }}
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                    p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                    ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                    ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                  }}
-                >
-                  {`## Detailed Analysis\n\n${analysisResult}`}
-                </ReactMarkdown>
+                <TTSProvider analysisText={analysisResult}>
+                  <div style={{ marginTop: '2rem' }}>
+                    {/* Enhanced TTS Controls */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <EnhancedAnalysisTTS 
+                        analysisText={analysisResult}
+                        title="Detailed Analysis"
+                      />
+                    </div>
+                    
+                    {/* Custom H2 Section Component */}
+                    <H2SectionRenderer 
+                      analysisText={`## Detailed Analysis\n\n${analysisResult}`}
+                    />
+                  </div>
+                </TTSProvider>
               )}
               
               {/* Bill Text Display Section with TTS */}

@@ -9,6 +9,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
 import { MessageSquare, Code, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 function Judge() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -184,6 +186,107 @@ ${feedback}`;
     );
   };
 
+  // Render transcript with TTS buttons for each speech section
+  const renderTranscriptWithTTS = (transcriptText) => {
+    // Split transcript into sections by ## headers (speech sections)
+    const sections = transcriptText.split(/(?=^## )/m);
+    
+    return sections.map((section, index) => {
+      if (!section.trim()) return null;
+      
+      const lines = section.trim().split('\n');
+      const headerLine = lines[0];
+      const restOfSection = lines.slice(1).join('\n');
+      
+      // Check if this is a main speech section by looking for speaker patterns
+      const isSpeechSection = headerLine.match(/^## (AI Debater|Pro \(|Con \(|.*\(AI\)|.*\(User\)|.*AI.*)/i);
+      
+      if (isSpeechSection) {
+        // Count how many speech sections we've rendered so far
+        const speechSections = sections.slice(0, index).filter(s => {
+          const firstLine = s.trim().split('\n')[0];
+          return firstLine.match(/^## (AI Debater|Pro \(|Con \(|.*\(AI\)|.*\(User\)|.*AI.*)/i);
+        });
+        // Extract speaker name from header
+        const speakerMatch = headerLine.match(/^## (.+)$/);
+        const speakerName = speakerMatch ? speakerMatch[1] : 'Speaker';
+        
+        // Get the text content for TTS (remove model info but keep other markdown)
+        const textContent = restOfSection
+          .replace(/\*Model: [^\*]+\*/g, '') // Remove model info lines
+          .replace(/^\s*$/gm, ' ') // Replace empty lines with spaces
+          .replace(/#+\s*/g, '') // Remove markdown headers within speech
+          .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold formatting
+          .replace(/\*(.+?)\*/g, '$1') // Remove italic formatting
+          .trim();
+        
+        return (
+          <React.Fragment key={index}>
+            {speechSections.length > 0 && <hr className="judge-markdown-hr" />}
+            <div className="debate-speech-header">
+              <h2 className="judge-markdown-h2">{speakerName}</h2>
+              <div className="debate-speech-tts">
+                <EnhancedVoiceOutput
+                  text={textContent}
+                  useGoogleTTS={true}
+                  ttsApiUrl={TTS_CONFIG.apiUrl}
+                  buttonStyle="compact"
+                  showLabel={false}
+                  context="debate"
+                  onSpeechStart={() => console.log(`Speech started for ${speakerName}`)}
+                  onSpeechEnd={() => console.log(`Speech ended for ${speakerName}`)}
+                  onSpeechError={(error) => console.error(`Speech error for ${speakerName}:`, error)}
+                />
+              </div>
+            </div>
+            <ReactMarkdown
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
+              }}
+            >
+              {restOfSection}
+            </ReactMarkdown>
+          </React.Fragment>
+        );
+      } else {
+        // Non-speech section (like Bill Description, etc.), render normally without TTS
+        return (
+          <div key={index}>
+            <ReactMarkdown
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
+              }}
+            >
+              {section}
+            </ReactMarkdown>
+          </div>
+        );
+      }
+    });
+  };
+
   return (
     <div className="judge-container">
       <header className="judge-header">
@@ -268,24 +371,7 @@ ${feedback}`;
               )}
             </div>
             <div className="judge-scrollable-content">
-              <ReactMarkdown
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
-                  ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
-                  ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
-                  li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
-                  strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
-                  hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
-                }}
-              >
-                {formattedTranscript()}
-              </ReactMarkdown>
+              {renderTranscriptWithTTS(formattedTranscript())}
             </div>
           </div>
 
@@ -300,7 +386,22 @@ ${feedback}`;
                 />
               ) : (
                 <>
-                  <h3 className="judge-speech-title">AI Judge:</h3>
+                  <div className="debate-speech-header">
+                    <h3 className="judge-speech-title">AI Judge:</h3>
+                    <div className="debate-speech-tts">
+                      <EnhancedVoiceOutput
+                        text={feedback}
+                        useGoogleTTS={true}
+                        ttsApiUrl={TTS_CONFIG.apiUrl}
+                        buttonStyle="compact"
+                        showLabel={false}
+                        context="judge"
+                        onSpeechStart={() => console.log(`Speech started for AI Judge`)}
+                        onSpeechEnd={() => console.log(`Speech ended for AI Judge`)}
+                        onSpeechError={(error) => console.error(`Speech error for AI Judge:`, error)}
+                      />
+                    </div>
+                  </div>
                   <p className="judge-model-info">Model: {judgeModel}</p>
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}

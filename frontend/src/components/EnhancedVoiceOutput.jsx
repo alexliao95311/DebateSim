@@ -2,13 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TTS_CONFIG, getVoiceForContext, getTTSEndpoint } from '../config/tts';
 import './VoiceOutput.css';
 
-// Function to strip markdown syntax from text
+// Function to get byte length of text (UTF-8)
+const getByteLength = (text) => {
+  return new Blob([text]).size;
+};
+
+// Function to strip markdown syntax and clean up symbols for TTS
 const stripMarkdown = (text) => {
   if (!text) return '';
   
   return text
-    // Remove headers (###, ##, #)
-    .replace(/^#{1,6}\s+/gm, '')
+    // Remove headers (###, ##, #) - enhanced to catch any missed cases
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/#{1,6}\s*/g, '')  // Also remove any remaining # symbols inline
     // Remove bold/italic markers (**text**, *text*)
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
@@ -31,26 +37,48 @@ const stripMarkdown = (text) => {
     .replace(/_(.*?)_/g, '$1')
     // Remove strikethrough (~~text~~)
     .replace(/~~(.*?)~~/g, '$1')
+    // Fix problematic symbols that cause misreading
+    .replace(/["""""'']/g, '')  // Remove all quote variants entirely to prevent "inches" reading
+    .replace(/'/g, "'")         // Keep apostrophes for contractions
+    // Handle other symbols that might cause misreading
+    .replace(/\(/g, ' ')        // Replace parentheses with spaces for cleaner speech
+    .replace(/\)/g, ' ')
+    .replace(/\[/g, ' ')        // Replace brackets with spaces  
+    .replace(/\]/g, ' ')
+    .replace(/—/g, ' - ') // Replace em dash with spaced dash
+    .replace(/–/g, ' - ') // Replace en dash with spaced dash
+    .replace(/\.\.\./g, ', pause,') // Replace ellipsis with pause
+    // Remove any remaining pause markers that might be read aloud
+    .replace(/\[PAUSE\]/gi, '')
+    .replace(/\.\.\.?\s*\[PAUSE\]/gi, '')
+    // Remove any stray hash symbols that might remain
+    .replace(/#/g, '')
     // Clean up extra whitespace
     .replace(/\n\s*\n/g, '\n')
     .replace(/\s+/g, ' ')
     .trim();
 };
 
-// Function to add pauses after headings
+// Function to add natural pauses after headings for better TTS flow
 const addHeadingPauses = (text) => {
   if (!text) return '';
   
-  // Add pauses after numbered headings (1., 2., etc.) and other headings
+  // Add natural pauses after headings using longer punctuation and spacing
   return text
+    // Add longer pause after section headings - use multiple periods for longer pause
+    .replace(/^([A-Z][A-Za-z\s:]+)$/gm, '$1...') // Standalone headings get triple dots
     // Add pause after numbered headings like "1. Heading"
-    .replace(/(\d+\.\s+[^\n]+)/g, '$1... [PAUSE]')
-    // Add pause after markdown headers
-    .replace(/(#{1,6}\s+[^\n]+)/g, '$1... [PAUSE]')
-    // Add pause after standalone headings (lines that end with colon or are all caps)
-    .replace(/([A-Z][A-Z\s]+:?)\n/g, '$1... [PAUSE]\n')
-    // Add pause after debate structure markers
-    .replace(/(Opening Statement|Closing Statement|Rebuttal|Cross-Examination|Summary)/gi, '$1... [PAUSE]');
+    .replace(/(\d+\.\s+[^\n]+)/g, '$1...')
+    // Add pause after headings that end with colon
+    .replace(/([^.!?]):\s*$/gm, '$1:...')
+    // Add pause after words in ALL CAPS (likely headings)
+    .replace(/\b([A-Z]{3,})\b/g, '$1...')
+    // Add extra pause between major sections
+    .replace(/\n([A-Z][A-Za-z\s:]+)\n/g, '\n\n$1...\n\n')
+    // Add natural breathing pauses at sentence boundaries with better spacing
+    .replace(/([.!?])\s*([A-Z])/g, '$1  $2') // Two spaces for slight pause
+    // Convert triple dots to comma pauses for more natural speech
+    .replace(/\.\.\./g, ', , ,'); // Multiple commas create pauses in TTS
 };
 
 const EnhancedVoiceOutput = ({ 
@@ -200,6 +228,10 @@ const EnhancedVoiceOutput = ({
       // Clean the text by removing markdown syntax and add heading pauses
       const cleanText = stripMarkdown(text);
       const textWithPauses = addHeadingPauses(cleanText);
+      
+      // Safety check: if text is too long for Google TTS, truncate it
+      const textByteLength = getByteLength(textWithPauses);
+      const finalText = textByteLength > 4500 ? textWithPauses.substring(0, 2000) + '...' : textWithPauses;
 
       // Set loading state
       setIsLoading(true);
@@ -207,7 +239,7 @@ const EnhancedVoiceOutput = ({
       // Try Google TTS first if available
       if (useGoogleTTS && isGoogleTTSAvailable) {
         try {
-          const success = await playGoogleTTS(textWithPauses);
+          const success = await playGoogleTTS(finalText);
           if (success) return;
         } catch (googleTTSError) {
           console.log('Google TTS failed, falling back to browser TTS:', googleTTSError);
@@ -217,7 +249,7 @@ const EnhancedVoiceOutput = ({
 
       // Fallback to browser TTS
       if (synthRef.current) {
-        const utterance = new SpeechSynthesisUtterance(textWithPauses);
+        const utterance = new SpeechSynthesisUtterance(finalText);
         utteranceRef.current = utterance;
         
         // Configure speech settings from context
