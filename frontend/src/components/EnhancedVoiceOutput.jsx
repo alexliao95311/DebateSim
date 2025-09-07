@@ -278,22 +278,40 @@ const EnhancedVoiceOutput = ({
     try {
       const contextSettings = getVoiceForContext(context);
       
+      const requestPayload = {
+        text: text,
+        voice_name: selectedVoice,
+        rate: contextSettings.rate,
+        pitch: contextSettings.pitch,
+        volume: contextSettings.volume
+      };
+
+
       const response = await fetch(getTTSEndpoint('synthesize'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          text: text,
-          voice_name: selectedVoice,
-          rate: contextSettings.rate,
-          pitch: contextSettings.pitch,
-          volume: contextSettings.volume
-        }),
+        body: JSON.stringify(requestPayload),
       });
 
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorDetails = '';
+        try {
+          const errorData = await response.json();
+          errorDetails = JSON.stringify(errorData);
+          console.error('🎵 TTS Error Response:', errorData);
+        } catch (parseError) {
+          try {
+            errorDetails = await response.text();
+            console.error('🎵 TTS Error Text:', errorDetails);
+          } catch (textError) {
+            errorDetails = `Unable to parse error response: ${textError.message}`;
+            console.error('🎵 TTS Error Parse Failed:', textError);
+          }
+        }
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorDetails}`);
       }
 
       const data = await response.json();
