@@ -1,13 +1,13 @@
 # AI Debate Model & Drift Analysis Research Paper
 
-This directory contains the research paper and supporting materials for the AI Debate Model & Drift Analysis project, formatted for NeurIPS 2024 submission.
+This directory contains the research paper and supporting materials for the AI Debate Model & Drift Analysis project, formatted for agents4science 2025 submission.
 
 ## Paper Structure
 
 ### Main Paper
-- `neurips_paper_template.tex` - Main LaTeX paper following NeurIPS formatting guidelines
+- `neurips_paper_template.tex` - Main LaTeX paper following agents4science 2025 formatting guidelines
 - `references.bib` - Bibliography with relevant citations
-- `neurips_2024.sty` - NeurIPS style file for proper formatting
+- `agents4science_2025.sty` - agents4science 2025 style file for proper formatting
 
 ### Supporting Code and Systems
 
@@ -102,7 +102,7 @@ python auto_logging/auto_logger.py
 stanfordpaper/
 ├── neurips_paper_template.tex    # Main paper
 ├── references.bib                # Bibliography
-├── neurips_2024.sty             # NeurIPS style file
+├── agents4science_2025.sty      # agents4science 2025 style file
 ├── README.md                    # This file
 ├── drift_analysis/
 │   └── drift_analyzer.py        # Drift analysis system
@@ -170,11 +170,11 @@ The new components integrate seamlessly with the existing DebateSim system:
 If you use this work, please cite:
 
 ```bibtex
-@article{anonymous2024cot,
+@article{anonymous2025cot,
   title={Chain-of-Thought Evaluation and Drift Analysis for Multi-Agent AI Debate Systems},
   author={Anonymous Authors},
-  journal={Advances in Neural Information Processing Systems},
-  year={2024}
+  journal={1st Open Conference on AI Agents for Science (agents4science)},
+  year={2025}
 }
 ```
 
