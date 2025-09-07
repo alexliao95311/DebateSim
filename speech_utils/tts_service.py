@@ -18,6 +18,14 @@ class GoogleTTSService:
         self.credentials_path = os.path.join(os.path.dirname(__file__), "..", "credentials", "debatesim-6f403-55fd99aa753a-google-cloud.json")
         self.client = None
         self.voices = [
+            # Chirp3 voices - latest high-quality models
+            {
+                "name": "en-US-Chirp3-HD-Achernar",
+                "language": "en-US",
+                "gender": "FEMALE",
+                "description": "High-quality Chirp3 voice - Achernar ⭐"
+            },
+            # Neural2 voices - previous generation
             {
                 "name": "en-US-Neural2-A",
                 "language": "en-US",
@@ -74,7 +82,7 @@ class GoogleTTSService:
             }
         ]
         
-        self.default_voice = "en-US-Neural2-A"
+        self.default_voice = "en-US-Chirp3-HD-Achernar"
         self._initialize_client()
 
     def _initialize_client(self):

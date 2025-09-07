@@ -14,7 +14,7 @@ export const TTS_CONFIG = {
   },
   
   // Default voice selection
-  defaultVoice: 'en-US-Neural2-C', // Female voice - clear and articulate
+  defaultVoice: 'en-US-Chirp3-HD-Achernar', // High-quality Chirp3 voice
   
   // Alternative voices for different use cases
   voices: {
@@ -36,24 +36,31 @@ export const TTS_CONFIG = {
   // Voice settings for different contexts
   contexts: {
     debate: {
-      voice: 'en-US-Neural2-C',        // Female voice - clear for debates
-      rate: 0.9,                       // Slightly slower for comprehension
-      pitch: 0,                        // Neutral pitch
-      volume: 1.0                      // Full volume
+      voice: 'en-US-Chirp3-HD-Achernar',  // High-quality Chirp3 voice for debates
+      rate: 1.0,                           // Regular speed
+      pitch: 0,                            // Neutral pitch
+      volume: 1.0                          // Full volume
     },
     
     analysis: {
-      voice: 'en-US-Neural2-C',        // Female voice - clear for analysis
-      rate: 0.85,                      // Slower for complex content
-      pitch: 0,                        // Neutral pitch
-      volume: 1.0                      // Full volume
+      voice: 'en-US-Chirp3-HD-Achernar',  // High-quality Chirp3 voice for analysis
+      rate: 1.0,                           // Regular speed
+      pitch: 0,                            // Neutral pitch
+      volume: 1.0                          // Full volume
     },
     
     general: {
-      voice: 'en-US-Neural2-C',        // Default female voice
-      rate: 1.0,                       // Normal speed
-      pitch: 0,                        // Neutral pitch
-      volume: 1.0                      // Full volume
+      voice: 'en-US-Chirp3-HD-Achernar',  // High-quality Chirp3 voice as default
+      rate: 1.0,                           // Regular speed
+      pitch: 0,                            // Neutral pitch
+      volume: 1.0                          // Full volume
+    },
+    
+    judge: {
+      voice: 'en-US-Chirp3-HD-Achernar',  // High-quality Chirp3 voice for judge feedback
+      rate: 1.0,                           // Regular speed
+      pitch: 0,                            // Neutral pitch
+      volume: 1.0                          // Full volume
     }
   },
   
