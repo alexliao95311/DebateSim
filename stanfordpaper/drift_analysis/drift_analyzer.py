@@ -533,68 +533,95 @@ class DriftAnalyzer:
         return data
 
 # Example usage and testing
+
+    def load_real_responses(self):
+        """Load real AI responses from debate transcripts"""
+        hr40_responses = []
+        with open('hr40_debate_transcript.txt', 'r') as f:
+            content = f.read()
+        
+        # Split by rounds
+        rounds = content.split('AI Debater')[1:]  # Skip header
+        
+        for i, round_content in enumerate(rounds):
+            lines = round_content.strip().split('\n')
+            if len(lines) > 1:
+                response_lines = []
+                for line in lines[2:]:  # Skip round header and model info
+                    if line.strip() and not line.startswith('Model:'):
+                        response_lines.append(line)
+                
+                if response_lines:
+                    hr40_responses.append('\n'.join(response_lines))
+        
+        # Extract from H.R. 1 transcript
+        hr1_responses = []
+        with open('hr1_debate_transcript.txt', 'r') as f:
+            content = f.read()
+        
+        rounds = content.split('AI Debater')[1:]  # Skip header
+        
+        for i, round_content in enumerate(rounds):
+            lines = round_content.strip().split('\n')
+            if len(lines) > 1:
+                response_lines = []
+                for line in lines[2:]:  # Skip round header and model info
+                    if line.strip() and not line.startswith('Model:'):
+                        response_lines.append(line)
+                
+                if response_lines:
+                    hr1_responses.append('\n'.join(response_lines))
+        
+        return hr40_responses + hr1_responses
+    
+    def run_real_drift_analysis(self):
+        """Run drift analysis on real AI responses"""
+        print("Loading real AI responses from debate transcripts...")
+        real_responses = self.load_real_responses()
+        
+        if len(real_responses) < 2:
+            print("Need at least 2 responses for drift analysis")
+            return None
+        
+        print(f"Analyzing drift across {len(real_responses)} real AI responses...")
+        
+        # Analyze drift between consecutive responses
+        drift_results = []
+        for i in range(len(real_responses) - 1):
+            response1 = real_responses[i]
+            response2 = real_responses[i + 1]
+            
+            # Vectorize both responses
+            vector1 = self.vectorize_prompt(response1)
+            vector2 = self.vectorize_prompt(response2)
+            
+            # Calculate drift metrics
+            metrics = self.compute_drift_metrics(
+                response1, response2,
+                response1, response2  # Using same text for input/output
+            )
+            
+            drift_results.append(metrics)
+            print(f"Response {i+1} -> {i+2}: Drift Score = {metrics.overall_drift_score:.3f}")
+        
+        # Calculate average drift
+        avg_drift = sum(r.overall_drift_score for r in drift_results) / len(drift_results)
+        print(f"Average drift across real responses: {avg_drift:.3f}")
+        
+        return drift_results
+
+
 if __name__ == "__main__":
     # Initialize drift analyzer
     analyzer = DriftAnalyzer()
     
-    # Example prompts for testing
-    prompt1 = """
-    You are a Pro debater arguing for H.R. 40 - Commission to Study and Develop Reparation Proposals for African-Americans Act.
+    # Run real drift analysis
+    print("Running drift analysis on real AI responses...")
+    real_results = analyzer.run_real_drift_analysis()
     
-    Present exactly 3 main arguments in favor of this legislation:
-    1. Historical Justice
-    2. Economic Impact
-    3. Social Healing
-    
-    Support each argument with specific evidence from the bill text.
-    """
-    
-    prompt2 = """
-    You are a Pro debater arguing for H.R. 40 - Commission to Study and Develop Reparation Proposals for African-Americans Act.
-    
-    Present exactly 3 main arguments in favor of this legislation:
-    1. Moral Imperative
-    2. Economic Benefits
-    3. National Reconciliation
-    
-    Use direct quotes from the bill and provide concrete examples.
-    """
-    
-    # Example outputs
-    output1 = """
-    ### 1. Historical Justice
-    The bill establishes a commission to study the lasting effects of slavery and discrimination.
-    
-    ### 2. Economic Impact
-    Reparations would address wealth disparities and stimulate economic growth.
-    
-    ### 3. Social Healing
-    This process would promote national reconciliation and healing.
-    """
-    
-    output2 = """
-    ### 1. Moral Imperative
-    We have a moral obligation to address historical injustices.
-    
-    ### 2. Economic Benefits
-    Reparations would close the racial wealth gap and benefit all Americans.
-    
-    ### 3. National Reconciliation
-    This commission would help heal our nation's wounds.
-    """
-    
-    # Compute drift metrics
-    drift_metrics = analyzer.compute_drift_metrics(prompt1, prompt2, output1, output2)
-    
-    print("Drift Analysis Results:")
-    print(f"Prompt Similarity: {drift_metrics.prompt_similarity:.3f}")
-    print(f"Semantic Distance: {drift_metrics.semantic_distance:.3f}")
-    print(f"Token Variation: {drift_metrics.token_variation:.3f}")
-    print(f"Argument Structure Drift: {drift_metrics.argument_structure_drift:.3f}")
-    print(f"Evidence Consistency: {drift_metrics.evidence_consistency:.3f}")
-    print(f"Rebuttal Engagement Drift: {drift_metrics.rebuttal_engagement_drift:.3f}")
-    print(f"Overall Drift Score: {drift_metrics.overall_drift_score:.3f}")
-    
-    # Save analysis
-    filename = analyzer.save_drift_analysis()
-    print(f"\nAnalysis saved to: {filename}")
+    if real_results:
+        # Save real results
+        filename = analyzer.save_drift_analysis()
+        print(f"Real drift analysis saved to: {filename}")
+    else:
+        print("Failed to run real drift analysis")

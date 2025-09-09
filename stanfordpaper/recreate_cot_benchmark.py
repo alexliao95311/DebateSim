@@ -1,4 +1,31 @@
+#!/usr/bin/env python3
 """
+Recreate the CoT benchmark file with proper real data integration.
+"""
+
+import os
+import re
+from pathlib import Path
+
+def recreate_cot_benchmark():
+    """Recreate the CoT benchmark file with real data"""
+    
+    # Read the debate transcripts
+    with open('hr40_debate_transcript.txt', 'r') as f:
+        hr40_content = f.read()
+    
+    with open('hr1_debate_transcript.txt', 'r') as f:
+        hr1_content = f.read()
+    
+    # Extract responses
+    hr40_pro_match = re.search(r'AI Debater Pro - Round 1.*?Model:.*?\n(.*?)(?=AI Debater|$)', hr40_content, re.DOTALL)
+    hr40_pro_response = hr40_pro_match.group(1).strip()[:300] + "..." if hr40_pro_match else "No response found"
+    
+    hr40_con_match = re.search(r'AI Debater Con - Round 1.*?Model:.*?\n(.*?)(?=AI Debater|$)', hr40_content, re.DOTALL)
+    hr40_con_response = hr40_con_match.group(1).strip()[:300] + "..." if hr40_con_match else "No response found"
+    
+    # Create the new CoT benchmark file
+    cot_benchmark_content = f'''"""
 Chain-of-Thought (CoT) Evaluation Framework for AI Debate Capabilities
 
 This module implements a comprehensive benchmark system focused on CoT-specific
@@ -73,11 +100,11 @@ class CoTExtractor:
     
     def __init__(self):
         self.cot_patterns = [
-            r'(?:First|Initially|To start|Step \d+):\s*(.+?)(?=(?:Second|Next|Then|Step \d+|\n\n|$))',
-            r'(?:Second|Next|Then|Step \d+):\s*(.+?)(?=(?:Third|Next|Then|Step \d+|\n\n|$))',
-            r'(?:Third|Finally|Last|Step \d+):\s*(.+?)(?=(?:\n\n|$))',
-            r'### \d+\.\s*(.+?)(?=(?:### \d+\.|\n\n|$))',
-            r'\d+\.\s*(.+?)(?=(?:\d+\.|\n\n|$))'
+            r'(?:First|Initially|To start|Step \\d+):\\s*(.+?)(?=(?:Second|Next|Then|Step \\d+|\\n\\n|$))',
+            r'(?:Second|Next|Then|Step \\d+):\\s*(.+?)(?=(?:Third|Next|Then|Step \\d+|\\n\\n|$))',
+            r'(?:Third|Finally|Last|Step \\d+):\\s*(.+?)(?=(?:\\n\\n|$))',
+            r'### \\d+\\.\\s*(.+?)(?=(?:### \\d+\\.|\\n\\n|$))',
+            r'\\d+\\.\\s*(.+?)(?=(?:\\d+\\.|\\n\\n|$))'
         ]
         
         self.reasoning_indicators = [
@@ -126,7 +153,7 @@ class CoTExtractor:
         reasoning_parts = []
         
         for indicator in self.reasoning_indicators:
-            pattern = rf'{indicator}[^.!?]*[.!?]'
+            pattern = rf'{{indicator}}[^.!?]*[.!?]'
             matches = re.findall(pattern, text, re.IGNORECASE)
             reasoning_parts.extend(matches)
         
@@ -137,7 +164,7 @@ class CoTExtractor:
         evidence_parts = []
         
         for indicator in self.evidence_indicators:
-            pattern = rf'{indicator}[^.!?]*[.!?]'
+            pattern = rf'{{indicator}}[^.!?]*[.!?]'
             matches = re.findall(pattern, text, re.IGNORECASE)
             evidence_parts.extend(matches)
         
@@ -145,11 +172,11 @@ class CoTExtractor:
     
     def _estimate_confidence(self, text: str) -> float:
         """Estimate confidence level based on language patterns"""
-        confidence_indicators = {
+        confidence_indicators = {{
             'high': ['clearly', 'obviously', 'undoubtedly', 'certainly', 'definitely'],
             'medium': ['likely', 'probably', 'suggests', 'indicates', 'appears'],
             'low': ['possibly', 'might', 'could', 'perhaps', 'maybe']
-        }
+        }}
         
         text_lower = text.lower()
         
@@ -205,12 +232,12 @@ class CoTEvaluator:
     def __init__(self):
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         
-        self.quality_weights = {
+        self.quality_weights = {{
             'reasoning_depth': 0.25,
             'evidence_integration': 0.25,
             'logical_flow': 0.25,
             'step_coherence': 0.25
-        }
+        }}
     
     def evaluate_cot_quality(self, response_text: str, capability: CoTCapability, extracted_steps: List[CoTStep] = None) -> CoTAnalysis:
         """Evaluate the quality of Chain-of-Thought reasoning in a response."""
@@ -349,44 +376,42 @@ class CoTBenchmark:
     
     def _load_test_cases(self) -> Dict[CoTCapability, List[Dict[str, Any]]]:
         """Load test cases for each capability"""
-        test_cases = {
+        test_cases = {{
             CoTCapability.DEBATING: [
-                {
+                {{
                     "id": "debate_hr40_pro_real",
                     "description": "Real pro argument from H.R. 40 debate",
                     "prompt": "Present your pro argument for H.R. 40",
                     "expected_elements": ["evidence", "reasoning", "structure"],
-                    "real_response": """1. Moral and historical obligation
-The bill states "approximately 4,000,000 Africans and their descendants were enslaved in the United States..." and finds that "the slavery ... constituted an immoral and inhumane deprivation of Africans' life, liberty..." Quoting the statute grounds a national mora..."""
-                },
-                {
+                    "real_response": """{hr40_pro_response}"""
+                }},
+                {{
                     "id": "debate_hr40_con_real", 
                     "description": "Real con argument from H.R. 40 debate",
                     "prompt": "Present your con argument for H.R. 40",
                     "expected_elements": ["evidence", "reasoning", "structure"],
-                    "real_response": """1. Biased commission composition
-The bill states "Six members shall be selected from the major civil society and reparations organizations that have historically championed the cause of reparatory justice" (Section 4(a)(1)(D)). That explicit selection favors a single viewpoint and undermines claims ..."""
-                }
+                    "real_response": """{hr40_con_response}"""
+                }}
             ],
             CoTCapability.JUDGING: [
-                {
+                {{
                     "id": "judge_hr40_real",
                     "description": "Real debate evaluation from H.R. 40 transcript",
                     "prompt": "Evaluate this complete debate and determine the winner",
                     "expected_elements": ["analysis", "evaluation", "winner_determination"],
                     "real_response": "Based on the complete debate transcript, I will evaluate each side's performance and determine the winner based on argument quality, evidence usage, and rebuttal effectiveness."
-                }
+                }}
             ],
             CoTCapability.FEEDBACK: [
-                {
+                {{
                     "id": "feedback_real",
                     "description": "Real feedback based on actual debate performance",
                     "prompt": "Provide constructive feedback for debate improvement",
                     "expected_elements": ["specific_feedback", "actionable_suggestions"],
                     "real_response": "Based on the actual debate performance, here's my feedback for improvement: focus on evidence integration, strengthen rebuttals, and improve argument structure."
-                }
+                }}
             ]
-        }
+        }}
         
         return test_cases
     
@@ -400,7 +425,7 @@ The bill states "Six members shall be selected from the major civil society and 
             test_cases = [tc for tc in test_cases if tc['id'] == test_case_id]
         
         for test_case in test_cases:
-            logger.info(f"Running benchmark: {test_case['id']} for {model_name}")
+            logger.info(f"Running benchmark: {{test_case['id']}} for {{model_name}}")
             
             # Use real response data
             response_text = test_case.get('real_response', 'No response available')
@@ -440,7 +465,7 @@ The bill states "Six members shall be selected from the major civil society and 
         
         element_score = element_coverage / len(expected_elements) if expected_elements else 1.0
         
-        return {
+        return {{
             'total_score': analysis.total_score,
             'reasoning_depth': analysis.reasoning_depth,
             'evidence_integration': analysis.evidence_integration,
@@ -449,23 +474,23 @@ The bill states "Six members shall be selected from the major civil society and 
             'element_coverage': element_score,
             'step_count': len(analysis.extracted_steps),
             'avg_step_quality': np.mean([step.quality_score for step in analysis.extracted_steps]) if analysis.extracted_steps else 0.0
-        }
+        }}
     
     def save_benchmark_results(self, results: List[CoTBenchmarkResult], filename: str = None) -> str:
         """Save benchmark results to a JSON file."""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"cot_benchmark_results_{timestamp}.json"
+            filename = f"cot_benchmark_results_{{timestamp}}.json"
         
         filepath = os.path.join(self.benchmark_dir, filename)
         
         serializable_results = []
         for result in results:
-            result_dict = {
+            result_dict = {{
                 'model_name': result.model_name,
                 'capability': result.capability.value,
                 'test_case': result.test_case,
-                'analysis': {
+                'analysis': {{
                     'capability': result.analysis.capability.value,
                     'overall_quality': result.analysis.overall_quality.value,
                     'reasoning_depth': result.analysis.reasoning_depth,
@@ -475,25 +500,25 @@ The bill states "Six members shall be selected from the major civil society and 
                     'total_score': result.analysis.total_score,
                     'timestamp': result.analysis.timestamp,
                     'extracted_steps': [
-                        {
+                        {{
                             'step_number': step.step_number,
                             'description': step.description,
                             'reasoning': step.reasoning,
                             'evidence': step.evidence,
                             'confidence': step.confidence,
                             'quality_score': step.quality_score
-                        }
+                        }}
                         for step in result.analysis.extracted_steps
                     ]
-                },
+                }},
                 'performance_metrics': result.performance_metrics
-            }
+            }}
             serializable_results.append(result_dict)
         
         with open(filepath, 'w') as f:
             json.dump(serializable_results, f, indent=2)
         
-        logger.info(f"Benchmark results saved to: {filepath}")
+        logger.info(f"Benchmark results saved to: {{filepath}}")
         return filepath
 
 # Example usage and testing
@@ -527,15 +552,27 @@ if __name__ == "__main__":
     
     # Print results
     for result in all_results:
-        print(f"\n{result.capability.value.upper()} - {result.test_case}")
-        print(f"Overall Quality: {result.analysis.overall_quality.value}")
-        print(f"Total Score: {result.analysis.total_score:.3f}")
-        print(f"Reasoning Depth: {result.analysis.reasoning_depth:.3f}")
-        print(f"Evidence Integration: {result.analysis.evidence_integration:.3f}")
-        print(f"Logical Flow: {result.analysis.logical_flow:.3f}")
-        print(f"Step Coherence: {result.analysis.step_coherence:.3f}")
-        print(f"Steps Extracted: {len(result.analysis.extracted_steps)}")
+        print(f"\\n{{result.capability.value.upper()}} - {{result.test_case}}")
+        print(f"Overall Quality: {{result.analysis.overall_quality.value}}")
+        print(f"Total Score: {{result.analysis.total_score:.3f}}")
+        print(f"Reasoning Depth: {{result.analysis.reasoning_depth:.3f}}")
+        print(f"Evidence Integration: {{result.analysis.evidence_integration:.3f}}")
+        print(f"Logical Flow: {{result.analysis.logical_flow:.3f}}")
+        print(f"Step Coherence: {{result.analysis.step_coherence:.3f}}")
+        print(f"Steps Extracted: {{len(result.analysis.extracted_steps)}}")
     
     # Save results
     filename = benchmark.save_benchmark_results(all_results)
-    print(f"\nResults saved to: {filename}")
+    print(f"\\nResults saved to: {{filename}}")
+'''
+    
+    # Write the new file
+    with open('cot_evaluation/cot_benchmark.py', 'w') as f:
+        f.write(cot_benchmark_content)
+    
+    print("✅ Recreated CoT benchmark with real data integration")
+
+if __name__ == "__main__":
+    print("🔄 Recreating CoT benchmark with real data...")
+    recreate_cot_benchmark()
+    print("✅ CoT benchmark recreated!")
