@@ -1,0 +1,59 @@
+# Core FastAPI and web framework dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# PDF processing
+pdfminer.six>=20221105
+python-multipart>=0.0.6
+
+# HTTP and async requests
+aiohttp>=3.9.0
+httpx>=0.25.0
+requests>=2.31.0
+
+# Caching
+cachetools>=5.3.0
+
+# LangChain and AI libraries
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-google-genai>=1.0.0
+google-generativeai>=0.3.0
+openai>=1.3.0
+
+# Machine Learning and Data Science
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+sentence-transformers>=2.2.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# System monitoring and performance
+psutil>=5.9.0
+
+# Utility libraries
+gradio>=4.0.0
+tenacity>=8.2.0
+rapidfuzz>=3.5.0
+
+# Google Cloud services
+google-cloud-speech>=2.33.0
+google-cloud-texttospeech>=2.27.0
+google-auth>=2.14.1
+google-api-core>=1.34.1
+google-oauth2-tool>=0.0.3
+
+# Audio processing
+pyaudio>=0.2.14
+
+# Python 2/3 compatibility
+six>=1.16.0
+
+# Typing and development
+typing-extensions>=4.8.0
+
+# Standard library modules (included with Python, but listed for completeness)
+# json, os, time, asyncio, logging, re, datetime, pathlib, typing, dataclasses, enum, threading, queue, subprocess, webbrowser, hashlib, sqlite3, itertools, uuid, warnings, base64, sys
