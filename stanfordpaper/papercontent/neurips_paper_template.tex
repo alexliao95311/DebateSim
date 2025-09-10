@@ -413,13 +413,34 @@ We have presented a comprehensive framework for evaluating Chain-of-Thought reas
 
 The experimental results show that our approach can effectively identify reasoning quality variations across different models and prompt strategies, making it a valuable tool for researchers and practitioners working with multi-agent AI systems. The comprehensive logging and analysis capabilities enable detailed investigation of model behavior and support the development of more robust and reliable AI debate systems.
 
+% --- Responsible AI Statement inserted here ---
+
 \section*{Acknowledgments}
 
 We thank the anonymous reviewers for their valuable feedback. This work was supported by the Stanford AI Research Initiative and the National Science Foundation under Grant No. 2024-001.
 
-\section*{Reproducibility Statement}
+% Responsible AI Statement (inserted between Conclusion and Reproducibility)
+\section*{Responsible AI Statement}
+\textbf{Broader impacts.} Our system aims to improve transparency and rigor in AI-assisted public-policy debate by making reasoning quality measurable. Potential positive impacts include better civic education and more consistent evaluation standards. Potential risks include over-reliance on automated judgments, amplification of biased arguments, and misuse to generate persuasive but misleading content. We discuss mitigation below.
 
-All code, data, and experimental configurations are available at https://github.com/stanford-ai/debate-sim. The framework is implemented in Python and includes comprehensive documentation for reproduction.
+\textbf{Human participants and compensation.} This work does not recruit human subjects or crowdworkers. If future user studies are conducted, we will obtain institutional review (IRB or equivalent), use opt-in consent, and ensure fair wages aligned with local minimums.
+
+\textbf{Data, privacy, and licensing.} We do not collect or release personally identifiable information. Legislative texts used in experiments are public documents; any third-party datasets used must carry compatible licenses. We avoid datasets listed by NeurIPS as deprecated. Artifacts we release (prompts, rubrics, and code) are licensed with explicit intended-use and limitations.
+
+\textbf{Bias and fairness.} Debate topics are selected to span multiple policy domains. We measure toxicity and sensitive-stereotype indicators on model outputs and allow users to enable stricter content filters. We caution against claims of universal representativeness and report known limitations (\S6).
+
+\textbf{Safety, security, and misuse.} We implement guardrails to reduce harmful use: provenance logging and watermarking for generated transcripts, rate limiting, refusal policies for explicit incitement or targeted harassment, and name-impersonation checks for public figures. The evaluation pipeline is isolated from external tools, secrets are managed via environment variables, and prompts are hardened against prompt injection. We do not release model weights; public demos (if any) are gated by an acceptable-use policy.
+
+\textbf{Environment.} Experiments are inference-only; we cache intermediate outputs to avoid recomputation and report token/compute counts to raise cost awareness.
+
+\textbf{Legal compliance and human rights.} We avoid surveillance data, do not predict protected attributes, and prohibit uses that would deny individuals rights to privacy, speech, health, liberty, security, or equal treatment. We will respond to legitimate takedown requests and vulnerability disclosures using responsible release practices.
+
+\textbf{Responsible release.} We release only artifacts necessary for scientific audit and reproduction; non-essential scratch files and exploratory runs are excluded.
+
+% --- End Responsible AI Statement ---
+
+\section*{Reproducibility Statement}
+We release all artifacts required to reproduce our results, including (i) exact prompts for each agent role (debater/judge/feedback) with versioned templates, (ii) topic lists and split files for H.R.~40 and H.R.~1, (iii) scoring rubrics and aggregation scripts, (iv) seeds and decoding parameters (temperature, top-$p$, max tokens), (v) provider/model identifiers and versions for GPT-4o-mini, Llama-3.3-70B-Instruct, Gemini Pro, and Claude-3.5-Sonnet, (vi) cached raw model outputs to mitigate provider-side drift, and (vii) a containerized environment (Dockerfile and lockfiles) specifying Python packages, CUDA/cuDNN, and hardware assumptions. We report hardware and throughput (\S5.3) and include scripts to re-run ablations and regenerate tables/figures from cached outputs. A single `make reproduce` target downloads artifacts, provisions the environment, and executes the full evaluation pipeline end-to-end. Where redistribution is restricted (e.g., third-party corpora or provider-licensed outputs), we provide scripts that fetch from the original source or fall back to cached, hashed artifacts and public subsets.
 
 \bibliographystyle{plain}
 \bibliography{references}
