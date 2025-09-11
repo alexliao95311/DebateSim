@@ -6,6 +6,7 @@ import rehypeRaw from "rehype-raw";
 import { getSharedTranscript } from "../firebase/shareTranscript";
 import LoadingSpinner from "./LoadingSpinner";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
@@ -66,7 +67,43 @@ const TTSComponent = memo(({ speechText, context, headerId, headerText }) => (
 const TranscriptContent = memo(({ transcript, speechList, extractSpeechText }) => {
   const renderSpeechBlocks = () => {
     if (!transcript.transcript || !speechList.length) {
-      // Fall back to simple ReactMarkdown rendering for non-speech content
+      // For bill analysis, use TTS functionality
+      if (transcript.activityType === 'Analyze Bill') {
+        return (
+          <TTSProvider analysisText={transcript.transcript}>
+            <div className="transcript-content">
+              {/* Bill Analysis Content with Section TTS - Only H2 headers have play buttons */}
+              <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                  h2: ({node, ...props}) => {
+                    const headerText = typeof props.children === 'string' ? props.children : props.children?.join?.('') || '';
+                    return (
+                      <h2 className="markdown-h2" {...props}>
+                        {props.children}
+                        <HeaderPlayButton headerText={headerText} />
+                      </h2>
+                    );
+                  },
+                  h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                  h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                  p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                  ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                  strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                }}
+              >
+                {transcript.transcript}
+              </ReactMarkdown>
+            </div>
+          </TTSProvider>
+        );
+      }
+      
+      // Fall back to simple ReactMarkdown rendering for other non-speech content
       return (
         <div className="transcript-content">
           <ReactMarkdown
