@@ -79,7 +79,7 @@ const addHeadingPauses = (text) => {
     .replace(/\.\.\./g, ', , ,'); // Multiple commas create pauses in TTS
 };
 
-// Function to split text into chunks by headers
+// Function to split text into chunks by H2 headers only
 const parseAnalysisIntoSections = (text) => {
   if (!text) return [];
   
@@ -90,10 +90,10 @@ const parseAnalysisIntoSections = (text) => {
   lines.forEach(line => {
     const trimmedLine = line.trim();
     
-    // Check if line is a header (starts with ##, ###, etc. or is a numbered section)
-    const isHeader = /^#{2,6}\s+/.test(trimmedLine) || /^\d+\.\s+[A-Z]/.test(trimmedLine) || /^[A-Z][A-Z\s]+:$/.test(trimmedLine);
+    // Check if line is an H2 header (starts with ##)
+    const isH2Header = /^##\s+/.test(trimmedLine);
     
-    if (isHeader) {
+    if (isH2Header) {
       // Save previous section if exists
       if (currentSection) {
         sections.push(currentSection);
@@ -101,15 +101,15 @@ const parseAnalysisIntoSections = (text) => {
       
       // Start new section
       currentSection = {
-        header: trimmedLine.replace(/^#{2,6}\s+/, '').replace(/^(\d+\.\s+)/, ''),
+        header: trimmedLine.replace(/^##\s+/, ''),
         content: [trimmedLine],
         id: `section-${sections.length}`
       };
-    } else if (currentSection && trimmedLine) {
-      // Add content to current section
+    } else if (currentSection) {
+      // Add content to current section (including H1, H3, H4, paragraphs, etc.)
       currentSection.content.push(line);
     } else if (!currentSection && trimmedLine) {
-      // Handle content before first header
+      // Handle content before first H2 header
       if (sections.length === 0) {
         sections.push({
           header: 'Introduction',
@@ -137,8 +137,8 @@ const getByteLength = (text) => {
   return new Blob([text]).size;
 };
 
-// Function to split text into TTS-friendly chunks based on BYTE length (not character length)
-const chunkTextForTTS = (text, maxChunkBytes = 4500) => { // Use 4500 bytes to stay well under 5000 limit
+// Function to split text into TTS-friendly chunks by headers first, then by byte length
+const chunkTextForTTS = (text, maxChunkBytes = 3000) => { // Use 3000 bytes to be more conservative
   if (!text) return [];
   
   const cleanText = stripMarkdown(text);
@@ -148,6 +148,20 @@ const chunkTextForTTS = (text, maxChunkBytes = 4500) => { // Use 4500 bytes to s
     return [cleanText];
   }
   
+  // First, try to chunk by headers
+  const headerChunks = chunkByHeaders(cleanText, maxChunkBytes);
+  if (headerChunks.length > 1) {
+    // Verify that all chunks are within size limit
+    const validChunks = headerChunks.filter(chunk => getByteLength(chunk) <= maxChunkBytes);
+    if (validChunks.length === headerChunks.length) {
+      console.log(`Using ${headerChunks.length} header-based chunks`);
+      return headerChunks;
+    } else {
+      console.log(`Header chunks too large, falling back to sentence chunking`);
+    }
+  }
+  
+  // If header chunking didn't help, fall back to sentence chunking
   const sentences = cleanText.split(/(?<=[.!?])\s+/);
   const chunks = [];
   let currentChunk = '';
@@ -203,6 +217,163 @@ const chunkTextForTTS = (text, maxChunkBytes = 4500) => { // Use 4500 bytes to s
       console.warn(`WARNING: Chunk ${index + 1} is ${byteSize} bytes, exceeds 5000 byte limit!`);
     }
   });
+  
+  return chunks;
+};
+
+// Function to chunk text by headers (##, ###, etc.)
+const chunkByHeaders = (text, maxChunkBytes) => {
+  const lines = text.split('\n');
+  const chunks = [];
+  let currentChunk = '';
+  let currentHeader = '';
+  
+  console.log('Starting header-based chunking with maxChunkBytes:', maxChunkBytes);
+  
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    
+    // More comprehensive header detection
+    const isHeader = 
+      /^#{1,6}\s+/.test(trimmedLine) ||  // #, ##, ###, etc.
+      /^\d+\.\s+[A-Z]/.test(trimmedLine) ||  // 1. Title, 2. Title, etc.
+      /^[A-Z][A-Za-z\s]+:$/.test(trimmedLine) ||  // TITLE: or Section Name:
+      /^[A-Z][A-Za-z\s]+\s*$/.test(trimmedLine) && trimmedLine.length < 100; // Standalone titles
+    
+    if (isHeader) {
+      console.log(`Found header at line ${index}: "${trimmedLine}"`);
+      
+      // If we have content in current chunk, save it
+      if (currentChunk.trim()) {
+        const testChunk = currentChunk.trim();
+        const testByteLength = getByteLength(testChunk);
+        
+        console.log(`Saving chunk with ${testByteLength} bytes (${testChunk.length} chars)`);
+        
+        if (testByteLength <= maxChunkBytes) {
+          chunks.push(testChunk);
+        } else {
+          // Header chunk is too big, split it by sentences
+          console.log(`Chunk too big (${testByteLength} bytes), splitting by sentences`);
+          const sentenceChunks = splitChunkBySentences(testChunk, maxChunkBytes);
+          chunks.push(...sentenceChunks);
+        }
+      }
+      
+      // Start new chunk with header
+      currentChunk = line + '\n';
+      currentHeader = trimmedLine.replace(/^#{1,6}\s+/, '').replace(/^(\d+\.\s+)/, '');
+    } else if (trimmedLine) {
+      // Add content to current chunk
+      currentChunk += line + '\n';
+    }
+  });
+  
+  // Add the last chunk
+  if (currentChunk.trim()) {
+    const testChunk = currentChunk.trim();
+    const testByteLength = getByteLength(testChunk);
+    
+    console.log(`Saving final chunk with ${testByteLength} bytes (${testChunk.length} chars)`);
+    
+    if (testByteLength <= maxChunkBytes) {
+      chunks.push(testChunk);
+    } else {
+      // Header chunk is too big, split it by sentences
+      console.log(`Final chunk too big (${testByteLength} bytes), splitting by sentences`);
+      const sentenceChunks = splitChunkBySentences(testChunk, maxChunkBytes);
+      chunks.push(...sentenceChunks);
+    }
+  }
+  
+  console.log(`Header chunking created ${chunks.length} chunks`);
+  return chunks;
+};
+
+// Helper function to split a chunk by sentences if it's too big
+const splitChunkBySentences = (chunk, maxChunkBytes) => {
+  console.log(`Splitting chunk by sentences (${chunk.length} chars, ${getByteLength(chunk)} bytes)`);
+  
+  // First try splitting by paragraphs (double newlines)
+  const paragraphs = chunk.split(/\n\s*\n/);
+  if (paragraphs.length > 1) {
+    const paragraphChunks = [];
+    paragraphs.forEach(paragraph => {
+      const trimmedParagraph = paragraph.trim();
+      if (trimmedParagraph) {
+        const byteLength = getByteLength(trimmedParagraph);
+        if (byteLength <= maxChunkBytes) {
+          paragraphChunks.push(trimmedParagraph);
+        } else {
+          // Paragraph too big, split by sentences
+          const sentenceChunks = splitBySentences(trimmedParagraph, maxChunkBytes);
+          paragraphChunks.push(...sentenceChunks);
+        }
+      }
+    });
+    return paragraphChunks;
+  }
+  
+  // If no paragraphs, split by sentences
+  return splitBySentences(chunk, maxChunkBytes);
+};
+
+// Helper function to split by sentences
+const splitBySentences = (text, maxChunkBytes) => {
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const chunks = [];
+  let currentChunk = '';
+  
+  sentences.forEach(sentence => {
+    const testChunk = currentChunk + (currentChunk ? ' ' : '') + sentence;
+    const testByteLength = getByteLength(testChunk);
+    
+    if (testByteLength <= maxChunkBytes) {
+      currentChunk = testChunk;
+    } else {
+      if (currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = sentence;
+      } else {
+        // Single sentence is too long, split by words
+        const wordChunks = splitByWords(sentence, maxChunkBytes);
+        chunks.push(...wordChunks);
+      }
+    }
+  });
+  
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+  
+  return chunks;
+};
+
+// Helper function to split by words
+const splitByWords = (text, maxChunkBytes) => {
+  const words = text.split(/\s+/);
+  const chunks = [];
+  let currentChunk = '';
+  
+  words.forEach(word => {
+    const testChunk = currentChunk + (currentChunk ? ' ' : '') + word;
+    if (getByteLength(testChunk) <= maxChunkBytes) {
+      currentChunk = testChunk;
+    } else {
+      if (currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = word;
+      } else {
+        // Single word is too long, truncate it
+        const truncated = word.substring(0, Math.floor(maxChunkBytes / 2));
+        chunks.push(truncated);
+      }
+    }
+  });
+  
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
   
   return chunks;
 };
@@ -586,7 +757,8 @@ const TTSProvider = ({ children, analysisText }) => {
     stopSection,
     getSectionState,
     sections,
-    stopAllSections
+    stopAllSections,
+    sectionStates // Add the state directly to trigger re-renders
   };
   
   return (
@@ -602,7 +774,7 @@ const HeaderPlayButton = ({ headerText }) => {
   
   if (!tts) return null;
   
-  const { playSectionByHeader, pauseSection, resumeSection, getSectionState, sections } = tts;
+  const { playSectionByHeader, pauseSection, resumeSection, stopSection, getSectionState, sections, sectionStates } = tts;
   
   // Find the section for this header
   const section = sections.find(s => 
@@ -612,7 +784,7 @@ const HeaderPlayButton = ({ headerText }) => {
   
   if (!section) return null;
   
-  const sectionState = getSectionState(section.id);
+  const sectionState = sectionStates.get(section.id) || { isPlaying: false, isPaused: false, isLoading: false };
   const { isPlaying, isPaused, isLoading } = sectionState;
   
   const handleClick = () => {
@@ -623,6 +795,10 @@ const HeaderPlayButton = ({ headerText }) => {
     } else {
       playSectionByHeader(headerText);
     }
+  };
+
+  const handleStop = () => {
+    stopSection(section.id);
   };
   
   return (
@@ -647,7 +823,7 @@ const HeaderPlayButton = ({ headerText }) => {
             <span className="voice-button-icon">⏳</span>
           </button>
         ) : (
-          <div className="voice-output-playing-controls" style={{ display: 'inline-block' }}>
+          <div className="voice-output-playing-controls">
             {isPaused ? (
               <button
                 onClick={handleClick}
@@ -667,6 +843,22 @@ const HeaderPlayButton = ({ headerText }) => {
                 <span className="voice-button-icon">⏸️</span>
               </button>
             )}
+            
+            <button
+              onClick={handleStop}
+              className="voice-output-stop-button voice-output-button-compact"
+              title="Stop section"
+              aria-label="Stop section speech"
+            >
+              <span className="voice-button-icon">⏹️</span>
+            </button>
+            
+            {/* Status Display - inline with buttons */}
+            <div className="voice-output-status">
+              <span className="voice-output-indicator">
+                🔊 {isPaused ? 'Paused' : 'Playing...'}
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -720,7 +912,7 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
     setCurrentChunk(0);
   };
   
-  const playGoogleTTSChunk = async (text) => {
+  const playGoogleTTSChunk = async (text, retryCount = 0) => {
     try {
       // Check if stopped before making request
       if (isStopped.current) {
@@ -729,9 +921,13 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
       
       const contextSettings = getVoiceForContext('debate');
       
-      // Add timeout to prevent hanging requests
+      // Increase timeout for longer chunks and add retry logic
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutDuration = Math.max(20000, text.length * 0.2); // At least 20 seconds, or 0.2s per character
+      const timeoutId = setTimeout(() => {
+        console.log(`TTS request timeout after ${timeoutDuration}ms for chunk of ${text.length} characters`);
+        controller.abort();
+      }, timeoutDuration);
       
       const response = await fetch(getTTSEndpoint('synthesize'), {
         method: 'POST',
@@ -810,6 +1006,14 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
       }
     } catch (error) {
       console.error('Google TTS error:', error);
+      
+      // Retry logic for network errors
+      if (retryCount < 2 && (error.name === 'AbortError' || error.message.includes('timeout'))) {
+        console.log(`Retrying TTS request (attempt ${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return playGoogleTTSChunk(text, retryCount + 1);
+      }
+      
       return false;
     }
   };

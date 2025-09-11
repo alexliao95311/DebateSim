@@ -2794,14 +2794,6 @@ const Legislation = ({ user }) => {
               {showAnalysisText && (
                 <TTSProvider analysisText={analysisResult}>
                   <div style={{ marginTop: '2rem' }}>
-                    {/* Enhanced TTS Controls */}
-                    <div style={{ marginBottom: '2rem' }}>
-                      <EnhancedAnalysisTTS 
-                        analysisText={analysisResult}
-                        title="Detailed Analysis"
-                      />
-                    </div>
-                    
                     {/* Custom H2 Section Component */}
                     <H2SectionRenderer 
                       analysisText={`## Detailed Analysis\n\n${analysisResult}`}
