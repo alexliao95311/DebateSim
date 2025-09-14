@@ -168,7 +168,7 @@ For questions or issues, please open an issue on the GitHub repository or contac
 
 ## Acknowledgments
 
-This work was supported by the Stanford AI Research Initiative and the National Science Foundation under Grant No. 2024-001.
+This work was supported by the Stanford AI Research Initiative.
 
 ---
 
