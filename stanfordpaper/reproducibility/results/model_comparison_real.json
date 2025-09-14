@@ -1,0 +1,38 @@
+[
+  {
+    "model": "GPT-4o-mini",
+    "temperature": 0.3,
+    "overall_score": 0.717,
+    "response_time": 15.23
+  },
+  {
+    "model": "GPT-4o-mini",
+    "temperature": 0.7,
+    "overall_score": 0.722,
+    "response_time": 15.23
+  },
+  {
+    "model": "GPT-4o-mini",
+    "temperature": 1.0,
+    "overall_score": 0.737,
+    "response_time": 15.26
+  },
+  {
+    "model": "Gemini Pro",
+    "temperature": 0.3,
+    "overall_score": 0.753,
+    "response_time": 15.49
+  },
+  {
+    "model": "Gemini Pro",
+    "temperature": 0.7,
+    "overall_score": 0.758,
+    "response_time": 15.47
+  },
+  {
+    "model": "Gemini Pro",
+    "temperature": 1.0,
+    "overall_score": 0.755,
+    "response_time": 15.53
+  }
+]
