@@ -1,0 +1,58 @@
+# Configuration file for DebateSim reproducibility package
+
+# Model configurations
+models:
+  gpt-4o-mini:
+    provider: "openai"
+    temperature: [0.3, 0.7, 1.0]
+    max_tokens: 2048
+    top_p: 0.9
+  
+  llama-3.3-70b:
+    provider: "huggingface"
+    temperature: [0.3, 0.7, 1.0]
+    max_tokens: 2048
+    top_p: 0.9
+  
+  gemini-pro:
+    provider: "google"
+    temperature: [0.3, 0.7, 1.0]
+    max_tokens: 2048
+    top_p: 0.9
+  
+  claude-3.5-sonnet:
+    provider: "anthropic"
+    temperature: [0.3, 0.7, 1.0]
+    max_tokens: 2048
+    top_p: 0.9
+
+# Experiment settings
+experiments:
+  drift_analysis:
+    enabled: true
+    rounds: 6
+    metrics: ["semantic_distance", "token_variation", "structure_drift", "evidence_consistency"]
+  
+  cot_evaluation:
+    enabled: true
+    capabilities: ["debating", "judging", "feedback"]
+    quality_metrics: ["reasoning_depth", "evidence_integration", "logical_flow", "step_coherence"]
+  
+  gamestate_management:
+    enabled: true
+    session_types: ["test", "evaluation"]
+    context_persistence: true
+
+# Data settings
+data:
+  topics: ["hr1", "hr40"]
+  input_dir: "data/"
+  output_dir: "results/"
+  cache_enabled: true
+
+# Hardware requirements
+hardware:
+  min_memory: "8GB"
+  recommended_memory: "16GB"
+  gpu_required: false
+  gpu_recommended: true
