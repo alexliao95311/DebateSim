@@ -19,7 +19,6 @@ plotly>=5.0.0
 jupyter>=1.0.0
 
 # Database and storage
-sqlite3
 pymongo>=4.0.0
 
 # Utilities

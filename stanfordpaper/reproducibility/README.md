@@ -21,8 +21,13 @@ docker build -t debate-sim .
 docker run -it --gpus all debate-sim
 
 # Option 2: Local installation
-pip install -r models/requirements.txt
+chmod +x setup_environment.sh
+./setup_environment.sh
+source venv/bin/activate
 ```
+
+### Quick Start
+For a fast start, see [QUICK_START.md](QUICK_START.md).
 
 ### Detailed Installation
 1. **Environment Setup**: Create a virtual environment

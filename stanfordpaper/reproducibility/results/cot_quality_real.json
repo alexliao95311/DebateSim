@@ -1,0 +1,26 @@
+{
+  "debating_pro": {
+    "reasoning_depth": 0.314,
+    "evidence_integration": 0.655,
+    "logical_flow": 0.478,
+    "overall_score": 0.482
+  },
+  "debating_con": {
+    "reasoning_depth": 0.252,
+    "evidence_integration": 0.847,
+    "logical_flow": 0.518,
+    "overall_score": 0.539
+  },
+  "judging": {
+    "reasoning_depth": 0.289,
+    "evidence_integration": 0.167,
+    "logical_flow": 0.542,
+    "overall_score": 0.333
+  },
+  "feedback": {
+    "reasoning_depth": 0.183,
+    "evidence_integration": 0.144,
+    "logical_flow": 0.501,
+    "overall_score": 0.276
+  }
+}

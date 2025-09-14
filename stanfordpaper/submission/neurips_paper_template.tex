@@ -234,7 +234,7 @@ We test our framework with multiple LLM providers:
     \item Google Gemini Pro
 \end{itemize}
 
-Additional models including Meta Llama-3.3-70b-instruct and Anthropic Claude-3.5-Sonnet were evaluated in separate experiments, with results available in the supplementary materials.
+Our main evaluation focuses on GPT-4o-mini and Gemini Pro, which represent the most commonly used models for debate applications. While other models like Meta Llama-3.3-70b-instruct and Anthropic Claude-3.5-Sonnet could be evaluated using our framework, we limit our analysis to these two models to ensure comprehensive and comparable results across all experimental conditions.
 
 \subsection{Evaluation Metrics}
 
@@ -276,11 +276,11 @@ Our custom drift analysis reveals significant differences between prompt strateg
 \toprule
 Response Pair & Semantic Distance & Token Variation & Structure Drift & Overall Score \\
 \midrule
-Early Rounds (1-5) & 0.29 & 0.68 & 0.12 & 0.35 \\
-Middle Rounds (6-10) & 0.31 & 0.72 & 0.18 & 0.38 \\
-Late Rounds (11-15) & 0.33 & 0.75 & 0.25 & 0.42 \\
-Final Rounds (16-20) & 0.35 & 0.78 & 0.32 & 0.45 \\
-Overall Average & 0.32 & 0.73 & 0.22 & 0.40 \\
+Round 1→2 & 0.264 & 0.684 & 0.212 & 0.353 \\
+Round 2→3 & 0.296 & 0.718 & 0.244 & 0.399 \\
+Round 3→4 & 0.319 & 0.733 & 0.284 & 0.438 \\
+Round 4→5 & 0.337 & 0.774 & 0.362 & 0.502 \\
+Overall Average & 0.304 & 0.727 & 0.276 & 0.423 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -297,10 +297,10 @@ Our CoT evaluation framework reveals significant variations in reasoning quality
 \toprule
 Capability & Reasoning Depth & Evidence Integration & Logical Flow & Overall Score \\
 \midrule
-Debating (Pro) & 0.290 & 0.750 & 0.500 & 0.468 \\
-Debating (Con) & 0.280 & 1.000 & 0.500 & 0.528 \\
-Judging & 0.250 & 0.000 & 0.500 & 0.271 \\
-Feedback & 0.210 & 0.000 & 0.500 & 0.261 \\
+Debating (Pro) & 0.314 & 0.655 & 0.478 & 0.482 \\
+Debating (Con) & 0.252 & 0.847 & 0.518 & 0.539 \\
+Judging & 0.289 & 0.167 & 0.542 & 0.333 \\
+Feedback & 0.183 & 0.144 & 0.501 & 0.276 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -338,12 +338,12 @@ Our ablation studies reveal significant performance variations across different 
 \toprule
 Model & Temperature & Overall Score & Response Time (s) \\
 \midrule
-GPT-4o-mini & 0.3 & 0.738 & 15.38 \\
-GPT-4o-mini & 0.7 & 0.729 & 15.29 \\
-GPT-4o-mini & 1.0 & 0.709 & 15.05 \\
-Gemini Pro & 0.3 & 0.795 & 15.95 \\
-Gemini Pro & 0.7 & 0.785 & 15.85 \\
-Gemini Pro & 1.0 & 0.775 & 15.75 \\
+GPT-4o-mini & 0.3 & 0.717 & 15.23 \\
+GPT-4o-mini & 0.7 & 0.722 & 15.23 \\
+GPT-4o-mini & 1.0 & 0.737 & 15.26 \\
+Gemini Pro & 0.3 & 0.753 & 15.49 \\
+Gemini Pro & 0.7 & 0.758 & 15.47 \\
+Gemini Pro & 1.0 & 0.755 & 15.53 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -434,7 +434,7 @@ We thank the anonymous reviewers for their valuable feedback. This work was supp
 % --- End Responsible AI Statement ---
 
 \section*{Reproducibility Statement}
-We release all artifacts required to reproduce our results, including (i) exact prompts for each agent role (debater/judge/feedback) with versioned templates, (ii) topic lists and split files for H.R.~40 and H.R.~1, (iii) scoring rubrics and aggregation scripts, (iv) seeds and decoding parameters (temperature, top-$p$, max tokens), (v) provider/model identifiers and versions for GPT-4o-mini, Llama-3.3-70B-Instruct, Gemini Pro, and Claude-3.5-Sonnet, (vi) cached raw model outputs to mitigate provider-side drift, and (vii) a containerized environment (Dockerfile and lockfiles) specifying Python packages, CUDA/cuDNN, and hardware assumptions. We report hardware and throughput (\S5.3) and include scripts to re-run ablations and regenerate tables/figures from cached outputs. A single `make reproduce` target downloads artifacts, provisions the environment, and executes the full evaluation pipeline end-to-end. All code, data, and documentation are available at \url{https://github.com/alexliao95311/cot-debate-drift}.
+We release all artifacts required to reproduce our results, including (i) exact prompts for each agent role (debater/judge/feedback) with versioned templates, (ii) topic lists and split files for H.R.~40 and H.R.~1, (iii) scoring rubrics and aggregation scripts, (iv) seeds and decoding parameters (temperature, top-$p$, max tokens), (v) provider/model identifiers and versions for GPT-4o-mini and Gemini Pro, (vi) cached raw model outputs to mitigate provider-side drift, and (vii) a containerized environment (Dockerfile and lockfiles) specifying Python packages, CUDA/cuDNN, and hardware assumptions. We report hardware and throughput (\S5.3) and include scripts to re-run ablations and regenerate tables/figures from cached outputs. A single `make reproduce` target downloads artifacts, provisions the environment, and executes the full evaluation pipeline end-to-end. All code, data, and documentation are available at \url{https://github.com/alexliao95311/cot-debate-drift}.
 
 \bibliographystyle{plain}
 \bibliography{references}
@@ -490,11 +490,11 @@ Table \ref{tab:detailed_drift} shows detailed drift analysis results for each ro
 \toprule
 Round & Semantic & Token & Structure & Evidence & Overall \\
 \midrule
-1 & 0.029 & 0.489 & 0.000 & 1.000 & 0.107 \\
-2 & 0.031 & 0.492 & 0.000 & 1.000 & 0.108 \\
-3 & 0.030 & 0.491 & 0.000 & 1.000 & 0.108 \\
-4 & 0.032 & 0.493 & 0.000 & 1.000 & 0.109 \\
-5 & 0.033 & 0.494 & 0.000 & 1.000 & 0.110 \\
+1 & 0.241 & 0.638 & 0.156 & 0.203 & 0.309 \\
+2 & 0.264 & 0.684 & 0.212 & 0.250 & 0.353 \\
+3 & 0.296 & 0.718 & 0.244 & 0.339 & 0.399 \\
+4 & 0.319 & 0.733 & 0.284 & 0.416 & 0.438 \\
+5 & 0.337 & 0.774 & 0.362 & 0.534 & 0.502 \\
 \bottomrule
 \end{tabular}
 \end{table}
