@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Volume2, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Volume2, Settings as SettingsIcon } from 'lucide-react';
+import UserDropdown from './UserDropdown';
 import { TTS_CONFIG, getAvailableVoices, getDefaultVoice, getVoiceForContext, getTTSEndpoint } from '../config/tts';
 import './Settings.css';
 
@@ -315,15 +316,7 @@ const Settings = ({ user, onLogout }) => {
         </div>
 
         <div className="settings-header-right">
-          <div className="settings-user-section">
-            <div className="settings-user-info">
-              <User className="settings-user-icon" />
-              <span className="settings-username">{user?.displayName}</span>
-            </div>
-            <button className="settings-logout-button" onClick={onLogout}>
-              Logout
-            </button>
-          </div>
+          <UserDropdown user={user} onLogout={onLogout} className="settings-user-dropdown" />
         </div>
       </div>
 
