@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TTS_CONFIG, getVoiceForContext, getTTSEndpoint } from '../config/tts';
+import voicePreferenceService from '../services/voicePreferenceService';
 import './VoiceOutput.css';
 
 // Function to get byte length of text (UTF-8)
@@ -101,11 +102,29 @@ const EnhancedVoiceOutput = ({
   const [isSupported, setIsSupported] = useState(true);
   const [isGoogleTTSAvailable, setIsGoogleTTSAvailable] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState(defaultVoice || getVoiceForContext(context).voice);
-  
+
   const utteranceRef = useRef(null);
   const synthRef = useRef(null);
   const audioRef = useRef(null);
   const currentAudioUrl = useRef(null);
+
+  // Listen for voice preference changes
+  useEffect(() => {
+    const handleVoiceChange = (newVoice) => {
+      setSelectedVoice(newVoice);
+    };
+
+    voicePreferenceService.addListener(handleVoiceChange);
+
+    // Set initial voice if available
+    if (voicePreferenceService.isVoiceLoaded()) {
+      setSelectedVoice(voicePreferenceService.getCurrentVoice());
+    }
+
+    return () => {
+      voicePreferenceService.removeListener(handleVoiceChange);
+    };
+  }, []);
 
   // Initialize speech synthesis
   useEffect(() => {
@@ -252,8 +271,8 @@ const EnhancedVoiceOutput = ({
         const utterance = new SpeechSynthesisUtterance(finalText);
         utteranceRef.current = utterance;
         
-        // Configure speech settings from context
-        const contextSettings = getVoiceForContext(context);
+        // Configure speech settings from context with user's voice preference
+        const contextSettings = getVoiceForContext(context, voicePreferenceService.getCurrentVoice());
         utterance.rate = contextSettings.rate;
         utterance.pitch = contextSettings.pitch;
         utterance.volume = contextSettings.volume;
@@ -276,8 +295,8 @@ const EnhancedVoiceOutput = ({
 
   const playGoogleTTS = async (text) => {
     try {
-      const contextSettings = getVoiceForContext(context);
-      
+      const contextSettings = getVoiceForContext(context, voicePreferenceService.getCurrentVoice());
+
       const requestPayload = {
         text: text,
         voice_name: selectedVoice,
