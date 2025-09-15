@@ -1,396 +1,267 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Volume2, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, User, Volume2, Play } from 'lucide-react';
 import UserDropdown from './UserDropdown';
-import { TTS_CONFIG, getAvailableVoices, getDefaultVoice, getVoiceForContext, getTTSEndpoint } from '../config/tts';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import voicePreferenceService from '../services/voicePreferenceService';
 import './Settings.css';
 
 const Settings = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const [selectedVoice, setSelectedVoice] = useState(getDefaultVoice());
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoice, setSelectedVoice] = useState('en-US-Chirp3-HD-Achernar');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [error, setError] = useState('');
 
-  // Load saved voice preference from localStorage
+  // Fetch available voices from the backend
   useEffect(() => {
-    const savedVoice = localStorage.getItem('tts-voice-preference');
-    if (savedVoice) {
-      setSelectedVoice(savedVoice);
-    }
-  }, []);
+    const fetchVoices = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/tts/voices');
+        const data = await response.json();
 
-  // Save voice preference to localStorage
-  const handleVoiceChange = (voice) => {
-    setSelectedVoice(voice);
-    localStorage.setItem('tts-voice-preference', voice);
-    
-    // Update the TTS config for immediate effect
-    TTS_CONFIG.defaultVoice = voice;
-    Object.keys(TTS_CONFIG.contexts).forEach(context => {
-      TTS_CONFIG.contexts[context].voice = voice;
-    });
+        if (data.success) {
+          setAvailableVoices(data.voices);
+
+          // Load user's saved voice preference
+          if (user && !user.isGuest) {
+            await loadUserVoicePreference();
+          } else {
+            // Use default voice for guests
+            setSelectedVoice(data.default_voice);
+          }
+        } else {
+          setError('Failed to load available voices');
+        }
+      } catch (err) {
+        console.error('Error fetching voices:', err);
+        setError('Failed to connect to voice service');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVoices();
+  }, [user]);
+
+  // Load user's voice preference from Firestore
+  const loadUserVoicePreference = async () => {
+    if (!user || user.isGuest) return;
+
+    try {
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.voicePreference) {
+          setSelectedVoice(userData.voicePreference);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading voice preference:', err);
+    }
   };
 
-  // Test voice functionality (matching EnhancedVoiceOutput implementation)
-  const testVoice = async (voice) => {
-    if (isPlaying) return;
-    
-    setIsPlaying(true);
-    
-    try {
-      const contextSettings = getVoiceForContext('general');
-      
-      const requestPayload = {
-        text: "Hello! This is a sample of how this voice sounds for text-to-speech in DebateSim.",
-        voice_name: voice,
-        rate: contextSettings.rate,
-        pitch: contextSettings.pitch,
-        volume: contextSettings.volume
-      };
+  // Save user's voice preference to Firestore
+  const saveVoicePreference = async (voiceId) => {
+    if (!user || user.isGuest) {
+      // For guests, save to localStorage
+      localStorage.setItem('tts-voice-preference', voiceId);
+      return;
+    }
 
-      const response = await fetch(getTTSEndpoint('synthesize'), {
+    setSaving(true);
+    try {
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', user.uid);
+
+      await setDoc(userDocRef, {
+        voicePreference: voiceId,
+        lastUpdated: new Date()
+      }, { merge: true });
+
+    } catch (err) {
+      console.error('Error saving voice preference:', err);
+      setError('Failed to save voice preference');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle voice selection change
+  const handleVoiceChange = (voiceId) => {
+    setSelectedVoice(voiceId);
+    saveVoicePreference(voiceId);
+    // Update the voice preference service so other components get the new voice
+    voicePreferenceService.setCurrentVoice(voiceId);
+  };
+
+  // Test voice functionality
+  const testVoice = async (voiceId) => {
+    if (testing) return;
+
+    setTesting(true);
+    try {
+      const response = await fetch('http://localhost:8000/tts/synthesize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestPayload),
+        body: JSON.stringify({
+          text: "Hello! This is a sample of how this voice sounds for text-to-speech in DebateSim.",
+          voice_name: voiceId,
+          rate: 1.0,
+          pitch: 0,
+          volume: 1.0
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`TTS API error: ${response.status}`);
-      }
-
       const data = await response.json();
-      
+
       if (data.success && data.audio_content) {
-        // Convert base64 to audio and play (matching EnhancedVoiceOutput implementation)
+        // Convert base64 to audio and play
         const audioBlob = new Blob([
           Uint8Array.from(atob(data.audio_content), c => c.charCodeAt(0))
         ], { type: 'audio/mp3' });
-        
+
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
-        
-        audio.onloadedmetadata = () => {
-          audio.play().catch(() => {
-            setIsPlaying(false);
-            URL.revokeObjectURL(audioUrl);
-            alert('Unable to play audio. Try clicking again or check browser autoplay settings.');
-          });
-        };
-        
+
         audio.onended = () => {
-          setIsPlaying(false);
           URL.revokeObjectURL(audioUrl);
         };
-        
+
         audio.onerror = () => {
-          setIsPlaying(false);
           URL.revokeObjectURL(audioUrl);
-          alert('Audio playback failed. Please try again.');
+          setError('Audio playback failed');
         };
-        
+
+        await audio.play();
       } else {
-        throw new Error(data.error || 'No audio content received');
+        setError('Voice test failed');
       }
-      
-    } catch (error) {
-      console.error('TTS test error:', error);
-      setIsPlaying(false);
-      alert('Voice test failed. Please ensure the TTS service is running and try again.');
+    } catch (err) {
+      console.error('Error testing voice:', err);
+      setError('Voice test failed. Please ensure the TTS service is running.');
+    } finally {
+      setTesting(false);
     }
   };
-
-  // Get all available voice options
-  const getVoiceOptions = () => {
-    const voices = [];
-    
-    // Premium Chirp3 HD voices (highest quality)
-    const chirp3Voices = [
-      { id: 'en-US-Chirp3-HD-Achernar', gender: 'FEMALE', name: 'Achernar' },
-      { id: 'en-US-Chirp3-HD-Achird', gender: 'MALE', name: 'Achird' },
-      { id: 'en-US-Chirp3-HD-Algenib', gender: 'MALE', name: 'Algenib' },
-      { id: 'en-US-Chirp3-HD-Algieba', gender: 'MALE', name: 'Algieba' },
-      { id: 'en-US-Chirp3-HD-Alnilam', gender: 'MALE', name: 'Alnilam' },
-      { id: 'en-US-Chirp3-HD-Aoede', gender: 'FEMALE', name: 'Aoede' },
-      { id: 'en-US-Chirp3-HD-Autonoe', gender: 'FEMALE', name: 'Autonoe' },
-      { id: 'en-US-Chirp3-HD-Callirrhoe', gender: 'FEMALE', name: 'Callirrhoe' },
-      { id: 'en-US-Chirp3-HD-Charon', gender: 'MALE', name: 'Charon' },
-      { id: 'en-US-Chirp3-HD-Despina', gender: 'FEMALE', name: 'Despina' },
-      { id: 'en-US-Chirp3-HD-Enceladus', gender: 'MALE', name: 'Enceladus' },
-      { id: 'en-US-Chirp3-HD-Erinome', gender: 'FEMALE', name: 'Erinome' },
-      { id: 'en-US-Chirp3-HD-Fenrir', gender: 'MALE', name: 'Fenrir' },
-      { id: 'en-US-Chirp3-HD-Gacrux', gender: 'FEMALE', name: 'Gacrux' },
-      { id: 'en-US-Chirp3-HD-Iapetus', gender: 'MALE', name: 'Iapetus' },
-      { id: 'en-US-Chirp3-HD-Kore', gender: 'FEMALE', name: 'Kore' },
-      { id: 'en-US-Chirp3-HD-Laomedeia', gender: 'FEMALE', name: 'Laomedeia' },
-      { id: 'en-US-Chirp3-HD-Leda', gender: 'FEMALE', name: 'Leda' },
-      { id: 'en-US-Chirp3-HD-Orus', gender: 'MALE', name: 'Orus' },
-      { id: 'en-US-Chirp3-HD-Puck', gender: 'MALE', name: 'Puck' },
-      { id: 'en-US-Chirp3-HD-Pulcherrima', gender: 'FEMALE', name: 'Pulcherrima' },
-      { id: 'en-US-Chirp3-HD-Rasalgethi', gender: 'MALE', name: 'Rasalgethi' },
-      { id: 'en-US-Chirp3-HD-Sadachbia', gender: 'MALE', name: 'Sadachbia' },
-      { id: 'en-US-Chirp3-HD-Sadaltager', gender: 'MALE', name: 'Sadaltager' },
-      { id: 'en-US-Chirp3-HD-Schedar', gender: 'MALE', name: 'Schedar' },
-      { id: 'en-US-Chirp3-HD-Sulafat', gender: 'FEMALE', name: 'Sulafat' },
-      { id: 'en-US-Chirp3-HD-Umbriel', gender: 'MALE', name: 'Umbriel' },
-      { id: 'en-US-Chirp3-HD-Vindemiatrix', gender: 'FEMALE', name: 'Vindemiatrix' },
-      { id: 'en-US-Chirp3-HD-Zephyr', gender: 'FEMALE', name: 'Zephyr' },
-      { id: 'en-US-Chirp3-HD-Zubenelgenubi', gender: 'MALE', name: 'Zubenelgenubi' }
-    ];
-
-    // Other Premium voices
-    const otherPremiumVoices = [
-      { id: 'en-US-Casual-K', gender: 'MALE', name: 'Casual K', category: 'Casual' },
-      { id: 'en-US-Chirp-HD-D', gender: 'MALE', name: 'Chirp HD D', category: 'Chirp HD' },
-      { id: 'en-US-Chirp-HD-F', gender: 'FEMALE', name: 'Chirp HD F', category: 'Chirp HD' },
-      { id: 'en-US-Chirp-HD-O', gender: 'FEMALE', name: 'Chirp HD O', category: 'Chirp HD' },
-      { id: 'en-US-News-K', gender: 'FEMALE', name: 'News K', category: 'News' },
-      { id: 'en-US-News-L', gender: 'FEMALE', name: 'News L', category: 'News' },
-      { id: 'en-US-News-N', gender: 'MALE', name: 'News N', category: 'News' },
-      { id: 'en-US-Polyglot-1', gender: 'MALE', name: 'Polyglot 1', category: 'Polyglot' }
-    ];
-
-    // Neural2 voices
-    const neural2Voices = [
-      { id: 'en-US-Neural2-A', gender: 'MALE', name: 'Neural2 A' },
-      { id: 'en-US-Neural2-C', gender: 'FEMALE', name: 'Neural2 C' },
-      { id: 'en-US-Neural2-D', gender: 'MALE', name: 'Neural2 D' },
-      { id: 'en-US-Neural2-E', gender: 'FEMALE', name: 'Neural2 E' },
-      { id: 'en-US-Neural2-F', gender: 'FEMALE', name: 'Neural2 F' },
-      { id: 'en-US-Neural2-G', gender: 'FEMALE', name: 'Neural2 G' },
-      { id: 'en-US-Neural2-H', gender: 'FEMALE', name: 'Neural2 H' },
-      { id: 'en-US-Neural2-I', gender: 'MALE', name: 'Neural2 I' },
-      { id: 'en-US-Neural2-J', gender: 'MALE', name: 'Neural2 J' }
-    ];
-
-    // WaveNet voices
-    const wavenetVoices = [
-      { id: 'en-US-Wavenet-A', gender: 'MALE', name: 'WaveNet A' },
-      { id: 'en-US-Wavenet-B', gender: 'MALE', name: 'WaveNet B' },
-      { id: 'en-US-Wavenet-C', gender: 'FEMALE', name: 'WaveNet C' },
-      { id: 'en-US-Wavenet-D', gender: 'MALE', name: 'WaveNet D' },
-      { id: 'en-US-Wavenet-E', gender: 'FEMALE', name: 'WaveNet E' },
-      { id: 'en-US-Wavenet-F', gender: 'FEMALE', name: 'WaveNet F' },
-      { id: 'en-US-Wavenet-G', gender: 'FEMALE', name: 'WaveNet G' },
-      { id: 'en-US-Wavenet-H', gender: 'FEMALE', name: 'WaveNet H' },
-      { id: 'en-US-Wavenet-I', gender: 'MALE', name: 'WaveNet I' },
-      { id: 'en-US-Wavenet-J', gender: 'MALE', name: 'WaveNet J' }
-    ];
-
-    // Studio voices
-    const studioVoices = [
-      { id: 'en-US-Studio-O', gender: 'FEMALE', name: 'Studio O' },
-      { id: 'en-US-Studio-Q', gender: 'MALE', name: 'Studio Q' }
-    ];
-
-    // Standard voices
-    const standardVoices = [
-      { id: 'en-US-Standard-A', gender: 'MALE', name: 'Standard A' },
-      { id: 'en-US-Standard-B', gender: 'MALE', name: 'Standard B' },
-      { id: 'en-US-Standard-C', gender: 'FEMALE', name: 'Standard C' },
-      { id: 'en-US-Standard-D', gender: 'MALE', name: 'Standard D' },
-      { id: 'en-US-Standard-E', gender: 'FEMALE', name: 'Standard E' },
-      { id: 'en-US-Standard-F', gender: 'FEMALE', name: 'Standard F' },
-      { id: 'en-US-Standard-G', gender: 'FEMALE', name: 'Standard G' },
-      { id: 'en-US-Standard-H', gender: 'FEMALE', name: 'Standard H' },
-      { id: 'en-US-Standard-I', gender: 'MALE', name: 'Standard I' },
-      { id: 'en-US-Standard-J', gender: 'MALE', name: 'Standard J' }
-    ];
-
-    // Add Chirp3 HD voices (highest quality)
-    chirp3Voices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: `${voice.name} (Chirp3 HD)`,
-        category: 'Chirp3 HD - Premium',
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} voice with highest quality AI synthesis`,
-        gender: voice.gender,
-        tier: 'premium'
-      });
-    });
-
-    // Add other premium voices
-    otherPremiumVoices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: voice.name,
-        category: `${voice.category || 'Premium'}`,
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} premium voice`,
-        gender: voice.gender,
-        tier: 'premium'
-      });
-    });
-
-    // Add Neural2 voices
-    neural2Voices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: voice.name,
-        category: 'Neural2 - Premium',
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} neural network voice`,
-        gender: voice.gender,
-        tier: 'premium'
-      });
-    });
-
-    // Add WaveNet voices
-    wavenetVoices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: voice.name,
-        category: 'WaveNet - Premium',
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} WaveNet voice`,
-        gender: voice.gender,
-        tier: 'premium'
-      });
-    });
-
-    // Add Studio voices
-    studioVoices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: voice.name,
-        category: 'Studio',
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} studio-quality voice`,
-        gender: voice.gender,
-        tier: 'studio'
-      });
-    });
-
-    // Add Standard voices
-    standardVoices.forEach(voice => {
-      voices.push({
-        id: voice.id,
-        name: voice.name,
-        category: 'Standard',
-        description: `${voice.gender === 'MALE' ? 'Male' : 'Female'} standard voice`,
-        gender: voice.gender,
-        tier: 'standard'
-      });
-    });
-
-    return voices;
-  };
-
-  const voiceOptions = getVoiceOptions();
-
-  // Group voices by category for better organization
-  const groupedVoices = voiceOptions.reduce((groups, voice) => {
-    const category = voice.category;
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(voice);
-    return groups;
-  }, {});
-
-  // Define category order (highest quality first)
-  const categoryOrder = [
-    'Chirp3 HD - Premium',
-    'Casual',
-    'Chirp HD',
-    'News',
-    'Polyglot',
-    'Neural2 - Premium',
-    'WaveNet - Premium',
-    'Studio',
-    'Standard'
-  ];
 
   return (
     <div className="settings-container">
-      {/* Header */}
-      <div className="settings-header">
-        <div className="settings-header-left">
-          <button 
-            className="settings-back-button" 
-            onClick={() => navigate(-1)}
-            title="Go back"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div className="settings-header-title">
-            <SettingsIcon size={24} />
-            <h1>Settings</h1>
+      {/* Header matching Home page style */}
+      <header className="settings-header">
+        <div className="settings-header-content">
+          <div className="settings-header-left">
+            <button
+              className="settings-back-button"
+              onClick={() => navigate(-1)}
+              title="Go back"
+            >
+              <ArrowLeft size={20} />
+              <span>Back</span>
+            </button>
+          </div>
+
+          <div className="settings-header-center">
+            <h1 className="settings-site-title">Settings</h1>
+          </div>
+
+          <div className="settings-header-right">
+            <UserDropdown user={user} onLogout={onLogout} className="settings-user-dropdown" />
           </div>
         </div>
-
-        <div className="settings-header-right">
-          <UserDropdown user={user} onLogout={onLogout} className="settings-user-dropdown" />
-        </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="settings-content">
+      <div className="settings-main-content">
+        {/* User Welcome Section */}
+        <div className="settings-welcome-section">
+          <div className="settings-user-card">
+            <div className="settings-user-avatar">
+              <User size={48} />
+            </div>
+            <div className="settings-user-info">
+              <h2 className="settings-user-name">{user?.displayName || 'Guest User'}</h2>
+              <p className="settings-user-subtitle">Welcome to your settings</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Voice Settings Section */}
         <div className="settings-section">
           <div className="settings-section-header">
-            <Volume2 size={20} />
-            <h2>Text-to-Speech Voice</h2>
+            <Volume2 size={24} />
+            <h3>Text-to-Speech Voice</h3>
           </div>
-          
+
           <p className="settings-section-description">
-            Choose your preferred voice for all text-to-speech features in DebateSim, 
-            including debate narration, analysis reading, and judge feedback.
+            Choose your preferred voice for all text-to-speech features in DebateSim.
+            {user && !user.isGuest ? ' Your preference will be saved to your account.' : ' Your preference will be saved locally.'}
           </p>
 
-          <div className="voice-options">
-            {categoryOrder.map(category => {
-              const voices = groupedVoices[category];
-              if (!voices || voices.length === 0) return null;
-              
-              return (
-                <div key={category} className="voice-category-group">
-                  <h3 className="voice-category-title">{category}</h3>
-                  <div className="voice-category-voices">
-                    {voices.map((voice) => (
-                      <div 
-                        key={voice.id} 
-                        className={`voice-option ${selectedVoice === voice.id ? 'selected' : ''}`}
-                      >
-                        <div className="voice-option-content">
-                          <div className="voice-option-header">
-                            <input
-                              type="radio"
-                              id={voice.id}
-                              name="voice"
-                              value={voice.id}
-                              checked={selectedVoice === voice.id}
-                              onChange={() => handleVoiceChange(voice.id)}
-                              className="voice-radio"
-                            />
-                            <label htmlFor={voice.id} className="voice-label">
-                              <div className="voice-info">
-                                <div className="voice-name">{voice.name}</div>
-                                <div className="voice-gender">{voice.gender === 'MALE' ? '♂' : '♀'} {voice.gender}</div>
-                              </div>
-                              <div className="voice-description">{voice.description}</div>
-                            </label>
-                          </div>
-                          
-                          <button
-                            className="voice-test-button"
-                            onClick={() => testVoice(voice.id)}
-                            disabled={isPlaying}
-                            title="Test this voice"
-                          >
-                            <Volume2 size={16} />
-                            {isPlaying ? 'Playing...' : 'Test'}
-                          </button>
+          {error && (
+            <div className="settings-error">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="settings-loading">
+              <p>Loading available voices...</p>
+            </div>
+          ) : (
+            <div className="voice-selection-grid">
+              {availableVoices.map((voice) => (
+                <div
+                  key={voice.name}
+                  className={`voice-card ${selectedVoice === voice.name ? 'selected' : ''}`}
+                >
+                  <div className="voice-card-content">
+                    <div className="voice-info">
+                      <input
+                        type="radio"
+                        id={voice.name}
+                        name="voice"
+                        value={voice.name}
+                        checked={selectedVoice === voice.name}
+                        onChange={() => handleVoiceChange(voice.name)}
+                        className="voice-radio"
+                      />
+                      <label htmlFor={voice.name} className="voice-label">
+                        <div className="voice-name">{voice.name}</div>
+                        <div className="voice-details">
+                          <span className="voice-gender">{voice.gender === 'MALE' ? '♂' : '♀'} {voice.gender}</span>
+                          <span className="voice-description">{voice.description}</span>
                         </div>
-                      </div>
-                    ))}
+                      </label>
+                    </div>
+
+                    <button
+                      className="voice-test-button"
+                      onClick={() => testVoice(voice.name)}
+                      disabled={testing}
+                      title="Test this voice"
+                    >
+                      <Play size={16} />
+                      {testing ? 'Testing...' : 'Test'}
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
-          <div className="settings-note">
-            <p>
-              <strong>Note:</strong> Voice changes take effect immediately and will be used 
-              for all future text-to-speech playback. Your preference is saved locally.
-            </p>
-          </div>
+          {saving && (
+            <div className="settings-saving">
+              <p>Saving preference...</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
