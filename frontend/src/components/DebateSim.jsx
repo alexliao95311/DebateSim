@@ -277,6 +277,15 @@ function DebateSim({ user }) {
       tags: ["Accessible", "Structured"],
       color: "from-emerald-500 to-green-600"
     }
+    ,
+    {
+      id: "lincoln-douglas",
+      title: "LD Debate",
+      description: "Philosophical debate format with value premise, criterion, and contentions. 6-speech structure.",
+      icon: <Award size={48} />,
+      tags: ["Philosophy", "Framework", "LD"],
+      color: "from-yellow-500 to-orange-600"
+    }
   ];
 
 
