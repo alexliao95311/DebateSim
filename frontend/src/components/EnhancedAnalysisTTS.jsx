@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
 import { TTS_CONFIG, getVoiceForContext, getTTSEndpoint } from '../config/tts';
+import voicePreferenceService from '../services/voicePreferenceService';
 import './VoiceOutput.css';
 
 // Create a context for TTS functionality
@@ -564,8 +565,8 @@ const TTSProvider = ({ children, analysisText }) => {
   
   const playGoogleTTSForSection = async (sectionId, text, chunkIndex = 0) => {
     try {
-      const contextSettings = getVoiceForContext('debate');
-      
+      const contextSettings = getVoiceForContext('debate', voicePreferenceService.getCurrentVoice());
+
       const response = await fetch(getTTSEndpoint('synthesize'), {
         method: 'POST',
         headers: {
@@ -573,7 +574,7 @@ const TTSProvider = ({ children, analysisText }) => {
         },
         body: JSON.stringify({
           text: text,
-          voice_name: contextSettings.voice,
+          voice_name: voicePreferenceService.getCurrentVoice(),
           rate: contextSettings.rate,
           pitch: contextSettings.pitch,
           volume: contextSettings.volume
@@ -648,8 +649,8 @@ const TTSProvider = ({ children, analysisText }) => {
   const playBrowserTTSForSection = (sectionId, text, chunkIndex = 0) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      const contextSettings = getVoiceForContext('debate');
-      
+      const contextSettings = getVoiceForContext('debate', voicePreferenceService.getCurrentVoice());
+
       utterance.rate = contextSettings.rate;
       utterance.pitch = contextSettings.pitch;
       utterance.volume = contextSettings.volume;
@@ -919,8 +920,8 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
         return false;
       }
       
-      const contextSettings = getVoiceForContext('debate');
-      
+      const contextSettings = getVoiceForContext('debate', voicePreferenceService.getCurrentVoice());
+
       // Increase timeout for longer chunks and add retry logic
       const controller = new AbortController();
       const timeoutDuration = Math.max(20000, text.length * 0.2); // At least 20 seconds, or 0.2s per character
@@ -928,7 +929,7 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
         console.log(`TTS request timeout after ${timeoutDuration}ms for chunk of ${text.length} characters`);
         controller.abort();
       }, timeoutDuration);
-      
+
       const response = await fetch(getTTSEndpoint('synthesize'), {
         method: 'POST',
         headers: {
@@ -936,7 +937,7 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
         },
         body: JSON.stringify({
           text: text,
-          voice_name: contextSettings.voice,
+          voice_name: voicePreferenceService.getCurrentVoice(),
           rate: contextSettings.rate,
           pitch: contextSettings.pitch,
           volume: contextSettings.volume
@@ -1021,8 +1022,8 @@ const EnhancedAnalysisTTS = ({ analysisText, title = "Analysis" }) => {
   const playBrowserTTSChunk = (text) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      const contextSettings = getVoiceForContext('debate');
-      
+      const contextSettings = getVoiceForContext('debate', voicePreferenceService.getCurrentVoice());
+
       utterance.rate = contextSettings.rate;
       utterance.pitch = contextSettings.pitch;
       utterance.volume = contextSettings.volume;
