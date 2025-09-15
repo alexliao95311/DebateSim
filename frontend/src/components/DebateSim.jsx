@@ -4,19 +4,16 @@ import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import HistorySidebar from "./HistorySidebar";
-import { 
-  Users, 
-  Bot, 
-  UserCheck, 
-  PlayCircle, 
-  History, 
-  User,
-  LogOut,
+import UserDropdown from "./UserDropdown";
+import {
+  Users,
+  Bot,
+  UserCheck,
+  PlayCircle,
+  History,
   Award,
-  ChevronRight,
-  ChevronDown,
-  Menu
-} 
+  ChevronRight
+}
 from "lucide-react";
 import "./DebateSim.css";
 import Footer from "./Footer.jsx";
@@ -29,8 +26,6 @@ function DebateSim({ user }) {
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredMode, setHoveredMode] = useState(null);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
-  
   // Persona selection states
   const [proPersona, setProPersona] = useState("");
   const [conPersona, setConPersona] = useState("");
@@ -39,7 +34,6 @@ function DebateSim({ user }) {
   const [showRightArrow, setShowRightArrow] = useState(true);
   const navigate = useNavigate();
   const inputRef = useRef(null);
-  const dropdownRef = useRef(null);
   const pdfContentRef = useRef(null);
   const topicSectionRef = useRef(null);
   const personaCardsRef = useRef(null);
@@ -61,19 +55,6 @@ function DebateSim({ user }) {
     return () => clearTimeout(animationTimer);
   }, []);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Fetch history on load
   useEffect(() => {
@@ -429,57 +410,7 @@ function DebateSim({ user }) {
 
           {/* RIGHT SECTION: User + Logout */}
           <div className="debatesim-header-right">
-            {/* Desktop user section */}
-            <div className="debatesim-user-section debatesim-desktop-user">
-              <div className="debatesim-user-info">
-                <User size={18} />
-                <span>{user?.displayName}</span>
-              </div>
-              <button className="debatesim-logout-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-
-            {/* Mobile dropdown */}
-            <div className="debatesim-mobile-dropdown-container" ref={dropdownRef}>
-              <button
-                className="debatesim-mobile-dropdown-trigger"
-                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-              >
-                <Menu size={18} />
-                <ChevronDown size={16} className={`debatesim-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-              </button>
-
-              {showMobileDropdown && (
-                <div className="debatesim-mobile-dropdown-menu">
-                  <div className="debatesim-dropdown-user-info">
-                    <User size={16} />
-                    <span>{user?.displayName}</span>
-                  </div>
-                  <button
-                    className="debatesim-dropdown-option"
-                    onClick={() => {
-                      setShowHistorySidebar(!showHistorySidebar);
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <History size={16} />
-                    <span>History</span>
-                  </button>
-                  <button
-                    className="debatesim-dropdown-option debatesim-dropdown-logout"
-                    onClick={() => {
-                      handleLogout();
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserDropdown user={user} onLogout={handleLogout} className="debatesim-user-dropdown" />
           </div>
         </div>
       </header>

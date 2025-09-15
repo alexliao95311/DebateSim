@@ -3,23 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import HistorySidebar from "./HistorySidebar";
-import { 
-  Code, 
-  Gavel, 
-  Shield, 
-  ChevronRight, 
-  Star, 
-  Clock, 
+import UserDropdown from "./UserDropdown";
+import {
+  Code,
+  Gavel,
+  Shield,
+  ChevronRight,
+  Star,
+  Clock,
   CheckCircle,
-  User,
-  LogOut,
   Zap,
   TrendingUp,
   Award,
   MessageSquare,
-  History,
-  ChevronDown,
-  Menu
+  History
 } from "lucide-react";
 import "./Home.css";
 import Footer from "./Footer.jsx";
@@ -34,9 +31,7 @@ function Home({ user, onLogout }) {
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [history, setHistory] = useState([]);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
   const featureCardsRef = useRef(null);
-  const dropdownRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
   useLayoutEffect(() => {
@@ -55,19 +50,6 @@ function Home({ user, onLogout }) {
     };
   }, []);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Fetch debate history on load
   useEffect(() => {
@@ -263,57 +245,7 @@ function Home({ user, onLogout }) {
           </div>
 
           <div className="home-header-right">
-            {/* Desktop user section */}
-            <div className="home-user-section home-desktop-user">
-              <div className="home-user-info">
-                <User className="home-user-icon" />
-                <span className="home-username">{user?.displayName}</span>
-              </div>
-              <button className="home-logout-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-
-            {/* Mobile dropdown */}
-            <div className="home-mobile-dropdown-container" ref={dropdownRef}>
-              <button
-                className="home-mobile-dropdown-trigger"
-                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-              >
-                <Menu size={18} />
-                <ChevronDown size={16} className={`home-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-              </button>
-
-              {showMobileDropdown && (
-                <div className="home-mobile-dropdown-menu">
-                  <div className="home-dropdown-user-info">
-                    <User size={16} />
-                    <span>{user?.displayName}</span>
-                  </div>
-                  <button
-                    className="home-dropdown-option"
-                    onClick={() => {
-                      setShowHistorySidebar(!showHistorySidebar);
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <History size={16} />
-                    <span>History</span>
-                  </button>
-                  <button
-                    className="home-dropdown-option home-dropdown-logout"
-                    onClick={() => {
-                      handleLogout();
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserDropdown user={user} onLogout={handleLogout} className="home-user-dropdown" />
           </div>
         </div>
       </header>

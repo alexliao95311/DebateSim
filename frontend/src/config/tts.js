@@ -74,9 +74,19 @@ export const TTS_CONFIG = {
   }
 };
 
-// Helper function to get voice for context
-export const getVoiceForContext = (context = 'general') => {
-  return TTS_CONFIG.contexts[context] || TTS_CONFIG.contexts.general;
+// Helper function to get voice for context with user preference
+export const getVoiceForContext = (context = 'general', userVoice = null) => {
+  const contextConfig = TTS_CONFIG.contexts[context] || TTS_CONFIG.contexts.general;
+
+  // If user has a voice preference, use it; otherwise use context default
+  if (userVoice) {
+    return {
+      ...contextConfig,
+      voice: userVoice
+    };
+  }
+
+  return contextConfig;
 };
 
 // Helper function to get all available voices

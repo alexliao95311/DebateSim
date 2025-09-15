@@ -10,6 +10,8 @@ import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
 import AboutUs from "./components/AboutUs";
 import SpeechTest from "./components/SpeechTest";
+import Settings from "./components/Settings";
+import voicePreferenceService from "./services/voicePreferenceService";
 
 // Component to handle scroll reset on route changes
 function ScrollToTop() {
@@ -34,13 +36,20 @@ function App() {
     // Check if a guest user is persisted in localStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const user = JSON.parse(storedUser);
+      setUser(user);
       setLoading(false);
+      // Load voice preference for guest user
+      voicePreferenceService.loadVoicePreference(user);
     } else {
       // Subscribe to Firebase auth state only if there's no persisted guest user
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
         setLoading(false);
+        // Load voice preference for authenticated user
+        if (currentUser) {
+          voicePreferenceService.loadVoicePreference(currentUser);
+        }
       });
       return () => unsubscribe();
     }
@@ -110,6 +119,7 @@ function App() {
             <Route path="/debate" element={<Debate />} />
             <Route path="/judge" element={<Judge />} />
             <Route path="/legislation" element={<Legislation user={user} />} />
+            <Route path="/settings" element={<Settings user={user} onLogout={handleLogout} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
