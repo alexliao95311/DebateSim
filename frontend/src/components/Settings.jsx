@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Volume2, Play } from 'lucide-react';
+import { ArrowLeft, User, Volume2, Play, Edit2, Check, X } from 'lucide-react';
 import UserDropdown from './UserDropdown';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import voicePreferenceService from '../services/voicePreferenceService';
 import './Settings.css';
 
@@ -14,6 +15,10 @@ const Settings = ({ user, onLogout }) => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState(user?.displayName || '');
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   // Fetch available voices from the backend
   useEffect(() => {
@@ -152,6 +157,78 @@ const Settings = ({ user, onLogout }) => {
     }
   };
 
+  // Handle username editing
+  const handleEditName = () => {
+    setIsEditingName(true);
+    setNewDisplayName(user?.displayName || '');
+    setNameError('');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+    setNewDisplayName(user?.displayName || '');
+    setNameError('');
+  };
+
+  const handleSaveName = async () => {
+    if (!newDisplayName.trim()) {
+      setNameError('Display name cannot be empty');
+      return;
+    }
+
+    if (newDisplayName.trim().length < 2) {
+      setNameError('Display name must be at least 2 characters long');
+      return;
+    }
+
+    if (newDisplayName.trim().length > 50) {
+      setNameError('Display name must be less than 50 characters');
+      return;
+    }
+
+    setSavingName(true);
+    setNameError('');
+
+    try {
+      const trimmedName = newDisplayName.trim();
+
+      if (user && !user.isGuest) {
+        // Update Firebase Auth profile
+        await updateProfile(user, {
+          displayName: trimmedName
+        });
+
+        // Update Firestore user document
+        const db = getFirestore();
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          displayName: trimmedName,
+          lastUpdated: new Date()
+        });
+
+        // Update local user object
+        user.displayName = trimmedName;
+      } else {
+        // For guest users, update localStorage
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        storedUser.displayName = trimmedName;
+        localStorage.setItem('user', JSON.stringify(storedUser));
+
+        // Update the user object
+        if (user) {
+          user.displayName = trimmedName;
+        }
+      }
+
+      setIsEditingName(false);
+    } catch (err) {
+      console.error('Error updating display name:', err);
+      setNameError('Failed to update display name. Please try again.');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   return (
     <div className="settings-container">
       {/* Header matching Home page style */}
@@ -183,11 +260,73 @@ const Settings = ({ user, onLogout }) => {
         {/* User Welcome Section */}
         <div className="settings-welcome-section">
           <div className="settings-user-card">
+            {/* Edit button in top right corner */}
+            {!isEditingName && (
+              <button
+                onClick={handleEditName}
+                className="settings-card-edit-btn"
+                title="Edit display name"
+              >
+                <Edit2 size={16} />
+              </button>
+            )}
+
             <div className="settings-user-avatar">
               <User size={48} />
             </div>
             <div className="settings-user-info">
-              <h2 className="settings-user-name">{user?.displayName || 'Guest User'}</h2>
+              {isEditingName ? (
+                <div className="settings-name-edit">
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    className="settings-name-input"
+                    placeholder="Enter your display name"
+                    maxLength={50}
+                    disabled={savingName}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName();
+                      } else if (e.key === 'Escape') {
+                        handleCancelEdit();
+                      }
+                    }}
+                  />
+                  <div className="settings-name-edit-buttons">
+                    <button
+                      onClick={handleSaveName}
+                      disabled={savingName}
+                      className="settings-name-save-btn"
+                      title="Save changes"
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={savingName}
+                      className="settings-name-cancel-btn"
+                      title="Cancel changes"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {nameError && (
+                    <div className="settings-name-error">
+                      {nameError}
+                    </div>
+                  )}
+                  {savingName && (
+                    <div className="settings-name-saving">
+                      Saving...
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="settings-name-display">
+                  <h2 className="settings-user-name">{user?.displayName || 'Guest User'}</h2>
+                </div>
+              )}
               <p className="settings-user-subtitle">Welcome to your settings</p>
             </div>
           </div>
