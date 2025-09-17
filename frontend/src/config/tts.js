@@ -3,7 +3,7 @@
 
 export const TTS_CONFIG = {
   // Google TTS API settings - now consolidated with main backend
-  apiUrl: 'http://localhost:8000',
+  apiUrl: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
   
   // TTS endpoint paths
   endpoints: {
@@ -74,9 +74,19 @@ export const TTS_CONFIG = {
   }
 };
 
-// Helper function to get voice for context
-export const getVoiceForContext = (context = 'general') => {
-  return TTS_CONFIG.contexts[context] || TTS_CONFIG.contexts.general;
+// Helper function to get voice for context with user preference
+export const getVoiceForContext = (context = 'general', userVoice = null) => {
+  const contextConfig = TTS_CONFIG.contexts[context] || TTS_CONFIG.contexts.general;
+
+  // If user has a voice preference, use it; otherwise use context default
+  if (userVoice) {
+    return {
+      ...contextConfig,
+      voice: userVoice
+    };
+  }
+
+  return contextConfig;
 };
 
 // Helper function to get all available voices
