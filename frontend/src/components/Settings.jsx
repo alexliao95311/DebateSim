@@ -24,7 +24,8 @@ const Settings = ({ user, onLogout }) => {
   useEffect(() => {
     const fetchVoices = async () => {
       try {
-        const response = await fetch('http://localhost:8000/tts/voices');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${API_URL}/tts/voices`);
         const data = await response.json();
 
         if (data.success) {
@@ -111,7 +112,8 @@ const Settings = ({ user, onLogout }) => {
 
     setTesting(true);
     try {
-      const response = await fetch('http://localhost:8000/tts/synthesize', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${API_URL}/tts/synthesize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

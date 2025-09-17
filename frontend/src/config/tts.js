@@ -3,7 +3,7 @@
 
 export const TTS_CONFIG = {
   // Google TTS API settings - now consolidated with main backend
-  apiUrl: 'http://localhost:8000',
+  apiUrl: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000',
   
   // TTS endpoint paths
   endpoints: {
