@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Volume2, Play, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, User, Volume2, Play, Edit2, Check, X, History } from 'lucide-react';
 import UserDropdown from './UserDropdown';
+import Footer from './Footer.jsx';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import voicePreferenceService from '../services/voicePreferenceService';
@@ -239,15 +240,39 @@ const Settings = ({ user, onLogout }) => {
           <div className="settings-header-left">
             <button
               className="settings-back-button"
-              onClick={() => navigate(-1)}
-              title="Go back"
+              onClick={() => navigate('/')}
+              title="Go to Home"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '8px 16px',
+                backgroundColor: 'transparent',
+                border: '2px solid #374151',
+                borderRadius: '8px',
+                color: '#f1f5f9',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#374151';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
               <span>Back</span>
             </button>
           </div>
 
-          <div className="settings-header-center">
+          <div className="settings-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="settings-site-title">Settings</h1>
           </div>
 
@@ -405,6 +430,8 @@ const Settings = ({ user, onLogout }) => {
           )}
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

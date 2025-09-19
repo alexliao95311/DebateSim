@@ -8,7 +8,7 @@ import "./Judge.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
 import UserDropdown from "./UserDropdown";
-import { MessageSquare, Code } from "lucide-react";
+import { MessageSquare, Code, History } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
@@ -279,14 +279,21 @@ ${feedback}`;
         <div className="judge-header-content">
           <div className="judge-header-left">
             <button 
-              className="judge-back-button"
+              className="judge-history-button"
               onClick={() => navigate("/")}
+              title="Go to Home"
             >
-              ← Home
+              <History size={18} />
+              <span>Home</span>
             </button>
           </div>
 
-          <div className="judge-header-center">
+          <div className="judge-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="judge-site-title" onClick={() => navigate("/")}>
               Judge Results
             </h1>

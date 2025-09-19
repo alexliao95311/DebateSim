@@ -11,6 +11,7 @@ import PublicTranscriptView from "./components/PublicTranscriptView";
 import AboutUs from "./components/AboutUs";
 import SpeechTest from "./components/SpeechTest";
 import Settings from "./components/Settings";
+import History from "./components/History";
 import voicePreferenceService from "./services/voicePreferenceService";
 
 // Component to handle scroll reset on route changes
@@ -120,6 +121,7 @@ function App() {
             <Route path="/judge" element={<Judge />} />
             <Route path="/legislation" element={<Legislation user={user} />} />
             <Route path="/settings" element={<Settings user={user} onLogout={handleLogout} />} />
+            <Route path="/history" element={<History user={user} onLogout={handleLogout} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}

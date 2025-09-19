@@ -8,12 +8,11 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
-import HistorySidebar from "./HistorySidebar";
 import UserDropdown from "./UserDropdown";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import EnhancedAnalysisTTS, { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
-import { MessageSquare, Code, Share2, X, Download, History } from 'lucide-react';
+import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -541,9 +540,6 @@ const Legislation = ({ user }) => {
   const [conPersona, setConPersona] = useState('');
   const [aiPersona, setAiPersona] = useState('');
   
-  // History state
-  const [history, setHistory] = useState([]);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
@@ -1726,23 +1722,21 @@ const Legislation = ({ user }) => {
       {/* NEW: Page Loader */}
       <PageLoader isLoading={isPageLoading} />
       
-      <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''} ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
+      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
         {/* Header with fade-in animation */}
         <header className={`legislation-header ${componentsLoaded.header ? 'component-visible' : 'component-hidden'}`}>
           <div className="legislation-header-content">
-            {/* LEFT SECTION: History Button */}
             <div className="legislation-header-left">
-              <button
-                className="legislation-history-button"
-                onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              >
-                <History size={16} />
-                <span>History</span>
-              </button>
+              {/* Empty space for alignment */}
             </div>
 
             {/* CENTER SECTION: Title */}
-            <div className="legislation-header-center">
+            <div className="legislation-header-center" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flex: 1
+            }}>
               <h1 className="legislation-site-title" onClick={() => navigate("/")}>
                 <span className="legislation-title-full">Bill and Legislation Debate</span>
                 <span className="legislation-title-mobile">Bill Debate</span>
@@ -2836,13 +2830,6 @@ const Legislation = ({ user }) => {
         />
       )}
 
-      <HistorySidebar 
-        user={user}
-        history={history}
-        showHistorySidebar={showHistorySidebar}
-        setShowHistorySidebar={setShowHistorySidebar}
-        componentPrefix="legislation"
-      />
       </div>
     </>
   );

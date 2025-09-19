@@ -3,14 +3,12 @@ import { getFirestore, collection, getDocs, query, orderBy } from "firebase/fire
 import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import HistorySidebar from "./HistorySidebar";
 import UserDropdown from "./UserDropdown";
 import {
   Users,
   Bot,
   UserCheck,
   PlayCircle,
-  History,
   Award,
   ChevronRight
 }
@@ -22,8 +20,6 @@ function DebateSim({ user }) {
   const [mode, setMode] = useState("");
   const [debateFormat, setDebateFormat] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
-  const [history, setHistory] = useState([]);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredMode, setHoveredMode] = useState(null);
   // Persona selection states
@@ -387,22 +383,20 @@ function DebateSim({ user }) {
   };
 
   return (
-    <div className={`debatesim-container ${showHistorySidebar ? 'debatesim-sidebar-open' : ''}`}>
+    <div className="debatesim-container">
       <header className="debatesim-header">
         <div className="debatesim-header-content">
-          {/* LEFT SECTION: History Button */}
           <div className="debatesim-header-left">
-            <button
-              className="debatesim-history-button"
-              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-            >
-              <History size={18} />
-              <span>History</span>
-            </button>
+            {/* Empty space for alignment */}
           </div>
 
           {/* CENTER SECTION: Title */}
-          <div className="debatesim-header-center">
+          <div className="debatesim-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="debatesim-site-title" onClick={() => navigate("/")}>
               Debate Simulator
             </h1>
@@ -656,13 +650,6 @@ function DebateSim({ user }) {
         </div>
       </div>
 
-      <HistorySidebar 
-        user={user}
-        history={history}
-        showHistorySidebar={showHistorySidebar}
-        setShowHistorySidebar={setShowHistorySidebar}
-        componentPrefix="debatesim"
-      />
       
       <Footer />
     </div>
