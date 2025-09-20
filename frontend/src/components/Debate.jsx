@@ -203,7 +203,12 @@ function Debate() {
   const [pfSpeakingOrder, setPfSpeakingOrder] = useState("pro-first");
   const [pfOrderSelected, setPfOrderSelected] = useState(false);
   const [showPfInfo, setShowPfInfo] = useState(false);
-
+  // LD info popup state (mirrors PF)
+  const [showLdInfo, setShowLdInfo] = useState(false);
+  // LD speaking order + confirmation (mirrors PF)
+  const [ldSpeakingOrder, setLdSpeakingOrder] = useState("pro-first");
+  const [ldOrderSelected, setLdOrderSelected] = useState(false);
+  
   // Handler for the back to home button
   const handleBackToHome = () => {
     navigate("/");
@@ -231,7 +236,7 @@ function Debate() {
   // Auto-continue when loading finishes in auto mode
   useEffect(() => {
     // Check if we should continue auto-generation
-    const maxRounds = debateFormat === "public-forum" ? 4 : 5;
+  const maxRounds = debateFormat === "public-forum" ? 4 : (debateFormat === "lincoln-douglas" ? 7 : 5);
     const aiSpeeches = countAISpeeches(messageList);
     const shouldContinue = aiSpeeches < (maxRounds * 2); // 8 speeches total for PF, 10 for regular
 
@@ -390,7 +395,7 @@ function Debate() {
   const maxRounds = debateFormat === "public-forum"
     ? 4
     : debateFormat === "lincoln-douglas"
-      ? 6
+      ? 7
       : 5;
   const handleAIDebate = async () => {
     // Check if we have completed all speeches (4 rounds = 8 speeches for PF, 5 rounds = 10 speeches for regular)
@@ -1420,6 +1425,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </div>
             </div>
           )}
+          
           {/* This debate-model-selection div is now hidden in user-vs-user mode */}
           {actualMode !== "user-vs-user" && (
             <div className="debate-model-selection">
@@ -1473,6 +1479,47 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </label>
             </div>
           )}
+          {debateFormat === "lincoln-douglas" && actualMode === "ai-vs-ai" && !ldOrderSelected && (
+            <div className="ai-vs-user-setup">
+              <div className="setup-header">
+                <h3>Lincoln-Douglas Debate Setup</h3>
+                <button 
+                  className="info-button"
+                  onClick={() => setShowLdInfo(true)}
+                  title="More information about Lincoln-Douglas debate format"
+                >
+                  ?
+                </button>
+              </div>
+              <p style={{ color: '#fff' }}>Choose the speaking order for all 7 rounds</p>
+              <div className="order-selection">
+                <label>Speaking Order</label>
+                <div className="order-buttons">
+                  <button
+                    className={`order-button ${ldSpeakingOrder === 'pro-first' ? 'selected' : ''}`}
+                    onClick={() => setLdSpeakingOrder('pro-first')}
+                  >
+                    PRO speaks first in each round
+                  </button>
+                  <button
+                    className={`order-button ${ldSpeakingOrder === 'con-first' ? 'selected' : ''}`}
+                    onClick={() => setLdSpeakingOrder('con-first')}
+                  >
+                    CON speaks first in each round
+                  </button>
+                </div>
+              </div>
+
+              <div className="confirm-section">
+                <button
+                  className="confirm-button"
+                  onClick={() => { setLdOrderSelected(true); setPfSpeakingOrder(ldSpeakingOrder); }}
+                >
+                  Start Lincoln-Douglas Debate
+                </button>
+              </div>
+            </div>
+          )}
           {/* Render each speech as its own block */}
           {messageList.map(({ speaker, text, model }, i) => {
             const speechItem = speechList[i];
@@ -1521,7 +1568,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </div>
             );
           })}
-          {actualMode === "ai-vs-ai" && (debateFormat !== "public-forum" || pfOrderSelected) && (
+          {actualMode === "ai-vs-ai" && (
+            (debateFormat !== "public-forum" && debateFormat !== "lincoln-douglas") ||
+            (debateFormat === "public-forum" && pfOrderSelected) ||
+            (debateFormat === "lincoln-douglas" && ldOrderSelected)
+          ) && (
             <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
               {!autoMode ? (
                 <>
@@ -1693,6 +1744,60 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       <li>Cross-examination periods between speeches (coming soon)</li>
                       <li>Emphasis on logical reasoning and evidence</li>
                       <li>Focus on current events and policy issues</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lincoln-Douglas Info Popup */}
+          {showLdInfo && (
+            <div className="popup-overlay" onClick={() => setShowLdInfo(false)}>
+              <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                <div className="popup-header">
+                  <h3>Lincoln-Douglas Debate Format</h3>
+                  <button 
+                    className="close-button"
+                    onClick={() => setShowLdInfo(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="popup-body">
+                  <h4>Structure (7 Rounds):</h4>
+                  <div className="round-structure">
+                    <div className="round-item">
+                      <strong>Round 1:</strong> Affirmative Constructive (AC)
+                      <p>Aff presents the case with value/criterion and contentions. 6 minutes.</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 2:</strong> Negative Cross-Examination of Aff
+                      <p>Neg questions Aff’s case to clarify and probe. 3 minutes.</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 3:</strong> Negative Constructive + Rebuttal (NC/NR)
+                      <p>Neg presents case and responds to AC. 7 minutes.</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 4:</strong> Affirmative Cross-Examination of Neg
+                      <p>Aff questions Neg’s case and responses. 3 minutes.</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 5:</strong> First Affirmative Rebuttal (1AR)
+                      <p>Aff responds to NC/NR and extends key offense. 4 minutes.</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>Round 6:</strong> Negative Rebuttal (NR) and Second Affirmative Rebuttal (2AR)
+                      <p>Neg collapses and weighs; Aff finalizes voting issues. 6 mins (NR) + 3 mins (2AR).</p>
+                    </div>
+                  </div>
+                  <div className="format-details">
+                    <h4>Key Features:</h4>
+                    <ul>
+                      <li>Value/criterion framework to evaluate impacts</li>
+                      <li>Emphasis on philosophical analysis and weighing</li>
+                      <li>Limited prep, no partner; depth over breadth</li>
                     </ul>
                   </div>
                 </div>
@@ -2041,6 +2146,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         </div>
         <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
       </footer>
+
+      
     </div>
   );
 }

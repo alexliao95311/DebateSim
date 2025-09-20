@@ -439,7 +439,7 @@ Strategic Content Guidelines
 IMPORTANT: {rebuttal_importance}
 """
 
-# Template for Lincoln-Douglas debates - 6 speeches with philosophical framework
+# Template for Lincoln-Douglas debates - 7 rounds with philosophical framework
 lincoln_douglas_template = """
 {persona_instructions}
 
@@ -447,7 +447,7 @@ lincoln_douglas_template = """
 
 You are **{debater_role}**, engaged in a Lincoln-Douglas debate on **"{topic}"**.
 
-LINCOLN-DOUGLAS FORMAT (6 SPEECHES EXACTLY):
+LINCOLN-DOUGLAS FORMAT (7 ROUNDS EXACTLY):
 1. **Affirmative Constructive (AC)** - 6 min: Present case with value premise, criterion, and contentions
 2. **Cross-Examination** - 3 min: Ask questions to expose flaws in opponent's argument  
 3. **Negative Constructive (NC)** - 7 min: Present case AND attack affirmative's case
@@ -647,11 +647,11 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
                 rebuttal_requirement = "• **FINAL FOCUS**: Make your final appeal on the most important issues. No new arguments. Focus on why your side wins on the key impacts and values. Crystallize the voting issues."
                 rebuttal_importance = f"This is {debater_role}'s final focus. Make your final appeal - no new arguments, just crystallization."
         elif debate_format == "lincoln-douglas":
-            max_rounds = 6  # 6 speeches total: AC, NC, 1AR, 2NR, 2AR (plus CX periods)
+            max_rounds = 7  # 7 rounds total: includes CX periods after AC and NC
             
-            # Lincoln-Douglas has 6 speeches total with specific timing and structure
-            # Speech order: AC (Aff), NC (Neg), 1AR (Aff), 2NR (Neg), 2AR (Aff)
-            # Cross-examinations happen after AC and NC
+            # Lincoln-Douglas has 7 rounds when counting cross-examination periods
+            # Round order: 1 AC (Aff), 2 CX (Neg questions Aff), 3 NC (Neg),
+            # 4 CX (Aff questions Neg), 5 1AR (Aff), 6 2NR (Neg), 7 2AR (Aff)
             
             # Determine speech number and type based on round_num
             if round_num_val == 1:
