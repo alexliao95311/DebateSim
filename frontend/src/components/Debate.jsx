@@ -387,7 +387,11 @@ function Debate() {
     }
   };
 
-  const maxRounds = debateFormat === "public-forum" ? 4 : 5;
+  const maxRounds = debateFormat === "public-forum"
+    ? 4
+    : debateFormat === "lincoln-douglas"
+      ? 6
+      : 5;
   const handleAIDebate = async () => {
     // Check if we have completed all speeches (4 rounds = 8 speeches for PF, 5 rounds = 10 speeches for regular)
     const aiSpeeches = countAISpeeches(messageList);
@@ -401,7 +405,7 @@ function Debate() {
           const modelInfo = model ? `*Model: ${model}*\n\n` : "";
           return `## ${speaker}\n${modelInfo}${text}`;
         })
-        .join("\n\n---\n\n");
+        .join("\n\n");
 
       // Get last message text for immediate rebuttal
       const lastMessage = messageList.length > 0
@@ -1236,7 +1240,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           const modelInfo = model ? `*Model: ${model}*\n\n` : "";
           return `## ${speaker}\n${modelInfo}${text}`;
         })
-        .join("\n\n---\n\n");
+        .join("\n\n");
 
       const truncatedDescription = description?.length > 3000
         ? `${description.substring(0, 3000)}... (bill text continues)`
@@ -1306,7 +1310,7 @@ CONTENT REQUIREMENTS:
 - Follow the RIGID FORMAT exactly as specified above
 - Use clear structural markers (PART 1, PART 2, etc.)
 - Address arguments by their specific titles/content
-- Quote user's exact words when refuting
+- Quote opponent's exact words when refuting
 - Provide evidence, reasoning, and impact for all points
 - DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
 
@@ -1331,7 +1335,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           const modelInfo = model ? `*Model: ${model}*\n\n` : "";
           return `## ${speaker}\n${modelInfo}${text}`;
         })
-        .join("\n\n---\n\n");
+        .join("\n\n");
 
       console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
       console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
@@ -1345,58 +1349,6 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
     } catch (err) {
       console.error("Error in User vs AI debate:", err);
       setError("Failed to fetch AI rebuttal.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUserVsAISubmitAndEnd = async () => {
-    if (!userInput.trim()) {
-      alert("Input field cannot be blank. Please enter your argument.");
-      return;
-    }
-    if (!userSide) {
-      setError("Please choose Pro or Con before proceeding.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      // Add the user's message to the messageList
-      appendMessage(
-        userSide === "pro" ? "Pro (User)" : "Con (User)",
-        userInput
-      );
-
-      // Clear the input
-      setUserInput("");
-      setCurrentRound(prev => prev + 1);
-
-      // Build transcript with the current messageList plus the new user message
-      const userMessage = {
-        speaker: userSide === "pro" ? "Pro (User)" : "Con (User)",
-        text: userInput.trim(),
-        round: currentRound
-      };
-
-      const finalTranscript = [...messageList, userMessage]
-        .map(({ speaker, text, model }) => {
-          const modelInfo = model ? `*Model: ${model}*\n\n` : "";
-          return `## ${speaker}\n${modelInfo}${text}`;
-        })
-        .join("\n\n---\n\n");
-
-      // Navigate to judge with the complete transcript
-      navigate("/judge", {
-        state: {
-          transcript: finalTranscript,
-          topic,
-          mode: isBillDebate ? 'bill-debate' : actualMode,
-          judgeModel
-        }
-      });
-    } catch (err) {
-      setError("Failed to send final user argument.");
     } finally {
       setLoading(false);
     }
