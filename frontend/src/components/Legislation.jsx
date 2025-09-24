@@ -38,6 +38,13 @@ const debateFormats = [
     description: "Accessible format focused on current events and real-world issues, emphasizing clear communication",
     tags: ["Accessible", "Current Events"]
   }
+  ,
+  {
+    id: "lincoln-douglas",
+    title: "LD Debate",
+    description: "Philosophical debate format with value premise, criterion, and contentions. 6-speech structure.",
+    tags: ["Philosophy", "Framework", "LD"]
+  }
 ];
 
 // Persona options for debates
