@@ -18,7 +18,7 @@ function Judge() {
   const auth = getAuth();
   
   // Retrieve debate details from router state
-  const { transcript, topic, mode, judgeModel } = location.state || {};
+  const { transcript, topic, mode, judgeModel, debateFormat } = location.state || {};
 
   // If required state is missing, redirect back to DebateSim
   if (!transcript || !topic || !mode || !judgeModel) {
@@ -348,6 +348,46 @@ ${feedback}`;
                     </div>
                   </div>
                   <p className="judge-model-info">Model: {judgeModel}</p>
+                  {debateFormat === "lincoln-douglas" && (
+                    <div className="judge-criteria-info">
+                      <h4>LD Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Framework Analysis:</strong> Value premise, criterion, and framework consistency</li>
+                        <li><strong>Logical Structure:</strong> Syllogistic reasoning, argument construction, logical consistency</li>
+                        <li><strong>Philosophical Depth:</strong> Ethical principles, moral reasoning, philosophical sophistication</li>
+                        <li><strong>Comparative Weighing:</strong> Which framework better achieves the stated values</li>
+                        <li><strong>Evidence Quality:</strong> Philosophical arguments, ethical principles, real-world examples</li>
+                        <li><strong>Clash Resolution:</strong> Addressing opponent arguments and winning key debates</li>
+                        <li><strong>Crystallization:</strong> Voting issues and final appeals</li>
+                        <li><strong>Speaker Points:</strong> Argument quality, clarity, strategic execution (26-30)</li>
+                      </ul>
+                    </div>
+                  )}
+                  {debateFormat === "public-forum" && (
+                    <div className="judge-criteria-info">
+                      <h4>Public Forum Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Accessibility:</strong> Arguments understandable to general audiences</li>
+                        <li><strong>Real-World Focus:</strong> Practical impacts on people and society</li>
+                        <li><strong>Value Framework:</strong> Justice, security, prosperity, freedom</li>
+                        <li><strong>Evidence:</strong> Clear, credible sources supporting impacts</li>
+                        <li><strong>Comparative:</strong> Which side leads to better outcomes</li>
+                        <li><strong>Crystallization:</strong> Key clash points in later rounds</li>
+                      </ul>
+                    </div>
+                  )}
+                  {(!debateFormat || debateFormat === "default") && (
+                    <div className="judge-criteria-info">
+                      <h4>Standard Debate Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Argument Strength:</strong> Logical, well-reasoned arguments</li>
+                        <li><strong>Evidence Quality:</strong> Facts, statistics, examples, reasoning</li>
+                        <li><strong>Rebuttals:</strong> Directly addressing opponent arguments</li>
+                        <li><strong>Rhetorical Effectiveness:</strong> Persuasive delivery and style</li>
+                        <li><strong>Bias Neutrality:</strong> Objective, fair analysis</li>
+                      </ul>
+                    </div>
+                  )}
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}
                     components={{

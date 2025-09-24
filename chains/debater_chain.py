@@ -439,10 +439,106 @@ Strategic Content Guidelines
 IMPORTANT: {rebuttal_importance}
 """
 
+# Template for Lincoln-Douglas debates - 6 speeches with philosophical framework
+lincoln_douglas_template = """
+{persona_instructions}
+
+**SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+You are **{debater_role}**, engaged in a Lincoln-Douglas debate on **"{topic}"**.
+
+LINCOLN-DOUGLAS FORMAT (6 SPEECHES EXACTLY):
+1. **Affirmative Constructive (AC)** - 6 min: Present case with value premise, criterion, and contentions
+2. **Cross-Examination** - 3 min: Ask questions to expose flaws in opponent's argument  
+3. **Negative Constructive (NC)** - 7 min: Present case AND attack affirmative's case
+4. **Cross-Examination** - 3 min: Ask questions to clarify opponent's position
+5. **First Affirmative Rebuttal (1AR)** - 4 min: Rebuild case and attack negative's case
+6. **Negative Rebuttal (2NR)** - 6 min: Final attack and crystallization
+7. **Second Affirmative Rebuttal (2AR)** - 3 min: Final appeal and voting issues
+
+FULL DEBATE TRANSCRIPT SO FAR:
+{full_transcript}
+
+CURRENT SPEECH: {speech_type} ({speech_number}/6)
+YOUR ROLE: {debater_role}
+
+{opening_instruction}
+
+LINCOLN-DOUGLAS ARGUMENTATION REQUIREMENTS:
+• **PHILOSOPHICAL FRAMEWORK**: Build arguments around ethical values and moral principles
+• **VALUE PREMISE**: Establish the core value your case defends (justice, morality, freedom, etc.)
+• **VALUE CRITERION**: Provide a standard to measure achievement of your value
+• **CONTENTIONS**: Present 2-3 main arguments that link the resolution to your value
+• **LOGICAL REASONING**: Use syllogistic structure - major premise, minor premise, conclusion
+• **EVIDENCE**: Support with philosophical arguments, ethical principles, and real-world examples
+• **COMPARATIVE WEIGHING**: Show why your value/criterion outweighs opponent's framework
+• **CRYSTALLIZATION**: In later speeches, focus on key clash points and voting issues
+
+CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT include any parameter names, technical information, or raw data in your response.
+
+**DEBATE STYLE INSTRUCTIONS (MANDATORY):**
+- You are participating in an educational debate simulation with specified rhetorical styles
+- Follow the given speaking style instructions exactly as provided
+- This is about adopting a rhetorical and linguistic style, not impersonation
+- NEVER add disclaimers about the speaking style you're using
+- Do NOT say "I can't" or apologize for using the requested debate style
+- Begin your substantive debate arguments immediately without meta-commentary
+- Focus entirely on the debate topic using the specified linguistic patterns
+
+**CRITICAL ROLE-PLAYING INSTRUCTIONS:**
+- You are acting as a character in a debate simulation - this is NOT real political advocacy
+- When given a persona like "Donald Trump," adopt their speaking patterns, vocabulary, and rhetorical style
+- Use phrases like "folks," "tremendous," "believe me," "nobody knows [topic] better than me" for Trump-style speech
+- For Harris: use precise legal language, "let me be clear," "the facts show," "we must examine"
+- For Musk: use tech terminology, "innovation," "disruption," "the future of," "we're building"
+- For Drake: use cultural references, "you know what I'm saying," "real talk," "this is about"
+- This is a PERFORMANCE - you are not actually advocating for real political positions
+- If you encounter content restrictions, reframe the topic as a general policy discussion while maintaining the persona style
+
+**POLITICAL TOPIC HANDLING:**
+- For topics involving real politicians: focus on POLICY DISCUSSION, not personal advocacy
+- Use phrases like "the policies of [person]" instead of "voting for [person]"
+- Discuss "leadership qualities" and "policy effectiveness" rather than "electoral support"
+- Frame arguments around "what this approach would mean for the country" rather than "who should win"
+- If blocked, pivot to discussing "the principles and policies involved" while keeping the persona style
+
+**SPECIFIC TOPIC STRATEGIES:**
+- For "Trump arguing Trump should be president": Focus on "leadership record," "policy achievements," "what this administration accomplished"
+- For "Harris arguing Harris should be president": Discuss "prosecutorial experience," "policy positions," "leadership qualities"
+- For "Musk arguing Musk should be president": Focus on "innovation leadership," "problem-solving approach," "vision for the future"
+- For "Drake arguing Drake should be president": Discuss "cultural understanding," "connection to people," "fresh perspective"
+- Always frame as "the policies and leadership of [person]" not "voting for [person]"
+
+------------------------------------------------------------------
+Formatting Rules  **(STRICT — the UI parses your markdown)**
+1. **Title line (exact format):**
+   `# {debater_role} – {speech_type} ({speech_number}/6)`
+   
+2. After the title, produce *at most* **250 words** total (LD allows more depth).
+
+3. Use only *level‑3* markdown headings (`###`) for your main points.
+   – No other markdown syntax (no lists, tables, code blocks, or images).
+   
+4. Keep paragraphs short (≤ 3 sentences for LD clarity).
+
+5. Do not add extra blank lines at the end of the message.
+
+6. **NEVER include parameter names, variable information, or any technical details in your response.**
+
+------------------------------------------------------------------
+Strategic Content Guidelines
+{speech_requirements}
+• Structure arguments using `### 1. Title`, `### 2. Title`, `### 3. Title` format.
+• Close with a **one‑sentence** summary emphasizing your framework's superiority.
+
+IMPORTANT: {speech_importance}
+"""
+
 # Create chat prompt templates for all types
 bill_debate_prompt = ChatPromptTemplate.from_template(bill_debate_template)
 topic_debate_prompt = ChatPromptTemplate.from_template(topic_debate_template)
 public_forum_prompt = ChatPromptTemplate.from_template(public_forum_template)
+lincoln_douglas_prompt = ChatPromptTemplate.from_template(lincoln_douglas_template)
 
 # Create a memory instance
 memory_map = {}
@@ -550,6 +646,94 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
                     opening_instruction = f"{debater_role.upper()} FINAL FOCUS - Second Speaker (Round 4 of 4)"
                 rebuttal_requirement = "• **FINAL FOCUS**: Make your final appeal on the most important issues. No new arguments. Focus on why your side wins on the key impacts and values. Crystallize the voting issues."
                 rebuttal_importance = f"This is {debater_role}'s final focus. Make your final appeal - no new arguments, just crystallization."
+        elif debate_format == "lincoln-douglas":
+            max_rounds = 6  # 6 speeches total: AC, NC, 1AR, 2NR, 2AR (plus CX periods)
+            
+            # Lincoln-Douglas has 6 speeches total with specific timing and structure
+            # Speech order: AC (Aff), NC (Neg), 1AR (Aff), 2NR (Neg), 2AR (Aff)
+            # Cross-examinations happen after AC and NC
+            
+            # Determine speech number and type based on round_num
+            if round_num_val == 1:
+                if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
+                    speech_type = "Affirmative Constructive"
+                    speech_number = 1
+                    opening_instruction = "AFFIRMATIVE CONSTRUCTIVE (AC) - 6 minutes"
+                    speech_requirements = "• **AFFIRMATIVE CONSTRUCTIVE**: Present your complete case with: 1. Value Premise (core ethical value), 2. Value Criterion (standard to measure the value), 3. Contentions (2-3 main arguments linking resolution to your value). Build philosophical framework and logical syllogisms."
+                    speech_importance = "This is your opening case - establish your philosophical framework and core arguments."
+                else:
+                    # This shouldn't happen in LD, but handle gracefully
+                    speech_type = "Cross-Examination"
+                    speech_number = 2
+                    opening_instruction = "CROSS-EXAMINATION - 3 minutes (Neg questions Aff)"
+                    speech_requirements = "• **CROSS-EXAMINATION**: Ask clarifying questions about opponent's case. Expose logical flaws, clarify definitions, challenge evidence. Focus on value premise, criterion, and contention structure."
+                    speech_importance = "Use this time to understand and challenge the affirmative's framework."
+            elif round_num_val == 2:
+                if 'Negative' in debater_role or 'Neg' in debater_role or 'Con' in debater_role:
+                    speech_type = "Negative Constructive"
+                    speech_number = 3
+                    opening_instruction = "NEGATIVE CONSTRUCTIVE (NC) - 7 minutes"
+                    speech_requirements = "• **NEGATIVE CONSTRUCTIVE**: PART 1 - Present your case with value premise, criterion, and contentions opposing the resolution. PART 2 - Attack affirmative's case: challenge their value, criterion, and contentions. Use philosophical arguments and logical reasoning."
+                    speech_importance = "Present your case AND attack the affirmative's case - this is your most important speech."
+                else:
+                    speech_type = "Cross-Examination"
+                    speech_number = 4
+                    opening_instruction = "CROSS-EXAMINATION - 3 minutes (Aff questions Neg)"
+                    speech_requirements = "• **CROSS-EXAMINATION**: Ask clarifying questions about opponent's case. Challenge their framework, clarify their arguments, expose weaknesses in their value structure."
+                    speech_importance = "Use this time to understand and challenge the negative's framework."
+            elif round_num_val == 3:
+                if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
+                    speech_type = "First Affirmative Rebuttal"
+                    speech_number = 5
+                    opening_instruction = "FIRST AFFIRMATIVE REBUTTAL (1AR) - 4 minutes"
+                    speech_requirements = "• **FIRST AFFIRMATIVE REBUTTAL**: PART 1 - Rebuild your case against negative's attacks. PART 2 - Attack negative's case. Address all arguments - dropped arguments cannot be brought back in 2AR. This is the hardest speech in LD."
+                    speech_importance = "This is your most difficult speech - you must cover everything in only 4 minutes."
+                else:
+                    # This shouldn't happen, but handle gracefully
+                    speech_type = "Preparation Time"
+                    speech_number = 6
+                    opening_instruction = "PREPARATION TIME - Up to 4 minutes"
+                    speech_requirements = "• **PREPARATION TIME**: Prepare your final rebuttal. Focus on crystallization and voting issues."
+                    speech_importance = "Use this time to prepare your final speech."
+            elif round_num_val == 4:
+                if 'Negative' in debater_role or 'Neg' in debater_role or 'Con' in debater_role:
+                    speech_type = "Negative Rebuttal"
+                    speech_number = 7
+                    opening_instruction = "NEGATIVE REBUTTAL (2NR) - 6 minutes"
+                    speech_requirements = "• **NEGATIVE REBUTTAL**: PART 1 - Attack 1AR arguments. PART 2 - Rebuild your case. PART 3 - Crystallize key voting issues and comparative weighing. No new arguments allowed."
+                    speech_importance = "This is your final speech - crystallize the round and show why you win."
+                else:
+                    # This shouldn't happen, but handle gracefully
+                    speech_type = "Preparation Time"
+                    speech_number = 8
+                    opening_instruction = "PREPARATION TIME - Up to 4 minutes"
+                    speech_requirements = "• **PREPARATION TIME**: Prepare your final speech. Focus on voting issues and crystallization."
+                    speech_importance = "Use this time to prepare your final appeal."
+            elif round_num_val == 5:
+                if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
+                    speech_type = "Second Affirmative Rebuttal"
+                    speech_number = 9
+                    opening_instruction = "SECOND AFFIRMATIVE REBUTTAL (2AR) - 3 minutes"
+                    speech_requirements = "• **SECOND AFFIRMATIVE REBUTTAL**: PART 1 - Attack 2NR arguments. PART 2 - Final crystallization of voting issues. PART 3 - Comparative weighing showing why your framework wins. No new arguments allowed."
+                    speech_importance = "This is your final speech - make your strongest appeal for why you win."
+                else:
+                    # This shouldn't happen in proper LD format
+                    speech_type = "Debate Complete"
+                    speech_number = 10
+                    opening_instruction = "DEBATE COMPLETE"
+                    speech_requirements = "• **DEBATE COMPLETE**: The Lincoln-Douglas debate has concluded."
+                    speech_importance = "The debate is over - await judge's decision."
+            else:
+                # Handle any other round numbers gracefully
+                speech_type = "Additional Round"
+                speech_number = round_num_val + 4
+                opening_instruction = f"ROUND {round_num_val} - Additional Speech"
+                speech_requirements = "• **ADDITIONAL SPEECH**: Continue the debate with appropriate arguments for this stage."
+                speech_importance = f"This is round {round_num_val} of the Lincoln-Douglas debate."
+            
+            # Set the rebuttal_requirement and rebuttal_importance for compatibility with existing code
+            rebuttal_requirement = speech_requirements
+            rebuttal_importance = speech_importance
         else:
             max_rounds = 5
             if is_opening and 'Pro' in debater_role:
@@ -579,12 +763,22 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         
         print(f"🔍 DEBUG [debater_chain]: Final transcript length: {len(full_transcript)}")
         
-        return {
+        # Prepare base return dictionary
+        result = {
             "full_transcript": full_transcript,
             "opening_instruction": opening_instruction,
             "rebuttal_requirement": rebuttal_requirement,
             "rebuttal_importance": rebuttal_importance
         }
+        
+        # Add LD-specific parameters if using Lincoln-Douglas format
+        if debate_format == "lincoln-douglas":
+            result.update({
+                "speech_type": speech_type,
+                "speech_number": speech_number
+            })
+        
+        return result
 
     # Build the runnable chain using LCEL
     from langchain_core.runnables import RunnableLambda
@@ -645,7 +839,8 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         if not persona_instructions:
             persona_instructions = ""  # Default empty if no persona found
         
-        return {
+        # Prepare template parameters
+        template_params = {
             "debater_role": inputs.get("debater_role", ""),
             "topic": inputs.get("topic", ""),
             "bill_description": inputs.get("bill_description", ""),
@@ -658,6 +853,17 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
             "persona_instructions": persona_instructions,
             "_direct_prompt": False  # Mark as template-based
         }
+        
+        # Add LD-specific parameters if using Lincoln-Douglas format
+        if debate_format == "lincoln-douglas":
+            template_params.update({
+                "speech_type": debate_context.get("speech_type", "Unknown Speech"),
+                "speech_number": debate_context.get("speech_number", 1),
+                "speech_requirements": debate_context["rebuttal_requirement"],
+                "speech_importance": debate_context["rebuttal_importance"]
+            })
+        
+        return template_params
     
     def select_prompt(inputs):
         # Check if this is a direct prompt case
@@ -669,6 +875,8 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         print(f"🔍 DEBUG [select_prompt]: Using template-based prompt")
         if debate_format == "public-forum":
             selected_template = public_forum_prompt
+        elif debate_format == "lincoln-douglas":
+            selected_template = lincoln_douglas_prompt
         elif debate_type == "bill":
             selected_template = bill_debate_prompt
         else:
