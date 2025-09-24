@@ -553,27 +553,6 @@ const Legislation = ({ user }) => {
   const resultsRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch debate history function
-  const fetchHistory = async () => {
-    if (!user || user.isGuest) return;
-    try {
-      const db = getFirestore();
-      const transcriptsRef = collection(db, "users", user.uid, "transcripts");
-      const q = query(transcriptsRef, orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const fetchedHistory = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setHistory(fetchedHistory);
-      } else {
-        setHistory([]); // Explicitly set empty array
-      }
-    } catch (err) {
-      console.error("Error fetching debate history:", err);
-    }
-  };
 
    // Enhanced initial page loading sequence with improved timing
   useLayoutEffect(() => {
@@ -626,12 +605,6 @@ const Legislation = ({ user }) => {
     };
   }, []);
 
-  // Fetch debate history on component mount (after loading)
-  useEffect(() => {
-     if (isContentReady) {
-      fetchHistory();
-    }
-  }, [user, isContentReady]);
 
 
    // Fetch recommended bills from Congress.gov API (after initial loading)
@@ -935,7 +908,6 @@ const Legislation = ({ user }) => {
             grades,
             selectedModel
           );
-          await fetchHistory();
         } catch (err) {
           console.error("Error saving analysis to history:", err);
         }
