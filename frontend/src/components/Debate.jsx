@@ -124,15 +124,20 @@ function Debate() {
   const { mode, debateMode, topic, description, billText, billTitle, selectedModel, debateFormat, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
   const navigate = useNavigate();
 
-  // Helper function to count AI speeches for both formats
+  // Helper function to count AI speeches for all formats
   const countAISpeeches = (messages) => {
     if (debateFormat === "public-forum") {
-      return messages.filter(m => 
+      return messages.filter(m =>
         (m.speaker.includes("Pro (AI)") || m.speaker.includes("Pro (") && m.speaker.includes(") -")) ||
         (m.speaker.includes("Con (AI)") || m.speaker.includes("Con (") && m.speaker.includes(") -"))
       ).length;
+    } else if (debateFormat === "lincoln-douglas") {
+      return messages.filter(m =>
+        (m.speaker.includes("Affirmative (AI)") || m.speaker.includes("Affirmative (") && m.speaker.includes(") -")) ||
+        (m.speaker.includes("Negative (AI)") || m.speaker.includes("Negative (") && m.speaker.includes(") -"))
+      ).length;
     } else {
-      return messages.filter(m => 
+      return messages.filter(m =>
         m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con"
       ).length;
     }
@@ -204,6 +209,11 @@ function Debate() {
   const [pfOrderSelected, setPfOrderSelected] = useState(false);
   const [showPfInfo, setShowPfInfo] = useState(false);
 
+  // Lincoln-Douglas speaking order state
+  const [ldSpeakingOrder, setLdSpeakingOrder] = useState("aff-first");
+  const [ldOrderSelected, setLdOrderSelected] = useState(false);
+  const [showLdInfo, setShowLdInfo] = useState(false);
+
   // Handler for the back to home button
   const handleBackToHome = () => {
     navigate("/");
@@ -231,9 +241,9 @@ function Debate() {
   // Auto-continue when loading finishes in auto mode
   useEffect(() => {
     // Check if we should continue auto-generation
-    const maxRounds = debateFormat === "public-forum" ? 4 : 5;
+    const maxRounds = debateFormat === "public-forum" ? 4 : debateFormat === "lincoln-douglas" ? 5 : 5;
     const aiSpeeches = countAISpeeches(messageList);
-    const shouldContinue = aiSpeeches < (maxRounds * 2); // 8 speeches total for PF, 10 for regular
+    const shouldContinue = debateFormat === "lincoln-douglas" ? aiSpeeches < 5 : aiSpeeches < (maxRounds * 2); // 5 speeches for LD, 8 for PF, 10 for regular
 
     if (autoMode && !loading && messageList.length > 0 && shouldContinue) {
       // Clear any existing timer
@@ -387,11 +397,11 @@ function Debate() {
     }
   };
 
-  const maxRounds = debateFormat === "public-forum" ? 4 : 5;
+  const maxRounds = debateFormat === "public-forum" ? 4 : debateFormat === "lincoln-douglas" ? 5 : 5;
   const handleAIDebate = async () => {
-    // Check if we have completed all speeches (4 rounds = 8 speeches for PF, 5 rounds = 10 speeches for regular)
+    // Check if we have completed all speeches (5 speeches for LD, 8 for PF, 10 for regular)
     const aiSpeeches = countAISpeeches(messageList);
-    if (aiSpeeches >= (maxRounds * 2)) return;
+    if (debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2)) return;
     setLoading(true);
     setError("");
     try {
@@ -416,8 +426,139 @@ function Debate() {
       let aiResponse;
       if (aiSide === "pro") {
         let proPrompt;
-        
-        if (debateFormat === "public-forum") {
+
+        if (debateFormat === "lincoln-douglas") {
+          // Lincoln-Douglas format with 5 speeches (no cross-examination)
+          // 1. AC (6min/~900 words), 2. NC (7min/~1050 words), 3. 1AR (4min/~600 words), 4. NR (6min/~900 words), 5. 2AR (3min/~450 words)
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length;
+
+          // Determine current speech number (1-5)
+          let speechNum = totalSpeeches + 1;
+          if (speechNum > 5) return; // All speeches complete
+
+          let speechType, wordLimit, timeLimit, minWords, isAffirmativeTurn;
+
+          if (speechNum === 1) { // Affirmative Constructive (AC)
+            speechType = "AFFIRMATIVE CONSTRUCTIVE";
+            wordLimit = 900;
+            minWords = 800;
+            timeLimit = "6 minutes";
+            isAffirmativeTurn = true;
+          } else if (speechNum === 2) { // Negative Constructive (NC)
+            speechType = "NEGATIVE CONSTRUCTIVE";
+            wordLimit = 1050;
+            minWords = 950;
+            timeLimit = "7 minutes";
+            isAffirmativeTurn = false;
+          } else if (speechNum === 3) { // 1st Affirmative Rebuttal (1AR)
+            speechType = "1ST AFFIRMATIVE REBUTTAL";
+            wordLimit = 600;
+            minWords = 500;
+            timeLimit = "4 minutes";
+            isAffirmativeTurn = true;
+          } else if (speechNum === 4) { // Negative Rebuttal (NR)
+            speechType = "NEGATIVE REBUTTAL";
+            wordLimit = 900;
+            minWords = 800;
+            timeLimit = "6 minutes";
+            isAffirmativeTurn = false;
+          } else if (speechNum === 5) { // 2nd Affirmative Rebuttal (2AR)
+            speechType = "2ND AFFIRMATIVE REBUTTAL";
+            wordLimit = 450;
+            minWords = 350;
+            timeLimit = "3 minutes";
+            isAffirmativeTurn = true;
+          }
+
+          // Skip if it's not Pro's turn (we handle Affirmative as Pro)
+          if (!isAffirmativeTurn) {
+            // Switch to Con (Negative) instead
+            setAiSide("con");
+            return;
+          }
+
+          proPrompt = `
+You are competing in a Lincoln-Douglas debate on: "${topic}"
+
+BILL CONTEXT:
+${actualDescription}
+
+SPEECH TYPE: ${speechType} (${timeLimit} - ${minWords}-${wordLimit} words)
+
+${speechNum === 1 ? `
+=== AFFIRMATIVE CONSTRUCTIVE REQUIREMENTS ===
+
+FRAMEWORK (Required):
+- Present your VALUE PREMISE (what should be most valued in this debate)
+- Present your VALUE CRITERION (how we measure/achieve your value)
+- Explain why your framework should be preferred
+
+CONTENTIONS (Required):
+- Present 2-3 main contentions supporting the resolution
+- Each contention should have:
+  * Clear claim/thesis
+  * Strong evidence and reasoning
+  * Connection to your value framework
+  * Real-world examples/impacts
+
+STRUCTURE:
+1. Value Premise and Criterion (150-200 words)
+2. Framework Justification (100-150 words)
+3. Contention 1 with evidence (200-250 words)
+4. Contention 2 with evidence (200-250 words)
+5. Contention 3 with evidence (150-200 words)
+6. Summary linking back to framework (100 words)
+
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+
+speechNum === 3 ? `
+=== 1ST AFFIRMATIVE REBUTTAL REQUIREMENTS ===
+
+DEFENSE (First Half):
+- Respond to Negative attacks on your framework
+- Defend your value premise and criterion
+- Extend your strongest contentions with new evidence
+- Clarify any misrepresented arguments
+
+OFFENSE (Second Half):
+- Attack the Negative's framework if weak
+- Point out contradictions in their case
+- Extend impacts from your contentions
+- Show why you're winning key framework debates
+
+STRATEGY:
+- Spend ~300 words on defense, ~300 words on offense
+- Prioritize framework debates - they determine the round
+- Don't drop major arguments or concede framework
+- Set up voting issues for 2AR
+
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+
+speechNum === 5 ? `
+=== 2ND AFFIRMATIVE REBUTTAL REQUIREMENTS ===
+
+CRYSTALLIZATION:
+- Identify 2-3 key voting issues that win you the round
+- Explain why you win the framework debate
+- Show how your impacts matter more under your framework
+- Address any critical Negative arguments still standing
+
+FINAL APPEAL:
+- Make your strongest philosophical/moral arguments
+- Demonstrate why affirming the resolution is imperative
+- Connect your arguments to real-world significance
+- End with compelling reason to vote Affirmative
+
+STRUCTURE:
+1. Framework summary (100 words)
+2. Voting Issue #1 (100 words)
+3. Voting Issue #2 (100 words)
+4. Voting Issue #3 (if needed, 75 words)
+5. Final impact/appeal (75 words)
+
+CRITICAL: This is your final speech. Make it count. ${minWords}-${wordLimit} words exactly.` : ''}
+          `;
+        } else if (debateFormat === "public-forum") {
           // Public Forum format with 4 rounds: Constructive, Rebuttal, Summary, Final Focus
           const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
           const proSpeeches = messageList.filter(m => m.speaker.includes("Pro")).length;
@@ -750,37 +891,156 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
         let proDisplayName;
-        if (debateFormat === "public-forum") {
+        if (debateFormat === "lincoln-douglas") {
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length;
+          let speechNum = totalSpeeches + 1;
+
+          let speechType;
+          if (speechNum === 1) speechType = "AC"; // Affirmative Constructive
+          else if (speechNum === 3) speechType = "1AR"; // 1st Affirmative Rebuttal
+          else if (speechNum === 5) speechType = "2AR"; // 2nd Affirmative Rebuttal
+
+          proDisplayName = proPersona !== "default" ?
+            `Affirmative (${getPersonaName(proPersona)}) - ${speechType}` :
+            `Affirmative (AI) - ${speechType}`;
+        } else if (debateFormat === "public-forum") {
           const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
-          
+
           // Determine speech type based on total number of speeches
           let speechTypeIndex;
           if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
-          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round  
+          else if (totalSpeeches <= 3) speechTypeIndex = 2; // Rebuttal round
           else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
           else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
           else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
-          
+
           let speechType;
           if (speechTypeIndex === 1) speechType = "CONSTRUCTIVE";
           else if (speechTypeIndex === 2) speechType = "REBUTTAL";
           else if (speechTypeIndex === 3) speechType = "SUMMARY";
           else speechType = "FINAL FOCUS";
-          
-          proDisplayName = proPersona !== "default" ? 
-            `Pro (${getPersonaName(proPersona)}) - ${speechType}` : 
+
+          proDisplayName = proPersona !== "default" ?
+            `Pro (${getPersonaName(proPersona)}) - ${speechType}` :
             `Pro (AI) - ${speechType}`;
         } else {
-          proDisplayName = proPersona !== "default" ? 
-            `AI Debater Pro (${getPersonaName(proPersona)})` : 
+          proDisplayName = proPersona !== "default" ?
+            `AI Debater Pro (${getPersonaName(proPersona)})` :
             "AI Debater Pro";
         }
         appendMessage(proDisplayName, cleanedResponse, proModel);
         setAiSide("con");
       } else {
         let conPrompt;
-        
-        if (debateFormat === "public-forum") {
+
+        if (debateFormat === "lincoln-douglas") {
+          // Lincoln-Douglas format for Negative
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length;
+
+          // Determine current speech number (1-5)
+          let speechNum = totalSpeeches + 1;
+          if (speechNum > 5) return; // All speeches complete
+
+          let speechType, wordLimit, timeLimit, minWords, isNegativeTurn;
+
+          if (speechNum === 1) { // Affirmative Constructive (AC)
+            isNegativeTurn = false;
+          } else if (speechNum === 2) { // Negative Constructive (NC)
+            speechType = "NEGATIVE CONSTRUCTIVE";
+            wordLimit = 1050;
+            minWords = 950;
+            timeLimit = "7 minutes";
+            isNegativeTurn = true;
+          } else if (speechNum === 3) { // 1st Affirmative Rebuttal (1AR)
+            isNegativeTurn = false;
+          } else if (speechNum === 4) { // Negative Rebuttal (NR)
+            speechType = "NEGATIVE REBUTTAL";
+            wordLimit = 900;
+            minWords = 800;
+            timeLimit = "6 minutes";
+            isNegativeTurn = true;
+          } else if (speechNum === 5) { // 2nd Affirmative Rebuttal (2AR)
+            isNegativeTurn = false;
+          }
+
+          // Skip if it's not Negative's turn
+          if (!isNegativeTurn) {
+            // Switch back to Affirmative
+            setAiSide("pro");
+            return;
+          }
+
+          conPrompt = `
+You are competing in a Lincoln-Douglas debate on: "${topic}"
+
+BILL CONTEXT:
+${actualDescription}
+
+SPEECH TYPE: ${speechType} (${timeLimit} - ${minWords}-${wordLimit} words)
+
+${speechNum === 2 ? `
+=== NEGATIVE CONSTRUCTIVE REQUIREMENTS ===
+
+FRAMEWORK ATTACK (First Priority):
+- Attack their value premise as inappropriate for this resolution
+- Prove your framework is superior for evaluating this debate
+- Show why their criterion fails or is outweighed
+
+YOUR FRAMEWORK:
+- Present your VALUE PREMISE (what should be prioritized)
+- Present your VALUE CRITERION (how we achieve/measure it)
+- Justify why your framework is better than theirs
+
+CONTENTIONS (Required):
+- Present 2-3 contentions negating the resolution
+- Each contention should:
+  * Attack a key Affirmative argument
+  * Present independent reasons to reject resolution
+  * Connect to your value framework
+  * Include strong evidence and examples
+
+STRUCTURE:
+1. Framework attack and defense (300-350 words)
+2. Contention 1 with evidence (250-300 words)
+3. Contention 2 with evidence (250-300 words)
+4. Contention 3 with evidence (200-250 words)
+5. Summary of why Negative wins (100 words)
+
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+
+speechNum === 4 ? `
+=== NEGATIVE REBUTTAL REQUIREMENTS ===
+
+FRAMEWORK CRYSTALLIZATION:
+- Extend why your framework should be preferred
+- Respond to any Affirmative framework attacks
+- Show you're winning the framework debate
+
+CONTENTION EXTENSION:
+- Extend your strongest contentions from NC
+- Add new evidence and analysis
+- Respond to 1AR attacks on your case
+
+AFFIRMATIVE TAKEOUTS:
+- Attack their weakest contentions from AC
+- Show why their impacts don't matter under your framework
+- Point out arguments they dropped in 1AR
+
+STRATEGIC FOCUS:
+- This is your last constructive speech
+- Set up clear voting issues for the judge
+- Make it difficult for 2AR to recover
+- Emphasize framework and your strongest arguments
+
+STRUCTURE:
+1. Framework extension (200-250 words)
+2. Extend best contentions (300-350 words)
+3. Attack Aff case (250-300 words)
+4. Voting issues preview (100-150 words)
+
+CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` : ''}
+          `;
+        } else if (debateFormat === "public-forum") {
           // Public Forum format for Con
           const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
           const conSpeeches = messageList.filter(m => m.speaker.includes("Con")).length;
@@ -1117,9 +1377,20 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           cleanedResponse = aiResponse.split('\n').slice(1).join('\n').trim();
         }
         let conDisplayName;
-        if (debateFormat === "public-forum") {
+        if (debateFormat === "lincoln-douglas") {
+          const totalSpeeches = messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length;
+          let speechNum = totalSpeeches + 1;
+
+          let speechType;
+          if (speechNum === 2) speechType = "NC"; // Negative Constructive
+          else if (speechNum === 4) speechType = "NR"; // Negative Rebuttal
+
+          conDisplayName = conPersona !== "default" ?
+            `Negative (${getPersonaName(conPersona)}) - ${speechType}` :
+            `Negative (AI) - ${speechType}`;
+        } else if (debateFormat === "public-forum") {
           const totalSpeeches = messageList.filter(m => m.speaker.includes("Pro") || m.speaker.includes("Con")).length;
-          
+
           // Determine speech type based on total number of speeches
           let speechTypeIndex;
           if (totalSpeeches <= 1) speechTypeIndex = 1; // Constructive round
@@ -1127,19 +1398,19 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           else if (totalSpeeches <= 5) speechTypeIndex = 3; // Summary round
           else if (totalSpeeches <= 7) speechTypeIndex = 4; // Final Focus round (speeches 6&7&8)
           else return; // No more speeches allowed after 8 total speeches (4 rounds complete)
-          
+
           let speechType;
           if (speechTypeIndex === 1) speechType = "CONSTRUCTIVE";
           else if (speechTypeIndex === 2) speechType = "REBUTTAL";
           else if (speechTypeIndex === 3) speechType = "SUMMARY";
           else speechType = "FINAL FOCUS";
-          
-          conDisplayName = conPersona !== "default" ? 
-            `Con (${getPersonaName(conPersona)}) - ${speechType}` : 
+
+          conDisplayName = conPersona !== "default" ?
+            `Con (${getPersonaName(conPersona)}) - ${speechType}` :
             `Con (AI) - ${speechType}`;
         } else {
-          conDisplayName = conPersona !== "default" ? 
-            `AI Debater Con (${getPersonaName(conPersona)})` : 
+          conDisplayName = conPersona !== "default" ?
+            `AI Debater Con (${getPersonaName(conPersona)})` :
             "AI Debater Con";
         }
         appendMessage(conDisplayName, cleanedResponse, conModel);
@@ -1569,7 +1840,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               </div>
             );
           })}
-          {actualMode === "ai-vs-ai" && (debateFormat !== "public-forum" || pfOrderSelected) && (
+          {actualMode === "ai-vs-ai" && (
+            (debateFormat === "public-forum" && pfOrderSelected) ||
+            (debateFormat === "lincoln-douglas" && ldOrderSelected) ||
+            (debateFormat !== "public-forum" && debateFormat !== "lincoln-douglas")
+          ) && (
             <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
               {!autoMode ? (
                 <>
@@ -1577,7 +1852,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     onClick={handleAIDebate}
                     disabled={loading || (() => {
                       const aiSpeeches = countAISpeeches(messageList);
-                      return aiSpeeches >= (maxRounds * 2);
+                      return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                     })()}
                     style={{
                       background: "#4a90e2",
@@ -1587,42 +1862,57 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       borderRadius: "6px",
                       cursor: loading || (() => {
                         const aiSpeeches = countAISpeeches(messageList);
-                        return aiSpeeches >= (maxRounds * 2);
+                        return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                       })() ? "not-allowed" : "pointer",
                       opacity: loading || (() => {
                         const aiSpeeches = countAISpeeches(messageList);
-                        return aiSpeeches >= (maxRounds * 2);
+                        return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                       })() ? 0.6 : 1
                     }}
                   >
                     {(() => {
                       const aiSpeeches = countAISpeeches(messageList);
                       if (loading) return "Generating Response...";
-                      if (aiSpeeches >= (maxRounds * 2)) return "Round Limit Reached";
+
+                      const limitReached = debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
+                      if (limitReached) return "Round Limit Reached";
                       
-                      // Calculate the correct round number for Public Forum
-                      let displayRound;
-                      if (debateFormat === "public-forum") {
+                      // Calculate the correct display for different formats
+                      let buttonText;
+                      if (debateFormat === "lincoln-douglas") {
                         const totalSpeeches = aiSpeeches;
+                        let speechName = "";
+                        if (totalSpeeches === 0) speechName = "AC";
+                        else if (totalSpeeches === 1) speechName = "NC";
+                        else if (totalSpeeches === 2) speechName = "1AR";
+                        else if (totalSpeeches === 3) speechName = "NR";
+                        else if (totalSpeeches === 4) speechName = "2AR";
+
+                        return `Generate ${speechName} (${totalSpeeches + 1}/5)`;
+                      } else if (debateFormat === "public-forum") {
+                        const totalSpeeches = aiSpeeches;
+                        let displayRound;
                         if (totalSpeeches <= 1) displayRound = 1;
                         else if (totalSpeeches <= 3) displayRound = 2;
                         else if (totalSpeeches <= 5) displayRound = 3;
                         else if (totalSpeeches <= 7) displayRound = 4;
                         else displayRound = 4; // Should never reach here due to disable logic
+
+                        return aiSide === "pro"
+                          ? `Generate Pro Round ${displayRound}/${maxRounds}`
+                          : `Generate Con Round ${displayRound}/${maxRounds}`;
                       } else {
-                        displayRound = currentRound;
+                        return aiSide === "pro"
+                          ? `Generate Pro Round ${currentRound}/${maxRounds}`
+                          : `Generate Con Round ${currentRound}/${maxRounds}`;
                       }
-                      
-                      return aiSide === "pro"
-                        ? `Generate Pro Round ${displayRound}/${maxRounds}`
-                        : `Generate Con Round ${displayRound}/${maxRounds}`;
                     })()}
                   </button>
                   <button
                     onClick={startAutoDebate}
                     disabled={loading || (() => {
                       const aiSpeeches = countAISpeeches(messageList);
-                      return aiSpeeches >= (maxRounds * 2);
+                      return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                     })()}
                     style={{
                       background: "#28a745",
@@ -1632,11 +1922,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       borderRadius: "6px",
                       cursor: loading || (() => {
                         const aiSpeeches = countAISpeeches(messageList);
-                        return aiSpeeches >= (maxRounds * 2);
+                        return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                       })() ? "not-allowed" : "pointer",
                       opacity: loading || (() => {
                         const aiSpeeches = countAISpeeches(messageList);
-                        return aiSpeeches >= (maxRounds * 2);
+                        return debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
                       })() ? 0.6 : 1
                     }}
                   >
@@ -1698,6 +1988,98 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 >
                   Start Public Forum Debate
                 </button>
+              </div>
+            </div>
+          )}
+          {debateFormat === "lincoln-douglas" && actualMode === "ai-vs-ai" && !ldOrderSelected && (
+            <div className="ai-vs-user-setup">
+              <div className="setup-header">
+                <h3>Lincoln-Douglas Debate Setup</h3>
+                <button
+                  className="info-button"
+                  onClick={() => setShowLdInfo(true)}
+                  title="More information about Lincoln-Douglas debate format"
+                >
+                  ?
+                </button>
+              </div>
+              <p style={{ color: '#fff' }}>Choose the speaking sides for all 5 speeches</p>
+              <div className="order-selection">
+                <label>Speaking Sides</label>
+                <div className="order-buttons">
+                  <button
+                    className={`order-button ${ldSpeakingOrder === 'aff-first' ? 'selected' : ''}`}
+                    onClick={() => setLdSpeakingOrder('aff-first')}
+                  >
+                    AFFIRMATIVE begins (starts with AC)
+                  </button>
+                  <button
+                    className={`order-button ${ldSpeakingOrder === 'neg-first' ? 'selected' : ''}`}
+                    onClick={() => setLdSpeakingOrder('neg-first')}
+                  >
+                    NEGATIVE begins (starts with NC)
+                  </button>
+                </div>
+              </div>
+
+              <div className="confirm-section">
+                <button
+                  className="confirm-button"
+                  onClick={() => setLdOrderSelected(true)}
+                >
+                  Start Lincoln-Douglas Debate
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Lincoln-Douglas Info Popup */}
+          {showLdInfo && (
+            <div className="popup-overlay" onClick={() => setShowLdInfo(false)}>
+              <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+                <div className="popup-header">
+                  <h3>Lincoln-Douglas Debate Format</h3>
+                  <button
+                    className="close-button"
+                    onClick={() => setShowLdInfo(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="popup-body">
+                  <h4>Structure (5 Speeches):</h4>
+                  <div className="round-structure">
+                    <div className="round-item">
+                      <strong>1. Affirmative Constructive (AC):</strong> 6 minutes
+                      <p>Present value framework and 2-3 contentions supporting the resolution</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>2. Negative Constructive (NC):</strong> 7 minutes
+                      <p>Attack Affirmative framework, present Negative framework and contentions</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>3. 1st Affirmative Rebuttal (1AR):</strong> 4 minutes
+                      <p>Defend Affirmative case and attack Negative arguments</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>4. Negative Rebuttal (NR):</strong> 6 minutes
+                      <p>Final Negative speech - extend case and respond to 1AR</p>
+                    </div>
+                    <div className="round-item">
+                      <strong>5. 2nd Affirmative Rebuttal (2AR):</strong> 3 minutes
+                      <p>Final Affirmative speech - crystallize voting issues and make final appeal</p>
+                    </div>
+                  </div>
+                  <h4>Key Features:</h4>
+                  <ul>
+                    <li><strong>Philosophical Focus:</strong> Emphasis on value frameworks and moral reasoning</li>
+                    <li><strong>Individual Competition:</strong> One debater per side (unlike team formats)</li>
+                    <li><strong>Framework Debate:</strong> Value premise and criterion determine how arguments are evaluated</li>
+                  </ul>
+                  <p style={{ fontSize: '0.9em', fontStyle: 'italic', marginTop: '1rem', color: 'white' }}>
+                    <strong>Note:</strong> Traditional Lincoln-Douglas debate includes cross-examination periods, but these are not currently supported in this implementation.
+                  </p>
+                </div>
               </div>
             </div>
           )}
