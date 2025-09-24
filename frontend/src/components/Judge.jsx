@@ -278,14 +278,6 @@ ${feedback}`;
       <header className="judge-header">
         <div className="judge-header-content">
           <div className="judge-header-left">
-            <button 
-              className="judge-history-button"
-              onClick={() => navigate("/")}
-              title="Go to Home"
-            >
-              <History size={18} />
-              <span>Home</span>
-            </button>
           </div>
 
           <div className="judge-header-center" style={{
