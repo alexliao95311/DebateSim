@@ -254,6 +254,10 @@ function History({ user, onLogout }) {
     if (filterType !== "all") {
       filtered = filtered.filter(item => {
         const itemType = getActivityType(item);
+        if (filterType === "bill") {
+          // Only show Bill Debate, not Analyze Bill
+          return itemType === 'Bill Debate';
+        }
         return itemType.toLowerCase().includes(filterType.toLowerCase());
       });
     }
