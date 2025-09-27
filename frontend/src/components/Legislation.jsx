@@ -522,6 +522,10 @@ const Legislation = ({ user }) => {
   const [actionType, setActionType] = useState(''); // 'analyze' or 'debate'
   const [extractedBillData, setExtractedBillData] = useState(null);
   const [extractedPdfText, setExtractedPdfText] = useState(null); // Cache for PDF text
+  const [billSections, setBillSections] = useState([]); // Extracted sections from PDF
+  const [selectedSections, setSelectedSections] = useState([]); // User-selected sections for analysis
+  const [analyzeWholeBill, setAnalyzeWholeBill] = useState(true); // Whether to analyze whole bill or sections
+  const [sectionSearchTerm, setSectionSearchTerm] = useState(''); // Search term for filtering sections
 
   // Common states
   const [error, setError] = useState('');
@@ -752,7 +756,161 @@ const Legislation = ({ user }) => {
     
     // Cache the extracted text
     setExtractedPdfText(data.text);
+
+    // Extract sections from the text
+    const sections = extractSectionsFromText(data.text);
+    setBillSections(sections);
+
     return data.text;
+  };
+
+  // Extract sections from PDF text
+  const extractSectionsFromText = (text) => {
+    if (!text) return [];
+
+    const sections = [];
+    const lines = text.split('\n');
+    let currentSection = null;
+    let currentContent = [];
+    let inTableOfContents = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Common section patterns in bills
+      const sectionPatterns = [
+        /^SEC(?:TION)?\.?\s+(\d+[A-Z]?)\s*[.:]/i,  // SEC. 1, SECTION 2A, etc.
+        /^SECTION\s+(\d+[A-Z]?)\s*[.:]/i,         // SECTION 1
+        /^§\s*(\d+[A-Z]?)\s*[.:]/i,               // § 1
+        /^TITLE\s+([IVX]+|\d+)\s*[.:]/i,          // TITLE I, TITLE 1
+        /^CHAPTER\s+(\d+[A-Z]?)\s*[.:]/i,         // CHAPTER 1
+        /^PART\s+([IVX]+|\d+)\s*[.:]/i,           // PART I, PART 1
+        /^ARTICLE\s+([IVX]+|\d+)\s*[.:]/i,        // ARTICLE I
+        /^SUBTITLE\s+([A-Z]|\d+)\s*[.:]/i,        // SUBTITLE A
+        /^SUBCHAPTER\s+([A-Z]|\d+)\s*[.:]/i       // SUBCHAPTER A
+      ];
+
+      let matchFound = false;
+      for (const pattern of sectionPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          // Check if this is a table of contents section and skip it
+          const isTableOfContents = /table\s+of\s+contents/i.test(line);
+          if (isTableOfContents) {
+            // Save previous section if exists before starting TOC
+            if (currentSection) {
+              sections.push({
+                ...currentSection,
+                content: currentContent.join('\n').trim()
+              });
+              currentSection = null;
+              currentContent = [];
+            }
+            inTableOfContents = true;
+            matchFound = true; // Prevent adding to content of previous section
+            break;
+          }
+
+          // If we're starting a new section, we're no longer in TOC
+          inTableOfContents = false;
+
+          // Save previous section if exists
+          if (currentSection) {
+            sections.push({
+              ...currentSection,
+              content: currentContent.join('\n').trim()
+            });
+          }
+
+          // Start new section
+          currentSection = {
+            id: `section-${sections.length}`,
+            number: match[1] || (sections.length + 1).toString(),
+            title: line,
+            type: pattern.source.includes('TITLE') ? 'title' :
+                  pattern.source.includes('CHAPTER') ? 'chapter' :
+                  pattern.source.includes('PART') ? 'part' :
+                  pattern.source.includes('ARTICLE') ? 'article' :
+                  pattern.source.includes('SUBTITLE') ? 'subtitle' :
+                  pattern.source.includes('SUBCHAPTER') ? 'subchapter' :
+                  'section'
+          };
+          currentContent = [line];
+          matchFound = true;
+          break;
+        }
+      }
+
+      if (!matchFound && !inTableOfContents && currentSection) {
+        currentContent.push(line);
+      } else if (!matchFound && !inTableOfContents && !currentSection) {
+        // If no section found yet, treat as preamble
+        if (!sections.find(s => s.type === 'preamble')) {
+          sections.push({
+            id: 'preamble',
+            number: 'Preamble',
+            title: 'Preamble',
+            type: 'preamble',
+            content: line
+          });
+        } else {
+          const preamble = sections.find(s => s.type === 'preamble');
+          preamble.content += '\n' + line;
+        }
+      }
+      // If inTableOfContents is true, we skip adding the line to any section
+    }
+
+    // Add last section
+    if (currentSection) {
+      sections.push({
+        ...currentSection,
+        content: currentContent.join('\n').trim()
+      });
+    }
+
+    // If no sections found, create a single "Full Bill" section
+    if (sections.length === 0) {
+      sections.push({
+        id: 'full-bill',
+        number: 'Full Bill',
+        title: 'Full Bill',
+        type: 'full',
+        content: text
+      });
+    }
+
+    return sections;
+  };
+
+  // Get text from selected sections
+  const getSelectedSectionsText = () => {
+    if (selectedSections.length === 0) {
+      return extractedPdfText; // Fallback to full text if no sections selected
+    }
+
+    const selectedSectionObjects = billSections.filter(section =>
+      selectedSections.includes(section.id)
+    );
+
+    return selectedSectionObjects
+      .map(section => section.content)
+      .join('\n\n---\n\n');
+  };
+
+  // Filter sections based on search term
+  const getFilteredSections = () => {
+    if (!sectionSearchTerm.trim()) {
+      return billSections;
+    }
+
+    const searchTerm = sectionSearchTerm.toLowerCase();
+    return billSections.filter(section =>
+      section.title.toLowerCase().includes(searchTerm) ||
+      section.content.toLowerCase().includes(searchTerm) ||
+      section.type.toLowerCase().includes(searchTerm) ||
+      section.number.toLowerCase().includes(searchTerm)
+    );
   };
 
   const getActivityTypeDisplay = (item) => {
@@ -789,6 +947,10 @@ const Legislation = ({ user }) => {
       setSelectedBill(file);
       setBillSource('upload');
       setExtractedPdfText(null); // Clear previous cached text
+      setBillSections([]); // Clear previous sections
+      setSelectedSections([]); // Clear selected sections
+      setAnalyzeWholeBill(true); // Reset to analyze whole bill
+      setSectionSearchTerm(''); // Clear search term
       setCurrentStep(2);
       setError('');
       clearInfoNote(); // Clear any previous info notes
@@ -812,6 +974,14 @@ const Legislation = ({ user }) => {
       setDebateTopic(billName);
     }
     
+    // Auto-extract PDF text and sections when entering analyze mode with uploaded PDF
+    if (action === 'analyze' && billSource === 'upload' && selectedBill && !extractedPdfText) {
+      extractPdfText(selectedBill).catch(error => {
+        console.error('Failed to extract PDF text:', error);
+        setError('Failed to extract text from PDF. Please try again.');
+      });
+    }
+
     clearInfoNote(); // Clear any info notes when changing action
     setCurrentStep(3);
   };
@@ -997,8 +1167,9 @@ const Legislation = ({ user }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: extractedPdfText,
-              model: selectedModel
+              text: analyzeWholeBill ? extractedPdfText : getSelectedSectionsText(),
+              model: selectedModel,
+              sections: analyzeWholeBill ? null : selectedSections
             }),
           });
           
@@ -2423,16 +2594,183 @@ const Legislation = ({ user }) => {
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
                     </div>
+
+                    {billSource === 'upload' && (
+                      <div className="section-selection">
+                        <label className="section-label">
+                          <span className="label-icon">📄</span>
+                          Choose What to Analyze
+                        </label>
+
+                        <div className="analysis-scope-options">
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-whole-bill"
+                              name="analysis-scope"
+                              checked={analyzeWholeBill}
+                              onChange={() => {
+                                setAnalyzeWholeBill(true);
+                                setSelectedSections([]);
+                              }}
+                            />
+                            <label htmlFor="analyze-whole-bill">
+                              <strong>Analyze Whole Bill</strong>
+                              <span className="option-description">Analyze the entire bill document</span>
+                            </label>
+                          </div>
+
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-sections"
+                              name="analysis-scope"
+                              checked={!analyzeWholeBill}
+                              onChange={() => {
+                                setAnalyzeWholeBill(false);
+                                // Auto-extract sections if not already done
+                                if (billSections.length === 0 && extractedPdfText) {
+                                  const sections = extractSectionsFromText(extractedPdfText);
+                                  setBillSections(sections);
+                                }
+                              }}
+                            />
+                            <label htmlFor="analyze-sections">
+                              <strong>Analyze Specific Sections</strong>
+                              <span className="option-description">Choose specific sections to analyze</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {!analyzeWholeBill && (
+                          <div className="sections-list">
+                            {billSections.length === 0 && extractedPdfText && (
+                              <button
+                                className="extract-sections-btn"
+                                onClick={() => {
+                                  const sections = extractSectionsFromText(extractedPdfText);
+                                  setBillSections(sections);
+                                }}
+                              >
+                                Extract Sections from PDF
+                              </button>
+                            )}
+
+                            {billSections.length > 0 && (
+                              <>
+                                <div className="sections-header">
+                                  <span>Select sections to analyze:</span>
+                                  <div className="select-actions">
+                                    <button
+                                      className="select-all-btn"
+                                      onClick={() => {
+                                        const filteredSections = getFilteredSections();
+                                        const allFilteredIds = filteredSections.map(s => s.id);
+                                        const newSelected = [...new Set([...selectedSections, ...allFilteredIds])];
+                                        setSelectedSections(newSelected);
+                                      }}
+                                    >
+                                      Select All {sectionSearchTerm ? 'Visible' : ''}
+                                    </button>
+                                    <button
+                                      className="select-none-btn"
+                                      onClick={() => {
+                                        if (sectionSearchTerm) {
+                                          const filteredSections = getFilteredSections();
+                                          const filteredIds = filteredSections.map(s => s.id);
+                                          setSelectedSections(selectedSections.filter(id => !filteredIds.includes(id)));
+                                        } else {
+                                          setSelectedSections([]);
+                                        }
+                                      }}
+                                    >
+                                      Deselect {sectionSearchTerm ? 'Visible' : 'All'}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="section-search">
+                                  <input
+                                    type="text"
+                                    className="section-search-input"
+                                    placeholder="Search sections by title, content, type, or number..."
+                                    value={sectionSearchTerm}
+                                    onChange={(e) => setSectionSearchTerm(e.target.value)}
+                                  />
+                                  {sectionSearchTerm && (
+                                    <button
+                                      className="clear-search-btn"
+                                      onClick={() => setSectionSearchTerm('')}
+                                      title="Clear search"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+
+                                {getFilteredSections().length > 0 ? (
+                                  <div className="sections-grid">
+                                    {getFilteredSections().map((section) => (
+                                      <div key={section.id} className="section-item">
+                                        <label className="section-checkbox">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedSections.includes(section.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setSelectedSections([...selectedSections, section.id]);
+                                              } else {
+                                                setSelectedSections(selectedSections.filter(id => id !== section.id));
+                                              }
+                                            }}
+                                          />
+                                          <div className="section-info">
+                                            <div className="section-title">{section.title}</div>
+                                            <div className="section-type">{section.type}</div>
+                                            <div className="section-preview">
+                                              {section.content.substring(0, 100)}...
+                                            </div>
+                                          </div>
+                                        </label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="no-search-results">
+                                    {sectionSearchTerm ?
+                                      `No sections found matching "${sectionSearchTerm}"` :
+                                      'No sections available'
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {billSections.length === 0 && !extractedPdfText && (
+                              <div className="no-sections-message">
+                                Please upload a PDF first to extract sections.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  
+
+                  {billSource === 'upload' && !analyzeWholeBill && selectedSections.length === 0 && (
+                    <div className="validation-message">
+                      Please select at least one section to analyze, or choose "Analyze Whole Bill" option.
+                    </div>
+                  )}
+
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
-                    <button 
+                    <button
                       className="nav-button execute"
                       onClick={handleAnalyzeExecution}
-                      disabled={loadingState}
+                      disabled={loadingState || (billSource === 'upload' && !analyzeWholeBill && selectedSections.length === 0)}
                     >
                       {loadingState ? 'Analyzing...' : 'Start Analysis'}
                     </button>
