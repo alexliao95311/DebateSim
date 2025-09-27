@@ -869,9 +869,55 @@ const Legislation = ({ user }) => {
       });
     }
 
+    // Remove duplicates by keeping sections with actual content over TOC entries
+    const deduplicatedSections = [];
+    const sectionNumberMap = new Map();
+
+    // First pass: group sections by their section number/identifier
+    sections.forEach((section, index) => {
+      // Extract section number from title (e.g., "SEC. 1", "Sec. 10101", etc.)
+      const numberMatch = section.title.match(/(?:SEC(?:TION)?\.?\s+|Sec\.?\s+)(\d+[A-Z]?)/i);
+      const sectionNumber = numberMatch ? numberMatch[1] : section.title.toLowerCase().trim();
+
+      if (!sectionNumberMap.has(sectionNumber)) {
+        sectionNumberMap.set(sectionNumber, []);
+      }
+      sectionNumberMap.get(sectionNumber).push({ section, index });
+    });
+
+    // Second pass: for each section number, keep the one with more content
+    sectionNumberMap.forEach((instances) => {
+      if (instances.length > 1) {
+        // For duplicates, keep the one with more substantial content
+        const bestInstance = instances.reduce((best, current) => {
+          const bestContentLength = best.section.content ? best.section.content.length : 0;
+          const currentContentLength = current.section.content ? current.section.content.length : 0;
+
+          // Prefer sections with more content, or if same, prefer later occurrence
+          if (currentContentLength > bestContentLength) {
+            return current;
+          } else if (currentContentLength === bestContentLength && current.index > best.index) {
+            return current;
+          }
+          return best;
+        });
+        deduplicatedSections.push(bestInstance.section);
+      } else {
+        // For non-duplicates, keep the only instance
+        deduplicatedSections.push(instances[0].section);
+      }
+    });
+
+    // Sort by original order
+    const finalSections = deduplicatedSections.sort((a, b) => {
+      const aIndex = sections.findIndex(s => s.id === a.id);
+      const bIndex = sections.findIndex(s => s.id === b.id);
+      return aIndex - bIndex;
+    });
+
     // If no sections found, create a single "Full Bill" section
-    if (sections.length === 0) {
-      sections.push({
+    if (finalSections.length === 0) {
+      finalSections.push({
         id: 'full-bill',
         number: 'Full Bill',
         title: 'Full Bill',
@@ -880,7 +926,7 @@ const Legislation = ({ user }) => {
       });
     }
 
-    return sections;
+    return finalSections;
   };
 
   // Get text from selected sections
@@ -2748,7 +2794,7 @@ const Legislation = ({ user }) => {
 
                             {billSections.length === 0 && !extractedPdfText && (
                               <div className="no-sections-message">
-                                Please upload a PDF first to extract sections.
+                                Loading bill sections...
                               </div>
                             )}
                           </div>
