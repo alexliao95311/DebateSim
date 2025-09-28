@@ -13,8 +13,7 @@ import {
   Filter,
   X,
   Download,
-  Share2,
-  ArrowLeft
+  Share2
 } from "lucide-react";
 import "./Home.css"; // Reuse existing styles
 import "./HistorySidebar.css"; // For the modal styles
@@ -355,33 +354,7 @@ function History({ user, onLogout }) {
       <header className="home-header">
         <div className="home-header-content">
           <div className="home-header-left">
-            <button
-              className="history-back-button"
-              onClick={() => navigate("/")}
-              title="Go to Home"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '8px 16px',
-                backgroundColor: 'transparent',
-                border: '2px solid #374151',
-                borderRadius: '8px',
-                color: '#f1f5f9',
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#374151';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <ArrowLeft size={18} />
-              <span>Back</span>
-            </button>
+            {/* Empty space for alignment */}
           </div>
 
           <div className="home-header-center" style={{
@@ -389,14 +362,16 @@ function History({ user, onLogout }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '0.5rem',
-            flex: 1
-          }}>
-            <HistoryIcon size={32} style={{ color: 'white' }} />
-            <h1 className="home-title" style={{ margin: 0, color: 'white' }}>Activity History</h1>
+            flex: 1,
+            cursor: 'pointer'
+          }}
+          onClick={() => navigate('/')}
+          >
+            <h1 className="home-site-title">Activity History</h1>
           </div>
 
           <div className="home-header-right">
-            <UserDropdown user={user} onLogout={onLogout} />
+            <UserDropdown user={user} onLogout={onLogout} className="home-user-dropdown" />
           </div>
         </div>
       </header>

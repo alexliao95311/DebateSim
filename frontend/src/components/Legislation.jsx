@@ -522,6 +522,10 @@ const Legislation = ({ user }) => {
   const [actionType, setActionType] = useState(''); // 'analyze' or 'debate'
   const [extractedBillData, setExtractedBillData] = useState(null);
   const [extractedPdfText, setExtractedPdfText] = useState(null); // Cache for PDF text
+  const [billSections, setBillSections] = useState([]); // Extracted sections from PDF
+  const [selectedSections, setSelectedSections] = useState([]); // User-selected sections for analysis
+  const [analyzeWholeBill, setAnalyzeWholeBill] = useState(true); // Whether to analyze whole bill or sections
+  const [sectionSearchTerm, setSectionSearchTerm] = useState(''); // Search term for filtering sections
 
   // Common states
   const [error, setError] = useState('');
@@ -672,9 +676,18 @@ const Legislation = ({ user }) => {
 
   // Step 1: Handle bill selection from recommended bills (lazy loading)
   const handleSelectRecommendedBill = (bill) => {
+    console.log('🔄 Selecting recommended bill:', bill.title);
     setSelectedBill(bill);
     setBillSource('recommended');
     setExtractedBillData(null); // Clear previous data
+
+    // Reset section-related state
+    console.log('🗑️ Clearing previous bill sections and selections');
+    setBillSections([]); // Clear previous sections
+    setSelectedSections([]); // Clear selected sections
+    setAnalyzeWholeBill(true); // Reset to analyze whole bill
+    setSectionSearchTerm(''); // Clear search term
+
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
@@ -683,11 +696,19 @@ const Legislation = ({ user }) => {
   // Extract recommended bill text when needed
   const extractRecommendedBillText = async (bill) => {
     if (extractedBillData) {
-      return extractedBillData; // Return cached data
+      console.log('📋 Using cached bill data, text length:', extractedBillData.text?.length || 0);
+      return extractedBillData.text; // Return cached text only
     }
-    
+
     setProcessingStage('Extracting bill text from Congress.gov...');
-    
+
+    console.log('🔗 Fetching bill text from API for:', {
+      type: bill.type,
+      number: bill.number,
+      congress: bill.congress || 119,
+      title: bill.title
+    });
+
     const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
       method: "POST",
       headers: {
@@ -711,21 +732,36 @@ const Legislation = ({ user }) => {
     }
     
     const data = await response.json();
-    
+
+    console.log('📄 API Response received:', {
+      hasText: !!data.text,
+      textLength: data.text?.length || 0,
+      textPreview: data.text?.substring(0, 200) + '...',
+      title: data.title
+    });
+
     // Check if bill text is unavailable
     if (data.text && data.text.includes('Bill Text Unavailable')) {
+      console.log('⚠️ Bill text marked as unavailable');
       throw new Error('This bill\'s text is not yet available from Congress.gov. You can try again later or upload a PDF version if available.');
     }
-    
+
+    // Check if we got suspiciously short text (might be just preamble)
+    if (data.text && data.text.length < 2000) {
+      console.log('⚠️ Received suspiciously short text, might be incomplete:', data.text.length, 'characters');
+      console.log('📝 Short text content:', data.text);
+    }
+
     // Cache the extracted bill data
     const billData = {
       text: data.text,
       title: data.title || bill.title,
       billCode: `${bill.type} ${bill.number}`
     };
-    
+
+    console.log('💾 Caching bill data, final text length:', billData.text?.length || 0);
     setExtractedBillData(billData);
-    return billData;
+    return billData.text;
   };
   
   // Extract PDF text when needed
@@ -752,7 +788,334 @@ const Legislation = ({ user }) => {
     
     // Cache the extracted text
     setExtractedPdfText(data.text);
+
+    // Extract sections from the text
+    console.log('📄 PDF uploaded, extracting sections from text...');
+    const sections = extractSectionsFromText(data.text);
+    console.log('💾 Setting bill sections in state, count:', sections.length);
+    setBillSections(sections);
+
     return data.text;
+  };
+
+  // Extract sections from text using TOC-first approach
+  const extractSectionsFromText = (text) => {
+    console.log('🔧 TOC-first extractSectionsFromText called');
+    console.log('📊 Input text type:', typeof text);
+    console.log('📊 Input text length:', text?.length || 0);
+    console.log('📊 Input text preview:', text.substring(0, 100));
+
+    if (!text) {
+      console.log('⚠️ No text provided to extractSectionsFromText');
+      return [];
+    }
+
+    if (typeof text !== 'string') {
+      console.error('❌ Text is not a string, type:', typeof text, 'value:', text);
+      return [];
+    }
+
+    console.log('🚀 Starting TOC-first section extraction...');
+    console.log('📊 Input text length:', text.length);
+
+    // Step 1: Find and extract table of contents sections
+    const tocSections = extractTOCSections(text);
+    console.log('📋 Found', tocSections.length, 'sections in table of contents');
+
+    if (tocSections.length === 0) {
+      console.log('⚠️ No TOC found, falling back to full text as single section');
+      return [{
+        id: 'full-bill',
+        number: 'Full Bill',
+        title: 'Full Bill Text',
+        type: 'full',
+        content: text.substring(0, 10000) + (text.length > 10000 ? '...' : '')
+      }];
+    }
+
+    // Step 2: Find each TOC section in the full document
+    const sections = [];
+    console.log('🔍 Searching for each TOC section in the full document...');
+
+    for (let i = 0; i < tocSections.length; i++) {
+      const tocSection = tocSections[i];
+      const sectionContent = findSectionInText(text, tocSection, tocSections);
+
+      if (sectionContent) {
+        const section = {
+          id: `section-${i}`,
+          number: tocSection.number,
+          title: tocSection.title,
+          type: 'section',
+          content: sectionContent
+        };
+
+        console.log('✅ Found section:', {
+          number: section.number,
+          title: section.title.substring(0, 60) + '...',
+          contentLength: section.content.length
+        });
+
+        sections.push(section);
+      } else {
+        console.log('❌ Could not find content for section:', tocSection.number, tocSection.title);
+      }
+    }
+
+    console.log('✅ Section extraction completed!');
+    console.log('📊 Final sections count:', sections.length, 'out of', tocSections.length, 'TOC entries');
+
+    if (sections.length > 0) {
+      console.log('📏 Content length range:', {
+        min: Math.min(...sections.map(s => s.content.length)),
+        max: Math.max(...sections.map(s => s.content.length)),
+        avg: Math.round(sections.reduce((sum, s) => sum + s.content.length, 0) / sections.length)
+      });
+    }
+
+    return sections;
+  };
+
+  // Extract section list from table of contents
+  function extractTOCSections(text) {
+    console.log('📋 Extracting sections from table of contents...');
+
+    // Find the table of contents section
+    const tocStart = text.search(/TABLE\s+OF\s+CONTENTS|CONTENTS/i);
+    if (tocStart === -1) {
+      console.log('❌ No table of contents found');
+      return [];
+    }
+
+    // Find where the actual bill content starts (after TOC)
+    // Look for the first substantial section implementation
+    const sectionImplPattern = /SEC\.\s+(\d+[A-Z]?)\.\s+[A-Z][A-Z\s\-,()&.]+\.\s*\([a-z]\)/gi;
+    const sectionImpl = sectionImplPattern.exec(text.substring(tocStart + 1000));
+
+    let tocEnd = text.length;
+    if (sectionImpl) {
+      tocEnd = tocStart + 1000 + sectionImpl.index;
+      console.log('📋 Found bill implementation start at position:', tocEnd);
+    } else {
+      // Fallback to original markers
+      const billStartMarkers = [
+        /SEC\.\s+1001\.\s+[A-Z]/i,
+        /SEC\.\s+1\.\s+[A-Z]/i,
+        /TITLE\s+[IVX]+\s*--.*SEC\.\s+\d+/i
+      ];
+
+      for (const marker of billStartMarkers) {
+        const match = text.substring(tocStart + 100).search(marker);
+        if (match !== -1) {
+          const actualPos = tocStart + 100 + match;
+          if (actualPos < tocEnd) {
+            tocEnd = actualPos;
+          }
+        }
+      }
+    }
+
+    const tocText = text.substring(tocStart, tocEnd);
+    console.log('📋 TOC text length:', tocText.length);
+
+    // Extract section entries from TOC
+    const sectionPattern = /Sec\.\s+(\d+[A-Z]?)\.\s+(.+?)(?=\n|Sec\.\s+\d+|\.|\s+\d+\s*$|$)/gi;
+    const sections = [];
+    let match;
+
+    while ((match = sectionPattern.exec(tocText)) !== null) {
+      const sectionNumber = match[1].trim();
+      let sectionTitle = match[2].trim();
+
+      // Clean up the title
+      sectionTitle = sectionTitle.replace(/\s+/g, ' ');
+      sectionTitle = sectionTitle.replace(/\.$/, ''); // Remove trailing period
+
+      // Skip if this looks like a page number or other non-section content
+      if (sectionTitle.length < 5 || /^\d+$/.test(sectionTitle)) {
+        continue;
+      }
+
+      const section = {
+        number: sectionNumber,
+        title: `SEC. ${sectionNumber}. ${sectionTitle.toUpperCase()}.`,
+        originalTitle: sectionTitle
+      };
+
+      console.log('📋 TOC entry:', section.number, '-', section.originalTitle);
+      sections.push(section);
+    }
+
+    console.log('📋 Extracted', sections.length, 'sections from TOC');
+    return sections;
+  }
+
+  // Find a specific section in the full document text
+  function findSectionInText(text, tocSection, allTocSections) {
+    const sectionNumber = tocSection.number;
+
+    // Create multiple search patterns for this section
+    const searchPatterns = [
+      // Most common: "SEC. 1001. TITLE."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Alternative: "SECTION 1001. TITLE."
+      new RegExp(`SECTION\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Simple: "SEC. 1001."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.`, 'gi'),
+      // Even simpler: just the number pattern at word boundary
+      new RegExp(`\\bSEC(?:TION)?\\.?\\s+${sectionNumber}\\b`, 'gi')
+    ];
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    // Try each pattern
+    for (let i = 0; i < searchPatterns.length; i++) {
+      const pattern = searchPatterns[i];
+      const matches = [...text.matchAll(pattern)];
+
+      for (const match of matches) {
+        const position = match.index;
+        const matchText = match[0];
+
+        // Score this match based on various criteria
+        let score = 0;
+
+        // Prefer matches that are not in the TOC area (first 10% of document)
+        if (position > text.length * 0.1) score += 10;
+
+        // Prefer matches with full titles over just numbers
+        if (matchText.length > 10) score += 5;
+
+        // Prefer exact pattern matches (lower index = more specific pattern)
+        score += (4 - i);
+
+        // Check if this match has legislative content after it (subsections, amendments, etc.)
+        const contentAfter = text.substring(position, position + 500);
+        if (/\([a-z]\)/.test(contentAfter)) score += 5; // Has subsections
+        if (/is amended|striking|inserting|adding/.test(contentAfter)) score += 3; // Legislative language
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = { position, matchText, score };
+        }
+      }
+    }
+
+    if (!bestMatch) {
+      console.log('❌ No match found for section', sectionNumber);
+      return null;
+    }
+
+    // Find the end of this section by looking for the next section
+    const currentIndex = allTocSections.findIndex(s => s.number === sectionNumber);
+    let endPosition = text.length;
+
+    // Look for the next section in the TOC list
+    for (let i = currentIndex + 1; i < allTocSections.length; i++) {
+      const nextSection = allTocSections[i];
+      const nextPattern = new RegExp(`SEC\\.?\\s+${nextSection.number}\\.`, 'gi');
+
+      // Reset regex lastIndex to avoid issues
+      nextPattern.lastIndex = 0;
+      const nextMatch = nextPattern.exec(text.substring(bestMatch.position + 100));
+
+      if (nextMatch) {
+        endPosition = bestMatch.position + 100 + nextMatch.index;
+        break;
+      }
+    }
+
+    // Extract the content
+    let content = text.substring(bestMatch.position, endPosition).trim();
+
+    // Limit very long sections
+    if (content.length > 15000) {
+      content = content.substring(0, 15000) + '...';
+    }
+
+    console.log('✅ Extracted section', sectionNumber, 'from position', bestMatch.position, 'to', endPosition, 'length:', content.length);
+
+    return content;
+  }
+
+  // Get bill title for context
+  const getBillTitle = () => {
+    if (billSource === 'recommended' || billSource === 'link') {
+      return selectedBill?.title || 'Unknown Bill';
+    } else {
+      return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
+    }
+  };
+
+  // Get text from selected sections with bill context
+  const getSelectedSectionsText = () => {
+    const billTitle = getBillTitle();
+    const billHeader = `BILL TITLE: ${billTitle}\n\n`;
+    const billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+
+    console.log('📋 getSelectedSectionsText called:', {
+      selectedSectionsCount: selectedSections.length,
+      selectedSectionIds: selectedSections,
+      billSectionsCount: billSections.length,
+      billSectionIds: billSections.map(s => s.id)
+    });
+
+    if (selectedSections.length === 0) {
+      console.log('⚠️ No sections selected, using full bill text');
+      return billHeader + (billText || ''); // Fallback to full text if no sections selected
+    }
+
+    const selectedSectionObjects = billSections.filter(section =>
+      selectedSections.includes(section.id)
+    );
+
+    console.log('📄 Selected section objects:', {
+      count: selectedSectionObjects.length,
+      sections: selectedSectionObjects.map(s => ({
+        id: s.id,
+        title: s.title,
+        contentLength: s.content?.length || 0,
+        contentPreview: s.content?.substring(0, 200) + '...'
+      }))
+    });
+
+    // Debug each selected section individually
+    selectedSectionObjects.forEach((section, index) => {
+      console.log(`🔍 Selected section ${index + 1}:`, {
+        id: section.id,
+        number: section.number,
+        title: section.title,
+        type: section.type,
+        contentLength: section.content?.length || 0,
+        contentFirstChars: section.content?.substring(0, 100),
+        contentLastChars: section.content?.slice(-100)
+      });
+    });
+
+    const sectionsText = selectedSectionObjects
+      .map(section => section.content)
+      .join('\n\n---\n\n');
+
+    console.log('📝 Final sections text length:', sectionsText.length);
+    console.log('📝 Final sections text preview:', sectionsText.substring(0, 200) + '...');
+
+    return billHeader + sectionsText;
+  };
+
+  // Filter sections based on search term
+  const getFilteredSections = () => {
+    if (!sectionSearchTerm.trim()) {
+      return billSections;
+    }
+
+    const searchTerm = sectionSearchTerm.toLowerCase();
+    return billSections.filter(section =>
+      section.title.toLowerCase().includes(searchTerm) ||
+      section.content.toLowerCase().includes(searchTerm) ||
+      section.type.toLowerCase().includes(searchTerm) ||
+      section.number.toLowerCase().includes(searchTerm)
+    );
   };
 
   const getActivityTypeDisplay = (item) => {
@@ -789,6 +1152,11 @@ const Legislation = ({ user }) => {
       setSelectedBill(file);
       setBillSource('upload');
       setExtractedPdfText(null); // Clear previous cached text
+      console.log('🗑️ Clearing previous bill sections');
+      setBillSections([]); // Clear previous sections
+      setSelectedSections([]); // Clear selected sections
+      setAnalyzeWholeBill(true); // Reset to analyze whole bill
+      setSectionSearchTerm(''); // Clear search term
       setCurrentStep(2);
       setError('');
       clearInfoNote(); // Clear any previous info notes
@@ -812,6 +1180,14 @@ const Legislation = ({ user }) => {
       setDebateTopic(billName);
     }
     
+    // Auto-extract PDF text and sections when entering analyze mode with uploaded PDF
+    if (action === 'analyze' && billSource === 'upload' && selectedBill && !extractedPdfText) {
+      extractPdfText(selectedBill).catch(error => {
+        console.error('Failed to extract PDF text:', error);
+        setError('Failed to extract text from PDF. Please try again.');
+      });
+    }
+
     clearInfoNote(); // Clear any info notes when changing action
     setCurrentStep(3);
   };
@@ -868,6 +1244,7 @@ const Legislation = ({ user }) => {
     // Reset all staged states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
     
@@ -935,29 +1312,28 @@ const Legislation = ({ user }) => {
         // Step 1: Extract bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
         setProgressStep(1);
-        
+
         const billData = await extractRecommendedBillText(selectedBill);
-        
-        // Step 2: Analyze legislation
+
+        // Step 2: Analyze legislation using selected sections
         setProcessingStage('Analyzing legislation with AI...');
         setProgressStep(2);
-        
-        const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
+
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            type: selectedBill.type,
-            number: selectedBill.number,
-            congress: selectedBill.congress || 119,
-            model: selectedModel
+            text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections
           }),
         });
-        
+
         if (!response.ok) {
           const errorData = await response.text();
-          
+
           // Handle specific error cases
           if (response.status === 404) {
             throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
@@ -969,13 +1345,13 @@ const Legislation = ({ user }) => {
             throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
           }
         }
-        
+
         const data = await response.json();
-        
+
         // Step 3: Finalizing
         setProcessingStage('Finalizing analysis and grades...');
         setProgressStep(3);
-        
+
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
         
@@ -997,8 +1373,9 @@ const Legislation = ({ user }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: extractedPdfText,
-              model: selectedModel
+              text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${billSource === 'upload' ? extractedPdfText : extractedBillData?.text}` : getSelectedSectionsText(),
+              model: selectedModel,
+              sections: analyzeWholeBill ? null : selectedSections
             }),
           });
           
@@ -1244,6 +1621,7 @@ const Legislation = ({ user }) => {
     // Reset staged loading states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
     
@@ -1638,8 +2016,18 @@ const Legislation = ({ user }) => {
   // Handle bill link confirmation
   const handleBillLinkConfirm = () => {
     if (linkParsedBill) {
+      console.log('🔄 Confirming link bill:', linkParsedBill.title);
       setSelectedBill(linkParsedBill);
       setBillSource('link');
+
+      // Reset section-related state
+      console.log('🗑️ Clearing previous bill sections and selections');
+      setBillSections([]); // Clear previous sections
+      setSelectedSections([]); // Clear selected sections
+      setAnalyzeWholeBill(true); // Reset to analyze whole bill
+      setSectionSearchTerm(''); // Clear search term
+      setExtractedBillData(null); // Clear previous extracted data
+
       setShowLinkConfirmation(false);
       setBillLink("");
       setLinkParsedBill(null);
@@ -1656,6 +2044,7 @@ const Legislation = ({ user }) => {
   const [showGradingSection, setShowGradingSection] = useState(false);
   const [showAnalysisText, setShowAnalysisText] = useState(false);
   const [showFullBillText, setShowFullBillText] = useState(false);
+  const [showBillTextSection, setShowBillTextSection] = useState(false);
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
@@ -1785,7 +2174,7 @@ const Legislation = ({ user }) => {
                       color: "white" 
                     }}
                   >
-                    ❌ Cancel
+                    ❌
                   </button>
                 </div>
               </div>
@@ -2244,7 +2633,7 @@ const Legislation = ({ user }) => {
                         }}
                         title="Clear search"
                       >
-                        ✕
+                        ❌
                       </button>
                     )}
                   </div>
@@ -2423,16 +2812,232 @@ const Legislation = ({ user }) => {
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
                     </div>
+
+                    <div className="section-selection">
+                        <label className="section-label">
+                          <span className="label-icon">📄</span>
+                          Choose What to Analyze
+                        </label>
+
+                        <div className="analysis-scope-options">
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-whole-bill"
+                              name="analysis-scope"
+                              checked={analyzeWholeBill}
+                              onChange={() => {
+                                setAnalyzeWholeBill(true);
+                                setSelectedSections([]);
+                              }}
+                            />
+                            <label htmlFor="analyze-whole-bill">
+                              <strong>Analyze Whole Bill</strong>
+                              <span className="option-description">Analyze the entire bill document</span>
+                            </label>
+                          </div>
+
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-sections"
+                              name="analysis-scope"
+                              checked={!analyzeWholeBill}
+                              onChange={async () => {
+                                setAnalyzeWholeBill(false);
+                                console.log('🔍 Section selection mode activated');
+                                console.log('📊 Debug - billSource:', billSource);
+
+                                let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                console.log('📊 Debug - initial billText length:', billText?.length || 0);
+                                console.log('📊 Debug - existing billSections count:', billSections.length);
+
+                                // For recommended/link bills, extract text if not available
+                                if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                  console.log('🔄 Bill text not available, extracting from API...');
+                                  try {
+                                    billText = await extractRecommendedBillText(selectedBill);
+                                    console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                  } catch (error) {
+                                    console.error('❌ Failed to extract bill text:', error);
+                                    return;
+                                  }
+                                }
+
+                                // Auto-extract sections if not already done
+                                if (billSections.length === 0 && billText) {
+                                  console.log('🚀 Auto-extracting sections from bill text...');
+                                  const sections = extractSectionsFromText(billText);
+                                  console.log('✅ Auto-extracted sections count:', sections.length);
+                                  console.log('💾 Setting bill sections in state (auto-extract)');
+                                  setBillSections(sections);
+                                } else if (!billText) {
+                                  console.log('⚠️ No bill text available for section extraction');
+                                } else {
+                                  console.log('ℹ️ Sections already extracted, count:', billSections.length);
+                                }
+                              }}
+                            />
+                            <label htmlFor="analyze-sections">
+                              <strong>Analyze Specific Sections</strong>
+                              <span className="option-description">Choose specific sections to analyze</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {!analyzeWholeBill && (
+                          <div className="sections-list">
+                            {billSections.length === 0 && (billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                              <button
+                                className="extract-sections-btn"
+                                onClick={async () => {
+                                  console.log('🔧 Manual section extraction triggered');
+                                  console.log('📊 Debug - billSource:', billSource);
+
+                                  let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                  console.log('📊 Debug - initial billText length:', billText?.length || 0);
+
+                                  // For recommended/link bills, extract text if not available
+                                  if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                    console.log('🔄 Bill text not available, extracting from API...');
+                                    try {
+                                      billText = await extractRecommendedBillText(selectedBill);
+                                      console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                    } catch (error) {
+                                      console.error('❌ Failed to extract bill text:', error);
+                                      return;
+                                    }
+                                  }
+
+                                  if (billText) {
+                                    console.log('🚀 Extracting sections from bill text...');
+                                    const sections = extractSectionsFromText(billText);
+                                    console.log('✅ Manual extraction completed, sections count:', sections.length);
+                                    console.log('💾 Setting bill sections in state (manual extract)');
+                                    setBillSections(sections);
+                                  } else {
+                                    console.log('❌ No bill text available for extraction');
+                                  }
+                                }}
+                              >
+                                Extract Sections from Bill
+                              </button>
+                            )}
+
+                            {billSections.length > 0 && (
+                              <>
+                                <div className="sections-header">
+                                  <span>Select sections to analyze:</span>
+                                  <div className="select-actions">
+                                    <button
+                                      className="select-all-btn"
+                                      onClick={() => {
+                                        const filteredSections = getFilteredSections();
+                                        const allFilteredIds = filteredSections.map(s => s.id);
+                                        const newSelected = [...new Set([...selectedSections, ...allFilteredIds])];
+                                        setSelectedSections(newSelected);
+                                      }}
+                                    >
+                                      Select All
+                                    </button>
+                                    <button
+                                      className="select-none-btn"
+                                      onClick={() => {
+                                        if (sectionSearchTerm) {
+                                          const filteredSections = getFilteredSections();
+                                          const filteredIds = filteredSections.map(s => s.id);
+                                          setSelectedSections(selectedSections.filter(id => !filteredIds.includes(id)));
+                                        } else {
+                                          setSelectedSections([]);
+                                        }
+                                      }}
+                                    >
+                                      Deselect All
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="section-search">
+                                  <input
+                                    type="text"
+                                    className="section-search-input"
+                                    placeholder="Search sections by title, content, type, or number..."
+                                    value={sectionSearchTerm}
+                                    onChange={(e) => setSectionSearchTerm(e.target.value)}
+                                  />
+                                  {sectionSearchTerm && (
+                                    <button
+                                      className="clear-search-btn"
+                                      onClick={() => setSectionSearchTerm('')}
+                                      title="Clear search"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+
+                                {getFilteredSections().length > 0 ? (
+                                  <div className="sections-grid">
+                                    {getFilteredSections().map((section) => (
+                                      <div key={section.id} className="section-item">
+                                        <label className="section-checkbox">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedSections.includes(section.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setSelectedSections([...selectedSections, section.id]);
+                                              } else {
+                                                setSelectedSections(selectedSections.filter(id => id !== section.id));
+                                              }
+                                            }}
+                                          />
+                                          <div className="section-info">
+                                            <div className="section-title">{section.title}</div>
+                                            <div className="section-type">{section.type}</div>
+                                            <div className="section-preview">
+                                              {section.content.substring(0, 100)}...
+                                            </div>
+                                          </div>
+                                        </label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="no-search-results">
+                                    {sectionSearchTerm ?
+                                      `No sections found matching "${sectionSearchTerm}"` :
+                                      'No sections available'
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {billSections.length === 0 && !(billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                              <div className="no-sections-message">
+                                Loading bill sections...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                   </div>
-                  
+
+                  {!analyzeWholeBill && selectedSections.length === 0 && (
+                    <div className="validation-message">
+                      Please select at least one section to analyze, or choose "Analyze Whole Bill" option.
+                    </div>
+                  )}
+
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
-                    <button 
+                    <button
                       className="nav-button execute"
                       onClick={handleAnalyzeExecution}
-                      disabled={loadingState}
+                      disabled={loadingState || (!analyzeWholeBill && selectedSections.length === 0)}
                     >
                       {loadingState ? 'Analyzing...' : 'Start Analysis'}
                     </button>
@@ -2704,59 +3309,53 @@ const Legislation = ({ user }) => {
                 <TTSProvider analysisText={analysisResult}>
                   <div style={{ marginTop: '2rem' }}>
                     {/* Custom H2 Section Component */}
-                    <H2SectionRenderer 
+                    <H2SectionRenderer
                       analysisText={`## Detailed Analysis\n\n${analysisResult}`}
                     />
+
+                    {/* Show Bill Text Section */}
+                    <div style={{ marginTop: '3rem' }}>
+                      <div className="expandable-section">
+                        <button
+                          className="expand-toggle-btn"
+                          onClick={() => setShowBillTextSection(!showBillTextSection)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            marginBottom: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <span style={{
+                            transform: showBillTextSection ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            fontSize: '12px'
+                          }}>
+                            ▶
+                          </span>
+                          {showBillTextSection ? 'Hide' : 'Show'} Bill Text
+                        </button>
+
+                        {showBillTextSection && (
+                          <H2SectionRenderer
+                            analysisText={`## Show Bill Text\n\n${analyzeWholeBill ?
+                              `**Bill Title:** ${getBillTitle()}\n\n${(billSource === 'upload' ? extractedPdfText : extractedBillData?.text) || 'No bill text available.'}` :
+                              getSelectedSectionsText() || 'No sections selected.'
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </TTSProvider>
               )}
               
-              {/* Bill Text Display Section with TTS */}
-              {extractedBillData?.text && (
-                <div className="bill-text-section" style={{ marginTop: '2rem' }}>
-                  <div className="bill-text-header">
-                    <h3>📄 Bill Text</h3>
-                    <EnhancedVoiceOutput 
-                      text={`Bill Text for ${extractedBillData.title || 'Selected Bill'}. ${extractedBillData.text.substring(0, 200)}...`}
-                      buttonStyle="compact"
-                      showLabel={false}
-                      useGoogleTTS={true}
-                      ttsApiUrl={TTS_CONFIG.apiUrl}
-                      defaultVoice={getVoiceForContext('general').voice}
-                      context="general"
-                      onSpeechStart={() => console.log('Started reading bill text')}
-                      onSpeechEnd={() => console.log('Finished reading bill text')}
-                      onSpeechError={(error) => console.error('Bill text speech error:', error)}
-                    />
-                  </div>
-                  <div className="bill-text-content">
-                    <p className="bill-text-preview">
-                      {extractedBillData.text.length > 500 
-                        ? `${extractedBillData.text.substring(0, 500)}...`
-                        : extractedBillData.text
-                      }
-                    </p>
-                    {extractedBillData.text.length > 500 && (
-                      <button 
-                        className="expand-bill-text-btn"
-                        onClick={() => setShowFullBillText(!showFullBillText)}
-                      >
-                        {showFullBillText ? 'Show Less' : 'Show Full Bill Text'}
-                      </button>
-                    )}
-                    {showFullBillText && (
-                      <div className="full-bill-text">
-                        <ReactMarkdown 
-                          rehypePlugins={[rehypeRaw]} 
-                          className="markdown-renderer bill-text-markdown"
-                        >
-                          {extractedBillData.text}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
               
               {/* Action buttons at the bottom - only show when everything is ready */}
               {analysisContentReady && (
