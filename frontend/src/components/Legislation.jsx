@@ -1312,29 +1312,28 @@ const Legislation = ({ user }) => {
         // Step 1: Extract bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
         setProgressStep(1);
-        
+
         const billData = await extractRecommendedBillText(selectedBill);
-        
-        // Step 2: Analyze legislation
+
+        // Step 2: Analyze legislation using selected sections
         setProcessingStage('Analyzing legislation with AI...');
         setProgressStep(2);
-        
-        const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
+
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            type: selectedBill.type,
-            number: selectedBill.number,
-            congress: selectedBill.congress || 119,
-            model: selectedModel
+            text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections
           }),
         });
-        
+
         if (!response.ok) {
           const errorData = await response.text();
-          
+
           // Handle specific error cases
           if (response.status === 404) {
             throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
@@ -1346,13 +1345,13 @@ const Legislation = ({ user }) => {
             throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
           }
         }
-        
+
         const data = await response.json();
-        
+
         // Step 3: Finalizing
         setProcessingStage('Finalizing analysis and grades...');
         setProgressStep(3);
-        
+
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
         
@@ -3357,52 +3356,6 @@ const Legislation = ({ user }) => {
                 </TTSProvider>
               )}
               
-              {/* Bill Text Display Section with TTS */}
-              {extractedBillData?.text && (
-                <div className="bill-text-section" style={{ marginTop: '2rem' }}>
-                  <div className="bill-text-header">
-                    <h3>📄 Bill Text</h3>
-                    <EnhancedVoiceOutput 
-                      text={`Bill Text for ${extractedBillData.title || 'Selected Bill'}. ${extractedBillData.text.substring(0, 200)}...`}
-                      buttonStyle="compact"
-                      showLabel={false}
-                      useGoogleTTS={true}
-                      ttsApiUrl={TTS_CONFIG.apiUrl}
-                      defaultVoice={getVoiceForContext('general').voice}
-                      context="general"
-                      onSpeechStart={() => console.log('Started reading bill text')}
-                      onSpeechEnd={() => console.log('Finished reading bill text')}
-                      onSpeechError={(error) => console.error('Bill text speech error:', error)}
-                    />
-                  </div>
-                  <div className="bill-text-content">
-                    <p className="bill-text-preview">
-                      {extractedBillData.text.length > 500 
-                        ? `${extractedBillData.text.substring(0, 500)}...`
-                        : extractedBillData.text
-                      }
-                    </p>
-                    {extractedBillData.text.length > 500 && (
-                      <button 
-                        className="expand-bill-text-btn"
-                        onClick={() => setShowFullBillText(!showFullBillText)}
-                      >
-                        {showFullBillText ? 'Show Less' : 'Show Full Bill Text'}
-                      </button>
-                    )}
-                    {showFullBillText && (
-                      <div className="full-bill-text">
-                        <ReactMarkdown 
-                          rehypePlugins={[rehypeRaw]} 
-                          className="markdown-renderer bill-text-markdown"
-                        >
-                          {extractedBillData.text}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
               
               {/* Action buttons at the bottom - only show when everything is ready */}
               {analysisContentReady && (
