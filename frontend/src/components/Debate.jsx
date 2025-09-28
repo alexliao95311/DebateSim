@@ -2004,7 +2004,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                           </button>
                         </div>
                         <p style={{ color: '#fff' }}>
-                          In LD, the Affirmative always starts: AC → NC → 1AR → NR → 2AR. No order selection is needed.
+                          In LD, the Affirmative always starts: AC → NC → 1AR → NR → 2AR.
                         </p>
 
                         <div className="confirm-section">
