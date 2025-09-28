@@ -2843,12 +2843,17 @@
 }
 
 .modal-button-group button {
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.5rem !important;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
+  height: auto !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .modal-button-group .share-button {
@@ -2873,6 +2878,9 @@
   background-color: #4a90e2;
   color: white;
   font-size: 0.95rem;
+  padding: 0.75rem 1.5rem !important;
+  height: auto !important;
+  min-height: 44px !important;
 }
 
 .modal-button-group .close-button:hover {
@@ -3732,7 +3740,10 @@ h3 {
 }
 
 /* Dark mode overrides for search bar and tip */
-.search-bar {
+.search-bar,
+input.search-bar,
+.search-bar:active,
+.search-bar:hover {
   background: rgba(30, 41, 59, 0.6) !important;
   color: #f8fafc !important;
   border: 2px solid rgba(74, 144, 226, 0.3) !important;
@@ -3743,7 +3754,10 @@ h3 {
   color: #94a3b8 !important;
 }
 
-.search-bar:focus {
+.search-bar:focus,
+input.search-bar:focus {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #f8fafc !important;
   border-color: #4a90e2 !important;
   box-shadow: 0 0 20px rgba(74, 144, 226, 0.3) !important;
 }
@@ -5518,6 +5532,7 @@ div[style*="backgroundColor: #d"] * {
 .section-label {
   display: flex;
   align-items: center;
+  justify-content: center;
   color: #f8fafc !important;
   font-size: 1.1rem;
   font-weight: 600;

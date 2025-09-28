@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Volume2, Play, Edit2, Check, X, History } from 'lucide-react';
+import { User, Volume2, Play, Edit2, Check, X, History } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer.jsx';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -235,49 +235,26 @@ const Settings = ({ user, onLogout }) => {
   return (
     <div className="settings-container">
       {/* Header matching Home page style */}
-      <header className="settings-header">
-        <div className="settings-header-content">
-          <div className="settings-header-left">
-            <button
-              className="settings-back-button"
-              onClick={() => navigate('/')}
-              title="Go to Home"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '8px 16px',
-                backgroundColor: 'transparent',
-                border: '2px solid #374151',
-                borderRadius: '8px',
-                color: '#f1f5f9',
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#374151';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <ArrowLeft size={18} />
-              <span>Back</span>
-            </button>
+      <header className="home-header">
+        <div className="home-header-content">
+          <div className="home-header-left">
+            {/* Empty space for alignment */}
           </div>
 
-          <div className="settings-header-center" style={{
+          <div className="home-header-center" style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flex: 1
-          }}>
-            <h1 className="settings-site-title">Settings</h1>
+            flex: 1,
+            cursor: 'pointer'
+          }}
+          onClick={() => navigate('/')}
+          >
+            <h1 className="home-site-title">Settings</h1>
           </div>
 
-          <div className="settings-header-right">
-            <UserDropdown user={user} onLogout={onLogout} className="settings-user-dropdown" />
+          <div className="home-header-right">
+            <UserDropdown user={user} onLogout={onLogout} className="home-user-dropdown" />
           </div>
         </div>
       </header>

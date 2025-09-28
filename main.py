@@ -911,25 +911,21 @@ Assess how well the bill addresses its stated problems and achieves intended obj
 ## Policy Analysis
 ### Potential Benefits
 - Identify 2-3 positive aspects or benefits this bill could provide
-- Support each point with specific text evidence from the available sections
+- Explain each point based on the bill's provisions and anticipated outcomes
 
 ### Potential Concerns
 - Identify 2-3 potential problems, challenges, or negative consequences
-- Support each point with specific text evidence from the available sections
+- Explain each point based on potential risks and implementation challenges
 
 ### Implementation Considerations
 - What challenges might arise in implementing this legislation?
 - Are there any unclear provisions or potential ambiguities?
 - Consider authorization levels, effective dates, and enforcement mechanisms if mentioned
 
-## Evidence from Bill Text
-For each major point you make, include direct quotes from the bill sections to support your analysis. Format quotes as:
-> "Direct quote from the bill"
-
 ## Overall Assessment
 Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.
 
-Please ensure your analysis is objective, evidence-based, and draws directly from the bill text sections provided.
+Please ensure your analysis is objective, comprehensive, and provides practical insights about the legislation's likely impact and effectiveness.
 """
 
     try:

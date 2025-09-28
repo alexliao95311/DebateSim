@@ -929,19 +929,33 @@ const Legislation = ({ user }) => {
     return finalSections;
   };
 
-  // Get text from selected sections
+  // Get bill title for context
+  const getBillTitle = () => {
+    if (billSource === 'recommended' || billSource === 'link') {
+      return selectedBill?.title || 'Unknown Bill';
+    } else {
+      return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
+    }
+  };
+
+  // Get text from selected sections with bill context
   const getSelectedSectionsText = () => {
+    const billTitle = getBillTitle();
+    const billHeader = `BILL TITLE: ${billTitle}\n\n`;
+
     if (selectedSections.length === 0) {
-      return extractedPdfText; // Fallback to full text if no sections selected
+      return billHeader + extractedPdfText; // Fallback to full text if no sections selected
     }
 
     const selectedSectionObjects = billSections.filter(section =>
       selectedSections.includes(section.id)
     );
 
-    return selectedSectionObjects
+    const sectionsText = selectedSectionObjects
       .map(section => section.content)
       .join('\n\n---\n\n');
+
+    return billHeader + sectionsText;
   };
 
   // Filter sections based on search term
@@ -1084,6 +1098,7 @@ const Legislation = ({ user }) => {
     // Reset all staged states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
     
@@ -1213,7 +1228,7 @@ const Legislation = ({ user }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: analyzeWholeBill ? extractedPdfText : getSelectedSectionsText(),
+              text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedPdfText}` : getSelectedSectionsText(),
               model: selectedModel,
               sections: analyzeWholeBill ? null : selectedSections
             }),
@@ -1461,6 +1476,7 @@ const Legislation = ({ user }) => {
     // Reset staged loading states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
     
@@ -1873,6 +1889,7 @@ const Legislation = ({ user }) => {
   const [showGradingSection, setShowGradingSection] = useState(false);
   const [showAnalysisText, setShowAnalysisText] = useState(false);
   const [showFullBillText, setShowFullBillText] = useState(false);
+  const [showBillTextSection, setShowBillTextSection] = useState(false);
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
@@ -2002,7 +2019,7 @@ const Legislation = ({ user }) => {
                       color: "white" 
                     }}
                   >
-                    ❌ Cancel
+                    ❌
                   </button>
                 </div>
               </div>
@@ -2461,7 +2478,7 @@ const Legislation = ({ user }) => {
                         }}
                         title="Clear search"
                       >
-                        ✕
+                        ❌
                       </button>
                     )}
                   </div>
@@ -2716,7 +2733,7 @@ const Legislation = ({ user }) => {
                                         setSelectedSections(newSelected);
                                       }}
                                     >
-                                      Select All {sectionSearchTerm ? 'Visible' : ''}
+                                      Select All
                                     </button>
                                     <button
                                       className="select-none-btn"
@@ -2730,7 +2747,7 @@ const Legislation = ({ user }) => {
                                         }
                                       }}
                                     >
-                                      Deselect {sectionSearchTerm ? 'Visible' : 'All'}
+                                      Deselect All
                                     </button>
                                   </div>
                                 </div>
@@ -3088,9 +3105,49 @@ const Legislation = ({ user }) => {
                 <TTSProvider analysisText={analysisResult}>
                   <div style={{ marginTop: '2rem' }}>
                     {/* Custom H2 Section Component */}
-                    <H2SectionRenderer 
+                    <H2SectionRenderer
                       analysisText={`## Detailed Analysis\n\n${analysisResult}`}
                     />
+
+                    {/* Show Bill Text Section */}
+                    <div style={{ marginTop: '3rem' }}>
+                      <div className="expandable-section">
+                        <button
+                          className="expand-toggle-btn"
+                          onClick={() => setShowBillTextSection(!showBillTextSection)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            marginBottom: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <span style={{
+                            transform: showBillTextSection ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            fontSize: '12px'
+                          }}>
+                            ▶
+                          </span>
+                          {showBillTextSection ? 'Hide' : 'Show'} Bill Text
+                        </button>
+
+                        {showBillTextSection && (
+                          <H2SectionRenderer
+                            analysisText={`## Show Bill Text\n\n${analyzeWholeBill ?
+                              `**Bill Title:** ${getBillTitle()}\n\n${extractedPdfText || 'No bill text available.'}` :
+                              getSelectedSectionsText() || 'No sections selected.'
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </TTSProvider>
               )}
