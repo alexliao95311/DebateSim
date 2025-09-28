@@ -209,8 +209,7 @@ function Debate() {
   const [pfOrderSelected, setPfOrderSelected] = useState(false);
   const [showPfInfo, setShowPfInfo] = useState(false);
 
-  // Lincoln-Douglas speaking order state
-  const [ldSpeakingOrder, setLdSpeakingOrder] = useState("aff-first");
+  // Lincoln-Douglas info/confirm state (order selection removed; Aff always starts)
   const [ldOrderSelected, setLdOrderSelected] = useState(false);
   const [showLdInfo, setShowLdInfo] = useState(false);
 
@@ -1700,7 +1699,12 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       return;
     }
     setUserVsUserSetup(prev => ({ ...prev, confirmed: true }));
-    setUserVsUserSide(userVsUserSetup.firstSpeaker);
+    // In LD, Affirmative (Pro) always starts; otherwise use selected first speaker
+    if (debateFormat === 'lincoln-douglas') {
+      setUserVsUserSide('pro');
+    } else {
+      setUserVsUserSide(userVsUserSetup.firstSpeaker);
+    }
     setError("");
   };
 
