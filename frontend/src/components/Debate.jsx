@@ -1992,46 +1992,31 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             </div>
           )}
           {debateFormat === "lincoln-douglas" && actualMode === "ai-vs-ai" && !ldOrderSelected && (
-            <div className="ai-vs-user-setup">
-              <div className="setup-header">
-                <h3>Lincoln-Douglas Debate Setup</h3>
-                <button
-                  className="info-button"
-                  onClick={() => setShowLdInfo(true)}
-                  title="More information about Lincoln-Douglas debate format"
-                >
-                  ?
-                </button>
-              </div>
-              <p style={{ color: '#fff' }}>Choose the speaking sides for all 5 speeches</p>
-              <div className="order-selection">
-                <label>Speaking Sides</label>
-                <div className="order-buttons">
-                  <button
-                    className={`order-button ${ldSpeakingOrder === 'aff-first' ? 'selected' : ''}`}
-                    onClick={() => setLdSpeakingOrder('aff-first')}
-                  >
-                    AFFIRMATIVE begins (starts with AC)
-                  </button>
-                  <button
-                    className={`order-button ${ldSpeakingOrder === 'neg-first' ? 'selected' : ''}`}
-                    onClick={() => setLdSpeakingOrder('neg-first')}
-                  >
-                    NEGATIVE begins (starts with NC)
-                  </button>
-                </div>
-              </div>
+                      <div className="ai-vs-user-setup">
+                        <div className="setup-header">
+                          <h3>Lincoln-Douglas Debate Setup</h3>
+                          <button
+                            className="info-button"
+                            onClick={() => setShowLdInfo(true)}
+                            title="More information about Lincoln-Douglas debate format"
+                          >
+                            ?
+                          </button>
+                        </div>
+                        <p style={{ color: '#fff' }}>
+                          In LD, the Affirmative always starts: AC → NC → 1AR → NR → 2AR. No order selection is needed.
+                        </p>
 
-              <div className="confirm-section">
-                <button
-                  className="confirm-button"
-                  onClick={() => setLdOrderSelected(true)}
-                >
-                  Start Lincoln-Douglas Debate
-                </button>
-              </div>
-            </div>
-          )}
+                        <div className="confirm-section">
+                          <button
+                            className="confirm-button"
+                            onClick={() => setLdOrderSelected(true)}
+                          >
+                            Start Lincoln-Douglas Debate
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
           {/* Lincoln-Douglas Info Popup */}
           {showLdInfo && (
@@ -2047,6 +2032,9 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </button>
                 </div>
                 <div className="popup-body">
+                  <p style={{ color: 'white', marginBottom: '0.75rem' }}>
+                    <strong>Speaking Order:</strong> Affirmative always speaks first (AC → NC → 1AR → NR → 2AR).
+                  </p>
                   <h4>Structure (5 Speeches):</h4>
                   <div className="round-structure">
                     <div className="round-item">
@@ -2135,7 +2123,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {!userSide && (
                 <div className="ai-vs-user-setup">
                   <h3>Setup Your Debate</h3>
-                  <p style={{ color: '#fff' }}>Choose your SIDE and SPEAKING ORDER</p>
+                  <p style={{ color: '#fff' }}>
+                    {debateFormat === 'lincoln-douglas'
+                      ? 'Choose your SIDE. In LD, the Affirmative (Pro) always starts.'
+                      : 'Choose your SIDE and SPEAKING ORDER'}
+                  </p>
                   <div className="side-selection-cards">
                     <div
                       className={`side-card ${selectedSide === 'pro' ? 'selected' : ''}`}
@@ -2160,23 +2152,25 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     </div>
                   </div>
 
-                  <div className="order-selection">
-                    <label>Speaking Order</label>
-                    <div className="order-buttons">
-                      <button
-                        className={`order-button ${firstSide === 'pro' ? 'selected' : ''}`}
-                        onClick={() => setFirstSide('pro')}
-                      >
-                        PRO speaks first
-                      </button>
-                      <button
-                        className={`order-button ${firstSide === 'con' ? 'selected' : ''}`}
-                        onClick={() => setFirstSide('con')}
-                      >
-                        CON speaks first
-                      </button>
+                  {debateFormat !== 'lincoln-douglas' && (
+                    <div className="order-selection">
+                      <label>Speaking Order</label>
+                      <div className="order-buttons">
+                        <button
+                          className={`order-button ${firstSide === 'pro' ? 'selected' : ''}`}
+                          onClick={() => setFirstSide('pro')}
+                        >
+                          PRO speaks first
+                        </button>
+                        <button
+                          className={`order-button ${firstSide === 'con' ? 'selected' : ''}`}
+                          onClick={() => setFirstSide('con')}
+                        >
+                          CON speaks first
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="confirm-section">
                     <button
@@ -2303,23 +2297,27 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     </div>
                   </div>
 
-                  <div className="order-selection">
-                    <label>Who speaks first?</label>
-                    <div className="order-buttons">
-                      <button
-                        className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
-                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
-                      >
-                        {userVsUserSetup.proUser || 'Pro'} speaks first
-                      </button>
-                      <button
-                        className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
-                        onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
-                      >
-                        {userVsUserSetup.conUser || 'Con'} speaks first
-                      </button>
+                  {debateFormat === 'lincoln-douglas' ? (
+                    <p style={{ color: '#fff' }}>In LD, the Affirmative (Pro) always starts.</p>
+                  ) : (
+                    <div className="order-selection">
+                      <label>Who speaks first?</label>
+                      <div className="order-buttons">
+                        <button
+                          className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
+                          onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
+                        >
+                          {userVsUserSetup.proUser || 'Pro'} speaks first
+                        </button>
+                        <button
+                          className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
+                          onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
+                        >
+                          {userVsUserSetup.conUser || 'Con'} speaks first
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="debate-model-selection" style={{ marginBottom: "1.5rem" }}>
                     <label className="debate-model-label">

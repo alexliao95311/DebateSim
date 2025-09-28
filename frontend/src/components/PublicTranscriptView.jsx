@@ -465,8 +465,23 @@ function PublicTranscriptView() {
         } else {
           // Handle regular debate speeches
           const sameSpeekerCount = speeches.filter(s => s.speaker === speaker && !s.isJudge).length;
-          const roundNum = sameSpeekerCount + 1;
-          let title = `${speaker} - Round ${roundNum}`;
+          const globalIndex = speechIndex + 1;
+          
+          // Check if this is an LD debate
+          const isLD = transcript && ((transcript.debateFormat && /lincoln-douglas/i.test(transcript.debateFormat)) || (transcript.mode && /lincoln-douglas/i.test(transcript.mode)));
+          
+          let title, roundNum;
+          if (isLD) {
+            // LD has 5 speeches: AC, NC, 1AR, NR, 2AR
+            const speechTypes = ['AC', 'NC', '1AR', 'NR', '2AR'];
+            const speechType = (globalIndex >= 1 && globalIndex <= speechTypes.length) ? speechTypes[globalIndex - 1] : `Speech ${globalIndex}`;
+            title = `${speaker} - ${speechType}`;
+            roundNum = globalIndex;
+          } else {
+            roundNum = sameSpeekerCount + 1;
+            title = `${speaker} - Round ${roundNum}`;
+          }
+          
           speeches.push({
             id: `speech-${speechIndex}`,
             title: title,
