@@ -1101,8 +1101,27 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
             clean_text = re.sub(r'&amp;', '&', clean_text)
             clean_text = re.sub(r'&quot;', '"', clean_text)
             clean_text = re.sub(r'&apos;', "'", clean_text)
-            # Remove excessive whitespace
-            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            # Normalize line endings and clean up whitespace more carefully
+            clean_text = re.sub(r'\r\n', '\n', clean_text)  # Normalize line endings
+            clean_text = re.sub(r'[ \t]+', ' ', clean_text)  # Multiple spaces/tabs to single space
+
+            # Preserve some structure by keeping line breaks around section headers
+            # Look for section patterns and ensure they start on new lines
+            section_patterns = [
+                r'(SEC(?:TION)?\.?\s+\d+[A-Z]?\.)',
+                r'(TITLE\s+[IVX]+)',
+                r'(CHAPTER\s+\d+)',
+                r'(PART\s+[A-Z]+)',
+                r'(SUBTITLE\s+[A-Z]+)'
+            ]
+
+            for pattern in section_patterns:
+                # Ensure section headers start on new lines
+                clean_text = re.sub(f'(?<!^)(?<!\n){pattern}', r'\n\1', clean_text, flags=re.IGNORECASE)
+
+            # Clean up excessive newlines but keep some structure
+            clean_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', clean_text)  # Multiple newlines to double
+            clean_text = clean_text.strip()
             # Remove document metadata that's not useful for analysis
             clean_text = re.sub(r'\[Congressional Bills.*?\]', '', clean_text)
             clean_text = re.sub(r'\[From the U\.S\. Government Publishing Office\]', '', clean_text)
