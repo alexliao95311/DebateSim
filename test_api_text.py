@@ -20,8 +20,8 @@ async def test_bill_text_fetch():
         return
 
     bill_type = "hr"  # Try using the short form like the backend might
-    bill_number = "1"
-    congress = 119
+    bill_number = "1319"
+    congress = 117
 
     try:
         async with aiohttp.ClientSession() as session:
