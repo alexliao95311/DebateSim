@@ -798,12 +798,12 @@ const Legislation = ({ user }) => {
     return data.text;
   };
 
-  // Extract sections from PDF text
+  // Extract sections from text using TOC-first approach
   const extractSectionsFromText = (text) => {
-    console.log('🔧 extractSectionsFromText called');
+    console.log('🔧 TOC-first extractSectionsFromText called');
     console.log('📊 Input text type:', typeof text);
     console.log('📊 Input text length:', text?.length || 0);
-    console.log('📊 Input text preview:', typeof text === 'string' ? text.substring(0, 100) : JSON.stringify(text));
+    console.log('📊 Input text preview:', text.substring(0, 100));
 
     if (!text) {
       console.log('⚠️ No text provided to extractSectionsFromText');
@@ -815,260 +815,229 @@ const Legislation = ({ user }) => {
       return [];
     }
 
-    const sections = [];
+    console.log('🚀 Starting TOC-first section extraction...');
+    console.log('📊 Input text length:', text.length);
 
-    console.log('🔍 Starting section extraction...');
-    console.log('📄 Text sample (first 500 chars):', text.substring(0, 500));
+    // Step 1: Find and extract table of contents sections
+    const tocSections = extractTOCSections(text);
+    console.log('📋 Found', tocSections.length, 'sections in table of contents');
 
-    // For Congress API text that comes as continuous blocks, use regex-based splitting
-    const sectionPatterns = [
-      /(?:SEC(?:TION)?\.?\s+(\d+[A-Z]?)(?:\.|:|\s))/gi,  // SEC. 1, SECTION 2A, etc.
-      /(?:SECTION\s+(\d+[A-Z]?)(?:\.|:|\s))/gi,         // SECTION 1
-      /(?:§\s*(\d+[A-Z]?)(?:\.|:|\s))/gi,               // § 1
-      /(?:TITLE\s+([IVX]+|\d+)(?:\.|:|\s))/gi,          // TITLE I, TITLE 1
-      /(?:CHAPTER\s+(\d+[A-Z]?)(?:\.|:|\s))/gi,         // CHAPTER 1
-      /(?:PART\s+([IVX]+|\d+)(?:\.|:|\s))/gi,           // PART I, PART 1
-      /(?:ARTICLE\s+([IVX]+|\d+)(?:\.|:|\s))/gi,        // ARTICLE I
-      /(?:SUBTITLE\s+([A-Z]|\d+)(?:\.|:|\s))/gi,        // SUBTITLE A
-      /(?:SUBCHAPTER\s+([A-Z]|\d+)(?:\.|:|\s))/gi,      // SUBCHAPTER A
-    ];
-
-    // Find section headers - handle both line-based (PDF) and continuous (API) text
-    console.log('🔍 Text format analysis:', {
-      hasNewlines: text.includes('\n'),
-      lineCount: text.split('\n').length,
-      firstChars: text.substring(0, 200)
-    });
-
-    let headerPattern;
-    let isLineBased = text.includes('\n') && text.split('\n').length > 50;
-
-    if (isLineBased) {
-      // This looks like line-based text (PDF), use the original pattern
-      console.log('📄 Using line-based pattern for PDF text');
-      // Match section headers at the start of lines
-      headerPattern = /(?:^|\n)\s*(SEC(?:TION)?\.?\s+\d+[A-Z]?\.?\s*[^\n]*)/gim;
-    } else {
-      // This looks like continuous text (Congress API), use a pattern that doesn't rely on newlines
-      console.log('🌐 Using continuous text pattern for Congress API');
-      // Match section headers - we'll filter out TOC entries later based on content
-      headerPattern = /\b(SEC(?:TION)?\.?\s+\d+[A-Z]?\.?\s*[^.]*?\.)/gim;
-    }
-
-    const matches = [];
-    let match;
-    while ((match = headerPattern.exec(text)) !== null) {
-      // For line-based text, match[1] contains the captured group
-      // For continuous text, match[1] also contains the captured group
-      const headerText = match[1] ? match[1].trim() : match[0].trim();
-
-      // For line-based text, we need to find the actual start of the header
-      let actualIndex = match.index;
-      if (isLineBased && match[1]) {
-        actualIndex = match.index + match[0].indexOf(match[1]);
-      }
-
-      matches.push({
-        index: actualIndex,
-        headerText: headerText,
-        fullMatch: match[0]
-      });
-    }
-
-    console.log('🎯 Found', matches.length, 'potential section markers');
-    console.log('📍 Section markers:', matches.slice(0, 10).map(m => ({ index: m.index, text: m.headerText })));
-
-    if (matches.length === 0) {
-      console.log('⚠️ No section markers found, creating single section');
-      sections.push({
+    if (tocSections.length === 0) {
+      console.log('⚠️ No TOC found, falling back to full text as single section');
+      return [{
         id: 'full-bill',
         number: 'Full Bill',
-        title: 'Full Bill',
+        title: 'Full Bill Text',
         type: 'full',
-        content: text.substring(0, 10000) + '...' // Show first 10k chars
-      });
-    } else {
-      // Create sections based on the matches
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        const nextMatch = matches[i + 1];
+        content: text.substring(0, 10000) + (text.length > 10000 ? '...' : '')
+      }];
+    }
 
-        // Extract section number and title from header
-        const numberMatch = match.headerText.match(/(\d+[A-Z]?)/i);
-        const sectionNumber = numberMatch ? numberMatch[1] : (i + 1).toString();
+    // Step 2: Find each TOC section in the full document
+    const sections = [];
+    console.log('🔍 Searching for each TOC section in the full document...');
 
-        // All sections are 'section' type for now
-        const sectionType = 'section';
+    for (let i = 0; i < tocSections.length; i++) {
+      const tocSection = tocSections[i];
+      const sectionContent = findSectionInText(text, tocSection, tocSections);
 
-        // Get content from current section header to next section header (or end of text)
-        const startIndex = match.index;
-        const endIndex = nextMatch ? nextMatch.index : text.length;
-        let sectionContent = text.substring(startIndex, endIndex).trim();
-
-        // For very long sections (likely from continuous Congress API text),
-        // limit to a reasonable length to avoid memory issues
-        if (sectionContent.length > 10000) {
-          sectionContent = sectionContent.substring(0, 10000) + '...';
-        }
-
-        console.log('📏 Content extraction debug:', {
-          sectionNumber,
-          startIndex,
-          endIndex,
-          contentLength: sectionContent.length,
-          contentPreview: sectionContent.substring(0, 300),
-          rawSlice: text.substring(startIndex, Math.min(startIndex + 500, text.length))
-        });
-
-        // Use the header text directly as the title
-        let title = match.headerText.trim();
-
-        // Clean up the title - remove extra spaces and formatting
-        title = title.replace(/\s+/g, ' ').trim();
-
-        console.log('📝 Section title extracted:', {
-          sectionNumber,
-          title,
-          headerText: match.headerText
-        });
-
-        // Skip table of contents sections (keep this simple and targeted)
-        if (/table\s+of\s+contents/i.test(title)) {
-          console.log('📋 Skipping table of contents section:', title);
-          continue;
-        }
-
-        // Smart TOC filtering based on position, content length, and content type
-        const isLikelyTOCEntry = (() => {
-          // 1. TOC entries appear early in the document (first 20% of text)
-          const documentPosition = match.index / text.length;
-          const isEarlyInDocument = documentPosition < 0.2;
-
-          // 2. TOC entries are very short (just the header, no real content)
-          const contentAfterHeader = sectionContent.substring(title.length).trim();
-          const isVeryShort = contentAfterHeader.length < 100;
-
-          // 3. TOC entries contain many section references but no legislative language
-          const sectionRefs = (contentAfterHeader.match(/Sec\.\s+\d+/g) || []).length;
-          const hasLegislativeKeywords = /\([a-z]\)|amended|inserted|striking|subsection|paragraph|enacted|whereas|provided/i.test(contentAfterHeader);
-
-          // 4. TOC entries often have specific patterns
-          const isTOCPattern = /^(Sec\.\s+\d+|\s*$)/i.test(contentAfterHeader);
-
-          console.log('🔍 TOC analysis for:', title, {
-            documentPosition: Math.round(documentPosition * 100) + '%',
-            isEarlyInDocument,
-            contentAfterHeaderLength: contentAfterHeader.length,
-            isVeryShort,
-            sectionRefs,
-            hasLegislativeKeywords,
-            isTOCPattern,
-            contentPreview: contentAfterHeader.substring(0, 50) + '...'
-          });
-
-          // It's likely a TOC entry if:
-          // - It's early in the document AND very short
-          // - OR it has many section refs but no legislative content
-          // - OR it matches TOC patterns
-          return (isEarlyInDocument && isVeryShort) ||
-                 (sectionRefs >= 2 && !hasLegislativeKeywords) ||
-                 (isVeryShort && isTOCPattern);
-        })();
-
-        if (isLikelyTOCEntry) {
-          console.log('📋 Skipping likely TOC entry:', title);
-          continue;
-        }
-
-        // Note: We now include all sections regardless of length since they contain full content
-
-        // Create the section object with detailed debugging
-        const sectionObject = {
-          id: `section-${sections.length}`,
-          number: sectionNumber,
-          title: title,
-          type: sectionType,
+      if (sectionContent) {
+        const section = {
+          id: `section-${i}`,
+          number: tocSection.number,
+          title: tocSection.title,
+          type: 'section',
           content: sectionContent
         };
 
-        console.log('🆕 Created section:', {
-          number: sectionNumber,
-          type: sectionType,
-          title: title,
-          titleLength: title.length,
-          contentLength: sectionContent.length,
-          contentPreview: sectionContent.substring(0, 150) + '...'
+        console.log('✅ Found section:', {
+          number: section.number,
+          title: section.title.substring(0, 60) + '...',
+          contentLength: section.content.length
         });
 
-        console.log('🔍 Section object being stored:', {
-          id: sectionObject.id,
-          number: sectionObject.number,
-          title: sectionObject.title,
-          type: sectionObject.type,
-          contentLength: sectionObject.content.length,
-          contentFirstChars: sectionObject.content.substring(0, 100),
-          contentLastChars: sectionObject.content.slice(-100)
-        });
-
-        // Check for duplicates before adding (avoid adding same section twice)
-        const isDuplicate = sections.some(existing =>
-          existing.number === sectionNumber
-        );
-
-        if (isDuplicate) {
-          console.log('🔄 Skipping duplicate section:', title);
-          continue;
-        }
-
-        sections.push(sectionObject);
-      }
-    }
-
-    // If no sections were created (all were skipped), create a preamble
-    if (sections.length === 0) {
-      sections.push({
-        id: 'preamble',
-        number: 'Preamble',
-        title: 'Preamble',
-        type: 'preamble',
-        content: text.substring(0, 5000) + '...'
-      });
-    }
-
-    console.log('📊 Initial extraction complete. Found', sections.length, 'sections');
-
-    // Post-processing: if we have very few sections, we might have been too aggressive
-    // In that case, keep only the sections with substantial content (> 500 chars)
-    let finalSections = sections;
-
-    if (sections.length > 0) {
-      // Sort sections by content length to analyze the distribution
-      const sortedByLength = [...sections].sort((a, b) => b.content.length - a.content.length);
-      console.log('📊 Section length analysis:', {
-        total: sections.length,
-        longest: sortedByLength[0]?.content.length || 0,
-        shortest: sortedByLength[sortedByLength.length - 1]?.content.length || 0,
-        avgLength: Math.round(sections.reduce((sum, s) => sum + s.content.length, 0) / sections.length),
-        substantialSections: sections.filter(s => s.content.length > 500).length
-      });
-
-      // If we have sections but most are very short, keep only substantial ones
-      const substantialSections = sections.filter(s => s.content.length > 500);
-
-      if (substantialSections.length > 0 && substantialSections.length < sections.length) {
-        console.log('🔧 Filtering to keep only substantial sections:', substantialSections.length, 'out of', sections.length);
-        finalSections = substantialSections;
+        sections.push(section);
+      } else {
+        console.log('❌ Could not find content for section:', tocSection.number, tocSection.title);
       }
     }
 
     console.log('✅ Section extraction completed!');
-    console.log('📊 Final sections count:', finalSections.length);
-    console.log('📋 Section types found:', finalSections.map(s => s.type).join(', '));
-    console.log('📝 Section titles:', finalSections.map(s => s.title.substring(0, 50) + '...'));
-    console.log('📏 Content lengths:', finalSections.map(s => s.content.length));
+    console.log('📊 Final sections count:', sections.length, 'out of', tocSections.length, 'TOC entries');
 
-    return finalSections;
+    if (sections.length > 0) {
+      console.log('📏 Content length range:', {
+        min: Math.min(...sections.map(s => s.content.length)),
+        max: Math.max(...sections.map(s => s.content.length)),
+        avg: Math.round(sections.reduce((sum, s) => sum + s.content.length, 0) / sections.length)
+      });
+    }
+
+    return sections;
   };
+
+  // Extract section list from table of contents
+  function extractTOCSections(text) {
+    console.log('📋 Extracting sections from table of contents...');
+
+    // Find the table of contents section
+    const tocStart = text.search(/TABLE\s+OF\s+CONTENTS|CONTENTS/i);
+    if (tocStart === -1) {
+      console.log('❌ No table of contents found');
+      return [];
+    }
+
+    // Find where the actual bill content starts (after TOC)
+    // Look for the first substantial section implementation
+    const sectionImplPattern = /SEC\.\s+(\d+[A-Z]?)\.\s+[A-Z][A-Z\s\-,()&.]+\.\s*\([a-z]\)/gi;
+    const sectionImpl = sectionImplPattern.exec(text.substring(tocStart + 1000));
+
+    let tocEnd = text.length;
+    if (sectionImpl) {
+      tocEnd = tocStart + 1000 + sectionImpl.index;
+      console.log('📋 Found bill implementation start at position:', tocEnd);
+    } else {
+      // Fallback to original markers
+      const billStartMarkers = [
+        /SEC\.\s+1001\.\s+[A-Z]/i,
+        /SEC\.\s+1\.\s+[A-Z]/i,
+        /TITLE\s+[IVX]+\s*--.*SEC\.\s+\d+/i
+      ];
+
+      for (const marker of billStartMarkers) {
+        const match = text.substring(tocStart + 100).search(marker);
+        if (match !== -1) {
+          const actualPos = tocStart + 100 + match;
+          if (actualPos < tocEnd) {
+            tocEnd = actualPos;
+          }
+        }
+      }
+    }
+
+    const tocText = text.substring(tocStart, tocEnd);
+    console.log('📋 TOC text length:', tocText.length);
+
+    // Extract section entries from TOC
+    const sectionPattern = /Sec\.\s+(\d+[A-Z]?)\.\s+(.+?)(?=\n|Sec\.\s+\d+|\.|\s+\d+\s*$|$)/gi;
+    const sections = [];
+    let match;
+
+    while ((match = sectionPattern.exec(tocText)) !== null) {
+      const sectionNumber = match[1].trim();
+      let sectionTitle = match[2].trim();
+
+      // Clean up the title
+      sectionTitle = sectionTitle.replace(/\s+/g, ' ');
+      sectionTitle = sectionTitle.replace(/\.$/, ''); // Remove trailing period
+
+      // Skip if this looks like a page number or other non-section content
+      if (sectionTitle.length < 5 || /^\d+$/.test(sectionTitle)) {
+        continue;
+      }
+
+      const section = {
+        number: sectionNumber,
+        title: `SEC. ${sectionNumber}. ${sectionTitle.toUpperCase()}.`,
+        originalTitle: sectionTitle
+      };
+
+      console.log('📋 TOC entry:', section.number, '-', section.originalTitle);
+      sections.push(section);
+    }
+
+    console.log('📋 Extracted', sections.length, 'sections from TOC');
+    return sections;
+  }
+
+  // Find a specific section in the full document text
+  function findSectionInText(text, tocSection, allTocSections) {
+    const sectionNumber = tocSection.number;
+
+    // Create multiple search patterns for this section
+    const searchPatterns = [
+      // Most common: "SEC. 1001. TITLE."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Alternative: "SECTION 1001. TITLE."
+      new RegExp(`SECTION\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Simple: "SEC. 1001."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.`, 'gi'),
+      // Even simpler: just the number pattern at word boundary
+      new RegExp(`\\bSEC(?:TION)?\\.?\\s+${sectionNumber}\\b`, 'gi')
+    ];
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    // Try each pattern
+    for (let i = 0; i < searchPatterns.length; i++) {
+      const pattern = searchPatterns[i];
+      const matches = [...text.matchAll(pattern)];
+
+      for (const match of matches) {
+        const position = match.index;
+        const matchText = match[0];
+
+        // Score this match based on various criteria
+        let score = 0;
+
+        // Prefer matches that are not in the TOC area (first 10% of document)
+        if (position > text.length * 0.1) score += 10;
+
+        // Prefer matches with full titles over just numbers
+        if (matchText.length > 10) score += 5;
+
+        // Prefer exact pattern matches (lower index = more specific pattern)
+        score += (4 - i);
+
+        // Check if this match has legislative content after it (subsections, amendments, etc.)
+        const contentAfter = text.substring(position, position + 500);
+        if (/\([a-z]\)/.test(contentAfter)) score += 5; // Has subsections
+        if (/is amended|striking|inserting|adding/.test(contentAfter)) score += 3; // Legislative language
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = { position, matchText, score };
+        }
+      }
+    }
+
+    if (!bestMatch) {
+      console.log('❌ No match found for section', sectionNumber);
+      return null;
+    }
+
+    // Find the end of this section by looking for the next section
+    const currentIndex = allTocSections.findIndex(s => s.number === sectionNumber);
+    let endPosition = text.length;
+
+    // Look for the next section in the TOC list
+    for (let i = currentIndex + 1; i < allTocSections.length; i++) {
+      const nextSection = allTocSections[i];
+      const nextPattern = new RegExp(`SEC\\.?\\s+${nextSection.number}\\.`, 'gi');
+
+      // Reset regex lastIndex to avoid issues
+      nextPattern.lastIndex = 0;
+      const nextMatch = nextPattern.exec(text.substring(bestMatch.position + 100));
+
+      if (nextMatch) {
+        endPosition = bestMatch.position + 100 + nextMatch.index;
+        break;
+      }
+    }
+
+    // Extract the content
+    let content = text.substring(bestMatch.position, endPosition).trim();
+
+    // Limit very long sections
+    if (content.length > 15000) {
+      content = content.substring(0, 15000) + '...';
+    }
+
+    console.log('✅ Extracted section', sectionNumber, 'from position', bestMatch.position, 'to', endPosition, 'length:', content.length);
+
+    return content;
+  }
 
   // Get bill title for context
   const getBillTitle = () => {
