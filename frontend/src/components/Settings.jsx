@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Volume2, Play, Edit2, Check, X, History } from 'lucide-react';
+import { User, Volume2, Play, Edit2, Check, X, History, UserCheck } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer.jsx';
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -20,6 +20,24 @@ const Settings = ({ user, onLogout }) => {
   const [newDisplayName, setNewDisplayName] = useState(user?.displayName || '');
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState('');
+
+  // User Profile State
+  const [userProfile, setUserProfile] = useState({
+    citizenshipStatus: '',
+    immigrationStatus: '',
+    race: '',
+    ethnicity: '',
+    socioeconomicStatus: '',
+    age: '',
+    education: '',
+    employment: '',
+    disability: '',
+    veteranStatus: '',
+    other: ''
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Fetch available voices from the backend
   useEffect(() => {
@@ -51,6 +69,52 @@ const Settings = ({ user, onLogout }) => {
     };
 
     fetchVoices();
+  }, [user]);
+
+  // Load user profile from Firestore or localStorage
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      setProfileLoading(true);
+      try {
+        if (user && !user.isGuest) {
+          // Load from Firestore for authenticated users
+          const db = getFirestore();
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.profile) {
+              setUserProfile(prevProfile => ({
+                ...prevProfile,
+                ...userData.profile
+              }));
+            }
+          }
+        } else {
+          // Load from localStorage for guest users
+          const savedProfile = localStorage.getItem('user-profile');
+          if (savedProfile) {
+            try {
+              const parsedProfile = JSON.parse(savedProfile);
+              setUserProfile(prevProfile => ({
+                ...prevProfile,
+                ...parsedProfile
+              }));
+            } catch (parseErr) {
+              console.error('Error parsing saved profile:', parseErr);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error loading user profile:', err);
+        setProfileError('Failed to load profile data');
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadUserProfile();
   }, [user]);
 
   // Load user's voice preference from Firestore
@@ -232,6 +296,47 @@ const Settings = ({ user, onLogout }) => {
     }
   };
 
+  // Handle profile field changes
+  const handleProfileChange = (field, value) => {
+    setUserProfile(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Auto-save for logged-in users
+    if (user && !user.isGuest) {
+      saveUserProfile({ ...userProfile, [field]: value });
+    } else {
+      // For guests, save to localStorage
+      const updatedProfile = { ...userProfile, [field]: value };
+      localStorage.setItem('user-profile', JSON.stringify(updatedProfile));
+    }
+  };
+
+  // Save user profile to Firestore
+  const saveUserProfile = async (profileData = userProfile) => {
+    if (!user || user.isGuest) return;
+
+    setProfileSaving(true);
+    setProfileError('');
+
+    try {
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', user.uid);
+
+      await setDoc(userDocRef, {
+        profile: profileData,
+        lastUpdated: new Date()
+      }, { merge: true });
+
+    } catch (err) {
+      console.error('Error saving user profile:', err);
+      setProfileError('Failed to save profile data');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   return (
     <div className="settings-container">
       {/* Header matching Home page style */}
@@ -336,6 +441,259 @@ const Settings = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* User Profile Section */}
+        <div className="settings-section">
+          <div className="settings-section-header">
+            <UserCheck size={24} />
+            <h3>Personal Profile</h3>
+          </div>
+
+          <p className="settings-section-description">
+            Help us understand how legislation affects you personally. This information will be used to provide personalized analysis of how bills might impact your specific circumstances.
+            {user && !user.isGuest ? ' Your profile will be saved to your account.' : ' Your profile will be saved locally.'}
+          </p>
+
+          {profileError && (
+            <div className="settings-error">
+              <p>{profileError}</p>
+            </div>
+          )}
+
+          {profileLoading ? (
+            <div className="settings-loading">
+              <p>Loading profile data...</p>
+            </div>
+          ) : (
+            <div className="profile-fields-grid">
+              <div className="profile-field">
+                <label htmlFor="citizenshipStatus" className="profile-label">
+                  Citizenship Status
+                </label>
+                <select
+                  id="citizenshipStatus"
+                  value={userProfile.citizenshipStatus}
+                  onChange={(e) => handleProfileChange('citizenshipStatus', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select status</option>
+                  <option value="citizen">U.S. Citizen</option>
+                  <option value="permanent_resident">Permanent Resident</option>
+                  <option value="temporary_resident">Temporary Resident</option>
+                  <option value="undocumented">Undocumented</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="immigrationStatus" className="profile-label">
+                  Immigration Status (if applicable)
+                </label>
+                <select
+                  id="immigrationStatus"
+                  value={userProfile.immigrationStatus}
+                  onChange={(e) => handleProfileChange('immigrationStatus', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select status</option>
+                  <option value="visa_holder">Visa Holder</option>
+                  <option value="asylum_seeker">Asylum Seeker</option>
+                  <option value="refugee">Refugee</option>
+                  <option value="daca">DACA Recipient</option>
+                  <option value="tps">TPS Holder</option>
+                  <option value="other">Other</option>
+                  <option value="not_applicable">Not Applicable</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="race" className="profile-label">
+                  Race
+                </label>
+                <select
+                  id="race"
+                  value={userProfile.race}
+                  onChange={(e) => handleProfileChange('race', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select race</option>
+                  <option value="american_indian">American Indian or Alaska Native</option>
+                  <option value="asian">Asian</option>
+                  <option value="black">Black or African American</option>
+                  <option value="native_hawaiian">Native Hawaiian or Other Pacific Islander</option>
+                  <option value="white">White</option>
+                  <option value="multiracial">Two or More Races</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="ethnicity" className="profile-label">
+                  Ethnicity
+                </label>
+                <select
+                  id="ethnicity"
+                  value={userProfile.ethnicity}
+                  onChange={(e) => handleProfileChange('ethnicity', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select ethnicity</option>
+                  <option value="hispanic_latino">Hispanic or Latino</option>
+                  <option value="not_hispanic_latino">Not Hispanic or Latino</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="socioeconomicStatus" className="profile-label">
+                  Income Level
+                </label>
+                <select
+                  id="socioeconomicStatus"
+                  value={userProfile.socioeconomicStatus}
+                  onChange={(e) => handleProfileChange('socioeconomicStatus', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select income level</option>
+                  <option value="low_income">Low Income (under $25,000)</option>
+                  <option value="lower_middle">Lower Middle ($25,000 - $49,999)</option>
+                  <option value="middle_income">Middle Income ($50,000 - $99,999)</option>
+                  <option value="upper_middle">Upper Middle ($100,000 - $199,999)</option>
+                  <option value="high_income">High Income ($200,000+)</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="age" className="profile-label">
+                  Age Range
+                </label>
+                <select
+                  id="age"
+                  value={userProfile.age}
+                  onChange={(e) => handleProfileChange('age', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select age range</option>
+                  <option value="under_18">Under 18</option>
+                  <option value="18_24">18-24</option>
+                  <option value="25_34">25-34</option>
+                  <option value="35_44">35-44</option>
+                  <option value="45_54">45-54</option>
+                  <option value="55_64">55-64</option>
+                  <option value="65_plus">65+</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="education" className="profile-label">
+                  Education Level
+                </label>
+                <select
+                  id="education"
+                  value={userProfile.education}
+                  onChange={(e) => handleProfileChange('education', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select education level</option>
+                  <option value="no_high_school">No High School Diploma</option>
+                  <option value="high_school">High School Diploma/GED</option>
+                  <option value="some_college">Some College</option>
+                  <option value="associates">Associate's Degree</option>
+                  <option value="bachelors">Bachelor's Degree</option>
+                  <option value="masters">Master's Degree</option>
+                  <option value="doctoral">Doctoral Degree</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="employment" className="profile-label">
+                  Employment Status
+                </label>
+                <select
+                  id="employment"
+                  value={userProfile.employment}
+                  onChange={(e) => handleProfileChange('employment', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select employment status</option>
+                  <option value="employed_full_time">Employed Full-time</option>
+                  <option value="employed_part_time">Employed Part-time</option>
+                  <option value="self_employed">Self-employed</option>
+                  <option value="unemployed">Unemployed</option>
+                  <option value="student">Student</option>
+                  <option value="retired">Retired</option>
+                  <option value="disabled">Unable to work due to disability</option>
+                  <option value="homemaker">Homemaker</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="disability" className="profile-label">
+                  Disability Status
+                </label>
+                <select
+                  id="disability"
+                  value={userProfile.disability}
+                  onChange={(e) => handleProfileChange('disability', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select status</option>
+                  <option value="no_disability">No Disability</option>
+                  <option value="physical_disability">Physical Disability</option>
+                  <option value="cognitive_disability">Cognitive Disability</option>
+                  <option value="sensory_disability">Sensory Disability</option>
+                  <option value="mental_health">Mental Health Condition</option>
+                  <option value="multiple_disabilities">Multiple Disabilities</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="veteranStatus" className="profile-label">
+                  Veteran Status
+                </label>
+                <select
+                  id="veteranStatus"
+                  value={userProfile.veteranStatus}
+                  onChange={(e) => handleProfileChange('veteranStatus', e.target.value)}
+                  className="profile-select"
+                >
+                  <option value="">Select status</option>
+                  <option value="veteran">Veteran</option>
+                  <option value="active_duty">Active Duty</option>
+                  <option value="reservist">Reservist/National Guard</option>
+                  <option value="military_family">Military Family Member</option>
+                  <option value="not_applicable">Not Applicable</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div className="profile-field profile-field-full">
+                <label htmlFor="other" className="profile-label">
+                  Other Relevant Information
+                </label>
+                <textarea
+                  id="other"
+                  value={userProfile.other}
+                  onChange={(e) => handleProfileChange('other', e.target.value)}
+                  className="profile-textarea"
+                  placeholder="Any other information that might be relevant to how legislation affects you (e.g., small business owner, healthcare worker, student, etc.)"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          {profileSaving && (
+            <div className="settings-saving">
+              <p>Saving profile...</p>
+            </div>
+          )}
+        </div>
+
         {/* Voice Settings Section */}
         <div className="settings-section">
           <div className="settings-section-header">
@@ -407,7 +765,7 @@ const Settings = ({ user, onLogout }) => {
           )}
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
