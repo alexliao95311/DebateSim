@@ -125,7 +125,6 @@ const ProfileStatusIndicator = ({ user }) => {
   if (profileStatus.hasProfile) {
     return (
       <div className="profile-status-indicator has-profile">
-        <span className="status-icon">✅</span>
         <div className="status-content">
           <span className="status-text">Profile configured - will include personalized "Impacts on You" section</span>
           <button

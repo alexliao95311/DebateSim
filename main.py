@@ -89,6 +89,7 @@ class JudgeFeedbackRequest(BaseModel):
 class AnalysisRequest(BaseModel):
     text: str
     model: str = DEFAULT_MODEL  # Use the global default model
+    userProfile: dict = None  # Optional user profile for personalized analysis
 
 # Connection pooling with optimizations - will be initialized lazily
 connector = None
@@ -261,7 +262,7 @@ class AnalyzeLegislationRequest(BaseModel):
     model: str = DEFAULT_MODEL
 
 @app.post("/analyze-legislation")
-async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DEFAULT_MODEL)):
+async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DEFAULT_MODEL), userProfile: str = Form(None)):
     logger.info(f"Received analyze-legislation request with model: {model}")
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
@@ -327,18 +328,27 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
         raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
 
     try:
+        # Parse user profile if provided
+        parsed_user_profile = None
+        if userProfile:
+            try:
+                parsed_user_profile = json.loads(userProfile)
+                logger.info("User profile data provided for personalized analysis")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid user profile JSON, proceeding without personalization: {e}")
+
         # Optimize large bill processing by extracting key sections once
         processed_text = text
         if len(text) > 40000:  # Same threshold as analyze_legislation_text
             logger.info(f"Large bill detected ({len(text)} chars), extracting key sections once for both analysis and grading")
             processed_text = extract_key_bill_sections(text, 40000)
             logger.info(f"Key sections extracted: {len(processed_text)} chars")
-        
+
         # Log consolidated processing info
         logger.info(f"Processing bill with model {model} - text length: {len(processed_text)} chars")
-        
+
         # Generate both analysis and grades using the processed text
-        analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+        analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True, user_profile=parsed_user_profile)
         grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -354,7 +364,7 @@ async def analyze_legislation_text_endpoint(request: AnalysisRequest):
         logger.info(f"Processing text input with model {request.model} - text length: {len(request.text)} chars")
         
         # Generate both analysis and grades (skip redundant logging since this is direct text input)
-        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True)
+        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile)
         grades = await grade_legislation_text(request.text, request.model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -805,7 +815,129 @@ IMPORTANT:
         logger.error(f"Error in grade_legislation_text: {e}")
         raise RuntimeError(f"Failed to grade legislation: {e}")
 
-async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> str:
+def format_user_profile_for_analysis(user_profile: dict) -> str:
+    """Format user profile data for inclusion in analysis prompt"""
+    if not user_profile:
+        return ""
+
+    # Helper function to format individual fields
+    def format_field(label: str, value: str, options: dict = None) -> str:
+        if not value or value == 'prefer_not_to_say':
+            return f"{label}: Not specified"
+
+        # Map coded values to readable text if options provided
+        if options and value in options:
+            return f"{label}: {options[value]}"
+
+        return f"{label}: {value}"
+
+    # Define human-readable mappings for coded values
+    citizenship_options = {
+        'citizen': 'U.S. Citizen',
+        'permanent_resident': 'Permanent Resident',
+        'temporary_resident': 'Temporary Resident',
+        'undocumented': 'Undocumented'
+    }
+
+    immigration_options = {
+        'visa_holder': 'Visa Holder',
+        'asylum_seeker': 'Asylum Seeker',
+        'refugee': 'Refugee',
+        'daca': 'DACA Recipient',
+        'tps': 'TPS Holder',
+        'other': 'Other Immigration Status',
+        'not_applicable': 'Not Applicable'
+    }
+
+    race_options = {
+        'american_indian': 'American Indian or Alaska Native',
+        'asian': 'Asian',
+        'black': 'Black or African American',
+        'native_hawaiian': 'Native Hawaiian or Other Pacific Islander',
+        'white': 'White',
+        'multiracial': 'Two or More Races'
+    }
+
+    ethnicity_options = {
+        'hispanic_latino': 'Hispanic or Latino',
+        'not_hispanic_latino': 'Not Hispanic or Latino'
+    }
+
+    income_options = {
+        'low_income': 'Low Income (under $25,000)',
+        'lower_middle': 'Lower Middle Income ($25,000 - $49,999)',
+        'middle_income': 'Middle Income ($50,000 - $99,999)',
+        'upper_middle': 'Upper Middle Income ($100,000 - $199,999)',
+        'high_income': 'High Income ($200,000+)'
+    }
+
+    age_options = {
+        'under_18': 'Under 18',
+        '18_24': '18-24',
+        '25_34': '25-34',
+        '35_44': '35-44',
+        '45_54': '45-54',
+        '55_64': '55-64',
+        '65_plus': '65+'
+    }
+
+    education_options = {
+        'no_high_school': 'No High School Diploma',
+        'high_school': 'High School Diploma/GED',
+        'some_college': 'Some College',
+        'associates': "Associate's Degree",
+        'bachelors': "Bachelor's Degree",
+        'masters': "Master's Degree",
+        'doctoral': 'Doctoral Degree'
+    }
+
+    employment_options = {
+        'employed_full_time': 'Employed Full-time',
+        'employed_part_time': 'Employed Part-time',
+        'self_employed': 'Self-employed',
+        'unemployed': 'Unemployed',
+        'student': 'Student',
+        'retired': 'Retired',
+        'disabled': 'Unable to work due to disability',
+        'homemaker': 'Homemaker'
+    }
+
+    disability_options = {
+        'no_disability': 'No Disability',
+        'physical_disability': 'Physical Disability',
+        'cognitive_disability': 'Cognitive Disability',
+        'sensory_disability': 'Sensory Disability',
+        'mental_health': 'Mental Health Condition',
+        'multiple_disabilities': 'Multiple Disabilities'
+    }
+
+    veteran_options = {
+        'veteran': 'Veteran',
+        'active_duty': 'Active Duty',
+        'reservist': 'Reservist/National Guard',
+        'military_family': 'Military Family Member',
+        'not_applicable': 'Not Applicable'
+    }
+
+    profile_parts = [
+        format_field('Citizenship Status', user_profile.get('citizenshipStatus'), citizenship_options),
+        format_field('Immigration Status', user_profile.get('immigrationStatus'), immigration_options),
+        format_field('Race', user_profile.get('race'), race_options),
+        format_field('Ethnicity', user_profile.get('ethnicity'), ethnicity_options),
+        format_field('Income Level', user_profile.get('socioeconomicStatus'), income_options),
+        format_field('Age Range', user_profile.get('age'), age_options),
+        format_field('Education Level', user_profile.get('education'), education_options),
+        format_field('Employment Status', user_profile.get('employment'), employment_options),
+        format_field('Disability Status', user_profile.get('disability'), disability_options),
+        format_field('Veteran Status', user_profile.get('veteranStatus'), veteran_options)
+    ]
+
+    if user_profile.get('other') and user_profile.get('other').strip():
+        profile_parts.append(f"Additional Information: {user_profile.get('other').strip()}")
+
+    return '\n'.join(profile_parts)
+
+async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None) -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
     # Debug logging (reduced when called together with grading)
@@ -875,8 +1007,32 @@ Based on the bill information available:
     else:
         bill_analysis_text = bill_text
     
+    # Format user profile context if provided
+    user_context = ""
+    personalized_section = ""
+    if user_profile:
+        formatted_profile = format_user_profile_for_analysis(user_profile)
+        if formatted_profile:
+            user_context = f"""
+
+USER PROFILE CONTEXT:
+The analysis should consider how this legislation might specifically affect a person with the following characteristics:
+{formatted_profile}
+"""
+            personalized_section = """
+
+## Impacts on You
+Based on the user's profile information provided, analyze how this bill would specifically affect someone with their demographic characteristics, circumstances, and background. Consider:
+- Direct impacts on their situation (economic, legal, social)
+- Indirect effects through programs, services, or policies they might use
+- How their specific demographic group might be affected differently than the general population
+- Potential benefits or challenges they might face
+- Any special provisions or considerations that apply to their circumstances
+
+Provide concrete, specific examples of how the bill's provisions would translate into real-world impacts for this individual."""
+
     analysis_prompt = f"""
-You are a legislative analyst providing a comprehensive analysis of the following bill. The bill text may include key extracted sections marked with === headers === for large bills.
+You are a legislative analyst providing a comprehensive analysis of the following bill. The bill text may include key extracted sections marked with === headers === for large bills.{user_context}
 
 BILL TEXT:
 {bill_analysis_text}
@@ -923,7 +1079,7 @@ Assess how well the bill addresses its stated problems and achieves intended obj
 - Consider authorization levels, effective dates, and enforcement mechanisms if mentioned
 
 ## Overall Assessment
-Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.
+Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.{personalized_section}
 
 Please ensure your analysis is objective, comprehensive, and provides practical insights about the legislation's likely impact and effectiveness.
 """
@@ -1171,11 +1327,11 @@ async def analyze_recommended_bill(request: dict):
             logger.info(f"Key sections extracted: {len(processed_text)} chars")
             
             # Generate both analysis and grades using processed text
-            analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+            analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True, user_profile=None)
             grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
         else:
             # Generate both analysis and grades using full text
-            analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True)
+            analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True, user_profile=None)
             grades = await grade_legislation_text(full_bill_text, model, skip_extraction=True)
         
         return {"analysis": analysis, "grades": grades}
