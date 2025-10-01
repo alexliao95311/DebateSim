@@ -444,7 +444,6 @@ const Settings = ({ user, onLogout }) => {
         {/* User Profile Section */}
         <div className="settings-section">
           <div className="settings-section-header">
-            <UserCheck size={24} />
             <h3>Personal Profile</h3>
           </div>
 

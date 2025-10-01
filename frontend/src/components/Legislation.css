@@ -5865,7 +5865,8 @@ div[style*="backgroundColor: #d"] * {
 
 .profile-status-indicator {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 0.5rem;
@@ -5902,6 +5903,8 @@ div[style*="backgroundColor: #d"] * {
   flex-direction: column;
   gap: 0.5rem;
   flex: 1;
+  text-align: center;
+  align-items: center;
 }
 
 .profile-status-indicator .status-text {
@@ -5919,7 +5922,7 @@ div[style*="backgroundColor: #d"] * {
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  align-self: flex-start;
+  align-self: center;
   text-decoration: none;
   font-weight: 500;
 }
