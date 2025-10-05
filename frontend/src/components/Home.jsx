@@ -159,6 +159,16 @@ function Home({ user, onLogout }) {
       route: null,
       tags: ["Coming Soon", "Analysis"],
       gradient: "from-orange-500 to-red-600"
+    },
+    {
+      id: "debate-trainer",
+      title: "Debate Trainer",
+      description: "Sharpen your debate skills with AI-powered training. Face off against bots of different skill levels, receive personalized feedback, and master any format or styles with feedback tailored to you.",
+      icon: <Gavel className="home-feature-icon" />,
+      status: "active",
+      route: "/debate-trainer",
+      tags: ["Personalized", "Interactive"],
+      gradient: "from-blue-500 to-purple-600"
     }
   ];
 
