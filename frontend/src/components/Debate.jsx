@@ -875,7 +875,7 @@ ${getPersonaPrompt(proPersona)}
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the opponent's last argument before presenting your own points.
            `;
         }
-        console.log(`🔍 DEBUG: Pro Prompt Preview: ${proPrompt.substring(0, 200)}...`);
+        console.log(`DEBUG: Pro Prompt Preview: ${proPrompt.substring(0, 200)}...`);
         aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
@@ -1079,7 +1079,7 @@ CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count yo
             timeLimit = "2 minutes";
           }
           
-          console.log(`🔍 DEBUG: Con Speech - Total speeches: ${totalSpeeches}, Speech type index: ${speechTypeIndex}, Round: ${roundNumber}, Speech Type: ${speechType}`);
+          console.log(`DEBUG: Con Speech - Total speeches: ${totalSpeeches}, Speech type index: ${speechTypeIndex}, Round: ${roundNumber}, Speech Type: ${speechType}`);
           
           conPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
@@ -1934,7 +1934,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       })() ? 0.6 : 1
                     }}
                   >
-                    🚀 Auto-Generate All Rounds
+                    Auto-Generate All Rounds
                   </button>
                 </>
               ) : (
@@ -1949,7 +1949,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     cursor: "pointer"
                   }}
                 >
-                  ⏸️ Stop Auto-Generation
+                  Stop Auto-Generation
                 </button>
               )}
             </div>

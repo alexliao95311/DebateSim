@@ -129,7 +129,7 @@ const FileUploadInput = ({
       {/* Error message */}
       {uploadError && (
         <div className="upload-error">
-          ⚠️ {uploadError}
+          Warning: {uploadError}
         </div>
       )}
 

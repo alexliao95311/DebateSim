@@ -308,7 +308,7 @@ const SpeechTest = () => {
       fontFamily: 'Arial, sans-serif'
     }}>
       <h1 style={{ color: '#333', textAlign: 'center', marginBottom: '2rem' }}>
-        🎤 Speech Recognition Test
+        Speech Recognition Test
       </h1>
       
       {/* Brave Browser Warning */}
@@ -320,7 +320,7 @@ const SpeechTest = () => {
           borderRadius: '8px',
           marginBottom: '2rem'
         }}>
-          <h3 style={{ color: '#856404', margin: '0 0 0.5rem 0' }}>⚠️ Brave Browser Detected</h3>
+          <h3 style={{ color: '#856404', margin: '0 0 0.5rem 0' }}>Brave Browser Detected</h3>
           <p style={{ color: '#856404', margin: '0 0 1rem 0' }}>
             Brave browser's privacy features may block speech recognition. Try these solutions:
           </p>
@@ -340,7 +340,7 @@ const SpeechTest = () => {
                 fontSize: '0.9rem'
               }}
             >
-              🔧 Open Brave Settings
+              Open Brave Settings
             </button>
             <button
               onClick={() => {
@@ -357,7 +357,7 @@ const SpeechTest = () => {
                 fontSize: '0.9rem'
               }}
             >
-              🎵 Sound Settings
+              Sound Settings
             </button>
             <button
               onClick={() => {
@@ -401,7 +401,7 @@ const SpeechTest = () => {
               fontSize: '1rem'
             }}
           >
-            {isListening ? '🛑 Stop Recording' : '🎤 Start Recording'}
+            {isListening ? 'Stop Recording' : 'Start Recording'}
           </button>
           
           <button
@@ -428,7 +428,7 @@ const SpeechTest = () => {
             borderRadius: '4px',
             marginBottom: '1rem'
           }}>
-            🎤 Listening... Speak now!
+            Listening... Speak now!
           </div>
         )}
         
@@ -552,7 +552,7 @@ const SpeechTest = () => {
           borderRadius: '8px',
           border: '1px solid #ffeaa7'
         }}>
-          <h3 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>🔧 Brave Browser Solutions:</h3>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Brave Browser Solutions:</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
             <div>
               <h4 style={{ margin: '0 0 0.5rem 0', color: '#856404' }}>Method 1: Disable Shields</h4>
@@ -611,7 +611,7 @@ const SpeechTest = () => {
                   <li>✅ Safari (you confirmed it works)</li>
                   <li>✅ Chrome (should work)</li>
                   <li>✅ Edge (should work)</li>
-                  <li>⚠️ Firefox (limited support)</li>
+                  <li>Firefox (limited support)</li>
                 </ul>
               </div>
             </div>
@@ -634,7 +634,7 @@ const SpeechTest = () => {
                 fontSize: '0.8rem'
               }}
             >
-              🔧 Microphone Settings
+              Microphone Settings
             </button>
             <button
               onClick={() => {
@@ -685,7 +685,7 @@ const SpeechTest = () => {
                 fontSize: '0.8rem'
               }}
             >
-              🎵 Sound Settings
+              Sound Settings
             </button>
           </div>
         </div>
