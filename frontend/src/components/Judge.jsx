@@ -420,7 +420,7 @@ ${feedback}`;
             onClick={handleShare} 
             disabled={!feedback || !saved}
           >
-            📤 Share Debate
+            Share Debate
           </button>
           <button className="judge-home-button" onClick={handleBackToHome}>
             Back to Home

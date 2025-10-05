@@ -140,7 +140,6 @@ const ProfileStatusIndicator = ({ user }) => {
 
   return (
     <div className="profile-status-indicator no-profile">
-      <span className="status-icon">ℹ️</span>
       <div className="status-content">
         <span className="status-text">No profile configured - analysis will be general</span>
         <button
@@ -2302,7 +2301,7 @@ const Legislation = ({ user }) => {
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                 {!isSearchMode && (
                   <>
-                    <h3>📋 Trending Congressional Bills</h3>
+                    <h3>Trending Congressional Bills</h3>
                     
                     {billsLoading && (
                       <div className="bills-loading">
@@ -2810,7 +2809,7 @@ const Legislation = ({ user }) => {
                     ) : billSource === 'link' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : (
-                      `Selected Bill: 📄 ${selectedBill.name}`
+                      `Selected Bill: ${selectedBill.name}`
                     )}
                   </h3>
                 </div>
@@ -2882,7 +2881,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="model-selection">
                       <label className="model-label">
-                        <span className="label-icon">🤖</span>
                         Select AI Model
                       </label>
                       <select 
@@ -2901,7 +2899,6 @@ const Legislation = ({ user }) => {
 
                     <div className="profile-status-section">
                       <label className="model-label">
-                        <span className="label-icon">👤</span>
                         Personalized Analysis
                       </label>
                       <ProfileStatusIndicator user={user} />
@@ -2909,7 +2906,6 @@ const Legislation = ({ user }) => {
 
                     <div className="section-selection">
                         <label className="section-label">
-                          <span className="label-icon">📄</span>
                           Choose What to Analyze
                         </label>
 
@@ -3366,7 +3362,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    📤 Share Analysis
+                    Share Analysis
                   </button>
                   <button 
                     className="download-analysis-btn" 
@@ -3376,7 +3372,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    📄 Download PDF
+                    Download PDF
                   </button>                 
                   <button 
                     className="new-analysis-btn" 
@@ -3461,10 +3457,10 @@ const Legislation = ({ user }) => {
                   }}
                 >
                   <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
-                    📤 Share This Analysis
+                    Share This Analysis
                   </button>
                   <button className="download-analysis-btn-large" onClick={handleDownloadAnalysisPDF}>
-                    📄 Download PDF Report
+                    Download PDF Report
                   </button>
                 </div>
               )}

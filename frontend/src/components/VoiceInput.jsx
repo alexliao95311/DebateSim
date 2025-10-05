@@ -440,7 +440,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         
         {isListening && (
           <div className="voice-input-listening">
-            <p>🎤 Listening... Speak now</p>
+            <p>Listening... Speak now</p>
             <button
               onClick={stopListening}
               style={{

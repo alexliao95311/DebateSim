@@ -89,7 +89,7 @@ const TTSDemo = () => {
     <div className="tts-demo-container">
       <div className="tts-demo-header">
         <div className="tts-demo-header-title-row">
-          <h1>🎤 Google TTS Demo</h1>
+          <h1>Google TTS Demo</h1>
           <div className="tts-demo-header-play">
             <EnhancedVoiceOutput
               text={demoText}
@@ -143,7 +143,7 @@ const TTSDemo = () => {
 
       {/* Context Selection */}
       <div className="context-selection">
-        <h3>🎭 Select Voice Context</h3>
+        <h3>Select Voice Context</h3>
         <div className="context-buttons">
           {contexts.map((context) => (
             <button
@@ -176,7 +176,7 @@ const TTSDemo = () => {
 
       {/* Custom Text Input */}
       <div className="custom-text-input">
-        <h3>✍️ Custom Text</h3>
+        <h3>Custom Text</h3>
         <textarea
           value={customText}
           onChange={handleTextChange}
@@ -220,7 +220,7 @@ const TTSDemo = () => {
         <h3>✨ Features</h3>
         <div className="features-grid">
           <div className="feature">
-            <h4>🎯 Context-Aware Voices</h4>
+            <h4>Context-Aware Voices</h4>
             <p>Different voice settings for debates, analysis, and general use</p>
           </div>
           <div className="feature">
@@ -232,7 +232,7 @@ const TTSDemo = () => {
             <p>Falls back to browser TTS if Google TTS is unavailable</p>
           </div>
           <div className="feature">
-            <h4>⚙️ Configurable Settings</h4>
+            <h4>Configurable Settings</h4>
             <p>Adjustable rate, pitch, and volume for each context</p>
           </div>
         </div>
