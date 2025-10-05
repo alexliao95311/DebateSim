@@ -1077,9 +1077,10 @@ Assess how well the bill addresses its stated problems and achieves intended obj
 - What challenges might arise in implementing this legislation?
 - Are there any unclear provisions or potential ambiguities?
 - Consider authorization levels, effective dates, and enforcement mechanisms if mentioned
+{personalized_section}
 
 ## Overall Assessment
-Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.{personalized_section}
+Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.
 
 Please ensure your analysis is objective, comprehensive, and provides practical insights about the legislation's likely impact and effectiveness.
 """
