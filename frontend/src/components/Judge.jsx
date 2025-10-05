@@ -7,16 +7,18 @@ import LoadingSpinner from "./LoadingSpinner";
 import "./Judge.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import ShareModal from "./ShareModal";
-import { MessageSquare, Code, User, LogOut, ChevronDown, Menu } from "lucide-react";
+import UserDropdown from "./UserDropdown";
+import { MessageSquare, Code, History } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
-
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 function Judge() {
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
   
   // Retrieve debate details from router state
-  const { transcript, topic, mode, judgeModel } = location.state || {};
+  const { transcript, topic, mode, judgeModel, debateFormat } = location.state || {};
 
   // If required state is missing, redirect back to DebateSim
   if (!transcript || !topic || !mode || !judgeModel) {
@@ -32,8 +34,6 @@ function Judge() {
   const [showBillText, setShowBillText] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [user, setUser] = useState(auth.currentUser);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
-  const dropdownRef = useRef(null);
   
   // Extract bill description from transcript
   const [billDescription, setBillDescription] = useState("");
@@ -48,19 +48,6 @@ function Judge() {
     return () => clearTimeout(scrollTimer);
   }, []);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     // Extract bill description from transcript if it exists
@@ -185,67 +172,127 @@ ${feedback}`;
     );
   };
 
+  // Render transcript with TTS buttons for each speech section
+  const renderTranscriptWithTTS = (transcriptText) => {
+    // Split transcript into sections by ## headers (speech sections)
+    const sections = transcriptText.split(/(?=^## )/m);
+    
+    return sections.map((section, index) => {
+      if (!section.trim()) return null;
+      
+      const lines = section.trim().split('\n');
+      const headerLine = lines[0];
+      const restOfSection = lines.slice(1).join('\n');
+      
+      // Check if this is a main speech section by looking for speaker patterns
+      const isSpeechSection = headerLine.match(/^## (AI Debater|Pro \(|Con \(|.*\(AI\)|.*\(User\)|.*AI.*)/i);
+      
+      if (isSpeechSection) {
+        // Count how many speech sections we've rendered so far
+        const speechSections = sections.slice(0, index).filter(s => {
+          const firstLine = s.trim().split('\n')[0];
+          return firstLine.match(/^## (AI Debater|Pro \(|Con \(|.*\(AI\)|.*\(User\)|.*AI.*)/i);
+        });
+        // Extract speaker name from header
+        const speakerMatch = headerLine.match(/^## (.+)$/);
+        const speakerName = speakerMatch ? speakerMatch[1] : 'Speaker';
+        
+        // Get the text content for TTS (remove model info but keep other markdown)
+        const textContent = restOfSection
+          .replace(/\*Model: [^\*]+\*/g, '') // Remove model info lines
+          .replace(/^\s*$/gm, ' ') // Replace empty lines with spaces
+          .replace(/#+\s*/g, '') // Remove markdown headers within speech
+          .replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold formatting
+          .replace(/\*(.+?)\*/g, '$1') // Remove italic formatting
+          .trim();
+        
+        return (
+          <React.Fragment key={index}>
+            {speechSections.length > 0 && <hr className="judge-markdown-hr" />}
+            <div className="debate-speech-header">
+              <h2 className="judge-markdown-h2">{speakerName}</h2>
+              <div className="debate-speech-tts">
+                <EnhancedVoiceOutput
+                  text={textContent}
+                  useGoogleTTS={true}
+                  ttsApiUrl={TTS_CONFIG.apiUrl}
+                  buttonStyle="compact"
+                  showLabel={false}
+                  context="debate"
+                  onSpeechStart={() => console.log(`Speech started for ${speakerName}`)}
+                  onSpeechEnd={() => console.log(`Speech ended for ${speakerName}`)}
+                  onSpeechError={(error) => console.error(`Speech error for ${speakerName}:`, error)}
+                />
+              </div>
+            </div>
+            <ReactMarkdown
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
+              }}
+            >
+              {restOfSection}
+            </ReactMarkdown>
+          </React.Fragment>
+        );
+      } else {
+        // Non-speech section (like Bill Description, etc.), render normally without TTS
+        return (
+          <div key={index}>
+            <ReactMarkdown
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
+                h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
+                h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
+                p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
+                ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
+                ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
+                li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
+                strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
+                em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
+                hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
+              }}
+            >
+              {section}
+            </ReactMarkdown>
+          </div>
+        );
+      }
+    });
+  };
+
   return (
     <div className="judge-container">
       <header className="judge-header">
         <div className="judge-header-content">
           <div className="judge-header-left">
-            <button 
-              className="judge-back-button"
-              onClick={() => navigate("/")}
-            >
-              ← Home
-            </button>
           </div>
 
-          <div className="judge-header-center">
+          <div className="judge-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="judge-site-title" onClick={() => navigate("/")}>
               Judge Results
             </h1>
           </div>
 
           <div className="judge-header-right">
-            {/* Desktop user section */}
-            <div className="judge-user-section judge-desktop-user">
-              <div className="judge-user-info">
-                <User size={18} />
-                <span>{user?.displayName || "Guest"}</span>
-              </div>
-              <button className="judge-logout-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-
-            {/* Mobile dropdown */}
-            <div className="judge-mobile-dropdown-container" ref={dropdownRef}>
-              <button
-                className="judge-mobile-dropdown-trigger"
-                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-              >
-                <Menu size={18} />
-                <ChevronDown size={16} className={`judge-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-              </button>
-
-              {showMobileDropdown && (
-                <div className="judge-mobile-dropdown-menu">
-                  <div className="judge-dropdown-user-info">
-                    <User size={16} />
-                    <span>{user?.displayName || "Guest"}</span>
-                  </div>
-                  <button
-                    className="judge-dropdown-option judge-dropdown-logout"
-                    onClick={() => {
-                      handleLogout();
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserDropdown user={user} onLogout={handleLogout} className="judge-user-dropdown" />
           </div>
         </div>
       </header>
@@ -269,24 +316,7 @@ ${feedback}`;
               )}
             </div>
             <div className="judge-scrollable-content">
-              <ReactMarkdown
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  h1: ({node, ...props}) => <h1 className="judge-markdown-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="judge-markdown-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="judge-markdown-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="judge-markdown-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="judge-markdown-p" {...props} />,
-                  ul: ({node, ...props}) => <ul className="judge-markdown-ul" {...props} />,
-                  ol: ({node, ...props}) => <ol className="judge-markdown-ol" {...props} />,
-                  li: ({node, ...props}) => <li className="judge-markdown-li" {...props} />,
-                  strong: ({node, ...props}) => <strong className="judge-markdown-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="judge-markdown-em" {...props} />,
-                  hr: ({node, ...props}) => <hr className="judge-markdown-hr" {...props} />
-                }}
-              >
-                {formattedTranscript()}
-              </ReactMarkdown>
+              {renderTranscriptWithTTS(formattedTranscript())}
             </div>
           </div>
 
@@ -301,8 +331,63 @@ ${feedback}`;
                 />
               ) : (
                 <>
-                  <h3 className="judge-speech-title">AI Judge:</h3>
+                  <div className="debate-speech-header">
+                    <h3 className="judge-speech-title">AI Judge:</h3>
+                    <div className="debate-speech-tts">
+                      <EnhancedVoiceOutput
+                        text={feedback}
+                        useGoogleTTS={true}
+                        ttsApiUrl={TTS_CONFIG.apiUrl}
+                        buttonStyle="compact"
+                        showLabel={false}
+                        context="judge"
+                        onSpeechStart={() => console.log(`Speech started for AI Judge`)}
+                        onSpeechEnd={() => console.log(`Speech ended for AI Judge`)}
+                        onSpeechError={(error) => console.error(`Speech error for AI Judge:`, error)}
+                      />
+                    </div>
+                  </div>
                   <p className="judge-model-info">Model: {judgeModel}</p>
+                  {debateFormat === "lincoln-douglas" && (
+                    <div className="judge-criteria-info">
+                      <h4>LD Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Framework Analysis:</strong> Value premise, criterion, and framework consistency</li>
+                        <li><strong>Logical Structure:</strong> Syllogistic reasoning, argument construction, logical consistency</li>
+                        <li><strong>Philosophical Depth:</strong> Ethical principles, moral reasoning, philosophical sophistication</li>
+                        <li><strong>Comparative Weighing:</strong> Which framework better achieves the stated values</li>
+                        <li><strong>Evidence Quality:</strong> Philosophical arguments, ethical principles, real-world examples</li>
+                        <li><strong>Clash Resolution:</strong> Addressing opponent arguments and winning key debates</li>
+                        <li><strong>Crystallization:</strong> Voting issues and final appeals</li>
+                        <li><strong>Speaker Points:</strong> Argument quality, clarity, strategic execution (26-30)</li>
+                      </ul>
+                    </div>
+                  )}
+                  {debateFormat === "public-forum" && (
+                    <div className="judge-criteria-info">
+                      <h4>Public Forum Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Accessibility:</strong> Arguments understandable to general audiences</li>
+                        <li><strong>Real-World Focus:</strong> Practical impacts on people and society</li>
+                        <li><strong>Value Framework:</strong> Justice, security, prosperity, freedom</li>
+                        <li><strong>Evidence:</strong> Clear, credible sources supporting impacts</li>
+                        <li><strong>Comparative:</strong> Which side leads to better outcomes</li>
+                        <li><strong>Crystallization:</strong> Key clash points in later rounds</li>
+                      </ul>
+                    </div>
+                  )}
+                  {(!debateFormat || debateFormat === "default") && (
+                    <div className="judge-criteria-info">
+                      <h4>Standard Debate Judging Criteria</h4>
+                      <ul>
+                        <li><strong>Argument Strength:</strong> Logical, well-reasoned arguments</li>
+                        <li><strong>Evidence Quality:</strong> Facts, statistics, examples, reasoning</li>
+                        <li><strong>Rebuttals:</strong> Directly addressing opponent arguments</li>
+                        <li><strong>Rhetorical Effectiveness:</strong> Persuasive delivery and style</li>
+                        <li><strong>Bias Neutrality:</strong> Objective, fair analysis</li>
+                      </ul>
+                    </div>
+                  )}
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}
                     components={{
@@ -335,7 +420,7 @@ ${feedback}`;
             onClick={handleShare} 
             disabled={!feedback || !saved}
           >
-            📤 Share Debate
+            Share Debate
           </button>
           <button className="judge-home-button" onClick={handleBackToHome}>
             Back to Home

@@ -47,7 +47,7 @@ class OpenRouterChat(BaseChatModel):
         provider = provider_map.get(root_token)
         return f"{provider}/{name}" if provider else name
 
-    model_name: str = Field(default="openai/gpt-5-mini")
+    model_name: str = Field(default="openai/gpt-4o-mini")
     temperature: float = Field(default=0.5)
     api_key: str = Field(default=API_KEY)
     api_base: str = Field(default="https://openrouter.ai/api/v1/chat/completions")
@@ -182,21 +182,54 @@ Please provide your judgement with the following sections:
 Format your response with clear headings using markdown (###).
 """
 
-# Create the chat prompt template
+# Define the Lincoln-Douglas specific judge template
+ld_judge_template = """You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
+
+DEBATE TRANSCRIPT:
+{transcript}
+
+LINCOLN-DOUGLAS JUDGING CRITERIA:
+- **Framework Analysis**: Evaluate the value premises, value criteria, and how well debaters uphold their frameworks
+- **Logical Structure**: Assess syllogistic reasoning, argument construction, and logical consistency
+- **Philosophical Depth**: Consider ethical principles, moral reasoning, and philosophical sophistication
+- **Comparative Weighing**: Judge which framework better achieves the stated values and why
+- **Evidence Quality**: Evaluate philosophical arguments, ethical principles, and real-world examples
+- **Clash Resolution**: Determine which side better addressed opponent arguments and won key clashes
+- **Crystallization**: Assess how well each side crystallized voting issues and made final appeals
+
+Please provide your judgement with the following sections:
+1. **Framework Analysis**: Evaluate each debater's value premise, criterion, and framework consistency
+2. **Argument Quality**: Assess logical structure, philosophical depth, and evidence quality for both sides
+3. **Clash Resolution**: Analyze how well each side addressed opponent arguments and won key debates
+4. **Comparative Weighing**: Determine which framework better achieves the stated values and why
+5. **Decision**: Who won the debate and why, with specific reference to LD criteria
+6. **Speaker Points**: Award points (26-30) based on argument quality, clarity, and strategic execution
+
+Format your response with clear headings using markdown (###).
+"""
+
+# Create the chat prompt templates
 chat_prompt = ChatPromptTemplate.from_template(template)
+ld_judge_prompt = ChatPromptTemplate.from_template(ld_judge_template)
 
 # Function to get a judge chain with a specific model
-def get_judge_chain(model_name="openai/gpt-5-mini"):
+def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
         temperature=0.5
     )
     
+    # Select the appropriate template based on debate format
+    if debate_format == "lincoln-douglas":
+        selected_prompt = ld_judge_prompt
+    else:
+        selected_prompt = chat_prompt
+    
     # Build the runnable chain using LCEL
     chain = (
         {"transcript": RunnablePassthrough()}
-        | chat_prompt
+        | selected_prompt
         | llm
         | StrOutputParser()
     )

@@ -3,37 +3,38 @@ import { getFirestore, collection, getDocs, query, orderBy } from "firebase/fire
 import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import HistorySidebar from "./HistorySidebar";
-import { 
-  Users, 
-  Bot, 
-  UserCheck, 
-  PlayCircle, 
-  History, 
-  User,
-  LogOut,
+import UserDropdown from "./UserDropdown";
+import {
+  Users,
+  Bot,
+  UserCheck,
+  PlayCircle,
   Award,
-  ChevronRight,
-  ChevronDown,
-  Menu
-} 
+  ChevronRight
+}
 from "lucide-react";
 import "./DebateSim.css";
 import Footer from "./Footer.jsx";
 
 function DebateSim({ user }) {
   const [mode, setMode] = useState("");
+  const [debateFormat, setDebateFormat] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
-  const [history, setHistory] = useState([]);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredMode, setHoveredMode] = useState(null);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+  // Persona selection states
+  const [proPersona, setProPersona] = useState("");
+  const [conPersona, setConPersona] = useState("");
+  const [aiPersona, setAiPersona] = useState("");
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
   const navigate = useNavigate();
   const inputRef = useRef(null);
-  const dropdownRef = useRef(null);
   const pdfContentRef = useRef(null);
   const topicSectionRef = useRef(null);
+  const personaCardsRef = useRef(null);
+  const personaSectionRef = useRef(null);
+  const formatSectionRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
@@ -50,19 +51,6 @@ function DebateSim({ user }) {
     return () => clearTimeout(animationTimer);
   }, []);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Fetch history on load
   useEffect(() => {
@@ -87,17 +75,138 @@ function DebateSim({ user }) {
     fetchHistory();
   }, [user]);
 
-  // Auto-scroll to topic section when mode is selected
+
+  // Persona cards scroll behavior
   useEffect(() => {
-    if (mode && topicSectionRef.current) {
+    const container = personaCardsRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      requestAnimationFrame(() => updateArrowVisibility());
+    };
+    
+    const handleResize = () => {
+      // Force a reflow to ensure accurate measurements
+      setTimeout(() => {
+        if (container && personaCardsRef.current) {
+          updateArrowVisibility();
+        }
+      }, 150);
+    };
+
+    // Add event listeners
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    
+    // Initial checks with multiple timeouts to ensure proper initialization
+    setTimeout(() => updateArrowVisibility(), 100);
+    setTimeout(() => updateArrowVisibility(), 300);
+    setTimeout(() => updateArrowVisibility(), 600);
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Auto-scroll to format section when mode is selected
+  useEffect(() => {
+    if (mode && formatSectionRef.current) {
       // Add a small delay to ensure the UI has updated
       setTimeout(() => {
-        topicSectionRef.current?.scrollIntoView({ 
+        formatSectionRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start',
           inline: 'nearest'
         });
       }, 300);
+    }
+  }, [mode]);
+
+  // Auto-scroll to persona section when format is selected
+  useEffect(() => {
+    if (debateFormat && personaSectionRef.current) {
+      // Add a small delay to ensure the UI has updated
+      setTimeout(() => {
+        personaSectionRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }, 300);
+    }
+  }, [debateFormat]);
+
+  // Auto-scroll to topic section when personas are selected
+  useEffect(() => {
+    if (mode && topicSectionRef.current) {
+      let shouldScroll = false;
+      
+      if (mode === 'user-vs-user') {
+        // For user vs user, scroll immediately since no personas needed
+        shouldScroll = true;
+      } else if (mode === 'ai-vs-user' && aiPersona) {
+        // For AI vs user, scroll when AI persona is selected
+        shouldScroll = true;
+      } else if (mode === 'ai-vs-ai' && proPersona && conPersona) {
+        // For AI vs AI, scroll when both personas are selected
+        shouldScroll = true;
+      }
+      
+      if (shouldScroll) {
+        setTimeout(() => {
+          topicSectionRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }, 300);
+      }
+    }
+  }, [mode, aiPersona, proPersona, conPersona]);
+
+  // Persona cards scroll behavior
+  useEffect(() => {
+    const container = personaCardsRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      requestAnimationFrame(() => updateArrowVisibility());
+    };
+    
+    const handleResize = () => {
+      // Force a reflow to ensure accurate measurements
+      setTimeout(() => {
+        if (container && personaCardsRef.current) {
+          updateArrowVisibility();
+        }
+      }, 150);
+    };
+
+    // Add event listeners
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    
+    // Initial checks with multiple timeouts to ensure proper initialization
+    setTimeout(() => updateArrowVisibility(), 100);
+    setTimeout(() => updateArrowVisibility(), 300);
+    setTimeout(() => updateArrowVisibility(), 600);
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Additional effect to check arrows when mode changes (personas become visible)
+  useEffect(() => {
+    if (mode && (mode === 'ai-vs-ai' || mode === 'ai-vs-user')) {
+      setTimeout(() => updateArrowVisibility(), 200);
+      setTimeout(() => updateArrowVisibility(), 500);
     }
   }, [mode]);
 
@@ -128,6 +237,117 @@ function DebateSim({ user }) {
     }
   ];
 
+  const debateFormats = [
+    {
+      id: "default",
+      title: "Default Format",
+      description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+      icon: <Award size={48} />,
+      tags: ["Academic", "Structured"],
+      color: "from-indigo-500 to-blue-600"
+    },
+    {
+      id: "public-forum",
+      title: "Public Forum",
+      description: "Public Forum debate style with 4 rounds exactly: Constructive, Rebuttal, Summary, Final Focus",
+      icon: <Users size={48} />,
+      tags: ["Accessible", "Structured"],
+      color: "from-emerald-500 to-green-600"
+    }
+    ,
+    {
+      id: "lincoln-douglas",
+      title: "LD Debate",
+      description: "Philosophical debate format with value premise, criterion, and contentions. 5 rounds with Affirmative starting first.",
+      icon: <Award size={48} />,
+      tags: ["Philosophy", "Framework", "LD"],
+      color: "from-yellow-500 to-orange-600"
+    }
+  ];
+
+
+  const personas = [
+    {
+      id: "default",
+      name: "Default AI",
+      description: "Standard debate style",
+      image: "/images/ai.jpg"
+    },
+    {
+      id: "trump",
+      name: "Donald Trump",
+      description: "Bold, direct speaking style",
+      image: "/images/trump.jpeg"
+    },
+    {
+      id: "harris",
+      name: "Kamala Harris",
+      description: "Prosecutorial, precise debate style",
+      image: "/images/harris.webp"
+    },
+    {
+      id: "musk",
+      name: "Elon Musk",
+      description: "Innovative, tech-focused approach",
+      image: "/images/elon.jpg"
+    },
+    {
+      id: "drake",
+      name: "Drake",
+      description: "Charismatic, cultural references",
+      image: "/images/drake.jpg"
+    }
+  ];
+
+  const updateArrowVisibility = () => {
+    const container = personaCardsRef.current;
+    if (!container) {
+      setShowLeftArrow(false);
+      setShowRightArrow(false);
+      return;
+    }
+    
+    // Force reflow to get accurate measurements
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    
+    
+    // Only show arrows if there's actually overflow (more content than visible area)
+    const hasOverflow = scrollWidth > clientWidth + 20; // Increased buffer
+    
+    if (!hasOverflow) {
+      setShowLeftArrow(false);
+      setShowRightArrow(false);
+      return;
+    }
+    
+    const isAtStart = scrollLeft <= 20; // Increased tolerance
+    const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 20; // Increased tolerance
+    
+    setShowLeftArrow(!isAtStart);
+    setShowRightArrow(!isAtEnd);
+  };
+
+  const scrollPersonas = (direction) => {
+    const container = personaCardsRef.current;
+    if (!container) return;
+    
+    const cardWidth = 260;
+    const gap = 32; // 2rem gap
+    const scrollAmount = cardWidth + gap;
+    
+    const targetScrollLeft = direction === 'left' 
+      ? container.scrollLeft - scrollAmount 
+      : container.scrollLeft + scrollAmount;
+    
+    container.scrollTo({ 
+      left: targetScrollLeft, 
+      behavior: 'smooth' 
+    });
+    
+    // Update arrows after scroll animation completes
+    setTimeout(() => updateArrowVisibility(), 400);
+  };
+
   const handleStartDebate = () => {
     if (!mode) {
       alert("Please select a debate mode before starting.");
@@ -137,7 +357,19 @@ function DebateSim({ user }) {
       alert("Please enter a debate topic.");
       return;
     }
-    navigate("/debate", { state: { mode, topic: debateTopic } });
+    // Default to "default" format if none selected
+    const finalDebateFormat = debateFormat || "default";
+    
+    navigate("/debate", { 
+      state: { 
+        mode, 
+        debateFormat: finalDebateFormat,
+        topic: debateTopic,
+        proPersona,
+        conPersona,
+        aiPersona
+      } 
+    });
   };
 
   const handleLogout = () => {
@@ -160,22 +392,20 @@ function DebateSim({ user }) {
   };
 
   return (
-    <div className={`debatesim-container ${showHistorySidebar ? 'debatesim-sidebar-open' : ''}`}>
+    <div className="debatesim-container">
       <header className="debatesim-header">
         <div className="debatesim-header-content">
-          {/* LEFT SECTION: History Button */}
           <div className="debatesim-header-left">
-            <button
-              className="debatesim-history-button"
-              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-            >
-              <History size={18} />
-              <span>History</span>
-            </button>
+            {/* Empty space for alignment */}
           </div>
 
           {/* CENTER SECTION: Title */}
-          <div className="debatesim-header-center">
+          <div className="debatesim-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="debatesim-site-title" onClick={() => navigate("/")}>
               Debate Simulator
             </h1>
@@ -183,57 +413,7 @@ function DebateSim({ user }) {
 
           {/* RIGHT SECTION: User + Logout */}
           <div className="debatesim-header-right">
-            {/* Desktop user section */}
-            <div className="debatesim-user-section debatesim-desktop-user">
-              <div className="debatesim-user-info">
-                <User size={18} />
-                <span>{user?.displayName}</span>
-              </div>
-              <button className="debatesim-logout-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-
-            {/* Mobile dropdown */}
-            <div className="debatesim-mobile-dropdown-container" ref={dropdownRef}>
-              <button
-                className="debatesim-mobile-dropdown-trigger"
-                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-              >
-                <Menu size={18} />
-                <ChevronDown size={16} className={`debatesim-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-              </button>
-
-              {showMobileDropdown && (
-                <div className="debatesim-mobile-dropdown-menu">
-                  <div className="debatesim-dropdown-user-info">
-                    <User size={16} />
-                    <span>{user?.displayName}</span>
-                  </div>
-                  <button
-                    className="debatesim-dropdown-option"
-                    onClick={() => {
-                      setShowHistorySidebar(!showHistorySidebar);
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <History size={16} />
-                    <span>History</span>
-                  </button>
-                  <button
-                    className="debatesim-dropdown-option debatesim-dropdown-logout"
-                    onClick={() => {
-                      handleLogout();
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserDropdown user={user} onLogout={handleLogout} className="debatesim-user-dropdown" />
           </div>
         </div>
       </header>
@@ -296,6 +476,150 @@ function DebateSim({ user }) {
           </div>
         </div>
 
+        {/* Debate Format Selection Section */}
+        <div ref={formatSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.3s' }}>
+          <h2 className="debatesim-section-title">Select Debate Format</h2>
+          <div className="debatesim-mode-grid">
+            {debateFormats.map((formatOption, index) => (
+              <div
+                key={formatOption.id}
+                className={`debatesim-mode-card ${debateFormat === formatOption.id ? 'debatesim-selected' : ''}`}
+                style={{ animationDelay: `${0.4 + index * 0.1}s` }}
+              >
+                <div className="debatesim-mode-icon">
+                  {formatOption.icon}
+                </div>
+                <h3 className="debatesim-mode-title">{formatOption.title}</h3>
+                <p className="debatesim-mode-description">{formatOption.description}</p>
+                <div className="debatesim-mode-tags">
+                  {formatOption.tags.map((tag, tagIndex) => (
+                    <span key={tagIndex} className="debatesim-mode-tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <button 
+                  className={`debatesim-mode-select-btn ${debateFormat === formatOption.id ? 'debatesim-selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDebateFormat(formatOption.id);
+                  }}
+                >
+                  {debateFormat === formatOption.id ? (
+                    <>
+                      <span>✓ Selected</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Select Format</span>
+                      <ChevronRight size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Persona Selection Section */}
+        <div ref={personaSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.4s' }}>
+          <h2 className="debatesim-section-title">Select Debate Personas</h2>
+          <p className="debatesim-section-subtitle">
+            Choose personas for your debate participants. Different personas will be available based on your selected mode.
+          </p>
+          
+          <div className="debatesim-persona-container">
+            <button 
+              className={`debatesim-scroll-arrow debatesim-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
+              onClick={() => scrollPersonas('left')}
+            >
+              ←
+            </button>
+            <button 
+              className={`debatesim-scroll-arrow debatesim-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
+              onClick={() => scrollPersonas('right')}
+            >
+              →
+            </button>
+            
+            <div className="debatesim-persona-cards" ref={personaCardsRef}>
+              {personas.map((persona) => (
+                <div
+                  key={persona.id}
+                  className={`debatesim-persona-card ${
+                    (mode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
+                    (mode === 'ai-vs-user' && aiPersona === persona.id) ? 'debatesim-selected' : ''
+                  }`}
+                >
+                  <div className="debatesim-persona-photo">
+                    <img 
+                      src={persona.image} 
+                      alt={persona.name}
+                      className="debatesim-persona-image"
+                    />
+                  </div>
+                  <div className="debatesim-persona-info">
+                    <h3>{persona.name}</h3>
+                    <p className="debatesim-persona-description">{persona.description}</p>
+                    
+                    {mode === 'ai-vs-ai' && (
+                      <div className="debatesim-persona-buttons">
+                        <button 
+                          className={`debatesim-persona-select-btn ${proPersona === persona.id ? 'debatesim-selected' : ''}`}
+                          onClick={() => {
+                            setProPersona(persona.id);
+                            setTimeout(() => updateArrowVisibility(), 100);
+                          }}
+                        >
+                          {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                        </button>
+                        <button 
+                          className={`debatesim-persona-select-btn ${conPersona === persona.id ? 'debatesim-selected' : ''}`}
+                          onClick={() => {
+                            setConPersona(persona.id);
+                            setTimeout(() => updateArrowVisibility(), 100);
+                          }}
+                        >
+                          {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {mode === 'ai-vs-user' && (
+                      <button 
+                        className={`debatesim-persona-select-btn ${aiPersona === persona.id ? 'debatesim-selected' : ''}`}
+                        onClick={() => {
+                          setAiPersona(persona.id);
+                          setTimeout(() => updateArrowVisibility(), 100);
+                        }}
+                      >
+                        {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                      </button>
+                    )}
+
+                    {mode === 'user-vs-user' && (
+                      <div className="debatesim-persona-info">
+                        <p className="debatesim-persona-disabled">No AI personas needed for user vs user mode</p>
+                      </div>
+                    )}
+
+                    {!mode && (
+                      <div className="debatesim-persona-buttons">
+                        <button 
+                          className="debatesim-persona-select-btn debatesim-disabled"
+                          disabled
+                        >
+                          Select a mode first
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Topic Input Section */}
         <div ref={topicSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.6s' }}>
           <h2 className="debatesim-section-title">Enter Debate Topic</h2>
@@ -335,13 +659,6 @@ function DebateSim({ user }) {
         </div>
       </div>
 
-      <HistorySidebar 
-        user={user}
-        history={history}
-        showHistorySidebar={showHistorySidebar}
-        setShowHistorySidebar={setShowHistorySidebar}
-        componentPrefix="debatesim"
-      />
       
       <Footer />
     </div>

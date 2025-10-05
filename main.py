@@ -37,7 +37,7 @@ if not CONGRESS_API_KEY:
     logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
 
 # Global model configuration
-DEFAULT_MODEL = "openai/gpt-5-mini"
+DEFAULT_MODEL = "openai/gpt-4o-mini"
 FALLBACK_MODEL = "meta-llama/llama-3.3-70b-instruct"
 
 # Initialize OpenAI client (not directly used since we are calling the API via aiohttp)
@@ -89,6 +89,7 @@ class JudgeFeedbackRequest(BaseModel):
 class AnalysisRequest(BaseModel):
     text: str
     model: str = DEFAULT_MODEL  # Use the global default model
+    userProfile: dict = None  # Optional user profile for personalized analysis
 
 # Connection pooling with optimizations - will be initialized lazily
 connector = None
@@ -134,6 +135,9 @@ class GenerateResponseRequest(BaseModel):
     bill_description: str = ""  # Full bill text for evidence-based arguments
     full_transcript: str = ""  # Full debate transcript for context
     round_num: int = 1  # Current round number
+    persona: str = "Default AI"  # Persona name for logging
+    debate_format: str = "default"  # Debate format (default, public-forum)
+    speaking_order: str = "pro-first"  # Speaking order for public forum (pro-first, con-first)
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
@@ -181,8 +185,8 @@ async def generate_response(request: GenerateResponseRequest):
             logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
             logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model and debate type
-        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type)
+        # Get a debater chain with the specified model, debate type, and format
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order)
         
         # DEBUG: Print what we're sending to the LangChain model
         logger.info(f"🔍 DEBUG: Sending to LangChain:")
@@ -192,15 +196,22 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - round_num: {request.round_num}")
         logger.info(f"🔍 DEBUG: - history: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: - history: None")
         logger.info(f"🔍 DEBUG: - full_transcript: {request.full_transcript[:200]}..." if request.full_transcript else "🔍 DEBUG: - full_transcript: None")
+        logger.info(f"🔍 DEBUG: - persona_prompt length: {len(request.prompt)}")
+        logger.info(f"🔍 DEBUG: - persona_prompt preview: {request.prompt[:300]}...")
+        logger.info(f"🔍 DEBUG: - debate_format: {request.debate_format}")
+        logger.info(f"🔍 DEBUG: - speaking_order: {request.speaking_order}")
         
-        # Call the run method - pass full transcript for context
+        # Call the run method - pass full transcript for context and the original prompt for persona instructions
         ai_output = model_specific_debater_chain.run(
             debater_role=debater_role,
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
             history=opponent_arg,
             full_transcript=request.full_transcript,  # Pass the full transcript for proper context
-            round_num=request.round_num  # Pass the current round number
+            round_num=request.round_num,  # Pass the current round number
+            persona_prompt=request.prompt,  # Pass the full prompt which contains persona instructions
+            persona=request.persona,  # Pass the persona name directly for logging
+            prompt=request.prompt  # Also pass the prompt directly for direct prompt detection
         )
         
     except Exception as e:
@@ -251,7 +262,7 @@ class AnalyzeLegislationRequest(BaseModel):
     model: str = DEFAULT_MODEL
 
 @app.post("/analyze-legislation")
-async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DEFAULT_MODEL)):
+async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DEFAULT_MODEL), userProfile: str = Form(None)):
     logger.info(f"Received analyze-legislation request with model: {model}")
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
@@ -317,18 +328,27 @@ async def analyze_legislation(file: UploadFile = File(...), model: str = Form(DE
         raise HTTPException(status_code=500, detail="Error processing PDF file: " + str(e))
 
     try:
+        # Parse user profile if provided
+        parsed_user_profile = None
+        if userProfile:
+            try:
+                parsed_user_profile = json.loads(userProfile)
+                logger.info("User profile data provided for personalized analysis")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid user profile JSON, proceeding without personalization: {e}")
+
         # Optimize large bill processing by extracting key sections once
         processed_text = text
         if len(text) > 40000:  # Same threshold as analyze_legislation_text
             logger.info(f"Large bill detected ({len(text)} chars), extracting key sections once for both analysis and grading")
             processed_text = extract_key_bill_sections(text, 40000)
             logger.info(f"Key sections extracted: {len(processed_text)} chars")
-        
+
         # Log consolidated processing info
         logger.info(f"Processing bill with model {model} - text length: {len(processed_text)} chars")
-        
+
         # Generate both analysis and grades using the processed text
-        analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+        analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True, user_profile=parsed_user_profile)
         grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -344,7 +364,7 @@ async def analyze_legislation_text_endpoint(request: AnalysisRequest):
         logger.info(f"Processing text input with model {request.model} - text length: {len(request.text)} chars")
         
         # Generate both analysis and grades (skip redundant logging since this is direct text input)
-        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True)
+        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile)
         grades = await grade_legislation_text(request.text, request.model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -795,7 +815,129 @@ IMPORTANT:
         logger.error(f"Error in grade_legislation_text: {e}")
         raise RuntimeError(f"Failed to grade legislation: {e}")
 
-async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False) -> str:
+def format_user_profile_for_analysis(user_profile: dict) -> str:
+    """Format user profile data for inclusion in analysis prompt"""
+    if not user_profile:
+        return ""
+
+    # Helper function to format individual fields
+    def format_field(label: str, value: str, options: dict = None) -> str:
+        if not value or value == 'prefer_not_to_say':
+            return f"{label}: Not specified"
+
+        # Map coded values to readable text if options provided
+        if options and value in options:
+            return f"{label}: {options[value]}"
+
+        return f"{label}: {value}"
+
+    # Define human-readable mappings for coded values
+    citizenship_options = {
+        'citizen': 'U.S. Citizen',
+        'permanent_resident': 'Permanent Resident',
+        'temporary_resident': 'Temporary Resident',
+        'undocumented': 'Undocumented'
+    }
+
+    immigration_options = {
+        'visa_holder': 'Visa Holder',
+        'asylum_seeker': 'Asylum Seeker',
+        'refugee': 'Refugee',
+        'daca': 'DACA Recipient',
+        'tps': 'TPS Holder',
+        'other': 'Other Immigration Status',
+        'not_applicable': 'Not Applicable'
+    }
+
+    race_options = {
+        'american_indian': 'American Indian or Alaska Native',
+        'asian': 'Asian',
+        'black': 'Black or African American',
+        'native_hawaiian': 'Native Hawaiian or Other Pacific Islander',
+        'white': 'White',
+        'multiracial': 'Two or More Races'
+    }
+
+    ethnicity_options = {
+        'hispanic_latino': 'Hispanic or Latino',
+        'not_hispanic_latino': 'Not Hispanic or Latino'
+    }
+
+    income_options = {
+        'low_income': 'Low Income (under $25,000)',
+        'lower_middle': 'Lower Middle Income ($25,000 - $49,999)',
+        'middle_income': 'Middle Income ($50,000 - $99,999)',
+        'upper_middle': 'Upper Middle Income ($100,000 - $199,999)',
+        'high_income': 'High Income ($200,000+)'
+    }
+
+    age_options = {
+        'under_18': 'Under 18',
+        '18_24': '18-24',
+        '25_34': '25-34',
+        '35_44': '35-44',
+        '45_54': '45-54',
+        '55_64': '55-64',
+        '65_plus': '65+'
+    }
+
+    education_options = {
+        'no_high_school': 'No High School Diploma',
+        'high_school': 'High School Diploma/GED',
+        'some_college': 'Some College',
+        'associates': "Associate's Degree",
+        'bachelors': "Bachelor's Degree",
+        'masters': "Master's Degree",
+        'doctoral': 'Doctoral Degree'
+    }
+
+    employment_options = {
+        'employed_full_time': 'Employed Full-time',
+        'employed_part_time': 'Employed Part-time',
+        'self_employed': 'Self-employed',
+        'unemployed': 'Unemployed',
+        'student': 'Student',
+        'retired': 'Retired',
+        'disabled': 'Unable to work due to disability',
+        'homemaker': 'Homemaker'
+    }
+
+    disability_options = {
+        'no_disability': 'No Disability',
+        'physical_disability': 'Physical Disability',
+        'cognitive_disability': 'Cognitive Disability',
+        'sensory_disability': 'Sensory Disability',
+        'mental_health': 'Mental Health Condition',
+        'multiple_disabilities': 'Multiple Disabilities'
+    }
+
+    veteran_options = {
+        'veteran': 'Veteran',
+        'active_duty': 'Active Duty',
+        'reservist': 'Reservist/National Guard',
+        'military_family': 'Military Family Member',
+        'not_applicable': 'Not Applicable'
+    }
+
+    profile_parts = [
+        format_field('Citizenship Status', user_profile.get('citizenshipStatus'), citizenship_options),
+        format_field('Immigration Status', user_profile.get('immigrationStatus'), immigration_options),
+        format_field('Race', user_profile.get('race'), race_options),
+        format_field('Ethnicity', user_profile.get('ethnicity'), ethnicity_options),
+        format_field('Income Level', user_profile.get('socioeconomicStatus'), income_options),
+        format_field('Age Range', user_profile.get('age'), age_options),
+        format_field('Education Level', user_profile.get('education'), education_options),
+        format_field('Employment Status', user_profile.get('employment'), employment_options),
+        format_field('Disability Status', user_profile.get('disability'), disability_options),
+        format_field('Veteran Status', user_profile.get('veteranStatus'), veteran_options)
+    ]
+
+    if user_profile.get('other') and user_profile.get('other').strip():
+        profile_parts.append(f"Additional Information: {user_profile.get('other').strip()}")
+
+    return '\n'.join(profile_parts)
+
+async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None) -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
     # Debug logging (reduced when called together with grading)
@@ -865,8 +1007,32 @@ Based on the bill information available:
     else:
         bill_analysis_text = bill_text
     
+    # Format user profile context if provided
+    user_context = ""
+    personalized_section = ""
+    if user_profile:
+        formatted_profile = format_user_profile_for_analysis(user_profile)
+        if formatted_profile:
+            user_context = f"""
+
+USER PROFILE CONTEXT:
+The analysis should consider how this legislation might specifically affect a person with the following characteristics:
+{formatted_profile}
+"""
+            personalized_section = """
+
+## Impacts on You
+Based on the user's profile information provided, analyze how this bill would specifically affect someone with their demographic characteristics, circumstances, and background. Consider:
+- Direct impacts on their situation (economic, legal, social)
+- Indirect effects through programs, services, or policies they might use
+- How their specific demographic group might be affected differently than the general population
+- Potential benefits or challenges they might face
+- Any special provisions or considerations that apply to their circumstances
+
+Provide concrete, specific examples of how the bill's provisions would translate into real-world impacts for this individual."""
+
     analysis_prompt = f"""
-You are a legislative analyst providing a comprehensive analysis of the following bill. The bill text may include key extracted sections marked with === headers === for large bills.
+You are a legislative analyst providing a comprehensive analysis of the following bill. The bill text may include key extracted sections marked with === headers === for large bills.{user_context}
 
 BILL TEXT:
 {bill_analysis_text}
@@ -901,25 +1067,22 @@ Assess how well the bill addresses its stated problems and achieves intended obj
 ## Policy Analysis
 ### Potential Benefits
 - Identify 2-3 positive aspects or benefits this bill could provide
-- Support each point with specific text evidence from the available sections
+- Explain each point based on the bill's provisions and anticipated outcomes
 
 ### Potential Concerns
 - Identify 2-3 potential problems, challenges, or negative consequences
-- Support each point with specific text evidence from the available sections
+- Explain each point based on potential risks and implementation challenges
 
 ### Implementation Considerations
 - What challenges might arise in implementing this legislation?
 - Are there any unclear provisions or potential ambiguities?
 - Consider authorization levels, effective dates, and enforcement mechanisms if mentioned
-
-## Evidence from Bill Text
-For each major point you make, include direct quotes from the bill sections to support your analysis. Format quotes as:
-> "Direct quote from the bill"
+{personalized_section}
 
 ## Overall Assessment
 Provide a balanced conclusion about the bill's likely effectiveness and impact based on the available sections. If this analysis is based on extracted sections rather than the full bill, note that the assessment covers the key provisions reviewed.
 
-Please ensure your analysis is objective, evidence-based, and draws directly from the bill text sections provided.
+Please ensure your analysis is objective, comprehensive, and provides practical insights about the legislation's likely impact and effectiveness.
 """
 
     try:
@@ -1095,8 +1258,27 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
             clean_text = re.sub(r'&amp;', '&', clean_text)
             clean_text = re.sub(r'&quot;', '"', clean_text)
             clean_text = re.sub(r'&apos;', "'", clean_text)
-            # Remove excessive whitespace
-            clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+            # Normalize line endings and clean up whitespace more carefully
+            clean_text = re.sub(r'\r\n', '\n', clean_text)  # Normalize line endings
+            clean_text = re.sub(r'[ \t]+', ' ', clean_text)  # Multiple spaces/tabs to single space
+
+            # Preserve some structure by keeping line breaks around section headers
+            # Look for section patterns and ensure they start on new lines
+            section_patterns = [
+                r'(SEC(?:TION)?\.?\s+\d+[A-Z]?\.)',
+                r'(TITLE\s+[IVX]+)',
+                r'(CHAPTER\s+\d+)',
+                r'(PART\s+[A-Z]+)',
+                r'(SUBTITLE\s+[A-Z]+)'
+            ]
+
+            for pattern in section_patterns:
+                # Ensure section headers start on new lines
+                clean_text = re.sub(f'(?<!^)(?<!\n){pattern}', r'\n\1', clean_text, flags=re.IGNORECASE)
+
+            # Clean up excessive newlines but keep some structure
+            clean_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', clean_text)  # Multiple newlines to double
+            clean_text = clean_text.strip()
             # Remove document metadata that's not useful for analysis
             clean_text = re.sub(r'\[Congressional Bills.*?\]', '', clean_text)
             clean_text = re.sub(r'\[From the U\.S\. Government Publishing Office\]', '', clean_text)
@@ -1146,11 +1328,11 @@ async def analyze_recommended_bill(request: dict):
             logger.info(f"Key sections extracted: {len(processed_text)} chars")
             
             # Generate both analysis and grades using processed text
-            analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True)
+            analysis = await analyze_legislation_text(processed_text, model, skip_extraction=True, user_profile=None)
             grades = await grade_legislation_text(processed_text, model, skip_extraction=True)
         else:
             # Generate both analysis and grades using full text
-            analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True)
+            analysis = await analyze_legislation_text(full_bill_text, model, skip_extraction=True, user_profile=None)
             grades = await grade_legislation_text(full_bill_text, model, skip_extraction=True)
         
         return {"analysis": analysis, "grades": grades}
@@ -1422,3 +1604,131 @@ async def extract_bill_from_url(request: BillFromUrlRequest):
     except Exception as e:
         logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")
+
+# ============================================================================
+# TEXT-TO-SPEECH ENDPOINTS
+# ============================================================================
+
+# Import TTS service
+import sys
+sys.path.append('speech_utils')
+from speech_utils.tts_service import GoogleTTSService
+
+# Initialize TTS service
+tts_service = GoogleTTSService()
+
+@app.get("/tts/health")
+async def tts_health():
+    """Check TTS service health"""
+    try:
+        if tts_service.client:
+            return {
+                "status": "healthy",
+                "service": "google-tts",
+                "credentials_loaded": True,
+                "message": "TTS service is running and ready"
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "service": "google-tts",
+                "credentials_loaded": False,
+                "message": "TTS service not initialized"
+            }
+    except Exception as e:
+        logger.error(f"TTS health check error: {e}")
+        return {
+            "status": "error",
+            "service": "google-tts",
+            "error": str(e)
+        }
+
+@app.get("/tts/voices")
+async def get_tts_voices():
+    """Get available TTS voices"""
+    try:
+        voices = tts_service.get_available_voices()
+        default_voice = tts_service.get_default_voice()
+        
+        return {
+            "success": True,
+            "voices": voices,
+            "default_voice": default_voice,
+            "total_voices": len(voices)
+        }
+    except Exception as e:
+        logger.error(f"Error getting TTS voices: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting TTS voices: {str(e)}")
+
+class TTSRequest(BaseModel):
+    text: str
+    voice_name: str = None
+    rate: float = 1.0
+    pitch: float = 0.0
+    volume: float = 1.0
+
+@app.post("/tts/synthesize")
+async def synthesize_speech(request: TTSRequest):
+    """Synthesize speech from text"""
+    try:
+        if not request.text or request.text.strip() == "":
+            raise HTTPException(status_code=400, detail="Text is required")
+        
+        # Use default voice if none specified
+        voice_name = request.voice_name or tts_service.get_default_voice()
+        
+        # Synthesize speech
+        audio_content = tts_service.synthesize_speech(
+            text=request.text,
+            voice_name=voice_name,
+            rate=request.rate,
+            pitch=request.pitch,
+            volume=request.volume
+        )
+        
+        if audio_content:
+            return {
+                "success": True,
+                "audio_content": audio_content,
+                "voice_used": voice_name,
+                "text_length": len(request.text),
+                "message": "Speech synthesized successfully"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to synthesize speech")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"TTS synthesis error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS synthesis error: {str(e)}")
+
+@app.get("/tts/test")
+async def test_tts():
+    """Test TTS with sample text"""
+    try:
+        test_text = "Hello! This is a test of the DebateSim text-to-speech system. The voice should sound natural and clear."
+        
+        audio_content = tts_service.synthesize_speech(
+            text=test_text,
+            voice_name=tts_service.get_default_voice()
+        )
+        
+        if audio_content:
+            return {
+                "success": True,
+                "audio_content": audio_content,
+                "test_text": test_text,
+                "voice_used": tts_service.get_default_voice(),
+                "message": "TTS test successful"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="TTS test failed")
+            
+    except Exception as e:
+        logger.error(f"TTS test error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS test error: {str(e)}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

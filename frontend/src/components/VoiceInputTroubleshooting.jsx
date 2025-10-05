@@ -131,7 +131,7 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
             borderRadius: '6px',
             marginBottom: '1rem'
           }}>
-            <h4 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>⚠️ Brave Browser Detected</h4>
+            <h4 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>Brave Browser Detected</h4>
             <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem', margin: 0 }}>
               Brave browser may have limited speech recognition support due to privacy features. 
               Try disabling Brave Shields or use Chrome for best compatibility.
@@ -225,9 +225,9 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               <ul style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
                 <li>✅ Chrome (recommended)</li>
                 <li>✅ Edge</li>
-                <li>⚠️ Brave (limited support - try disabling shields)</li>
-                <li>⚠️ Firefox (limited support)</li>
-                <li>⚠️ Safari (limited support)</li>
+                <li>Brave (limited support - try disabling shields)</li>
+                <li>Firefox (limited support)</li>
+                <li>Safari (limited support)</li>
               </ul>
               
               {isBrave && (

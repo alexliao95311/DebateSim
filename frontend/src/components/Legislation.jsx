@@ -8,20 +8,261 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
-import HistorySidebar from "./HistorySidebar";
-import VoiceOutput from './VoiceOutput';
-import { MessageSquare, Code, Share2, X, Download, History, User, LogOut, ChevronDown, Menu } from 'lucide-react';
+import UserDropdown from "./UserDropdown";
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import EnhancedAnalysisTTS, { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
+import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
+import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
+import UserProfileService from '../utils/userProfileService';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
-  "openai/gpt-5-mini", 
+  "openai/gpt-4o-mini", 
   "meta-llama/llama-3.3-70b-instruct", 
   "google/gemini-2.0-flash-001",
   "anthropic/claude-3.5-sonnet",
-  "openai/gpt-4o-mini",
   "openai/gpt-4o-mini-search-preview"
 ];
+
+// Debate format options
+const debateFormats = [
+  {
+    id: "default",
+    title: "Default Format",
+    description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+    tags: ["Academic", "Structured"]
+  },
+  {
+    id: "public-forum",
+    title: "Public Forum",
+    description: "Accessible format focused on current events and real-world issues, emphasizing clear communication",
+    tags: ["Accessible", "Current Events"]
+  }
+  ,
+  {
+    id: "lincoln-douglas",
+    title: "LD Debate",
+    description: "Philosophical debate format with value premise, criterion, and contentions. 6-speech structure.",
+    tags: ["Philosophy", "Framework", "LD"]
+  }
+];
+
+// Persona options for debates
+const personas = [
+  {
+    id: "default",
+    name: "Default AI",
+    description: "Standard debate style",
+    image: "/images/ai.jpg"
+  },
+  {
+    id: "trump",
+    name: "Donald Trump",
+    description: "Bold, confident rhetoric with superlatives",
+    image: "/images/trump.jpeg"
+  },
+  {
+    id: "harris",
+    name: "Kamala Harris", 
+    description: "Prosecutorial, structured, evidence-focused",
+    image: "/images/harris.webp"
+  },
+  {
+    id: "musk",
+    name: "Elon Musk",
+    description: "Analytical, engineering-focused, first principles",
+    image: "/images/elon.jpg"
+  },
+  {
+    id: "drake",
+    name: "Drake",
+    description: "Smooth, introspective Toronto style",
+    image: "/images/drake.jpg"
+  }
+];
+
+// Profile Status Indicator Component
+const ProfileStatusIndicator = ({ user }) => {
+  const [profileStatus, setProfileStatus] = useState({
+    hasProfile: false,
+    isLoading: true,
+    profileData: null
+  });
+
+  useEffect(() => {
+    const checkProfileStatus = async () => {
+      try {
+        const profile = await UserProfileService.getUserProfile(user);
+        const hasProfile = UserProfileService.hasProfileData(profile);
+        setProfileStatus({
+          hasProfile,
+          isLoading: false,
+          profileData: profile
+        });
+      } catch (err) {
+        console.error('Error checking profile status:', err);
+        setProfileStatus({
+          hasProfile: false,
+          isLoading: false,
+          profileData: null
+        });
+      }
+    };
+
+    checkProfileStatus();
+  }, [user]);
+
+  if (profileStatus.isLoading) {
+    return (
+      <div className="profile-status-indicator loading">
+        <span className="status-icon">⏳</span>
+        <span className="status-text">Checking profile...</span>
+      </div>
+    );
+  }
+
+  if (profileStatus.hasProfile) {
+    return (
+      <div className="profile-status-indicator has-profile">
+        <div className="status-content">
+          <span className="status-text">Profile configured - will include personalized "Impacts on You" section</span>
+          <button
+            className="profile-settings-link"
+            onClick={() => window.open('/settings', '_blank')}
+          >
+            View/Edit Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="profile-status-indicator no-profile">
+      <div className="status-content">
+        <span className="status-text">No profile configured - analysis will be general</span>
+        <button
+          className="profile-settings-link"
+          onClick={() => window.open('/settings', '_blank')}
+        >
+          Set Up Profile for Personalized Analysis
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Custom H2 Section Renderer Component
+const H2SectionRenderer = ({ analysisText }) => {
+  // Function to extract text content from H2 section until next H2
+  const extractH2SectionText = (fullText, h2HeaderText) => {
+    const lines = fullText.split('\n');
+    const startIndex = lines.findIndex(line => 
+      line.startsWith('## ') && line.toLowerCase().includes(h2HeaderText.toLowerCase())
+    );
+    
+    if (startIndex === -1) return '';
+    
+    // Find next H2 header or end of text
+    let endIndex = lines.length;
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      if (lines[i].startsWith('## ')) {
+        endIndex = i;
+        break;
+      }
+    }
+    
+    // Extract content from start to end (excluding the header itself for TTS)
+    return lines.slice(startIndex + 1, endIndex).join('\n').trim();
+  };
+
+  // Parse the analysis text to find all H2 sections
+  const lines = analysisText.split('\n');
+  const h2Sections = [];
+  
+  lines.forEach((line, index) => {
+    if (line.startsWith('## ')) {
+      const headerText = line.replace('## ', '');
+      const sectionText = extractH2SectionText(analysisText, headerText);
+      h2Sections.push({
+        header: headerText,
+        fullSectionText: sectionText,
+        lineIndex: index
+      });
+    }
+  });
+
+  // Render all sections with proper content separation
+  const renderAnalysisWithTTSButtons = () => {
+    const elements = [];
+    
+    h2Sections.forEach((section, index) => {
+      // Add divider line before each section (except the first)
+      if (index > 0) {
+        elements.push(<hr key={`divider-${index}`} className="section-divider" />);
+      }
+      
+      // Add H2 header with TTS button
+      elements.push(
+        <div key={`header-${index}`} className="analysis-heading-container">
+          <h2 className="analysis-heading">
+            {section.header}
+          </h2>
+          <div style={{ display: 'inline-block', marginLeft: '8px', verticalAlign: 'middle' }}>
+            <EnhancedVoiceOutput
+              text={section.fullSectionText}
+              showLabel={false}
+              buttonStyle="compact"
+              context="analysis"
+              useGoogleTTS={true}
+              ttsApiUrl={TTS_CONFIG.apiUrl}
+              title={`Play ${section.header} section`}
+            />
+          </div>
+        </div>
+      );
+      
+      // Add section content directly rendered as markdown
+      if (section.fullSectionText && section.fullSectionText.trim()) {
+        elements.push(
+          <ReactMarkdown 
+            key={`content-${index}`}
+            rehypePlugins={[rehypeRaw]} 
+            className="markdown-renderer"
+            components={{
+              h1: ({node, children, ...props}) => (
+                <h1 className="analysis-heading" {...props}>{children}</h1>
+              ),
+              h2: ({node, children, ...props}) => (
+                <h2 className="analysis-heading" {...props}>{children}</h2>
+              ),
+              h3: ({node, children, ...props}) => (
+                <h3 className="analysis-heading" {...props}>{children}</h3>
+              ),
+              h4: ({node, children, ...props}) => (
+                <h4 className="analysis-heading" {...props}>{children}</h4>
+              ),
+              p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
+              ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
+              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+            }}
+          >
+            {section.fullSectionText}
+          </ReactMarkdown>
+        );
+      }
+    });
+    
+    return elements;
+  };
+
+  return (
+    <div className="h2-sections-container">
+      {renderAnalysisWithTTSButtons()}
+    </div>
+  );
+};
 
 // NEW: Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
@@ -307,6 +548,34 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     </div>
   );
 };
+
+// Add this new component after the imports and before the main Legislation component
+const InfoNote = ({ message, expanded, onToggle }) => {
+  return (
+    <div className="info-note">
+      <div className="info-note-content">
+        <span className="info-note-message">{message}</span>
+        <button 
+          className="info-toggle-btn"
+          onClick={onToggle}
+          aria-label={expanded ? "Hide explanation" : "Show explanation"}
+        >
+          {expanded ? "−" : "?"}
+        </button>
+      </div>
+      {expanded && (
+        <div className="info-note-explanation">
+          <p>
+            Congress.gov updates new bills periodically, but many bills are still in the drafting phase. 
+            Lawmakers continue to refine and revise the text before it's officially published and made 
+            available for analysis. This is a normal part of the legislative process.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Legislation = ({ user }) => {
   // NEW: Initial page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -325,6 +594,10 @@ const Legislation = ({ user }) => {
   const [actionType, setActionType] = useState(''); // 'analyze' or 'debate'
   const [extractedBillData, setExtractedBillData] = useState(null);
   const [extractedPdfText, setExtractedPdfText] = useState(null); // Cache for PDF text
+  const [billSections, setBillSections] = useState([]); // Extracted sections from PDF
+  const [selectedSections, setSelectedSections] = useState([]); // User-selected sections for analysis
+  const [analyzeWholeBill, setAnalyzeWholeBill] = useState(true); // Whether to analyze whole bill or sections
+  const [sectionSearchTerm, setSectionSearchTerm] = useState(''); // Search term for filtering sections
 
   // Common states
   const [error, setError] = useState('');
@@ -332,6 +605,10 @@ const Legislation = ({ user }) => {
   const [processingStage, setProcessingStage] = useState('');
   const [progressStep, setProgressStep] = useState(0);
   const [totalSteps, setTotalSteps] = useState(4);
+  
+  // Info note state
+  const [showInfoNote, setShowInfoNote] = useState(false);
+  const [infoNoteExpanded, setInfoNoteExpanded] = useState(false);
 
   // Analysis state
   const [analysisResult, setAnalysisResult] = useState('');
@@ -341,15 +618,14 @@ const Legislation = ({ user }) => {
   // Debate state
   const [debateTopic, setDebateTopic] = useState('');
   const [debateMode, setDebateMode] = useState('');
+  const [debateFormat, setDebateFormat] = useState('');
+  const [proPersona, setProPersona] = useState('');
+  const [conPersona, setConPersona] = useState('');
+  const [aiPersona, setAiPersona] = useState('');
   
-  // History state
-  const [history, setHistory] = useState([]);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
-  const dropdownRef = useRef(null);
 
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
@@ -360,27 +636,6 @@ const Legislation = ({ user }) => {
   const resultsRef = useRef(null);
   const navigate = useNavigate();
 
-  // Fetch debate history function
-  const fetchHistory = async () => {
-    if (!user || user.isGuest) return;
-    try {
-      const db = getFirestore();
-      const transcriptsRef = collection(db, "users", user.uid, "transcripts");
-      const q = query(transcriptsRef, orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const fetchedHistory = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setHistory(fetchedHistory);
-      } else {
-        setHistory([]); // Explicitly set empty array
-      }
-    } catch (err) {
-      console.error("Error fetching debate history:", err);
-    }
-  };
 
    // Enhanced initial page loading sequence with improved timing
   useLayoutEffect(() => {
@@ -433,26 +688,7 @@ const Legislation = ({ user }) => {
     };
   }, []);
 
-  // Fetch debate history on component mount (after loading)
-  useEffect(() => {
-     if (isContentReady) {
-      fetchHistory();
-    }
-  }, [user, isContentReady]);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
    // Fetch recommended bills from Congress.gov API (after initial loading)
   useEffect(() => {
@@ -512,21 +748,39 @@ const Legislation = ({ user }) => {
 
   // Step 1: Handle bill selection from recommended bills (lazy loading)
   const handleSelectRecommendedBill = (bill) => {
+    console.log('🔄 Selecting recommended bill:', bill.title);
     setSelectedBill(bill);
     setBillSource('recommended');
     setExtractedBillData(null); // Clear previous data
+
+    // Reset section-related state
+    console.log('🗑️ Clearing previous bill sections and selections');
+    setBillSections([]); // Clear previous sections
+    setSelectedSections([]); // Clear selected sections
+    setAnalyzeWholeBill(true); // Reset to analyze whole bill
+    setSectionSearchTerm(''); // Clear search term
+
     setCurrentStep(2);
     setError('');
+    clearInfoNote(); // Clear any previous info notes
   };
   
   // Extract recommended bill text when needed
   const extractRecommendedBillText = async (bill) => {
     if (extractedBillData) {
-      return extractedBillData; // Return cached data
+      console.log('📋 Using cached bill data, text length:', extractedBillData.text?.length || 0);
+      return extractedBillData.text; // Return cached text only
     }
-    
+
     setProcessingStage('Extracting bill text from Congress.gov...');
-    
+
+    console.log('🔗 Fetching bill text from API for:', {
+      type: bill.type,
+      number: bill.number,
+      congress: bill.congress || 119,
+      title: bill.title
+    });
+
     const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
       method: "POST",
       headers: {
@@ -550,21 +804,36 @@ const Legislation = ({ user }) => {
     }
     
     const data = await response.json();
-    
+
+    console.log('📄 API Response received:', {
+      hasText: !!data.text,
+      textLength: data.text?.length || 0,
+      textPreview: data.text?.substring(0, 200) + '...',
+      title: data.title
+    });
+
     // Check if bill text is unavailable
     if (data.text && data.text.includes('Bill Text Unavailable')) {
+      console.log('⚠️ Bill text marked as unavailable');
       throw new Error('This bill\'s text is not yet available from Congress.gov. You can try again later or upload a PDF version if available.');
     }
-    
+
+    // Check if we got suspiciously short text (might be just preamble)
+    if (data.text && data.text.length < 2000) {
+      console.log('⚠️ Received suspiciously short text, might be incomplete:', data.text.length, 'characters');
+      console.log('📝 Short text content:', data.text);
+    }
+
     // Cache the extracted bill data
     const billData = {
       text: data.text,
       title: data.title || bill.title,
       billCode: `${bill.type} ${bill.number}`
     };
-    
+
+    console.log('💾 Caching bill data, final text length:', billData.text?.length || 0);
     setExtractedBillData(billData);
-    return billData;
+    return billData.text;
   };
   
   // Extract PDF text when needed
@@ -591,7 +860,334 @@ const Legislation = ({ user }) => {
     
     // Cache the extracted text
     setExtractedPdfText(data.text);
+
+    // Extract sections from the text
+    console.log('📄 PDF uploaded, extracting sections from text...');
+    const sections = extractSectionsFromText(data.text);
+    console.log('💾 Setting bill sections in state, count:', sections.length);
+    setBillSections(sections);
+
     return data.text;
+  };
+
+  // Extract sections from text using TOC-first approach
+  const extractSectionsFromText = (text) => {
+    console.log('🔧 TOC-first extractSectionsFromText called');
+    console.log('📊 Input text type:', typeof text);
+    console.log('📊 Input text length:', text?.length || 0);
+    console.log('📊 Input text preview:', text.substring(0, 100));
+
+    if (!text) {
+      console.log('⚠️ No text provided to extractSectionsFromText');
+      return [];
+    }
+
+    if (typeof text !== 'string') {
+      console.error('❌ Text is not a string, type:', typeof text, 'value:', text);
+      return [];
+    }
+
+    console.log('🚀 Starting TOC-first section extraction...');
+    console.log('📊 Input text length:', text.length);
+
+    // Step 1: Find and extract table of contents sections
+    const tocSections = extractTOCSections(text);
+    console.log('📋 Found', tocSections.length, 'sections in table of contents');
+
+    if (tocSections.length === 0) {
+      console.log('⚠️ No TOC found, falling back to full text as single section');
+      return [{
+        id: 'full-bill',
+        number: 'Full Bill',
+        title: 'Full Bill Text',
+        type: 'full',
+        content: text.substring(0, 10000) + (text.length > 10000 ? '...' : '')
+      }];
+    }
+
+    // Step 2: Find each TOC section in the full document
+    const sections = [];
+    console.log('🔍 Searching for each TOC section in the full document...');
+
+    for (let i = 0; i < tocSections.length; i++) {
+      const tocSection = tocSections[i];
+      const sectionContent = findSectionInText(text, tocSection, tocSections);
+
+      if (sectionContent) {
+        const section = {
+          id: `section-${i}`,
+          number: tocSection.number,
+          title: tocSection.title,
+          type: 'section',
+          content: sectionContent
+        };
+
+        console.log('✅ Found section:', {
+          number: section.number,
+          title: section.title.substring(0, 60) + '...',
+          contentLength: section.content.length
+        });
+
+        sections.push(section);
+      } else {
+        console.log('❌ Could not find content for section:', tocSection.number, tocSection.title);
+      }
+    }
+
+    console.log('✅ Section extraction completed!');
+    console.log('📊 Final sections count:', sections.length, 'out of', tocSections.length, 'TOC entries');
+
+    if (sections.length > 0) {
+      console.log('📏 Content length range:', {
+        min: Math.min(...sections.map(s => s.content.length)),
+        max: Math.max(...sections.map(s => s.content.length)),
+        avg: Math.round(sections.reduce((sum, s) => sum + s.content.length, 0) / sections.length)
+      });
+    }
+
+    return sections;
+  };
+
+  // Extract section list from table of contents
+  function extractTOCSections(text) {
+    console.log('📋 Extracting sections from table of contents...');
+
+    // Find the table of contents section
+    const tocStart = text.search(/TABLE\s+OF\s+CONTENTS|CONTENTS/i);
+    if (tocStart === -1) {
+      console.log('❌ No table of contents found');
+      return [];
+    }
+
+    // Find where the actual bill content starts (after TOC)
+    // Look for the first substantial section implementation
+    const sectionImplPattern = /SEC\.\s+(\d+[A-Z]?)\.\s+[A-Z][A-Z\s\-,()&.]+\.\s*\([a-z]\)/gi;
+    const sectionImpl = sectionImplPattern.exec(text.substring(tocStart + 1000));
+
+    let tocEnd = text.length;
+    if (sectionImpl) {
+      tocEnd = tocStart + 1000 + sectionImpl.index;
+      console.log('📋 Found bill implementation start at position:', tocEnd);
+    } else {
+      // Fallback to original markers
+      const billStartMarkers = [
+        /SEC\.\s+1001\.\s+[A-Z]/i,
+        /SEC\.\s+1\.\s+[A-Z]/i,
+        /TITLE\s+[IVX]+\s*--.*SEC\.\s+\d+/i
+      ];
+
+      for (const marker of billStartMarkers) {
+        const match = text.substring(tocStart + 100).search(marker);
+        if (match !== -1) {
+          const actualPos = tocStart + 100 + match;
+          if (actualPos < tocEnd) {
+            tocEnd = actualPos;
+          }
+        }
+      }
+    }
+
+    const tocText = text.substring(tocStart, tocEnd);
+    console.log('📋 TOC text length:', tocText.length);
+
+    // Extract section entries from TOC
+    const sectionPattern = /Sec\.\s+(\d+[A-Z]?)\.\s+(.+?)(?=\n|Sec\.\s+\d+|\.|\s+\d+\s*$|$)/gi;
+    const sections = [];
+    let match;
+
+    while ((match = sectionPattern.exec(tocText)) !== null) {
+      const sectionNumber = match[1].trim();
+      let sectionTitle = match[2].trim();
+
+      // Clean up the title
+      sectionTitle = sectionTitle.replace(/\s+/g, ' ');
+      sectionTitle = sectionTitle.replace(/\.$/, ''); // Remove trailing period
+
+      // Skip if this looks like a page number or other non-section content
+      if (sectionTitle.length < 5 || /^\d+$/.test(sectionTitle)) {
+        continue;
+      }
+
+      const section = {
+        number: sectionNumber,
+        title: `SEC. ${sectionNumber}. ${sectionTitle.toUpperCase()}.`,
+        originalTitle: sectionTitle
+      };
+
+      console.log('📋 TOC entry:', section.number, '-', section.originalTitle);
+      sections.push(section);
+    }
+
+    console.log('📋 Extracted', sections.length, 'sections from TOC');
+    return sections;
+  }
+
+  // Find a specific section in the full document text
+  function findSectionInText(text, tocSection, allTocSections) {
+    const sectionNumber = tocSection.number;
+
+    // Create multiple search patterns for this section
+    const searchPatterns = [
+      // Most common: "SEC. 1001. TITLE."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Alternative: "SECTION 1001. TITLE."
+      new RegExp(`SECTION\\s+${sectionNumber}\\.\\s+[A-Z][A-Z\\s\\-,()&.]+\\.`, 'gi'),
+      // Simple: "SEC. 1001."
+      new RegExp(`SEC\\.?\\s+${sectionNumber}\\.`, 'gi'),
+      // Even simpler: just the number pattern at word boundary
+      new RegExp(`\\bSEC(?:TION)?\\.?\\s+${sectionNumber}\\b`, 'gi')
+    ];
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    // Try each pattern
+    for (let i = 0; i < searchPatterns.length; i++) {
+      const pattern = searchPatterns[i];
+      const matches = [...text.matchAll(pattern)];
+
+      for (const match of matches) {
+        const position = match.index;
+        const matchText = match[0];
+
+        // Score this match based on various criteria
+        let score = 0;
+
+        // Prefer matches that are not in the TOC area (first 10% of document)
+        if (position > text.length * 0.1) score += 10;
+
+        // Prefer matches with full titles over just numbers
+        if (matchText.length > 10) score += 5;
+
+        // Prefer exact pattern matches (lower index = more specific pattern)
+        score += (4 - i);
+
+        // Check if this match has legislative content after it (subsections, amendments, etc.)
+        const contentAfter = text.substring(position, position + 500);
+        if (/\([a-z]\)/.test(contentAfter)) score += 5; // Has subsections
+        if (/is amended|striking|inserting|adding/.test(contentAfter)) score += 3; // Legislative language
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = { position, matchText, score };
+        }
+      }
+    }
+
+    if (!bestMatch) {
+      console.log('❌ No match found for section', sectionNumber);
+      return null;
+    }
+
+    // Find the end of this section by looking for the next section
+    const currentIndex = allTocSections.findIndex(s => s.number === sectionNumber);
+    let endPosition = text.length;
+
+    // Look for the next section in the TOC list
+    for (let i = currentIndex + 1; i < allTocSections.length; i++) {
+      const nextSection = allTocSections[i];
+      const nextPattern = new RegExp(`SEC\\.?\\s+${nextSection.number}\\.`, 'gi');
+
+      // Reset regex lastIndex to avoid issues
+      nextPattern.lastIndex = 0;
+      const nextMatch = nextPattern.exec(text.substring(bestMatch.position + 100));
+
+      if (nextMatch) {
+        endPosition = bestMatch.position + 100 + nextMatch.index;
+        break;
+      }
+    }
+
+    // Extract the content
+    let content = text.substring(bestMatch.position, endPosition).trim();
+
+    // Limit very long sections
+    if (content.length > 15000) {
+      content = content.substring(0, 15000) + '...';
+    }
+
+    console.log('✅ Extracted section', sectionNumber, 'from position', bestMatch.position, 'to', endPosition, 'length:', content.length);
+
+    return content;
+  }
+
+  // Get bill title for context
+  const getBillTitle = () => {
+    if (billSource === 'recommended' || billSource === 'link') {
+      return selectedBill?.title || 'Unknown Bill';
+    } else {
+      return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
+    }
+  };
+
+  // Get text from selected sections with bill context
+  const getSelectedSectionsText = () => {
+    const billTitle = getBillTitle();
+    const billHeader = `BILL TITLE: ${billTitle}\n\n`;
+    const billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+
+    console.log('📋 getSelectedSectionsText called:', {
+      selectedSectionsCount: selectedSections.length,
+      selectedSectionIds: selectedSections,
+      billSectionsCount: billSections.length,
+      billSectionIds: billSections.map(s => s.id)
+    });
+
+    if (selectedSections.length === 0) {
+      console.log('⚠️ No sections selected, using full bill text');
+      return billHeader + (billText || ''); // Fallback to full text if no sections selected
+    }
+
+    const selectedSectionObjects = billSections.filter(section =>
+      selectedSections.includes(section.id)
+    );
+
+    console.log('📄 Selected section objects:', {
+      count: selectedSectionObjects.length,
+      sections: selectedSectionObjects.map(s => ({
+        id: s.id,
+        title: s.title,
+        contentLength: s.content?.length || 0,
+        contentPreview: s.content?.substring(0, 200) + '...'
+      }))
+    });
+
+    // Debug each selected section individually
+    selectedSectionObjects.forEach((section, index) => {
+      console.log(`🔍 Selected section ${index + 1}:`, {
+        id: section.id,
+        number: section.number,
+        title: section.title,
+        type: section.type,
+        contentLength: section.content?.length || 0,
+        contentFirstChars: section.content?.substring(0, 100),
+        contentLastChars: section.content?.slice(-100)
+      });
+    });
+
+    const sectionsText = selectedSectionObjects
+      .map(section => section.content)
+      .join('\n\n---\n\n');
+
+    console.log('📝 Final sections text length:', sectionsText.length);
+    console.log('📝 Final sections text preview:', sectionsText.substring(0, 200) + '...');
+
+    return billHeader + sectionsText;
+  };
+
+  // Filter sections based on search term
+  const getFilteredSections = () => {
+    if (!sectionSearchTerm.trim()) {
+      return billSections;
+    }
+
+    const searchTerm = sectionSearchTerm.toLowerCase();
+    return billSections.filter(section =>
+      section.title.toLowerCase().includes(searchTerm) ||
+      section.content.toLowerCase().includes(searchTerm) ||
+      section.type.toLowerCase().includes(searchTerm) ||
+      section.number.toLowerCase().includes(searchTerm)
+    );
   };
 
   const getActivityTypeDisplay = (item) => {
@@ -628,8 +1224,14 @@ const Legislation = ({ user }) => {
       setSelectedBill(file);
       setBillSource('upload');
       setExtractedPdfText(null); // Clear previous cached text
+      console.log('🗑️ Clearing previous bill sections');
+      setBillSections([]); // Clear previous sections
+      setSelectedSections([]); // Clear selected sections
+      setAnalyzeWholeBill(true); // Reset to analyze whole bill
+      setSectionSearchTerm(''); // Clear search term
       setCurrentStep(2);
       setError('');
+      clearInfoNote(); // Clear any previous info notes
     } else {
       setError('Please upload a valid PDF file.');
     }
@@ -650,6 +1252,15 @@ const Legislation = ({ user }) => {
       setDebateTopic(billName);
     }
     
+    // Auto-extract PDF text and sections when entering analyze mode with uploaded PDF
+    if (action === 'analyze' && billSource === 'upload' && selectedBill && !extractedPdfText) {
+      extractPdfText(selectedBill).catch(error => {
+        console.error('Failed to extract PDF text:', error);
+        setError('Failed to extract text from PDF. Please try again.');
+      });
+    }
+
+    clearInfoNote(); // Clear any info notes when changing action
     setCurrentStep(3);
   };
 
@@ -705,6 +1316,7 @@ const Legislation = ({ user }) => {
     // Reset all staged states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
     
@@ -752,7 +1364,6 @@ const Legislation = ({ user }) => {
             grades,
             selectedModel
           );
-          await fetchHistory();
         } catch (err) {
           console.error("Error saving analysis to history:", err);
         }
@@ -762,39 +1373,48 @@ const Legislation = ({ user }) => {
 
   // Step 3: Handle analysis execution with progress updates
   const handleAnalyzeExecution = async () => {
+    clearInfoNote(); // Clear any info notes when starting analysis
     setLoadingState(true);
     setError('');
     setProgressStep(0);
     setTotalSteps(3);
+
+    // Get user profile data for personalized analysis
+    let userProfile = null;
+    try {
+      userProfile = await UserProfileService.getUserProfile(user);
+    } catch (err) {
+      console.error('Error loading user profile for analysis:', err);
+    }
     
     try {
       if (billSource === 'recommended' || billSource === 'link') {
         // Step 1: Extract bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
         setProgressStep(1);
-        
+
         const billData = await extractRecommendedBillText(selectedBill);
-        
-        // Step 2: Analyze legislation
+
+        // Step 2: Analyze legislation using selected sections
         setProcessingStage('Analyzing legislation with AI...');
         setProgressStep(2);
-        
-        const response = await fetch(`${API_URL}/analyze-recommended-bill`, {
+
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            type: selectedBill.type,
-            number: selectedBill.number,
-            congress: selectedBill.congress || 119,
-            model: selectedModel
+            text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections,
+            userProfile: userProfile
           }),
         });
-        
+
         if (!response.ok) {
           const errorData = await response.text();
-          
+
           // Handle specific error cases
           if (response.status === 404) {
             throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
@@ -806,13 +1426,13 @@ const Legislation = ({ user }) => {
             throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
           }
         }
-        
+
         const data = await response.json();
-        
+
         // Step 3: Finalizing
         setProcessingStage('Finalizing analysis and grades...');
         setProgressStep(3);
-        
+
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
         
@@ -834,8 +1454,10 @@ const Legislation = ({ user }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: extractedPdfText,
-              model: selectedModel
+              text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${billSource === 'upload' ? extractedPdfText : extractedBillData?.text}` : getSelectedSectionsText(),
+              model: selectedModel,
+              sections: analyzeWholeBill ? null : selectedSections,
+              userProfile: userProfile
             }),
           });
           
@@ -857,6 +1479,9 @@ const Legislation = ({ user }) => {
           const formData = new FormData();
           formData.append('file', selectedBill);
           formData.append('model', selectedModel);
+          if (userProfile) {
+            formData.append('userProfile', JSON.stringify(userProfile));
+          }
           
           setProcessingStage('Analyzing legislation with AI...');
           setProgressStep(2);
@@ -887,7 +1512,7 @@ const Legislation = ({ user }) => {
       }
       
     } catch (err) {
-      setError(`Error analyzing bill: ${err.message}`);
+      handleError(err);
     } finally {
       setLoadingState(false);
       setProcessingStage('');
@@ -901,6 +1526,8 @@ const Legislation = ({ user }) => {
       setError('Please enter a debate topic and select a debate mode.');
       return;
     }
+    
+    clearInfoNote(); // Clear any info notes when starting debate
     
     const billText = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.text : null;
     const billTitle = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.title : debateTopic;
@@ -937,12 +1564,16 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: billTitle,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
       } catch (err) {
-        setError(`Error extracting text: ${err.message}`);
+        handleError(err);
         setLoadingState(false);
         return;
       }
@@ -984,14 +1615,18 @@ const Legislation = ({ user }) => {
             topic: debateTopic,
             billText: data.text,
             billTitle: data.title,
-            debateMode: debateMode
+            debateMode: debateMode,
+            debateFormat: debateFormat,
+            proPersona: proPersona,
+            conPersona: conPersona,
+            aiPersona: aiPersona
           }
         });
         
         setLoadingState(false);
         
       } catch (err) {
-        setError(`Error extracting bill text: ${err.message}`);
+        handleError(err);
         setLoadingState(false);
         return;
       }
@@ -1005,10 +1640,39 @@ const Legislation = ({ user }) => {
           topic: debateTopic,
           billText: '',
           billTitle: debateTopic,
-          debateMode: debateMode
+          debateMode: debateMode,
+          debateFormat: debateFormat,
+          proPersona: proPersona,
+          conPersona: conPersona,
+          aiPersona: aiPersona
         }
       });
     }
+  };
+
+  // Helper function to handle errors and show info note for specific cases
+  const handleError = (err) => {
+    const errorMessage = err.message;
+    if (errorMessage.includes('No published text is available for this bill yet') || 
+        errorMessage.includes('Bill Text Unavailable')) {
+      setShowInfoNote(true);
+      setError('');
+    } else {
+      setError(`Error analyzing bill: ${errorMessage}`);
+      setShowInfoNote(false);
+    }
+  };
+
+  // Clear info note when selecting a new bill or changing state
+  const clearInfoNote = () => {
+    setShowInfoNote(false);
+    setInfoNoteExpanded(false);
+  };
+
+  // Step navigation functions that also clear info notes
+  const goToStep = (step) => {
+    setCurrentStep(step);
+    clearInfoNote();
   };
 
   // Reset the entire flow
@@ -1023,6 +1687,10 @@ const Legislation = ({ user }) => {
     setAnalysisGrades(null);
     setDebateTopic('');
     setDebateMode('');
+    setDebateFormat('');
+    setProPersona('');
+    setConPersona('');
+    setAiPersona('');
     setError('');
     setLoadingState(false);
     setProcessingStage('');
@@ -1038,8 +1706,28 @@ const Legislation = ({ user }) => {
     // Reset staged loading states
     setShowGradingSection(false);
     setShowAnalysisText(false);
+    setShowBillTextSection(false);
     setGradingSectionLoaded(false);
     setAnalysisContentReady(false);
+    
+    // Reset info note state
+    setShowInfoNote(false);
+    setInfoNoteExpanded(false);
+  };
+
+  // Check if debate configuration is complete
+  const isDebateConfigComplete = () => {
+    if (!debateTopic.trim() || !debateMode || !debateFormat) return false;
+    
+    if (debateMode === 'ai-vs-ai') {
+      return proPersona && conPersona;
+    } else if (debateMode === 'ai-vs-user') {
+      return aiPersona;
+    } else if (debateMode === 'user-vs-user') {
+      return true; // No personas needed
+    }
+    
+    return false;
   };
 
   // Handle sharing current analysis - simplified like Judge.jsx
@@ -1413,8 +2101,18 @@ const Legislation = ({ user }) => {
   // Handle bill link confirmation
   const handleBillLinkConfirm = () => {
     if (linkParsedBill) {
+      console.log('🔄 Confirming link bill:', linkParsedBill.title);
       setSelectedBill(linkParsedBill);
       setBillSource('link');
+
+      // Reset section-related state
+      console.log('🗑️ Clearing previous bill sections and selections');
+      setBillSections([]); // Clear previous sections
+      setSelectedSections([]); // Clear selected sections
+      setAnalyzeWholeBill(true); // Reset to analyze whole bill
+      setSectionSearchTerm(''); // Clear search term
+      setExtractedBillData(null); // Clear previous extracted data
+
       setShowLinkConfirmation(false);
       setBillLink("");
       setLinkParsedBill(null);
@@ -1430,6 +2128,8 @@ const Legislation = ({ user }) => {
 
   const [showGradingSection, setShowGradingSection] = useState(false);
   const [showAnalysisText, setShowAnalysisText] = useState(false);
+  const [showFullBillText, setShowFullBillText] = useState(false);
+  const [showBillTextSection, setShowBillTextSection] = useState(false);
   const [gradingSectionLoaded, setGradingSectionLoaded] = useState(false);
   const [analysisContentReady, setAnalysisContentReady] = useState(false);
 
@@ -1475,23 +2175,21 @@ const Legislation = ({ user }) => {
       {/* NEW: Page Loader */}
       <PageLoader isLoading={isPageLoading} />
       
-      <div className={`legislation-container ${showHistorySidebar ? 'legislation-sidebar-open' : ''} ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
+      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
         {/* Header with fade-in animation */}
         <header className={`legislation-header ${componentsLoaded.header ? 'component-visible' : 'component-hidden'}`}>
           <div className="legislation-header-content">
-            {/* LEFT SECTION: History Button */}
             <div className="legislation-header-left">
-              <button
-                className="legislation-history-button"
-                onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-              >
-                <History size={16} />
-                <span>History</span>
-              </button>
+              {/* Empty space for alignment */}
             </div>
 
             {/* CENTER SECTION: Title */}
-            <div className="legislation-header-center">
+            <div className="legislation-header-center" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flex: 1
+            }}>
               <h1 className="legislation-site-title" onClick={() => navigate("/")}>
                 <span className="legislation-title-full">Bill and Legislation Debate</span>
                 <span className="legislation-title-mobile">Bill Debate</span>
@@ -1500,57 +2198,7 @@ const Legislation = ({ user }) => {
 
             {/* RIGHT SECTION: User + Logout */}
             <div className="legislation-header-right">
-              {/* Desktop user section */}
-              <div className="legislation-user-section legislation-desktop-user">
-                <div className="legislation-user-info">
-                  <User size={18} />
-                  <span className="legislation-username">{user?.displayName}</span>
-                </div>
-                <button className="legislation-logout-button" onClick={handleLogout}>
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </div>
-
-              {/* Mobile dropdown */}
-              <div className="legislation-mobile-dropdown-container" ref={dropdownRef}>
-                <button
-                  className="legislation-mobile-dropdown-trigger"
-                  onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-                >
-                  <Menu size={18} />
-                  <ChevronDown size={16} className={`legislation-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-                </button>
-
-                {showMobileDropdown && (
-                  <div className="legislation-mobile-dropdown-menu">
-                    <div className="legislation-dropdown-user-info">
-                      <User size={16} />
-                      <span>{user?.displayName}</span>
-                    </div>
-                    <button
-                      className="legislation-dropdown-option"
-                      onClick={() => {
-                        setShowHistorySidebar(!showHistorySidebar);
-                        setShowMobileDropdown(false);
-                      }}
-                    >
-                      <History size={16} />
-                      <span>History</span>
-                    </button>
-                    <button
-                      className="legislation-dropdown-option legislation-dropdown-logout"
-                      onClick={() => {
-                        handleLogout();
-                        setShowMobileDropdown(false);
-                      }}
-                    >
-                      <LogOut size={16} />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <UserDropdown user={user} onLogout={handleLogout} className="legislation-user-dropdown" />
             </div>
           </div>
 
@@ -1611,7 +2259,7 @@ const Legislation = ({ user }) => {
                       color: "white" 
                     }}
                   >
-                    ❌ Cancel
+                    ❌
                   </button>
                 </div>
               </div>
@@ -1653,7 +2301,7 @@ const Legislation = ({ user }) => {
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                 {!isSearchMode && (
                   <>
-                    <h3>📋 Trending Congressional Bills</h3>
+                    <h3>Trending Congressional Bills</h3>
                     
                     {billsLoading && (
                       <div className="bills-loading">
@@ -2070,7 +2718,7 @@ const Legislation = ({ user }) => {
                         }}
                         title="Clear search"
                       >
-                        ✕
+                        ❌
                       </button>
                     )}
                   </div>
@@ -2121,6 +2769,13 @@ const Legislation = ({ user }) => {
                 </div>
 
               {error && <p className="error-text">{error}</p>}
+              {showInfoNote && (
+                <InfoNote 
+                  message="No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov."
+                  expanded={infoNoteExpanded}
+                  onToggle={() => setInfoNoteExpanded(!infoNoteExpanded)}
+                />
+              )}
               
               {loadingState && (
                 <div className="loading-container">
@@ -2147,15 +2802,17 @@ const Legislation = ({ user }) => {
             <div className="step-two">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <h3>
-                  {billSource === 'recommended' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : billSource === 'link' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : (
-                    `Selected Bill: 📄 ${selectedBill.name}`
-                  )}
-                </h3>
+                <div className="selected-bill-header">
+                  <h3>
+                    {billSource === 'recommended' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'link' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : (
+                      `Selected Bill: ${selectedBill.name}`
+                    )}
+                  </h3>
+                </div>
               </div>
 
               <h2>Step 2: What would you like to do?</h2>
@@ -2182,12 +2839,12 @@ const Legislation = ({ user }) => {
               </div>
 
               <div className="step-navigation">
-                <button className="nav-button back" onClick={() => setCurrentStep(1)}>
+                <button className="nav-button back" onClick={() => goToStep(1)}>
                   ← Back
                 </button>
                 <button 
                   className="nav-button next" 
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => goToStep(3)}
                   disabled={!actionType}
                 >
                   Next →
@@ -2201,15 +2858,17 @@ const Legislation = ({ user }) => {
             <div className="step-three">
               {/* Selected Bill Display */}
               <div className="selected-bill-display">
-                <h3>
-                  {billSource === 'recommended' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : billSource === 'link' ? (
-                    `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
-                  ) : (
-                    `Selected Bill: 📄 ${selectedBill.name}`
-                  )}
-                </h3>
+                <div className="selected-bill-header">
+                  <h3>
+                    {billSource === 'recommended' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'link' ? (
+                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : (
+                      `Selected Bill: 📄 ${selectedBill.name}`
+                    )}
+                  </h3>
+                </div>
               </div>
               
               <div className="action-display">
@@ -2222,7 +2881,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="model-selection">
                       <label className="model-label">
-                        <span className="label-icon">🤖</span>
                         Select AI Model
                       </label>
                       <select 
@@ -2238,16 +2896,238 @@ const Legislation = ({ user }) => {
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
                     </div>
+
+                    <div className="profile-status-section">
+                      <label className="model-label">
+                        Personalized Analysis
+                      </label>
+                      <ProfileStatusIndicator user={user} />
+                    </div>
+
+                    <div className="section-selection">
+                        <label className="section-label">
+                          Choose What to Analyze
+                        </label>
+
+                        <div className="analysis-scope-options">
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-whole-bill"
+                              name="analysis-scope"
+                              checked={analyzeWholeBill}
+                              onChange={() => {
+                                setAnalyzeWholeBill(true);
+                                setSelectedSections([]);
+                              }}
+                            />
+                            <label htmlFor="analyze-whole-bill">
+                              <strong>Analyze Whole Bill</strong>
+                              <span className="option-description">Analyze the entire bill document</span>
+                            </label>
+                          </div>
+
+                          <div className="scope-option">
+                            <input
+                              type="radio"
+                              id="analyze-sections"
+                              name="analysis-scope"
+                              checked={!analyzeWholeBill}
+                              onChange={async () => {
+                                setAnalyzeWholeBill(false);
+                                console.log('🔍 Section selection mode activated');
+                                console.log('📊 Debug - billSource:', billSource);
+
+                                let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                console.log('📊 Debug - initial billText length:', billText?.length || 0);
+                                console.log('📊 Debug - existing billSections count:', billSections.length);
+
+                                // For recommended/link bills, extract text if not available
+                                if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                  console.log('🔄 Bill text not available, extracting from API...');
+                                  try {
+                                    billText = await extractRecommendedBillText(selectedBill);
+                                    console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                  } catch (error) {
+                                    console.error('❌ Failed to extract bill text:', error);
+                                    return;
+                                  }
+                                }
+
+                                // Auto-extract sections if not already done
+                                if (billSections.length === 0 && billText) {
+                                  console.log('🚀 Auto-extracting sections from bill text...');
+                                  const sections = extractSectionsFromText(billText);
+                                  console.log('✅ Auto-extracted sections count:', sections.length);
+                                  console.log('💾 Setting bill sections in state (auto-extract)');
+                                  setBillSections(sections);
+                                } else if (!billText) {
+                                  console.log('⚠️ No bill text available for section extraction');
+                                } else {
+                                  console.log('ℹ️ Sections already extracted, count:', billSections.length);
+                                }
+                              }}
+                            />
+                            <label htmlFor="analyze-sections">
+                              <strong>Analyze Specific Sections</strong>
+                              <span className="option-description">Choose specific sections to analyze</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {!analyzeWholeBill && (
+                          <div className="sections-list">
+                            {billSections.length === 0 && (billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                              <button
+                                className="extract-sections-btn"
+                                onClick={async () => {
+                                  console.log('🔧 Manual section extraction triggered');
+                                  console.log('📊 Debug - billSource:', billSource);
+
+                                  let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                  console.log('📊 Debug - initial billText length:', billText?.length || 0);
+
+                                  // For recommended/link bills, extract text if not available
+                                  if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                    console.log('🔄 Bill text not available, extracting from API...');
+                                    try {
+                                      billText = await extractRecommendedBillText(selectedBill);
+                                      console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                    } catch (error) {
+                                      console.error('❌ Failed to extract bill text:', error);
+                                      return;
+                                    }
+                                  }
+
+                                  if (billText) {
+                                    console.log('🚀 Extracting sections from bill text...');
+                                    const sections = extractSectionsFromText(billText);
+                                    console.log('✅ Manual extraction completed, sections count:', sections.length);
+                                    console.log('💾 Setting bill sections in state (manual extract)');
+                                    setBillSections(sections);
+                                  } else {
+                                    console.log('❌ No bill text available for extraction');
+                                  }
+                                }}
+                              >
+                                Extract Sections from Bill
+                              </button>
+                            )}
+
+                            {billSections.length > 0 && (
+                              <>
+                                <div className="sections-header">
+                                  <span>Select sections to analyze:</span>
+                                  <div className="select-actions">
+                                    <button
+                                      className="select-all-btn"
+                                      onClick={() => {
+                                        const filteredSections = getFilteredSections();
+                                        const allFilteredIds = filteredSections.map(s => s.id);
+                                        const newSelected = [...new Set([...selectedSections, ...allFilteredIds])];
+                                        setSelectedSections(newSelected);
+                                      }}
+                                    >
+                                      Select All
+                                    </button>
+                                    <button
+                                      className="select-none-btn"
+                                      onClick={() => {
+                                        if (sectionSearchTerm) {
+                                          const filteredSections = getFilteredSections();
+                                          const filteredIds = filteredSections.map(s => s.id);
+                                          setSelectedSections(selectedSections.filter(id => !filteredIds.includes(id)));
+                                        } else {
+                                          setSelectedSections([]);
+                                        }
+                                      }}
+                                    >
+                                      Deselect All
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="section-search">
+                                  <input
+                                    type="text"
+                                    className="section-search-input"
+                                    placeholder="Search sections by title, content, type, or number..."
+                                    value={sectionSearchTerm}
+                                    onChange={(e) => setSectionSearchTerm(e.target.value)}
+                                  />
+                                  {sectionSearchTerm && (
+                                    <button
+                                      className="clear-search-btn"
+                                      onClick={() => setSectionSearchTerm('')}
+                                      title="Clear search"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+
+                                {getFilteredSections().length > 0 ? (
+                                  <div className="sections-grid">
+                                    {getFilteredSections().map((section) => (
+                                      <div key={section.id} className="section-item">
+                                        <label className="section-checkbox">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedSections.includes(section.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setSelectedSections([...selectedSections, section.id]);
+                                              } else {
+                                                setSelectedSections(selectedSections.filter(id => id !== section.id));
+                                              }
+                                            }}
+                                          />
+                                          <div className="section-info">
+                                            <div className="section-title">{section.title}</div>
+                                            <div className="section-type">{section.type}</div>
+                                            <div className="section-preview">
+                                              {section.content.substring(0, 100)}...
+                                            </div>
+                                          </div>
+                                        </label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="no-search-results">
+                                    {sectionSearchTerm ?
+                                      `No sections found matching "${sectionSearchTerm}"` :
+                                      'No sections available'
+                                    }
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {billSections.length === 0 && !(billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                              <div className="no-sections-message">
+                                Loading bill sections...
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                   </div>
-                  
+
+                  {!analyzeWholeBill && selectedSections.length === 0 && (
+                    <div className="validation-message">
+                      Please select at least one section to analyze, or choose "Analyze Whole Bill" option.
+                    </div>
+                  )}
+
                   <div className="button-group">
-                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                    <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
-                    <button 
+                    <button
                       className="nav-button execute"
                       onClick={handleAnalyzeExecution}
-                      disabled={loadingState}
+                      disabled={loadingState || (!analyzeWholeBill && selectedSections.length === 0)}
                     >
                       {loadingState ? 'Analyzing...' : 'Start Analysis'}
                     </button>
@@ -2258,6 +3138,8 @@ const Legislation = ({ user }) => {
               {actionType === 'debate' && (
                 <div className="debate-config">
                   <h2>Step 3: Configure Debate</h2>
+                  
+                  {/* Bill Name Section */}
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
@@ -2275,7 +3157,10 @@ const Legislation = ({ user }) => {
                         This will be the topic displayed during the debate session.
                       </p>
                     </div>
-                    
+                  </div>
+
+                  {/* Debate Mode Selection */}
+                  <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
                         <span className="label-icon">⚔️</span>
@@ -2305,15 +3190,117 @@ const Legislation = ({ user }) => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Debate Format Selection */}
+                  {debateMode && (
+                    <div className="config-section">
+                      <div className="debate-format-section">
+                        <label className="debate-label">
+                          <span className="label-icon">📋</span>
+                          Select Debate Format
+                        </label>
+                        <div className="debate-format-cards">
+                          {debateFormats.map((formatOption) => (
+                            <div 
+                              key={formatOption.id}
+                              className={`debate-format-card ${debateFormat === formatOption.id ? 'selected' : ''}`}
+                              onClick={() => setDebateFormat(formatOption.id)}
+                            >
+                              <div className="format-content">
+                                <h4 className="format-title">{formatOption.title}</h4>
+                                <p className="format-description">{formatOption.description}</p>
+                                <div className="format-tags">
+                                  {formatOption.tags.map((tag, index) => (
+                                    <span key={index} className="format-tag">{tag}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="format-description-text">
+                          Choose the structure and style of your debate.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Persona Selection */}
+                  {debateMode && debateFormat && (debateMode === 'ai-vs-ai' || debateMode === 'ai-vs-user') && (
+                    <div className="config-section">
+                      <div className="debate-persona-section">
+                        <label className="debate-label">
+                          <span className="label-icon">🎭</span>
+                          Select AI Personas
+                        </label>
+                        <p className="persona-description-text">
+                          {debateMode === 'ai-vs-ai' 
+                            ? 'Choose personas for both Pro and Con sides of the debate.'
+                            : 'Choose a persona for the AI opponent.'
+                          }
+                        </p>
+                        
+                        <div className="debate-persona-cards">
+                          {personas.map((persona) => (
+                            <div 
+                              key={persona.id}
+                              className={`debate-persona-card ${
+                                (debateMode === 'ai-vs-ai' && (proPersona === persona.id || conPersona === persona.id)) ||
+                                (debateMode === 'ai-vs-user' && aiPersona === persona.id) ? 'selected' : ''
+                              }`}
+                            >
+                              <div className="persona-photo">
+                                <img 
+                                  src={persona.image} 
+                                  alt={persona.name}
+                                  className="persona-image"
+                                />
+                              </div>
+                              <div className="persona-info">
+                                <h4 className="persona-name">{persona.name}</h4>
+                                <p className="persona-description">{persona.description}</p>
+                                
+                                {debateMode === 'ai-vs-ai' && (
+                                  <div className="persona-buttons">
+                                    <button 
+                                      className={`persona-select-btn ${proPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setProPersona(persona.id)}
+                                    >
+                                      {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                                    </button>
+                                    <button 
+                                      className={`persona-select-btn ${conPersona === persona.id ? 'selected' : ''}`}
+                                      onClick={() => setConPersona(persona.id)}
+                                    >
+                                      {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {debateMode === 'ai-vs-user' && (
+                                  <button 
+                                    className={`persona-select-btn ${aiPersona === persona.id ? 'selected' : ''}`}
+                                    onClick={() => setAiPersona(persona.id)}
+                                  >
+                                    {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="button-group">
-                    <button className="nav-button back" onClick={() => setCurrentStep(2)}>
+                    <button className="nav-button back" onClick={() => goToStep(2)}>
                       ← Back
                     </button>
                     <button 
-                      className="nav-button execute"
+                      className="nav-button next"
                       onClick={handleDebateExecution}
-                      disabled={!debateTopic.trim() || !debateMode}
+                      disabled={!isDebateConfigComplete()}
                     >
                       Start Debate
                     </button>
@@ -2342,6 +3329,13 @@ const Legislation = ({ user }) => {
               )}
 
               {error && <p className="error-text">{error}</p>}
+              {showInfoNote && (
+                <InfoNote 
+                  message="No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov."
+                  expanded={infoNoteExpanded}
+                  onToggle={() => setInfoNoteExpanded(!infoNoteExpanded)}
+                />
+              )}
             </div>
           )}
           
@@ -2358,16 +3352,6 @@ const Legislation = ({ user }) => {
               }}>
                 <div className="results-header-top">
                   <h2>Analysis Results</h2>
-                  <div className="analysis-voice-controls">
-                    <VoiceOutput 
-                      text={analysisResult}
-                      buttonStyle="default"
-                      showLabel={true}
-                      onSpeechStart={() => console.log('Started playing analysis')}
-                      onSpeechEnd={() => console.log('Finished playing analysis')}
-                      onSpeechError={(error) => console.error('Analysis speech error:', error)}
-                    />
-                  </div>
                 </div>
                 <div className="results-actions">
                   <button 
@@ -2378,7 +3362,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    📤 Share Analysis
+                    Share Analysis
                   </button>
                   <button 
                     className="download-analysis-btn" 
@@ -2388,7 +3372,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    📄 Download PDF
+                    Download PDF
                   </button>                 
                   <button 
                     className="new-analysis-btn" 
@@ -2410,27 +3394,58 @@ const Legislation = ({ user }) => {
                 </div>
               )}
               
-              {/* Analysis Text Section - Simplified */}
+              {/* Analysis Text Section - Enhanced with TTS */}
               {showAnalysisText && (
-                <ReactMarkdown 
-                  rehypePlugins={[rehypeRaw]} 
-                  className="markdown-renderer"
-                  style={{
-                    marginTop: '2rem'
-                  }}
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="analysis-heading" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="analysis-heading" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="analysis-heading" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="analysis-heading" {...props} />,
-                    p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
-                    ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-                    ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
-                  }}
-                >
-                  {`## Detailed Analysis\n\n${analysisResult}`}
-                </ReactMarkdown>
+                <TTSProvider analysisText={analysisResult}>
+                  <div style={{ marginTop: '2rem' }}>
+                    {/* Custom H2 Section Component */}
+                    <H2SectionRenderer
+                      analysisText={`## Detailed Analysis\n\n${analysisResult}`}
+                    />
+
+                    {/* Show Bill Text Section */}
+                    <div style={{ marginTop: '3rem' }}>
+                      <div className="expandable-section">
+                        <button
+                          className="expand-toggle-btn"
+                          onClick={() => setShowBillTextSection(!showBillTextSection)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            marginBottom: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <span style={{
+                            transform: showBillTextSection ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            fontSize: '12px'
+                          }}>
+                            ▶
+                          </span>
+                          {showBillTextSection ? 'Hide' : 'Show'} Bill Text
+                        </button>
+
+                        {showBillTextSection && (
+                          <H2SectionRenderer
+                            analysisText={`## Show Bill Text\n\n${analyzeWholeBill ?
+                              `**Bill Title:** ${getBillTitle()}\n\n${(billSource === 'upload' ? extractedPdfText : extractedBillData?.text) || 'No bill text available.'}` :
+                              getSelectedSectionsText() || 'No sections selected.'
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </TTSProvider>
               )}
+              
               
               {/* Action buttons at the bottom - only show when everything is ready */}
               {analysisContentReady && (
@@ -2442,10 +3457,10 @@ const Legislation = ({ user }) => {
                   }}
                 >
                   <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
-                    📤 Share This Analysis
+                    Share This Analysis
                   </button>
                   <button className="download-analysis-btn-large" onClick={handleDownloadAnalysisPDF}>
-                    📄 Download PDF Report
+                    Download PDF Report
                   </button>
                 </div>
               )}
@@ -2483,13 +3498,6 @@ const Legislation = ({ user }) => {
         />
       )}
 
-      <HistorySidebar 
-        user={user}
-        history={history}
-        showHistorySidebar={showHistorySidebar}
-        setShowHistorySidebar={setShowHistorySidebar}
-        componentPrefix="legislation"
-      />
       </div>
     </>
   );

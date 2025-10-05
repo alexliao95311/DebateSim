@@ -2,24 +2,19 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
-import HistorySidebar from "./HistorySidebar";
-import { 
-  Code, 
-  Gavel, 
-  Shield, 
-  ChevronRight, 
-  Star, 
-  Clock, 
+import UserDropdown from "./UserDropdown";
+import {
+  Code,
+  Gavel,
+  Shield,
+  ChevronRight,
+  Star,
+  Clock,
   CheckCircle,
-  User,
-  LogOut,
   Zap,
   TrendingUp,
   Award,
   MessageSquare,
-  History,
-  ChevronDown,
-  Menu
 } from "lucide-react";
 import "./Home.css";
 import Footer from "./Footer.jsx";
@@ -32,11 +27,7 @@ function Home({ user, onLogout }) {
   const [isVisible, setIsVisible] = useState(false);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [history, setHistory] = useState([]);
-  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
-  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
   const featureCardsRef = useRef(null);
-  const dropdownRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
   useLayoutEffect(() => {
@@ -55,42 +46,7 @@ function Home({ user, onLogout }) {
     };
   }, []);
 
-  // Handle click outside dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowMobileDropdown(false);
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Fetch debate history on load
-  useEffect(() => {
-    async function fetchHistory() {
-      if (!user || user.isGuest) return;
-      try {
-        const db = getFirestore();
-        const transcriptsRef = collection(db, "users", user.uid, "transcripts");
-        const q = query(transcriptsRef, orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const fetchedHistory = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setHistory(fetchedHistory);
-        }
-      } catch (err) {
-        console.error("Error fetching debate history:", err);
-      }
-    }
-    fetchHistory();
-  }, [user]);
 
   const updateArrowVisibility = () => {
     const container = featureCardsRef.current;
@@ -255,75 +211,24 @@ function Home({ user, onLogout }) {
   };
 
   return (
-    <div className={`home-container ${showHistorySidebar ? 'home-sidebar-open' : ''}`}>
+    <div className="home-container">
       <header className="home-header">
         <div className="home-header-content">
           <div className="home-header-left">
-            <button
-              className="home-history-button"
-              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-            >
-              <History size={18} />
-              <span>History</span>
-            </button>
+            {/* Empty space for alignment */}
           </div>
 
-          <div className="home-header-center">
+          <div className="home-header-center" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1
+          }}>
             <h1 className="home-site-title">Feature Hub</h1>
           </div>
 
           <div className="home-header-right">
-            {/* Desktop user section */}
-            <div className="home-user-section home-desktop-user">
-              <div className="home-user-info">
-                <User className="home-user-icon" />
-                <span className="home-username">{user?.displayName}</span>
-              </div>
-              <button className="home-logout-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-
-            {/* Mobile dropdown */}
-            <div className="home-mobile-dropdown-container" ref={dropdownRef}>
-              <button
-                className="home-mobile-dropdown-trigger"
-                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
-              >
-                <Menu size={18} />
-                <ChevronDown size={16} className={`home-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
-              </button>
-
-              {showMobileDropdown && (
-                <div className="home-mobile-dropdown-menu">
-                  <div className="home-dropdown-user-info">
-                    <User size={16} />
-                    <span>{user?.displayName}</span>
-                  </div>
-                  <button
-                    className="home-dropdown-option"
-                    onClick={() => {
-                      setShowHistorySidebar(!showHistorySidebar);
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <History size={16} />
-                    <span>History</span>
-                  </button>
-                  <button
-                    className="home-dropdown-option home-dropdown-logout"
-                    onClick={() => {
-                      handleLogout();
-                      setShowMobileDropdown(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <UserDropdown user={user} onLogout={handleLogout} className="home-user-dropdown" />
           </div>
         </div>
       </header>
@@ -444,13 +349,6 @@ function Home({ user, onLogout }) {
         </div>
       </div>
 
-      <HistorySidebar 
-        user={user}
-        history={history}
-        showHistorySidebar={showHistorySidebar}
-        setShowHistorySidebar={setShowHistorySidebar}
-        componentPrefix="home"
-      />
       
       <Footer />
     </div>

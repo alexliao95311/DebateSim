@@ -1,0 +1,551 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { TTS_CONFIG, getVoiceForContext, getTTSEndpoint } from '../config/tts';
+import voicePreferenceService from '../services/voicePreferenceService';
+import './VoiceOutput.css';
+
+// Function to get byte length of text (UTF-8)
+const getByteLength = (text) => {
+  return new Blob([text]).size;
+};
+
+// Function to strip markdown syntax and clean up symbols for TTS
+const stripMarkdown = (text) => {
+  if (!text) return '';
+  
+  return text
+    // Remove headers (###, ##, #) - enhanced to catch any missed cases
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/#{1,6}\s*/g, '')  // Also remove any remaining # symbols inline
+    // Remove bold/italic markers (**text**, *text*)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    // Remove code blocks (```code```)
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove inline code (`code`)
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove links [text](url)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove images ![alt](url)
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    // Remove horizontal rules (---, ***)
+    .replace(/^[-*_]{3,}$/gm, '')
+    // Remove blockquotes (> text)
+    .replace(/^>\s+/gm, '')
+    // Remove list markers (- item, * item, 1. item)
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    // Remove emphasis markers (_text_)
+    .replace(/_(.*?)_/g, '$1')
+    // Remove strikethrough (~~text~~)
+    .replace(/~~(.*?)~~/g, '$1')
+    // Fix problematic symbols that cause misreading
+    .replace(/["""""'']/g, '')  // Remove all quote variants entirely to prevent "inches" reading
+    .replace(/'/g, "'")         // Keep apostrophes for contractions
+    // Handle other symbols that might cause misreading
+    .replace(/\(/g, ' ')        // Replace parentheses with spaces for cleaner speech
+    .replace(/\)/g, ' ')
+    .replace(/\[/g, ' ')        // Replace brackets with spaces  
+    .replace(/\]/g, ' ')
+    .replace(/—/g, ' - ') // Replace em dash with spaced dash
+    .replace(/–/g, ' - ') // Replace en dash with spaced dash
+    .replace(/\.\.\./g, ', pause,') // Replace ellipsis with pause
+    // Remove any remaining pause markers that might be read aloud
+    .replace(/\[PAUSE\]/gi, '')
+    .replace(/\.\.\.?\s*\[PAUSE\]/gi, '')
+    // Remove any stray hash symbols that might remain
+    .replace(/#/g, '')
+    // Clean up extra whitespace
+    .replace(/\n\s*\n/g, '\n')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// Function to add natural pauses after headings for better TTS flow
+const addHeadingPauses = (text) => {
+  if (!text) return '';
+  
+  // Add natural pauses after headings using longer punctuation and spacing
+  return text
+    // Add longer pause after section headings - use multiple periods for longer pause
+    .replace(/^([A-Z][A-Za-z\s:]+)$/gm, '$1...') // Standalone headings get triple dots
+    // Add pause after numbered headings like "1. Heading"
+    .replace(/(\d+\.\s+[^\n]+)/g, '$1...')
+    // Add pause after headings that end with colon
+    .replace(/([^.!?]):\s*$/gm, '$1:...')
+    // Add pause after words in ALL CAPS (likely headings)
+    .replace(/\b([A-Z]{3,})\b/g, '$1...')
+    // Add extra pause between major sections
+    .replace(/\n([A-Z][A-Za-z\s:]+)\n/g, '\n\n$1...\n\n')
+    // Add natural breathing pauses at sentence boundaries with better spacing
+    .replace(/([.!?])\s*([A-Z])/g, '$1  $2') // Two spaces for slight pause
+    // Convert triple dots to comma pauses for more natural speech
+    .replace(/\.\.\./g, ', , ,'); // Multiple commas create pauses in TTS
+};
+
+const EnhancedVoiceOutput = ({ 
+  text, 
+  disabled = false, 
+  showLabel = false, 
+  buttonStyle = 'default',
+  onSpeechStart = null,
+  onSpeechEnd = null,
+  onSpeechError = null,
+  useGoogleTTS = true,
+  ttsApiUrl = TTS_CONFIG.apiUrl,
+  defaultVoice = null,
+  context = 'general'
+}) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isSupported, setIsSupported] = useState(true);
+  const [isGoogleTTSAvailable, setIsGoogleTTSAvailable] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState(defaultVoice || getVoiceForContext(context).voice);
+
+  const utteranceRef = useRef(null);
+  const synthRef = useRef(null);
+  const audioRef = useRef(null);
+  const currentAudioUrl = useRef(null);
+
+  // Listen for voice preference changes
+  useEffect(() => {
+    const handleVoiceChange = (newVoice) => {
+      setSelectedVoice(newVoice);
+    };
+
+    voicePreferenceService.addListener(handleVoiceChange);
+
+    // Set initial voice if available
+    if (voicePreferenceService.isVoiceLoaded()) {
+      setSelectedVoice(voicePreferenceService.getCurrentVoice());
+    }
+
+    return () => {
+      voicePreferenceService.removeListener(handleVoiceChange);
+    };
+  }, []);
+
+  // Initialize speech synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+      setIsSupported(true);
+    } else {
+      setIsSupported(false);
+      setError('Text-to-speech is not supported in this browser');
+    }
+
+    if (useGoogleTTS) {
+      initializeGoogleTTS();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      // Clean up any existing audio URLs
+      if (currentAudioUrl.current) {
+        URL.revokeObjectURL(currentAudioUrl.current);
+      }
+    };
+  }, [useGoogleTTS, ttsApiUrl, defaultVoice, selectedVoice]);
+
+  // Update selectedVoice when defaultVoice changes
+  useEffect(() => {
+    if (defaultVoice && defaultVoice !== selectedVoice) {
+      setSelectedVoice(defaultVoice);
+    }
+  }, [defaultVoice, selectedVoice]);
+
+  const initializeGoogleTTS = async () => {
+    try {
+      const healthResponse = await fetch(getTTSEndpoint('health'));
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        if (healthData.status === 'healthy') {
+          setIsGoogleTTSAvailable(true);
+          
+          // Set default voice from context
+          if (!selectedVoice) {
+            setSelectedVoice(getVoiceForContext(context).voice);
+          }
+        }
+      }
+    } catch (err) {
+      console.log('Google TTS not available, falling back to browser TTS:', err);
+      setIsGoogleTTSAvailable(false);
+    }
+  };
+
+  // Handle speech synthesis events
+  const setupUtteranceEvents = (utterance) => {
+    utterance.onstart = () => {
+      setIsPlaying(true);
+      setIsPaused(false);
+      setIsLoading(false);
+      setError('');
+      if (onSpeechStart) onSpeechStart();
+    };
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+      setIsLoading(false);
+      if (onSpeechEnd) onSpeechEnd();
+    };
+
+    utterance.onerror = (event) => {
+      setIsPlaying(false);
+      setIsPaused(false);
+      setIsLoading(false);
+      const errorMessage = `Speech error: ${event.error}`;
+      setError(errorMessage);
+      if (onSpeechError) onSpeechError(event.error);
+      console.error('Speech synthesis error:', event);
+    };
+
+    utterance.onpause = () => {
+      setIsPaused(true);
+    };
+
+    utterance.onresume = () => {
+      setIsPaused(false);
+    };
+  };
+
+  const handlePlay = async () => {
+    if (!isSupported || !text) {
+      setError('Cannot play speech: text-to-speech not available');
+      return;
+    }
+
+    try {
+      // Clear any previous errors
+      setError('');
+      
+      // Stop any current speech
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+
+      // Clean up any existing audio URLs
+      if (currentAudioUrl.current) {
+        URL.revokeObjectURL(currentAudioUrl.current);
+        currentAudioUrl.current = null;
+      }
+
+      // Clean the text by removing markdown syntax and add heading pauses
+      const cleanText = stripMarkdown(text);
+      const textWithPauses = addHeadingPauses(cleanText);
+      
+      // Safety check: if text is too long for Google TTS, truncate it
+      const textByteLength = getByteLength(textWithPauses);
+      const finalText = textByteLength > 4500 ? textWithPauses.substring(0, 2000) + '...' : textWithPauses;
+
+      // Set loading state
+      setIsLoading(true);
+
+      // Try Google TTS first if available
+      if (useGoogleTTS && isGoogleTTSAvailable) {
+        try {
+          const success = await playGoogleTTS(finalText);
+          if (success) return;
+        } catch (googleTTSError) {
+          console.log('Google TTS failed, falling back to browser TTS:', googleTTSError);
+          // Fall through to browser TTS
+        }
+      }
+
+      // Fallback to browser TTS
+      if (synthRef.current) {
+        const utterance = new SpeechSynthesisUtterance(finalText);
+        utteranceRef.current = utterance;
+        
+        // Configure speech settings from context with user's voice preference
+        const contextSettings = getVoiceForContext(context, voicePreferenceService.getCurrentVoice());
+        utterance.rate = contextSettings.rate;
+        utterance.pitch = contextSettings.pitch;
+        utterance.volume = contextSettings.volume;
+        
+        // Set up event handlers
+        setupUtteranceEvents(utterance);
+        
+        // Start speaking
+        synthRef.current.speak(utterance);
+      }
+      
+    } catch (err) {
+      const errorMessage = `Failed to start speech: ${err.message}`;
+      setError(errorMessage);
+      setIsLoading(false);
+      if (onSpeechError) onSpeechError(err.message);
+      console.error('Speech synthesis error:', err);
+    }
+  };
+
+  const playGoogleTTS = async (text) => {
+    try {
+      const contextSettings = getVoiceForContext(context, voicePreferenceService.getCurrentVoice());
+
+      const requestPayload = {
+        text: text,
+        voice_name: selectedVoice,
+        rate: contextSettings.rate,
+        pitch: contextSettings.pitch,
+        volume: contextSettings.volume
+      };
+
+
+      const response = await fetch(getTTSEndpoint('synthesize'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestPayload),
+      });
+
+
+      if (!response.ok) {
+        let errorDetails = '';
+        try {
+          const errorData = await response.json();
+          errorDetails = JSON.stringify(errorData);
+          console.error('🎵 TTS Error Response:', errorData);
+        } catch (parseError) {
+          try {
+            errorDetails = await response.text();
+            console.error('🎵 TTS Error Text:', errorDetails);
+          } catch (textError) {
+            errorDetails = `Unable to parse error response: ${textError.message}`;
+            console.error('🎵 TTS Error Parse Failed:', textError);
+          }
+        }
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorDetails}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.audio_content) {
+        // Convert base64 to audio and play
+        const audioBlob = new Blob([
+          Uint8Array.from(atob(data.audio_content), c => c.charCodeAt(0))
+        ], { type: 'audio/mp3' });
+        
+        const audioUrl = URL.createObjectURL(audioBlob);
+        currentAudioUrl.current = audioUrl;
+        
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.onloadedmetadata = () => {
+            audioRef.current.play();
+            setIsPlaying(true);
+            setIsLoading(false);
+            if (onSpeechStart) onSpeechStart();
+          };
+          
+          audioRef.current.onended = () => {
+            setIsPlaying(false);
+            setIsLoading(false);
+            if (onSpeechEnd) onSpeechEnd();
+            // Clean up audio URL
+            if (currentAudioUrl.current === audioUrl) {
+              URL.revokeObjectURL(audioUrl);
+              currentAudioUrl.current = null;
+            }
+          };
+          
+          // Only show error for actual audio playback failures, not normal stops
+          audioRef.current.onerror = () => {
+            // Only show error if we're actually trying to play, not when stopping
+            if (isPlaying && !isLoading) {
+              setIsPlaying(false);
+              setIsLoading(false);
+              setError('Audio playback failed');
+              if (onSpeechError) onSpeechError('Audio playback failed');
+            }
+            // Clean up audio URL
+            if (currentAudioUrl.current === audioUrl) {
+              URL.revokeObjectURL(audioUrl);
+              currentAudioUrl.current = null;
+            }
+          };
+        }
+        
+        return true;
+      } else {
+        throw new Error(data.error || 'Failed to synthesize speech');
+      }
+    } catch (error) {
+      console.error('Google TTS error:', error);
+      throw error;
+    }
+  };
+
+  const handlePause = () => {
+    if (audioRef.current && isPlaying) {
+      audioRef.current.pause();
+      setIsPaused(true);
+    } else if (synthRef.current && isPlaying) {
+      synthRef.current.pause();
+    }
+  };
+
+  const handleResume = () => {
+    if (audioRef.current && isPaused) {
+      audioRef.current.play();
+      setIsPaused(false);
+    } else if (synthRef.current && isPaused) {
+      synthRef.current.resume();
+    }
+  };
+
+  const handleStop = () => {
+    // Clear loading state
+    setIsLoading(false);
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+    
+    // Clean up audio URL
+    if (currentAudioUrl.current) {
+      URL.revokeObjectURL(currentAudioUrl.current);
+      currentAudioUrl.current = null;
+    }
+    
+    setIsPlaying(false);
+    setIsPaused(false);
+    // Don't clear errors here - let them persist if they're real errors
+    
+    if (onSpeechEnd) onSpeechEnd();
+  };
+
+  // Don't render if not supported
+  if (!isSupported) {
+    return null;
+  }
+
+  // Don't render if no text provided
+  if (!text || text.trim().length === 0) {
+    return null;
+  }
+
+  const getButtonClass = () => {
+    switch (buttonStyle) {
+      case 'compact':
+        return 'voice-output-button-compact';
+      case 'large':
+        return 'voice-output-button-large';
+      default:
+        return 'voice-output-button-default';
+    }
+  };
+
+  return (
+    <div className={`voice-output-container ${isLoading ? 'voice-output-loading' : ''}`}>
+      <div className="voice-output-controls">
+        {!isPlaying && !isLoading ? (
+          <button
+            onClick={handlePlay}
+            disabled={disabled}
+            className={`voice-output-play-button ${getButtonClass()}`}
+            title="Play speech"
+            aria-label="Play text as speech"
+          >
+            <span className="voice-button-icon">▶️</span>
+            {showLabel && <span className="voice-output-label">Play</span>}
+          </button>
+        ) : isLoading ? (
+          <button
+            disabled={true}
+            className={`voice-output-play-button ${getButtonClass()}`}
+            title="Loading speech..."
+            aria-label="Loading speech"
+          >
+            <span className="voice-button-icon">⏳</span>
+            {showLabel && <span className="voice-output-label">Loading...</span>}
+          </button>
+        ) : (
+          <div className="voice-output-playing-controls">
+            {isPaused ? (
+              <button
+                onClick={handleResume}
+                disabled={disabled}
+                className={`voice-output-resume-button ${getButtonClass()}`}
+                title="Resume speech"
+                aria-label="Resume speech"
+              >
+                <span className="voice-button-icon">▶️</span>
+                {showLabel && <span className="voice-output-label">Resume</span>}
+              </button>
+            ) : (
+              <button
+                onClick={handlePause}
+                disabled={disabled}
+                className={`voice-output-pause-button ${getButtonClass()}`}
+                title="Pause speech"
+                aria-label="Pause speech"
+              >
+                <span className="voice-button-icon">⏸️</span>
+                {showLabel && <span className="voice-output-label">Pause</span>}
+              </button>
+            )}
+            
+            <button
+              onClick={handleStop}
+              disabled={disabled}
+              className={`voice-output-stop-button ${getButtonClass()}`}
+              title="Stop speech"
+              aria-label="Stop speech"
+            >
+              <span className="voice-button-icon">⏹️</span>
+              {showLabel && <span className="voice-output-label">Stop</span>}
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Error Display - Improved styling */}
+      {error && (
+        <div className="voice-output-error">
+          <span className="voice-output-error-text">{error}</span>
+          <button 
+            onClick={() => setError('')}
+            className="voice-output-error-dismiss"
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
+      {/* Status Display - Better visual feedback */}
+      {isPlaying && (
+        <div className="voice-output-status">
+          <span className="voice-output-indicator">
+            🔊 {isPaused ? 'Paused' : 'Playing...'}
+          </span>
+        </div>
+      )}
+
+      {/* Hidden audio element for Google TTS */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
+    </div>
+  );
+};
+
+export default EnhancedVoiceOutput;

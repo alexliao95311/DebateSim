@@ -252,7 +252,7 @@ function AboutUs() {
                 <h3>Alex Liao</h3>
                 <p className="presentation-member-role">Founder and CTO</p>
                 <p className="presentation-member-bio">
-                Alex is a backend developer from Emerald High (Dublin, CA). As the founder and lead developer of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
+                Alex is a backend developer from Emerald High (Dublin, CA). As the founder and CTO of DebateSim, he architected the full-stack platform from the ground up, integrating advanced AI and intuitive UX. He is a competitive public forum debater and has qualified to California State Debate Championships. In his free time, he plays the piano and swims competitively.
                 </p>
                 <div className="presentation-member-links">
                   <a href="https://www.linkedin.com/in/alex-liao-184832356/" className="presentation-social-link" title="LinkedIn">
@@ -264,7 +264,6 @@ function AboutUs() {
                 </div>
               </div>
             </div>
-
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
                 <div className="presentation-photo-placeholder">
@@ -272,24 +271,21 @@ function AboutUs() {
                 </div>
               </div>
               <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
+                <h3>Mrinal Agarwal</h3>
+                <p className="presentation-member-role">Co-Founder</p>
                 <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
+                Mrinal is a junior at Emerald High School and a lead developer on DebateSim. He has created and built backend features including LangChain pipelines, DebateTrainer with prompt engineering and fine-tuning, and the congressional bill analyzer API. Apart from this he is a Machine Learning enthusiast and has created benchmark for deception detection in LLMs, developed safeguards against prompt-based injections. Outside of DebateSim, he is a nationally ranked debater: 2nd in California, top 25 at the Gold TOC, NSDA Nationals Top 40, and currently ranked top 50 in the country. He also enjoys competitive math and badminton.
                 </p>
                 <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
+                  <a href="#" className="https://www.linkedin.com/in/mrinal-agarwal-71017535a/" title="LinkedIn">
                     <Linkedin size={20} />
                   </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
+                  <a href="#" className="https://www.instagram.com/mrinal_a09/" title="Instagram">
                     <Instagram size={20} />
                   </a>
                 </div>
               </div>
             </div>
-
             <div className="presentation-team-member">
               <div className="presentation-member-photo">
                 <div className="presentation-photo-placeholder">
@@ -297,68 +293,16 @@ function AboutUs() {
                 </div>
               </div>
               <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
+                <h3>Arnav Kakani</h3>
+                <p className="presentation-member-role">Co-Founder</p>
                 <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
+                Arnav Kakani is a junior at Emerald High School (Dublin, CA) and the co-founder of DebateSim, where he is involved in full-stack development and AI engineering. He has integrated real-time Congressional data, and advanced debate simulations, while creating the mobile UI to ensure a clean, consistent user experience. He is a competitive golfer and pianist with a strong interest in quantum computing, programming, and ethical hacking.
                 </p>
                 <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
+                  <a href="https://www.linkedin.com/in/arnav-kakani-365117236/" className="presentation-social-link" title="LinkedIn">
                     <Linkedin size={20} />
                   </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
-                    <Instagram size={20} />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="presentation-team-member">
-              <div className="presentation-member-photo">
-                <div className="presentation-photo-placeholder">
-                  <Users size={48} />
-                </div>
-              </div>
-              <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
-                <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
-                </p>
-                <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
-                    <Linkedin size={20} />
-                  </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
-                    <Instagram size={20} />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="presentation-team-member">
-              <div className="presentation-member-photo">
-                <div className="presentation-photo-placeholder">
-                  <Users size={48} />
-                </div>
-              </div>
-              <div className="presentation-member-info">
-                <h3>Team Member Name</h3>
-                <p className="presentation-member-role">Role/Position Title</p>
-                <p className="presentation-member-bio">
-                  Brief bio and background information will go here. This section should 
-                  describe their role in the DebateSim project, relevant experience, 
-                  education, and what they bring to the team. Keep it concise but informative.
-                </p>
-                <div className="presentation-member-links">
-                  <a href="#" className="presentation-social-link" title="LinkedIn">
-                    <Linkedin size={20} />
-                  </a>
-                  <a href="#" className="presentation-social-link" title="Instagram">
+                  <a href="https://www.instagram.com/arnavkakani/" className="presentation-social-link" title="Instagram">
                     <Instagram size={20} />
                   </a>
                 </div>
@@ -368,96 +312,11 @@ function AboutUs() {
           </div>
         </section>
 
-        {/* Roadmap Section */}
-        <section
-          className="presentation-section presentation-fade-section"
-          ref={el => (sectionsRef.current[3] = el)}
-          id="roadmap"
-        >
-          <div className="presentation-section-header">
-            <h2 className="presentation-section-title">Future Roadmap</h2>
-            <p className="presentation-section-subtitle">
-              Expanding beyond text debates into voice, mobile, and competitive AI benchmarking
-            </p>
-          </div>
-
-          <div className="presentation-roadmap-grid">
-            <div className="presentation-roadmap-card">
-              <h3>Next-Generation Features</h3>
-              <div className="presentation-feature-bullets">
-                <ul>
-                  <li>Voice debates with real-time speech-to-text and AI voice responses</li>
-                  <li>Celebrity personas - debate against AI versions of famous figures</li>
-                  <li>Native mobile apps for iOS and Android platforms</li>
-                  <li>Cross-platform API integration for seamless experience</li>
-                </ul>
-              </div>
-              <div className="presentation-feature-list">
-                <div className="presentation-feature-item">
-                  <div className="presentation-feature-icon">🎤</div>
-                  <div>
-                    <h4>Voice Debates</h4>
-                    <p>Real-time speech-to-text with AI voice responses</p>
-                  </div>
-                </div>
-                <div className="presentation-feature-item">
-                  <div className="presentation-feature-icon">🎭</div>
-                  <div>
-                    <h4>Celebrity Personas</h4>
-                    <p>Debate against AI versions of famous debaters and politicians</p>
-                  </div>
-                </div>
-                <div className="presentation-feature-item">
-                  <div className="presentation-feature-icon">📱</div>
-                  <div>
-                    <h4>Mobile App</h4>
-                    <p>Native iOS and Android apps for debates on-the-go</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="presentation-arena-card">
-              <h3>AI Debate Arena</h3>
-              <div className="presentation-feature-bullets">
-                <ul>
-                  <li>AI models compete in debate battles for leaderboard rankings</li>
-                  <li>New benchmark focused on debate skills rather than exam scores</li>
-                  <li>ELO rating system to track model performance over time</li>
-                  <li>Similar to math competitions but for conversational reasoning</li>
-                </ul>
-              </div>
-              <div className="presentation-arena-concept">
-                <h4>Arena Concept</h4>
-                <div className="presentation-concept-placeholder">
-                  <div className="presentation-leaderboard-mockup">
-                    <h5>Model Leaderboard Preview</h5>
-                    <div className="presentation-leaderboard-item">
-                      <span className="presentation-rank">1.</span>
-                      <span className="presentation-model">GPT-4o</span>
-                      <span className="presentation-score">1847 ELO</span>
-                    </div>
-                    <div className="presentation-leaderboard-item">
-                      <span className="presentation-rank">2.</span>
-                      <span className="presentation-model">Claude-3.5</span>
-                      <span className="presentation-score">1823 ELO</span>
-                    </div>
-                    <div className="presentation-leaderboard-item">
-                      <span className="presentation-rank">3.</span>
-                      <span className="presentation-model">Gemini-2.0</span>
-                      <span className="presentation-score">1799 ELO</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Call to Action Section */}
         <section
           className="presentation-section presentation-cta-section presentation-fade-section"
-          ref={el => (sectionsRef.current[4] = el)}
+          ref={el => (sectionsRef.current[3] = el)}
           id="call-to-action"
         >
           <div className="presentation-cta-content">

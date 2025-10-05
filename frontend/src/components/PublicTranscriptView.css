@@ -114,11 +114,50 @@
 }
 
 .public-transcript-viewer {
-  background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   margin-bottom: 2rem;
+}
+
+/* TTS Controls for shared transcript
+.transcript-tts-controls {
+  padding: 1.5rem 2rem;
+  display: flex;
+}
+
+.transcript-tts-controls .voice-output-container {
+  max-width: 400px;
+  width: 100%;
+} */
+
+.transcript-tts-controls .voice-output-button-large {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.transcript-tts-controls .voice-output-button-large:hover {
+  background: #357abd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.transcript-tts-controls .voice-output-button-large:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(74, 144, 226, 0.3);
+}
+
+.transcript-tts-controls .voice-output-label {
+  font-weight: 600;
 }
 
 .public-transcript-content {
@@ -266,6 +305,25 @@
   min-height: 50vh;
 }
 
+/* Remove borders from speech blocks in shared transcript */
+.debate-speech-block {
+  border: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  margin-bottom: 2rem !important;
+}
+
+.debate-speech-block:hover {
+  transform: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.debate-speech-block::before {
+  display: none !important;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .public-main-title {
@@ -275,6 +333,15 @@
   .public-transcript-meta {
     flex-direction: column;
     align-items: center;
+  }
+  
+  .transcript-tts-controls {
+    padding: 1rem;
+  }
+  
+  .transcript-tts-controls .voice-output-button-large {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
   }
   
   .public-transcript-content {

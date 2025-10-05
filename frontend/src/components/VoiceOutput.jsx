@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import EnhancedVoiceOutput from './EnhancedVoiceOutput';
+import { TTS_CONFIG } from '../config/tts';
 import './VoiceOutput.css';
 
 const VoiceOutput = ({ 
@@ -8,8 +10,28 @@ const VoiceOutput = ({
   buttonStyle = 'default',
   onSpeechStart = null,
   onSpeechEnd = null,
-  onSpeechError = null
+  onSpeechError = null,
+  useGoogleTTS = true,
+  ttsApiUrl = TTS_CONFIG.apiUrl
 }) => {
+  // If Google TTS is enabled, use the enhanced component
+  if (useGoogleTTS) {
+    return (
+      <EnhancedVoiceOutput
+        text={text}
+        disabled={disabled}
+        showLabel={showLabel}
+        buttonStyle={buttonStyle}
+        onSpeechStart={onSpeechStart}
+        onSpeechEnd={onSpeechEnd}
+        onSpeechError={onSpeechError}
+        useGoogleTTS={true}
+        ttsApiUrl={ttsApiUrl}
+      />
+    );
+  }
+
+  // Fallback to original browser TTS implementation
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState('');
@@ -101,154 +123,98 @@ const VoiceOutput = ({
     }
   };
 
-  const handleStop = () => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
-    setIsPlaying(false);
-    setIsPaused(false);
-    setError('');
-  };
-
   const handlePause = () => {
-    if (synthRef.current && isPlaying && !isPaused) {
+    if (synthRef.current && isPlaying) {
       synthRef.current.pause();
     }
   };
 
   const handleResume = () => {
-    if (synthRef.current && isPlaying && isPaused) {
+    if (synthRef.current && isPaused) {
       synthRef.current.resume();
     }
   };
 
-  // Don't render if not supported
-  if (!isSupported) {
-    return null;
-  }
-
-  // Don't render if no text provided
-  if (!text || text.trim().length === 0) {
-    return null;
-  }
-
-  const getButtonClass = () => {
-    switch (buttonStyle) {
-      case 'compact':
-        return 'voice-output-button-compact';
-      case 'large':
-        return 'voice-output-button-large';
-      default:
-        return 'voice-output-button-default';
+  const handleStop = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsPlaying(false);
+      setIsPaused(false);
+      if (onSpeechEnd) onSpeechEnd();
     }
   };
 
+  // Browser TTS fallback UI
+  if (!isSupported) {
+    return (
+      <div className="voice-output-error">
+        <span>❌ TTS not supported</span>
+        {error && <div className="error-message">{error}</div>}
+      </div>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div className="voice-output-disabled">
+        <span>🔇 Disabled</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="voice-output-container">
-      <div className="voice-output-controls">
-        {!isPlaying ? (
+    <div className="voice-output">
+      {showLabel && <div className="voice-output-label">🔊</div>}
+      
+      <div className="voice-controls">
+        {!isPlaying && !isPaused && (
           <button
             onClick={handlePlay}
-            disabled={disabled}
-            className={`voice-output-play-button ${getButtonClass()}`}
+            className="voice-button play-button"
             title="Play speech"
             aria-label="Play text as speech"
           >
-            <img 
-              src="/images/play.png" 
-              alt="Play" 
-              className="voice-output-icon"
-              onError={(e) => {
-                // Fallback to emoji if image fails to load
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline';
-              }}
-            />
-            <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-              🔊
-            </span>
-            {showLabel && <span className="voice-output-label">Play</span>}
+            ▶️
           </button>
-        ) : (
-          <>
-            {isPaused ? (
-              <button
-                onClick={handleResume}
-                disabled={disabled}
-                className={`voice-output-resume-button ${getButtonClass()}`}
-                title="Resume speech"
-                aria-label="Resume speech"
-              >
-                <img 
-                  src="/images/play.png" 
-                  alt="Resume" 
-                  className="voice-output-icon"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'inline';
-                  }}
-                />
-                <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-                  ▶️
-                </span>
-                {showLabel && <span className="voice-output-label">Resume</span>}
-              </button>
-            ) : (
-              <button
-                onClick={handlePause}
-                disabled={disabled}
-                className={`voice-output-pause-button ${getButtonClass()}`}
-                title="Pause speech"
-                aria-label="Pause speech"
-              >
-                <span className="voice-output-emoji">⏸️</span>
-                {showLabel && <span className="voice-output-label">Pause</span>}
-              </button>
-            )}
-            
-            <button
-              onClick={handleStop}
-              disabled={disabled}
-              className={`voice-output-stop-button ${getButtonClass()}`}
-              title="Stop speech"
-              aria-label="Stop speech"
-            >
-              <img 
-                src="/images/stop.png" 
-                alt="Stop" 
-                className="voice-output-icon"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'inline';
-                }}
-              />
-              <span className="voice-output-emoji-fallback" style={{ display: 'none' }}>
-                ⏹️
-              </span>
-              {showLabel && <span className="voice-output-label">Stop</span>}
-            </button>
-          </>
+        )}
+        
+        {isPlaying && !isPaused && (
+          <button
+            onClick={handlePause}
+            className="voice-button pause-button"
+            title="Pause speech"
+            aria-label="Pause speech"
+          >
+            ⏸️
+          </button>
+        )}
+        
+        {isPaused && (
+          <button
+            onClick={handleResume}
+            className="voice-button resume-button"
+            title="Resume speech"
+            aria-label="Resume speech"
+          >
+            ▶️
+          </button>
+        )}
+        
+        {(isPlaying || isPaused) && (
+          <button
+            onClick={handleStop}
+            className="voice-button stop-button"
+            title="Stop speech"
+            aria-label="Stop speech"
+          >
+            ⏹️
+          </button>
         )}
       </div>
       
       {error && (
-        <div className="voice-output-error">
-          <span className="voice-output-error-text">{error}</span>
-          <button 
-            onClick={() => setError('')}
-            className="voice-output-error-dismiss"
-            aria-label="Dismiss error"
-          >
-            ×
-          </button>
-        </div>
-      )}
-      
-      {isPlaying && (
-        <div className="voice-output-status">
-          <span className="voice-output-indicator">
-            🔊 {isPaused ? 'Paused' : 'Playing...'}
-          </span>
+        <div className="error-message">
+          {error}
         </div>
       )}
     </div>
