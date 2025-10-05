@@ -394,6 +394,39 @@ const Settings = ({ user, onLogout }) => {
     }
   };
 
+  // Reset profile to default (clear all fields)
+  const handleResetProfile = async () => {
+    if (!window.confirm('Are you sure you want to reset your profile? This will clear all your profile information.')) {
+      return;
+    }
+
+    const defaultProfile = {
+      state: '',
+      sector: '',
+      citizenshipStatus: '',
+      immigrationStatus: '',
+      race: '',
+      ethnicity: '',
+      socioeconomicStatus: '',
+      age: '',
+      education: '',
+      employment: '',
+      disability: '',
+      veteranStatus: '',
+      other: ''
+    };
+
+    setUserProfile(defaultProfile);
+
+    // Save reset profile
+    if (user && !user.isGuest) {
+      await saveUserProfile(defaultProfile);
+    } else {
+      // For guests, clear localStorage
+      localStorage.setItem('user-profile', JSON.stringify(defaultProfile));
+    }
+  };
+
   return (
     <div className="settings-container">
       {/* Header matching Home page style */}
@@ -501,6 +534,7 @@ const Settings = ({ user, onLogout }) => {
         {/* User Profile Section */}
         <div className="settings-section">
           <div className="settings-section-header">
+            <UserCheck size={24} />
             <h3>Personal Profile</h3>
           </div>
 
@@ -833,6 +867,17 @@ const Settings = ({ user, onLogout }) => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Reset Profile Button */}
+              <div className="profile-reset-container">
+                <button
+                  onClick={handleResetProfile}
+                  className="profile-reset-btn"
+                  title="Reset all profile fields to default"
+                >
+                  Reset Profile to Default
+                </button>
               </div>
             </>
           )}
