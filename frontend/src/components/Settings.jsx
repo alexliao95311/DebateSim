@@ -23,6 +23,8 @@ const Settings = ({ user, onLogout }) => {
 
   // User Profile State
   const [userProfile, setUserProfile] = useState({
+    state: '',
+    sector: '',
     citizenshipStatus: '',
     immigrationStatus: '',
     race: '',
@@ -35,6 +37,61 @@ const Settings = ({ user, onLogout }) => {
     veteranStatus: '',
     other: ''
   });
+
+  // US States list
+  const US_STATES = [
+    { code: 'AL', name: 'Alabama' },
+    { code: 'AK', name: 'Alaska' },
+    { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' },
+    { code: 'CA', name: 'California' },
+    { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' },
+    { code: 'DE', name: 'Delaware' },
+    { code: 'FL', name: 'Florida' },
+    { code: 'GA', name: 'Georgia' },
+    { code: 'HI', name: 'Hawaii' },
+    { code: 'ID', name: 'Idaho' },
+    { code: 'IL', name: 'Illinois' },
+    { code: 'IN', name: 'Indiana' },
+    { code: 'IA', name: 'Iowa' },
+    { code: 'KS', name: 'Kansas' },
+    { code: 'KY', name: 'Kentucky' },
+    { code: 'LA', name: 'Louisiana' },
+    { code: 'ME', name: 'Maine' },
+    { code: 'MD', name: 'Maryland' },
+    { code: 'MA', name: 'Massachusetts' },
+    { code: 'MI', name: 'Michigan' },
+    { code: 'MN', name: 'Minnesota' },
+    { code: 'MS', name: 'Mississippi' },
+    { code: 'MO', name: 'Missouri' },
+    { code: 'MT', name: 'Montana' },
+    { code: 'NE', name: 'Nebraska' },
+    { code: 'NV', name: 'Nevada' },
+    { code: 'NH', name: 'New Hampshire' },
+    { code: 'NJ', name: 'New Jersey' },
+    { code: 'NM', name: 'New Mexico' },
+    { code: 'NY', name: 'New York' },
+    { code: 'NC', name: 'North Carolina' },
+    { code: 'ND', name: 'North Dakota' },
+    { code: 'OH', name: 'Ohio' },
+    { code: 'OK', name: 'Oklahoma' },
+    { code: 'OR', name: 'Oregon' },
+    { code: 'PA', name: 'Pennsylvania' },
+    { code: 'RI', name: 'Rhode Island' },
+    { code: 'SC', name: 'South Carolina' },
+    { code: 'SD', name: 'South Dakota' },
+    { code: 'TN', name: 'Tennessee' },
+    { code: 'TX', name: 'Texas' },
+    { code: 'UT', name: 'Utah' },
+    { code: 'VT', name: 'Vermont' },
+    { code: 'VA', name: 'Virginia' },
+    { code: 'WA', name: 'Washington' },
+    { code: 'WV', name: 'West Virginia' },
+    { code: 'WI', name: 'Wisconsin' },
+    { code: 'WY', name: 'Wyoming' },
+    { code: 'DC', name: 'District of Columbia' }
+  ];
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -463,227 +520,321 @@ const Settings = ({ user, onLogout }) => {
               <p>Loading profile data...</p>
             </div>
           ) : (
-            <div className="profile-fields-grid">
-              <div className="profile-field">
-                <label htmlFor="citizenshipStatus" className="profile-label">
-                  Citizenship Status
-                </label>
-                <select
-                  id="citizenshipStatus"
-                  value={userProfile.citizenshipStatus}
-                  onChange={(e) => handleProfileChange('citizenshipStatus', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select status</option>
-                  <option value="citizen">U.S. Citizen</option>
-                  <option value="permanent_resident">Permanent Resident</option>
-                  <option value="temporary_resident">Temporary Resident</option>
-                  <option value="undocumented">Undocumented</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+            <>
+              {/* Location Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Location</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="state" className="profile-label">
+                      State
+                    </label>
+                    <select
+                      id="state"
+                      value={userProfile.state}
+                      onChange={(e) => handleProfileChange('state', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select state</option>
+                      {US_STATES.map((state) => (
+                        <option key={state.code} value={state.code}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="immigrationStatus" className="profile-label">
-                  Immigration Status (if applicable)
-                </label>
-                <select
-                  id="immigrationStatus"
-                  value={userProfile.immigrationStatus}
-                  onChange={(e) => handleProfileChange('immigrationStatus', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select status</option>
-                  <option value="visa_holder">Visa Holder</option>
-                  <option value="asylum_seeker">Asylum Seeker</option>
-                  <option value="refugee">Refugee</option>
-                  <option value="daca">DACA Recipient</option>
-                  <option value="tps">TPS Holder</option>
-                  <option value="other">Other</option>
-                  <option value="not_applicable">Not Applicable</option>
-                </select>
+              {/* Demographics Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Demographics</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="age" className="profile-label">
+                      Age Range
+                    </label>
+                    <select
+                      id="age"
+                      value={userProfile.age}
+                      onChange={(e) => handleProfileChange('age', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select age range</option>
+                      <option value="under_18">Under 18</option>
+                      <option value="18_24">18-24</option>
+                      <option value="25_34">25-34</option>
+                      <option value="35_44">35-44</option>
+                      <option value="45_54">45-54</option>
+                      <option value="55_64">55-64</option>
+                      <option value="65_plus">65+</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="race" className="profile-label">
+                      Race
+                    </label>
+                    <select
+                      id="race"
+                      value={userProfile.race}
+                      onChange={(e) => handleProfileChange('race', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select race</option>
+                      <option value="american_indian">American Indian or Alaska Native</option>
+                      <option value="asian">Asian</option>
+                      <option value="black">Black or African American</option>
+                      <option value="native_hawaiian">Native Hawaiian or Other Pacific Islander</option>
+                      <option value="white">White</option>
+                      <option value="multiracial">Two or More Races</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="ethnicity" className="profile-label">
+                      Ethnicity
+                    </label>
+                    <select
+                      id="ethnicity"
+                      value={userProfile.ethnicity}
+                      onChange={(e) => handleProfileChange('ethnicity', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select ethnicity</option>
+                      <option value="hispanic_latino">Hispanic or Latino</option>
+                      <option value="not_hispanic_latino">Not Hispanic or Latino</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="race" className="profile-label">
-                  Race
-                </label>
-                <select
-                  id="race"
-                  value={userProfile.race}
-                  onChange={(e) => handleProfileChange('race', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select race</option>
-                  <option value="american_indian">American Indian or Alaska Native</option>
-                  <option value="asian">Asian</option>
-                  <option value="black">Black or African American</option>
-                  <option value="native_hawaiian">Native Hawaiian or Other Pacific Islander</option>
-                  <option value="white">White</option>
-                  <option value="multiracial">Two or More Races</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+              {/* Citizenship & Immigration Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Citizenship & Immigration</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="citizenshipStatus" className="profile-label">
+                      Citizenship Status
+                    </label>
+                    <select
+                      id="citizenshipStatus"
+                      value={userProfile.citizenshipStatus}
+                      onChange={(e) => handleProfileChange('citizenshipStatus', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select status</option>
+                      <option value="citizen">U.S. Citizen</option>
+                      <option value="permanent_resident">Permanent Resident</option>
+                      <option value="temporary_resident">Temporary Resident</option>
+                      <option value="undocumented">Undocumented</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="immigrationStatus" className="profile-label">
+                      Immigration Status (if applicable)
+                    </label>
+                    <select
+                      id="immigrationStatus"
+                      value={userProfile.immigrationStatus}
+                      onChange={(e) => handleProfileChange('immigrationStatus', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select status</option>
+                      <option value="visa_holder">Visa Holder</option>
+                      <option value="asylum_seeker">Asylum Seeker</option>
+                      <option value="refugee">Refugee</option>
+                      <option value="daca">DACA Recipient</option>
+                      <option value="tps">TPS Holder</option>
+                      <option value="other">Other</option>
+                      <option value="not_applicable">Not Applicable</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="ethnicity" className="profile-label">
-                  Ethnicity
-                </label>
-                <select
-                  id="ethnicity"
-                  value={userProfile.ethnicity}
-                  onChange={(e) => handleProfileChange('ethnicity', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select ethnicity</option>
-                  <option value="hispanic_latino">Hispanic or Latino</option>
-                  <option value="not_hispanic_latino">Not Hispanic or Latino</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+              {/* Economic & Employment Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Economic & Employment</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="socioeconomicStatus" className="profile-label">
+                      Income Level
+                    </label>
+                    <select
+                      id="socioeconomicStatus"
+                      value={userProfile.socioeconomicStatus}
+                      onChange={(e) => handleProfileChange('socioeconomicStatus', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select income level</option>
+                      <option value="low_income">Low Income (under $25,000)</option>
+                      <option value="lower_middle">Lower Middle ($25,000 - $49,999)</option>
+                      <option value="middle_income">Middle Income ($50,000 - $99,999)</option>
+                      <option value="upper_middle">Upper Middle ($100,000 - $199,999)</option>
+                      <option value="high_income">High Income ($200,000+)</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="employment" className="profile-label">
+                      Employment Status
+                    </label>
+                    <select
+                      id="employment"
+                      value={userProfile.employment}
+                      onChange={(e) => handleProfileChange('employment', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select employment status</option>
+                      <option value="employed_full_time">Employed Full-time</option>
+                      <option value="employed_part_time">Employed Part-time</option>
+                      <option value="self_employed">Self-employed</option>
+                      <option value="unemployed">Unemployed</option>
+                      <option value="student">Student</option>
+                      <option value="retired">Retired</option>
+                      <option value="disabled">Unable to work due to disability</option>
+                      <option value="homemaker">Homemaker</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="sector" className="profile-label">
+                      Industry/Sector (if applicable)
+                    </label>
+                    <select
+                      id="sector"
+                      value={userProfile.sector}
+                      onChange={(e) => handleProfileChange('sector', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select sector</option>
+                      <option value="technology">Technology</option>
+                      <option value="healthcare">Healthcare</option>
+                      <option value="education">Education</option>
+                      <option value="finance">Finance</option>
+                      <option value="manufacturing">Manufacturing</option>
+                      <option value="agriculture">Agriculture</option>
+                      <option value="energy">Energy</option>
+                      <option value="climate">Climate/Environment</option>
+                      <option value="transportation">Transportation</option>
+                      <option value="construction">Construction</option>
+                      <option value="retail">Retail</option>
+                      <option value="hospitality">Hospitality</option>
+                      <option value="government">Government</option>
+                      <option value="nonprofit">Nonprofit</option>
+                      <option value="legal">Legal</option>
+                      <option value="media">Media/Entertainment</option>
+                      <option value="real_estate">Real Estate</option>
+                      <option value="other">Other</option>
+                      <option value="not_applicable">Not Applicable</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="socioeconomicStatus" className="profile-label">
-                  Income Level
-                </label>
-                <select
-                  id="socioeconomicStatus"
-                  value={userProfile.socioeconomicStatus}
-                  onChange={(e) => handleProfileChange('socioeconomicStatus', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select income level</option>
-                  <option value="low_income">Low Income (under $25,000)</option>
-                  <option value="lower_middle">Lower Middle ($25,000 - $49,999)</option>
-                  <option value="middle_income">Middle Income ($50,000 - $99,999)</option>
-                  <option value="upper_middle">Upper Middle ($100,000 - $199,999)</option>
-                  <option value="high_income">High Income ($200,000+)</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+              {/* Education Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Education</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="education" className="profile-label">
+                      Education Level
+                    </label>
+                    <select
+                      id="education"
+                      value={userProfile.education}
+                      onChange={(e) => handleProfileChange('education', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select education level</option>
+                      <option value="no_high_school">No High School Diploma</option>
+                      <option value="high_school">High School Diploma/GED</option>
+                      <option value="some_college">Some College</option>
+                      <option value="associates">Associate's Degree</option>
+                      <option value="bachelors">Bachelor's Degree</option>
+                      <option value="masters">Master's Degree</option>
+                      <option value="doctoral">Doctoral Degree</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="age" className="profile-label">
-                  Age Range
-                </label>
-                <select
-                  id="age"
-                  value={userProfile.age}
-                  onChange={(e) => handleProfileChange('age', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select age range</option>
-                  <option value="under_18">Under 18</option>
-                  <option value="18_24">18-24</option>
-                  <option value="25_34">25-34</option>
-                  <option value="35_44">35-44</option>
-                  <option value="45_54">45-54</option>
-                  <option value="55_64">55-64</option>
-                  <option value="65_plus">65+</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+              {/* Health & Military Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Health & Military</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field">
+                    <label htmlFor="disability" className="profile-label">
+                      Disability Status
+                    </label>
+                    <select
+                      id="disability"
+                      value={userProfile.disability}
+                      onChange={(e) => handleProfileChange('disability', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select status</option>
+                      <option value="no_disability">No Disability</option>
+                      <option value="physical_disability">Physical Disability</option>
+                      <option value="cognitive_disability">Cognitive Disability</option>
+                      <option value="sensory_disability">Sensory Disability</option>
+                      <option value="mental_health">Mental Health Condition</option>
+                      <option value="multiple_disabilities">Multiple Disabilities</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+
+                  <div className="profile-field">
+                    <label htmlFor="veteranStatus" className="profile-label">
+                      Veteran Status
+                    </label>
+                    <select
+                      id="veteranStatus"
+                      value={userProfile.veteranStatus}
+                      onChange={(e) => handleProfileChange('veteranStatus', e.target.value)}
+                      className="profile-select"
+                    >
+                      <option value="">Select status</option>
+                      <option value="veteran">Veteran</option>
+                      <option value="active_duty">Active Duty</option>
+                      <option value="reservist">Reservist/National Guard</option>
+                      <option value="military_family">Military Family Member</option>
+                      <option value="not_applicable">Not Applicable</option>
+                      <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div className="profile-field">
-                <label htmlFor="education" className="profile-label">
-                  Education Level
-                </label>
-                <select
-                  id="education"
-                  value={userProfile.education}
-                  onChange={(e) => handleProfileChange('education', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select education level</option>
-                  <option value="no_high_school">No High School Diploma</option>
-                  <option value="high_school">High School Diploma/GED</option>
-                  <option value="some_college">Some College</option>
-                  <option value="associates">Associate's Degree</option>
-                  <option value="bachelors">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree</option>
-                  <option value="doctoral">Doctoral Degree</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
+              {/* Additional Information Section */}
+              <div className="profile-section-group">
+                <h4 className="profile-section-title">Additional Information</h4>
+                <div className="profile-fields-grid">
+                  <div className="profile-field profile-field-full">
+                    <label htmlFor="other" className="profile-label">
+                      Other Relevant Information
+                    </label>
+                    <textarea
+                      id="other"
+                      value={userProfile.other}
+                      onChange={(e) => handleProfileChange('other', e.target.value)}
+                      className="profile-textarea"
+                      placeholder="Any other information that might be relevant to how legislation affects you (e.g., small business owner, healthcare worker, student, etc.)"
+                      rows={3}
+                    />
+                  </div>
+                </div>
               </div>
-
-              <div className="profile-field">
-                <label htmlFor="employment" className="profile-label">
-                  Employment Status
-                </label>
-                <select
-                  id="employment"
-                  value={userProfile.employment}
-                  onChange={(e) => handleProfileChange('employment', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select employment status</option>
-                  <option value="employed_full_time">Employed Full-time</option>
-                  <option value="employed_part_time">Employed Part-time</option>
-                  <option value="self_employed">Self-employed</option>
-                  <option value="unemployed">Unemployed</option>
-                  <option value="student">Student</option>
-                  <option value="retired">Retired</option>
-                  <option value="disabled">Unable to work due to disability</option>
-                  <option value="homemaker">Homemaker</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
-              </div>
-
-              <div className="profile-field">
-                <label htmlFor="disability" className="profile-label">
-                  Disability Status
-                </label>
-                <select
-                  id="disability"
-                  value={userProfile.disability}
-                  onChange={(e) => handleProfileChange('disability', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select status</option>
-                  <option value="no_disability">No Disability</option>
-                  <option value="physical_disability">Physical Disability</option>
-                  <option value="cognitive_disability">Cognitive Disability</option>
-                  <option value="sensory_disability">Sensory Disability</option>
-                  <option value="mental_health">Mental Health Condition</option>
-                  <option value="multiple_disabilities">Multiple Disabilities</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
-              </div>
-
-              <div className="profile-field">
-                <label htmlFor="veteranStatus" className="profile-label">
-                  Veteran Status
-                </label>
-                <select
-                  id="veteranStatus"
-                  value={userProfile.veteranStatus}
-                  onChange={(e) => handleProfileChange('veteranStatus', e.target.value)}
-                  className="profile-select"
-                >
-                  <option value="">Select status</option>
-                  <option value="veteran">Veteran</option>
-                  <option value="active_duty">Active Duty</option>
-                  <option value="reservist">Reservist/National Guard</option>
-                  <option value="military_family">Military Family Member</option>
-                  <option value="not_applicable">Not Applicable</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
-                </select>
-              </div>
-
-              <div className="profile-field profile-field-full">
-                <label htmlFor="other" className="profile-label">
-                  Other Relevant Information
-                </label>
-                <textarea
-                  id="other"
-                  value={userProfile.other}
-                  onChange={(e) => handleProfileChange('other', e.target.value)}
-                  className="profile-textarea"
-                  placeholder="Any other information that might be relevant to how legislation affects you (e.g., small business owner, healthcare worker, student, etc.)"
-                  rows={3}
-                />
-              </div>
-            </div>
+            </>
           )}
 
           {profileSaving && (

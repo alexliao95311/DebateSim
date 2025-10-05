@@ -696,6 +696,20 @@
   }
 }
 
+/* Profile Section Groups */
+.profile-section-group {
+  margin-bottom: 2rem;
+}
+
+.profile-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4a90e2;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+}
+
 /* Profile Configured Status Section */
 .profile-configured-section {
   background: rgba(34, 197, 94, 0.1);
