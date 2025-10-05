@@ -10,6 +10,7 @@ import Legislation from "./components/Legislation";
 import PublicTranscriptView from "./components/PublicTranscriptView";
 import AboutUs from "./components/AboutUs";
 import SpeechTest from "./components/SpeechTest";
+import DebateTrainer from "./components/DebateTrainer";
 
 // Component to handle scroll reset on route changes
 function ScrollToTop() {
@@ -110,6 +111,7 @@ function App() {
             <Route path="/debate" element={<Debate />} />
             <Route path="/judge" element={<Judge />} />
             <Route path="/legislation" element={<Legislation user={user} />} />
+            <Route path="/debate-trainer" element={<DebateTrainer user={user} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}

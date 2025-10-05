@@ -209,8 +209,8 @@ function Home({ user, onLogout }) {
       title: "Debate Trainer",
       description: "Sharpen your debate skills with AI-powered training. Face off against bots of different skill levels, receive personalized feedback, and master any format or styles with feedback tailored to you.",
       icon: <Gavel className="home-feature-icon" />,
-      status: "beta",
-      route: "/debatesim",
+      status: "active",
+      route: "/debate-trainer",
       tags: ["Personalized", "Interactive"],
       gradient: "from-blue-500 to-purple-600"
     }

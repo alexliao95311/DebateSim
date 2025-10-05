@@ -1,9 +1,36 @@
-/* global DebateElo */
-
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { createRoot } from "react-dom/client";
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from "react-router-dom";
 import { generateAIResponse, getAIJudgeFeedback } from "../api";
-import "./debatetrainer.css";
+import { saveTranscriptToUser } from "../firebase/saveTranscript";
+import LoadingSpinner from "./LoadingSpinner";
+import HistorySidebar from "./HistorySidebar";
+import VoiceInput from './VoiceInput';
+import SimpleFileUpload from "./SimpleFileUpload";
+import { 
+  Gavel, 
+  MessageSquare, 
+  Download, 
+  Share2, 
+  ArrowLeft, 
+  Volume2, 
+  VolumeX,
+  History,
+  User,
+  LogOut,
+  Menu,
+  ChevronDown,
+  Award,
+  Target,
+  Users,
+  Bot,
+  Zap,
+  TrendingUp,
+  Star
+} from "lucide-react";
+import "./DebateTrainer.css";
+
+// Import ELO system
+import { EloLadder } from "../utils/debatetrainerelo";
 
 const SPEECH_TYPES = [
   { id: 'constructive', name: 'Constructive' },
@@ -70,54 +97,25 @@ Provide:
 2) Two exemplar lines they could say next time
 3) One-sentence overall verdict`;
 
-function SectionTitle({ title, subtitle, right }) {
-  return (
-    <div className="dt-title" style={{ justifyContent: 'space-between' }}>
-      <div>
-        <div style={{ fontSize: 16 }}>{title}</div>
-        {subtitle && <div className="dt-subtle" style={{ fontSize: 12 }}>{subtitle}</div>}
-      </div>
-      {right}
-    </div>
-  );
-}
+function DebateTrainer({ user }) {
+  const navigate = useNavigate();
+  const [history, setHistory] = useState([]);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const dropdownRef = useRef(null);
 
-function Labeled({ label, children, hint }) {
-  return (
-    <div>
-      <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
-      {children}
-      {hint && <div className="dt-inline-help" style={{ marginTop: 6 }}>{hint}</div>}
-    </div>
-  );
-}
+  // ELO System
+  const [eloLadder] = useState(() => new EloLadder(
+    PROMPT_PRESETS.filter(p => p.id.startsWith('spar-bot')).map((p, idx) => ({ 
+      id: p.id, 
+      name: p.name, 
+      rating: p.baseRating 
+    }))
+  ));
 
-function BotRow({ bot, onChallenge }) {
-  return (
-    <div className="dt-card dt-bot-row">
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontWeight: 700 }}>{bot.name}</span>
-          <span className="dt-tag">Games {bot.games}</span>
-          <span className="dt-tag">W {bot.wins} / L {bot.losses}</span>
-        </div>
-        <div className="dt-subtle" style={{ marginTop: 6 }}>Elo <span className="dt-elo-badge">{bot.rating}</span></div>
-      </div>
-      <div>
-        <button className="dt-btn primary" onClick={() => onChallenge(bot)}>Debate</button>
-      </div>
-    </div>
-  );
-}
-
-function DebateTrainerApp() {
-  const ladderRef = useRef(null);
-  if (!ladderRef.current) {
-    ladderRef.current = new DebateElo.EloLadder(
-      PROMPT_PRESETS.filter(p => p.id.startsWith('spar-bot')).map((p, idx) => ({ id: p.id, name: p.name, rating: p.baseRating }))
-    );
-  }
-
+  // Training Mode States
+  const [mode, setMode] = useState(''); // 'feedback', 'sparring'
   const [speechType, setSpeechType] = useState('constructive');
   const [topic, setTopic] = useState('Should governments implement universal basic income?');
   const [caseSide, setCaseSide] = useState('pro');
@@ -128,18 +126,78 @@ function DebateTrainerApp() {
   const [revision, setRevision] = useState('');
   const [reviewHistory, setReviewHistory] = useState([]);
 
-  const [activeMatch, setActiveMatch] = useState(null); // { botId, bot, transcript: [], mySide, status }
+  // Sparring Mode States
+  const [activeMatch, setActiveMatch] = useState(null);
   const [myElo, setMyElo] = useState(1500);
   const [kFactor, setKFactor] = useState(24);
+  const [userInput, setUserInput] = useState('');
 
+  // Common States
   const [model, setModel] = useState(MODEL_OPTIONS[0]);
   const [format, setFormat] = useState('Public Forum');
   const [feedbackTiming, setFeedbackTiming] = useState('per_speech');
-  const [feedbackOnlyMode, setFeedbackOnlyMode] = useState(false);
-  const [speechFeedbackList, setSpeechFeedbackList] = useState([]);
-  const [finalFeedback, setFinalFeedback] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const bots = ladderRef.current.listBots();
+  // Immediate scroll reset using useLayoutEffect
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  // Animation trigger
+  useEffect(() => {
+    const animationTimer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(animationTimer);
+  }, []);
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowMobileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Fetch debate history on load
+  useEffect(() => {
+    async function fetchHistory() {
+      if (!user || user.isGuest) return;
+      try {
+        // This would fetch DebateTrainer specific history
+        // For now, we'll use empty array
+        setHistory([]);
+      } catch (err) {
+        console.error("Error fetching debate trainer history:", err);
+      }
+    }
+    fetchHistory();
+  }, [user]);
+
+  // Ensure "me" is registered in ladder
+  useEffect(() => {
+    eloLadder.addBot('me', 'You', myElo);
+  }, [eloLadder, myElo]);
+
+  const handleBackToHome = () => {
+    navigate("/");
+  };
+
+  const handleLogout = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    navigate("/");
+  };
+
+  const bots = eloLadder.listBots();
   const coachOptions = PROMPT_PRESETS.filter(p => p.id.startsWith('coach'));
 
   function formatDirectives() {
@@ -166,7 +224,7 @@ function DebateTrainerApp() {
 
   function buildSparOpening(botPreset, side) {
     const styleDirective = botPreset.sparStyle === 'aggressive'
-      ? 'Be assertive. Press concessions, extend offense, collapse to strongest lines, and do sharp weighing.'
+      ? 'Be assertive. Press concessions, extend offense, collapse persuasively, and weigh efficiently.'
       : botPreset.sparStyle === 'beginner'
       ? 'Keep arguments simpler and fewer. Sometimes miss a weighing step, but remain coherent.'
       : 'Be balanced, organized, and evidence-driven with solid weighing.';
@@ -182,14 +240,10 @@ function DebateTrainerApp() {
     return `System:\n${botPreset.system}\n\nDebate format: ${format}. ${formatDirectives()}\nStyle: ${botPreset.sparStyle}. ${styleDirective}\n\nOpponent said: "${lastUserSpeech()}"\nTask: Respond with grouped, line-by-line answers, rebuild any attacked positions, and add weighing. Be concise. No fluff.`;
   }
 
-  // Real API call using our client utilities
   async function callModel(prompt, debaterLabel = 'Coach') {
     const response = await generateAIResponse(debaterLabel, prompt, model);
     return response;
   }
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   async function handleCritique() {
     setError('');
@@ -249,7 +303,6 @@ function DebateTrainerApp() {
       mySide: caseSide,
       status: 'setup',
     });
-    // Auto-begin and focus the live composer
     setTimeout(() => {
       beginRound();
       try { document.getElementById('dt-composer-input')?.focus(); } catch {}
@@ -272,31 +325,6 @@ function DebateTrainerApp() {
     }
   }
 
-  function buildMatchTranscriptMarkdown() {
-    const t = activeMatch?.transcript || [];
-    return t.map((m) => `## ${m.speaker === 'me' ? 'You' : 'Bot'}\n${m.text}`).join(`\n\n---\n\n`);
-  }
-
-  async function requestFinalFeedback() {
-    try {
-      setLoading(true);
-      const transcript = buildMatchTranscriptMarkdown();
-      const out = await getAIJudgeFeedback(transcript, model);
-      setFinalFeedback(out);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to get final feedback.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function lastUserSpeech() {
-    const t = activeMatch?.transcript || [];
-    for (let i = t.length - 1; i >= 0; i--) if (t[i].speaker === 'me') return t[i].text;
-    return '';
-  }
-
   async function meSpeaks(text) {
     if (!activeMatch || !text.trim()) return;
     setActiveMatch((m) => ({ ...m, transcript: [...m.transcript, { speaker: 'me', text }] }));
@@ -310,267 +338,428 @@ function DebateTrainerApp() {
 
   function concludeRound(won) {
     if (!activeMatch) return;
-    const updated = ladderRef.current.recordMatch('me', activeMatch.botId, won ? 1 : 0, kFactor);
+    const updated = eloLadder.recordMatch('me', activeMatch.botId, won ? 1 : 0, kFactor);
     setMyElo(updated.a ? updated.a.rating : myElo);
     setActiveMatch((m) => ({ ...m, status: won ? 'won' : 'lost' }));
-    if (feedbackTiming === 'end') {
-      requestFinalFeedback();
-    }
   }
 
-  // Ensure "me" is registered in ladder
-  useEffect(() => {
-    ladderRef.current.addBot('me', 'You', myElo);
-  }, []);
+  function lastUserSpeech() {
+    const t = activeMatch?.transcript || [];
+    for (let i = t.length - 1; i >= 0; i--) if (t[i].speaker === 'me') return t[i].text;
+    return '';
+  }
 
-  // removed apiKey persistence/UI
-
-  useEffect(() => {
-    try {
-      if (model) localStorage.setItem('OPENAI_MODEL', model);
-      const storedModel = localStorage.getItem('OPENAI_MODEL');
-      if (!model && storedModel) setModel(storedModel);
-    } catch {}
-    window.OPENAI_MODEL = model;
-  }, [model]);
+  const modes = [
+    {
+      id: "feedback",
+      title: "Speech Feedback",
+      description: "Get detailed feedback on your speeches with personalized coaching",
+      icon: <Target size={48} />,
+      tags: ["Feedback", "Learning"],
+      color: "from-blue-500 to-purple-600"
+    },
+    {
+      id: "sparring",
+      title: "AI Sparring",
+      description: "Practice against AI opponents with different skill levels",
+      icon: <Bot size={48} />,
+      tags: ["Practice", "ELO"],
+      color: "from-green-500 to-teal-600"
+    }
+  ];
 
   return (
-    <div className="dt-root">
-      <div className="dt-pane">
-        <SectionTitle
-          title="Debate Trainer"
-          subtitle="Choose format, get feedback, and spar against bots"
-          right={(
-            <div className="dt-chip-row">
-              <div className="dt-chip">Model
-                <select className="dt-select" style={{ width: 230, marginLeft: 8 }} value={model} onChange={(e) => setModel(e.target.value)}>
-                  {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
+    <div className={`debate-trainer-container ${showHistorySidebar ? 'debate-trainer-sidebar-open' : ''}`}>
+      <header className="debate-trainer-header">
+        <div className="debate-trainer-header-content">
+          <div className="debate-trainer-header-left">
+            <button className="back-to-home" onClick={handleBackToHome}>
+              <ArrowLeft size={18} />
+              Back to Home
+            </button>
+            <button
+              className="debate-trainer-history-button"
+              onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+            >
+              <History size={18} />
+              <span>History</span>
+            </button>
+          </div>
+
+          <div className="debate-trainer-header-center">
+            <h1 className="debate-trainer-site-title">Debate Trainer</h1>
+          </div>
+
+          <div className="debate-trainer-header-right">
+            <div className="debate-trainer-user-section debate-trainer-desktop-user">
+              <div className="debate-trainer-user-info">
+                <User size={18} />
+                <span>{user?.displayName}</span>
               </div>
-              {loading && <span className="dt-tag">Loading…</span>}
-              {error && <span className="dt-tag" style={{ color: '#ef4444' }}>Error</span>}
+              <button className="debate-trainer-logout-button" onClick={handleLogout}>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+
+            <div className="debate-trainer-mobile-dropdown-container" ref={dropdownRef}>
+              <button
+                className="debate-trainer-mobile-dropdown-trigger"
+                onClick={() => setShowMobileDropdown(!showMobileDropdown)}
+              >
+                <Menu size={18} />
+                <ChevronDown size={16} className={`debate-trainer-dropdown-arrow ${showMobileDropdown ? 'rotated' : ''}`} />
+              </button>
+
+              {showMobileDropdown && (
+                <div className="debate-trainer-mobile-dropdown-menu">
+                  <div className="debate-trainer-dropdown-user-info">
+                    <User size={16} />
+                    <span>{user?.displayName}</span>
+                  </div>
+                  <button
+                    className="debate-trainer-dropdown-option"
+                    onClick={() => {
+                      setShowHistorySidebar(!showHistorySidebar);
+                      setShowMobileDropdown(false);
+                    }}
+                  >
+                    <History size={16} />
+                    <span>History</span>
+                  </button>
+                  <button
+                    className="debate-trainer-dropdown-option debate-trainer-dropdown-logout"
+                    onClick={() => {
+                      handleLogout();
+                      setShowMobileDropdown(false);
+                    }}
+                  >
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
             </div>
           )}
-        />
-        <div className="dt-split">
-          <Labeled label="Format">
-            <select className="dt-select" value={format} onChange={(e) => setFormat(e.target.value)}>
-              {['Public Forum','Congress','Normal'].map(f => <option key={f} value={f}>{f}</option>)}
-            </select>
-          </Labeled>
-          <Labeled label="Feedback Timing" hint="Show feedback after each speech or at the end">
-            <select className="dt-select" value={feedbackTiming} onChange={(e) => setFeedbackTiming(e.target.value)}>
-              <option value="per_speech">After each speech</option>
-              <option value="end">All at the end</option>
-            </select>
-          </Labeled>
-        </div>
-        <div style={{ height: 8 }} />
-        <div className="dt-row">
-          <button className={`dt-btn ${!feedbackOnlyMode ? 'primary' : ''}`} onClick={() => setFeedbackOnlyMode(false)}>Full Trainer</button>
-          <button className={`dt-btn ${feedbackOnlyMode ? 'primary' : ''}`} onClick={() => setFeedbackOnlyMode(true)}>Feedback Only</button>
-        </div>
-        <div style={{ height: 8 }} />
-        {feedbackOnlyMode ? (
-          <div className="dt-card">
-            <div className="dt-split">
-              <Labeled label="Speech Type">
-                <select className="dt-select" value={speechType} onChange={(e) => setSpeechType(e.target.value)}>
-                  {SPEECH_TYPES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </Labeled>
-              <Labeled label="Side">
-                <select className="dt-select" value={caseSide} onChange={(e) => setCaseSide(e.target.value)}>
-                  <option value="pro">Pro / Affirmative</option>
-                  <option value="con">Con / Negative</option>
-                </select>
-              </Labeled>
-            </div>
-            <div style={{ height: 8 }} />
-            <Labeled label="Paste Your Speech">
-              <textarea className="dt-textarea" value={speechText} onChange={(e) => setSpeechText(e.target.value)} placeholder="Paste or write your speech here..." />
-            </Labeled>
-            <div className="dt-row" style={{ marginTop: 8 }}>
-              <button className="dt-btn primary" disabled={loading || !speechText.trim()} onClick={handleCritique}>Get Feedback</button>
-            </div>
-            <div className="dt-divider" />
-            <div className="dt-card">
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Feedback</div>
-              <div className="dt-scroll">
-                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{critique}</pre>
-              </div>
             </div>
           </div>
-        ) : (
-          <></>
+        </div>
+      </header>
+
+      <div className="debate-trainer-main-content">
+        <div className={`debate-trainer-hero-section ${isVisible ? 'debate-trainer-visible' : ''}`}>
+          <h1 className="debate-trainer-welcome-message">
+            Welcome to Debate Trainer, <span className="debate-trainer-username-highlight">{user?.displayName}</span>
+          </h1>
+          <p className="debate-trainer-hero-subtitle">
+            Sharpen your debate skills with AI-powered training and personalized feedback
+          </p>
+        </div>
+
+        {/* Mode Selection */}
+        {!mode && (
+          <div className={`debate-trainer-section ${isVisible ? 'debate-trainer-visible' : ''}`}>
+            <h2 className="debate-trainer-section-title">Choose Training Mode</h2>
+            <div className="debate-trainer-mode-grid">
+              {modes.map((modeOption, index) => (
+                <div
+                  key={modeOption.id}
+                  className={`debate-trainer-mode-card`}
+                  onClick={() => setMode(modeOption.id)}
+                  style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+                >
+                  <div className="debate-trainer-mode-icon">
+                    {modeOption.icon}
+            </div>
+                  <h3 className="debate-trainer-mode-title">{modeOption.title}</h3>
+                  <p className="debate-trainer-mode-description">{modeOption.description}</p>
+                  <div className="debate-trainer-mode-tags">
+                    {modeOption.tags.map((tag, tagIndex) => (
+                      <span key={tagIndex} className="debate-trainer-mode-tag">
+                        {tag}
+                      </span>
+                    ))}
+            </div>
+              </div>
+              ))}
+            </div>
+          </div>
         )}
-        <Labeled label="Topic">
-          <input className="dt-input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Resolution or motion" />
-        </Labeled>
-        <div style={{ height: 10 }} />
-        <Labeled label="Your Speech">
-          <textarea className="dt-textarea" value={speechText} onChange={(e) => setSpeechText(e.target.value)} placeholder="Paste or write your speech here..." />
-        </Labeled>
-        <div style={{ height: 10 }} />
-        <div className="dt-row">
-          <select className="dt-select" style={{ flex: 1 }} value={coachPresetId} onChange={(e) => setCoachPresetId(e.target.value)}>
+
+        {/* Speech Feedback Mode */}
+        {mode === 'feedback' && (
+          <div className="debate-trainer-feedback-mode">
+            <div className="debate-trainer-section">
+              <div className="debate-trainer-section-header">
+                <h2 className="debate-trainer-section-title">Speech Feedback</h2>
+                <button 
+                  className="debate-trainer-back-button"
+                  onClick={() => setMode('')}
+                >
+                  ← Back to Modes
+                </button>
+              </div>
+
+              <div className="debate-trainer-controls">
+                <div className="debate-trainer-control-group">
+                  <label>Model:</label>
+                  <select value={model} onChange={(e) => setModel(e.target.value)}>
+                    {MODEL_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="debate-trainer-control-group">
+                  <label>Format:</label>
+                  <select value={format} onChange={(e) => setFormat(e.target.value)}>
+                    {['Public Forum','Congress','Normal'].map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="debate-trainer-form">
+                <div className="debate-trainer-form-row">
+                  <div className="debate-trainer-form-group">
+                    <label>Speech Type:</label>
+                    <select value={speechType} onChange={(e) => setSpeechType(e.target.value)}>
+                      {SPEECH_TYPES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="debate-trainer-form-group">
+                    <label>Side:</label>
+                    <select value={caseSide} onChange={(e) => setCaseSide(e.target.value)}>
+                      <option value="pro">Pro / Affirmative</option>
+                      <option value="con">Con / Negative</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="debate-trainer-form-group">
+                  <label>Topic:</label>
+                  <input 
+                    type="text"
+                    value={topic} 
+                    onChange={(e) => setTopic(e.target.value)} 
+                    placeholder="Enter debate topic"
+                  />
+                </div>
+
+                <div className="debate-trainer-form-group">
+                  <label>Your Speech:</label>
+                  <textarea 
+                    value={speechText} 
+                    onChange={(e) => setSpeechText(e.target.value)} 
+                    placeholder="Paste or write your speech here..."
+                    rows={6}
+                  />
+                </div>
+
+                <div className="debate-trainer-form-group">
+                  <label>Coach Style:</label>
+                  <select value={coachPresetId} onChange={(e) => setCoachPresetId(e.target.value)}>
             {coachOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button className="dt-btn primary" onClick={handleCritique}>Get Critique</button>
-          <button className="dt-btn" onClick={handleTips}>Get Tips</button>
         </div>
-        <div style={{ height: 10 }} />
-        {!feedbackOnlyMode && (
-        <div className="dt-split">
-          <div className="dt-card">
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Critique</div>
-            <div className="dt-scroll">
-              <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{critique}</pre>
+
+                <div className="debate-trainer-actions">
+                  <button 
+                    className="debate-trainer-btn primary" 
+                    disabled={loading || !speechText.trim()} 
+                    onClick={handleCritique}
+                  >
+                    Get Feedback
+                  </button>
+                  <button 
+                    className="debate-trainer-btn" 
+                    disabled={loading || !speechText.trim()} 
+                    onClick={handleTips}
+                  >
+                    Get Tips & Drills
+                  </button>
             </div>
           </div>
-          <div className="dt-card">
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Tips & Drills</div>
-            <div className="dt-scroll">
-              <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{tips}</pre>
-            </div>
+
+              {critique && (
+                <div className="debate-trainer-feedback-section">
+                  <h3>Feedback</h3>
+                  <div className="debate-trainer-feedback-content">
+                    <pre>{critique}</pre>
           </div>
         </div>
         )}
-        {!feedbackOnlyMode && (
-          <>
-            <div className="dt-divider" />
-            <SectionTitle title="Revise and Review" subtitle="Paste a revision and get delta feedback" />
-            <Labeled label="Your Revision">
-              <textarea className="dt-textarea" value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="Make edits here and request another review" />
-            </Labeled>
-            <div className="dt-row" style={{ marginTop: 8 }}>
-              <button className="dt-btn" onClick={handleReviseAndReview}>Review Revision</button>
+
+              {tips && (
+                <div className="debate-trainer-feedback-section">
+                  <h3>Tips & Drills</h3>
+                  <div className="debate-trainer-feedback-content">
+                    <pre>{tips}</pre>
             </div>
-            <div style={{ height: 10 }} />
-            <div className="dt-card">
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Continuous Review History</div>
-              <div className="dt-scroll dt-list">
-                {reviewHistory.length === 0 && <div className="dt-subtle">No reviews yet</div>}
-                {reviewHistory.map((r, idx) => (
-                  <div key={idx} className="dt-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span className="dt-tag">{r.type}</span>
-                      <span className="dt-subtle">{new Date(r.ts).toLocaleString()}</span>
                     </div>
-                    <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{r.content}</pre>
+              )}
+
+              {revision && (
+                <div className="debate-trainer-form">
+                  <div className="debate-trainer-form-group">
+                    <label>Your Revision:</label>
+                    <textarea 
+                      value={revision} 
+                      onChange={(e) => setRevision(e.target.value)} 
+                      placeholder="Make edits here and request another review"
+                      rows={4}
+                    />
+                  </div>
+                  <button 
+                    className="debate-trainer-btn" 
+                    onClick={handleReviseAndReview}
+                  >
+                    Review Revision
+                  </button>
+                </div>
+              )}
+
+              {reviewHistory.length > 0 && (
+                <div className="debate-trainer-history-section">
+                  <h3>Review History</h3>
+                  <div className="debate-trainer-history-content">
+                    {reviewHistory.map((r, idx) => (
+                      <div key={idx} className="debate-trainer-history-item">
+                        <div className="debate-trainer-history-header">
+                          <span className="debate-trainer-history-type">{r.type}</span>
+                          <span className="debate-trainer-history-time">{new Date(r.ts).toLocaleString()}</span>
+                        </div>
+                        <pre>{r.content}</pre>
                   </div>
                 ))}
               </div>
             </div>
-          </>
         )}
       </div>
-
-      <div className="dt-pane">
-        <SectionTitle title="Sparring Arena" subtitle="Debate AI opponents with ratings" right={<span className="dt-tag">Elo</span>} />
-        <div className="dt-row" style={{ marginBottom: 8 }}>
-          <div className="dt-chip">Your Elo: <span className="dt-elo-badge" style={{ marginLeft: 6 }}>{myElo}</span></div>
-          <div className="dt-chip">K-Factor
-            <select className="dt-select" style={{ width: 90, marginLeft: 8 }} value={kFactor} onChange={(e) => setKFactor(Number(e.target.value))}>
-              {[16, 24, 32, 40].map(k => <option key={k} value={k}>{k}</option>)}
-            </select>
           </div>
-        </div>
-        <div className="dt-option-grid" style={{ marginBottom: 12 }}>
-          {bots.map((b) => (
-            <div key={b.id} className="dt-option-card" onClick={() => startMatch(b)}>
-              <div className="dt-option-title">{b.name}</div>
-              <div className="dt-option-meta">
-                <span className="dt-tag">Elo {b.rating}</span>
-                <span className="dt-tag">{b.wins}W/{b.losses}L</span>
+        )}
+
+        {/* AI Sparring Mode */}
+        {mode === 'sparring' && (
+          <div className="debate-trainer-sparring-mode">
+            <div className="debate-trainer-section">
+              <div className="debate-trainer-section-header">
+                <h2 className="debate-trainer-section-title">AI Sparring Arena</h2>
+                <button 
+                  className="debate-trainer-back-button"
+                  onClick={() => setMode('')}
+                >
+                  ← Back to Modes
+                </button>
               </div>
+
+              <div className="debate-trainer-sparring-controls">
+                <div className="debate-trainer-elo-display">
+                  <span>Your Elo: <strong>{myElo}</strong></span>
+                  <span>K-Factor: 
+                    <select value={kFactor} onChange={(e) => setKFactor(Number(e.target.value))}>
+                      {[16, 24, 32, 40].map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                  </span>
             </div>
-          ))}
-        </div>
-        <div className="dt-divider" />
-        <SectionTitle title="Live Match" subtitle="Line-by-line with weighing" />
-        {!activeMatch && <div className="dt-subtle">Select an opponent to start.</div>}
-        {activeMatch && (
-          <div className="dt-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>{activeMatch.bot.name}</div>
-              <div className="dt-tag">{activeMatch.status}</div>
-            </div>
-            {activeMatch.status === 'setup' && (
-              <div className="dt-row">
-                <button className="dt-btn primary" onClick={beginRound}>Begin Round</button>
               </div>
-            )}
-            {activeMatch.status !== 'setup' && (
-              <div>
-                <div className="dt-scroll dt-list" style={{ maxHeight: 220 }}>
-                  {activeMatch.transcript.map((t, i) => (
-                    <div key={i} className="dt-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span className="dt-tag">{t.speaker === 'me' ? 'You' : 'Bot'}</span>
+
+              <div className="debate-trainer-bot-grid">
+                <h3>Available Opponents</h3>
+                <div className="debate-trainer-bots">
+                  {bots.map((bot) => (
+                    <div key={bot.id} className="debate-trainer-bot-card" onClick={() => startMatch(bot)}>
+                      <div className="debate-trainer-bot-name">{bot.name}</div>
+                      <div className="debate-trainer-bot-stats">
+                        <span className="debate-trainer-bot-elo">Elo {bot.rating}</span>
+                        <span className="debate-trainer-bot-record">{bot.wins}W/{bot.losses}L</span>
                       </div>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{t.text}</pre>
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {activeMatch && (
+                <div className="debate-trainer-active-match">
+                  <h3>Live Match vs {activeMatch.bot.name}</h3>
+                  <div className="debate-trainer-match-status">Status: {activeMatch.status}</div>
+                  
+                  {activeMatch.status === 'setup' && (
+                    <button className="debate-trainer-btn primary" onClick={beginRound}>
+                      Begin Round
+                    </button>
+                  )}
+
                 {activeMatch.status === 'live' && (
-                  <ChatComposer onSend={async (text) => {
-                    await meSpeaks(text);
-                    if (feedbackTiming === 'per_speech') {
-                      try {
-                        const prompt = `System:\nYou are a debate coach. Provide universal-rubric feedback (clarity, warranting, weighing, responsiveness, delivery) for the following speech excerpt in ${format}. Topic: "${topic}". ${UNIVERSAL_FEEDBACK_RUBRIC}\n\nSpeech Excerpt:\n${text}`;
-                        const out = await callModel(prompt, 'Coach Feedback');
-                        setReviewHistory((h) => [{ type: 'per-speech', ts: Date.now(), content: out }, ...h]);
-                      } catch (e) { console.error(e); }
-                    }
+                    <div className="debate-trainer-match-content">
+                      <div className="debate-trainer-transcript">
+                        {activeMatch.transcript.map((t, i) => (
+                          <div key={i} className="debate-trainer-message">
+                            <div className="debate-trainer-message-header">
+                              {t.speaker === 'me' ? 'You' : 'Bot'}
+                            </div>
+                            <div className="debate-trainer-message-content">
+                              {t.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="debate-trainer-input-section">
+                        <textarea 
+                          id="dt-composer-input"
+                          value={userInput} 
+                          onChange={(e) => setUserInput(e.target.value)} 
+                          placeholder="Your response..."
+                          rows={3}
+                        />
+                        <button 
+                          className="debate-trainer-btn primary"
+                          onClick={async () => {
+                            await meSpeaks(userInput);
+                            setUserInput('');
                     await botSpeaks(false);
-                  }} />
-                )}
-                {activeMatch.status === 'live' && (
-                  <div className="dt-row" style={{ marginTop: 8 }}>
-                    <button className="dt-btn" onClick={() => concludeRound(true)}>Conclude: You Win</button>
-                    <button className="dt-btn warn" onClick={() => concludeRound(false)}>Conclude: You Lose</button>
+                          }}
+                        >
+                          Send
+                        </button>
+                      </div>
+
+                      <div className="debate-trainer-match-actions">
+                        <button 
+                          className="debate-trainer-btn success" 
+                          onClick={() => concludeRound(true)}
+                        >
+                          Conclude: You Win
+                        </button>
+                        <button 
+                          className="debate-trainer-btn danger" 
+                          onClick={() => concludeRound(false)}
+                        >
+                          Conclude: You Lose
+                        </button>
+                      </div>
                   </div>
                 )}
+
                 {['won', 'lost'].includes(activeMatch.status) && (
-                  <div className="dt-subtle" style={{ marginTop: 8 }}>Match concluded. Adjusted ratings have been saved.</div>
-                )}
+                    <div className="debate-trainer-match-result">
+                      Match concluded. Your Elo: {myElo}
               </div>
             )}
           </div>
         )}
-      </div>
-      {error && (
-        <div className="dt-pane" style={{ marginTop: 12 }}>
-          <div className="dt-card" style={{ borderColor: '#ef4444' }}>
-            <div style={{ fontWeight: 700, color: '#ef4444', marginBottom: 6 }}>Error</div>
-            <div className="dt-subtle">{error}</div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function ChatComposer({ onSend }) {
-  const [text, setText] = useState('');
-  return (
-    <div className="dt-row" style={{ marginTop: 8 }}>
-      <textarea id="dt-composer-input" className="dt-textarea" value={text} onChange={(e) => setText(e.target.value)} placeholder="Your turn: respond with grouped, warranted answers and weighing." />
-      <div style={{ display: 'grid', alignContent: 'start' }}>
-        <button className="dt-btn primary" onClick={() => { onSend(text); setText(''); }}>Send</button>
+        {error && <div className="debate-trainer-error">{error}</div>}
+        {loading && <LoadingSpinner message="Generating AI response" />}
       </div>
+
+      <HistorySidebar 
+        user={user}
+        history={history}
+        showHistorySidebar={showHistorySidebar}
+        setShowHistorySidebar={setShowHistorySidebar}
+        componentPrefix="debate-trainer"
+      />
     </div>
   );
 }
 
-// Mount on demand from the features row
-function mountDebateTrainer() {
-  const rootEl = document.getElementById('feature-panel');
-  if (!rootEl) return;
-  rootEl.style.display = 'block';
-  const root = createRoot(rootEl);
-  root.render(<DebateTrainerApp />);
-}
-
-window.DebateTrainer = { mountDebateTrainer };
+export default DebateTrainer;
