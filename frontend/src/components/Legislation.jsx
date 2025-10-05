@@ -14,6 +14,7 @@ import EnhancedAnalysisTTS, { TTSProvider, HeaderPlayButton } from './EnhancedAn
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
+import UserProfileService from '../utils/userProfileService';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -80,6 +81,78 @@ const personas = [
     image: "/images/drake.jpg"
   }
 ];
+
+// Profile Status Indicator Component
+const ProfileStatusIndicator = ({ user }) => {
+  const [profileStatus, setProfileStatus] = useState({
+    hasProfile: false,
+    isLoading: true,
+    profileData: null
+  });
+
+  useEffect(() => {
+    const checkProfileStatus = async () => {
+      try {
+        const profile = await UserProfileService.getUserProfile(user);
+        const hasProfile = UserProfileService.hasProfileData(profile);
+        setProfileStatus({
+          hasProfile,
+          isLoading: false,
+          profileData: profile
+        });
+      } catch (err) {
+        console.error('Error checking profile status:', err);
+        setProfileStatus({
+          hasProfile: false,
+          isLoading: false,
+          profileData: null
+        });
+      }
+    };
+
+    checkProfileStatus();
+  }, [user]);
+
+  if (profileStatus.isLoading) {
+    return (
+      <div className="profile-status-indicator loading">
+        <span className="status-icon">⏳</span>
+        <span className="status-text">Checking profile...</span>
+      </div>
+    );
+  }
+
+  if (profileStatus.hasProfile) {
+    return (
+      <div className="profile-status-indicator has-profile">
+        <div className="status-content">
+          <span className="status-text">Profile configured - will include personalized "Impacts on You" section</span>
+          <button
+            className="profile-settings-link"
+            onClick={() => window.open('/settings', '_blank')}
+          >
+            View/Edit Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="profile-status-indicator no-profile">
+      <span className="status-icon">ℹ️</span>
+      <div className="status-content">
+        <span className="status-text">No profile configured - analysis will be general</span>
+        <button
+          className="profile-settings-link"
+          onClick={() => window.open('/settings', '_blank')}
+        >
+          Set Up Profile for Personalized Analysis
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // Custom H2 Section Renderer Component
 const H2SectionRenderer = ({ analysisText }) => {
@@ -1306,6 +1379,14 @@ const Legislation = ({ user }) => {
     setError('');
     setProgressStep(0);
     setTotalSteps(3);
+
+    // Get user profile data for personalized analysis
+    let userProfile = null;
+    try {
+      userProfile = await UserProfileService.getUserProfile(user);
+    } catch (err) {
+      console.error('Error loading user profile for analysis:', err);
+    }
     
     try {
       if (billSource === 'recommended' || billSource === 'link') {
@@ -1327,7 +1408,8 @@ const Legislation = ({ user }) => {
           body: JSON.stringify({
             text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
             model: selectedModel,
-            sections: analyzeWholeBill ? null : selectedSections
+            sections: analyzeWholeBill ? null : selectedSections,
+            userProfile: userProfile
           }),
         });
 
@@ -1375,7 +1457,8 @@ const Legislation = ({ user }) => {
             body: JSON.stringify({
               text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${billSource === 'upload' ? extractedPdfText : extractedBillData?.text}` : getSelectedSectionsText(),
               model: selectedModel,
-              sections: analyzeWholeBill ? null : selectedSections
+              sections: analyzeWholeBill ? null : selectedSections,
+              userProfile: userProfile
             }),
           });
           
@@ -1397,6 +1480,9 @@ const Legislation = ({ user }) => {
           const formData = new FormData();
           formData.append('file', selectedBill);
           formData.append('model', selectedModel);
+          if (userProfile) {
+            formData.append('userProfile', JSON.stringify(userProfile));
+          }
           
           setProcessingStage('Analyzing legislation with AI...');
           setProgressStep(2);
@@ -2811,6 +2897,14 @@ const Legislation = ({ user }) => {
                       <p className="model-description">
                         Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
                       </p>
+                    </div>
+
+                    <div className="profile-status-section">
+                      <label className="model-label">
+                        <span className="label-icon">👤</span>
+                        Personalized Analysis
+                      </label>
+                      <ProfileStatusIndicator user={user} />
                     </div>
 
                     <div className="section-selection">
