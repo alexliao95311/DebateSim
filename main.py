@@ -1538,6 +1538,12 @@ class BillFromUrlRequest(BaseModel):
     number: str
     url: str
 
+class StateBillFromUrlRequest(BaseModel):
+    state: str
+    bill_number: str
+    year: str
+    url: str
+
 @app.post("/extract-bill-from-url")
 async def extract_bill_from_url(request: BillFromUrlRequest):
     """Extract bill information from Congress.gov URL"""
@@ -1621,6 +1627,66 @@ async def extract_bill_from_url(request: BillFromUrlRequest):
     except Exception as e:
         logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")
+
+@app.post("/extract-state-bill-from-url")
+async def extract_state_bill_from_url(request: StateBillFromUrlRequest):
+    """Extract state bill information from LegiScan URL"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        logger.info(f"Extracting state bill info from URL: {request.state} {request.bill_number} ({request.year})")
+
+        # Search for the bill by bill number in the state
+        # LegiScan API doesn't support direct bill lookup by number, so we search
+        bills = await legiscan_service.search_bills(request.state, request.bill_number, limit=50)
+
+        # Find exact match for bill number
+        matching_bill = None
+        for bill in bills:
+            if bill.get("number", "").upper() == request.bill_number.upper():
+                matching_bill = bill
+                break
+
+        if not matching_bill:
+            # If no exact match in search, try getting from current session
+            logger.info(f"No match in search results, trying master list")
+            all_bills = await legiscan_service.get_master_list(request.state, None)
+            for bill in all_bills:
+                if bill.get("number", "").upper() == request.bill_number.upper():
+                    matching_bill = bill
+                    break
+
+        if not matching_bill:
+            logger.error(f"Bill not found: {request.state} {request.bill_number}")
+            raise HTTPException(status_code=404, detail=f"Bill {request.bill_number} not found in {request.state}")
+
+        # Get full bill details if we have a bill_id
+        bill_id = matching_bill.get("id")
+        if bill_id:
+            full_bill = await legiscan_service.get_bill(bill_id)
+            if full_bill:
+                matching_bill = full_bill
+
+        return {
+            "title": matching_bill.get("title", f"{request.state} {request.bill_number}"),
+            "number": matching_bill.get("number", request.bill_number),
+            "description": matching_bill.get("description", matching_bill.get("title", "")),
+            "sponsor": matching_bill.get("sponsor", "Unknown Sponsor"),
+            "status": matching_bill.get("status", ""),
+            "lastAction": matching_bill.get("lastAction", ""),
+            "lastActionDate": matching_bill.get("lastActionDate", ""),
+            "url": matching_bill.get("url", request.url),
+            "stateLink": matching_bill.get("stateLink", ""),
+            "id": bill_id,
+            "state": request.state
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting state bill from URL: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error extracting state bill information: {str(e)}")
 
 # ============================================================================
 # LEGISCAN STATE BILLS ENDPOINTS
