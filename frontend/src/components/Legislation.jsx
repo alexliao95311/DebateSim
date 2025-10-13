@@ -636,6 +636,8 @@ const Legislation = ({ user }) => {
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
+  const [showBillPrefixInfo, setShowBillPrefixInfo] = useState(false);
+  const [showFederalBillInfo, setShowFederalBillInfo] = useState(false);
 
   // Jurisdiction and state bills state
   const [jurisdiction, setJurisdiction] = useState('federal'); // 'federal' or 'state'
@@ -2678,7 +2680,31 @@ const Legislation = ({ user }) => {
           {/* Step 1: Select Bill */}
           {currentStep === 1 && (
             <div className="step-one">
-              <h2>Step 1: Choose a Bill</h2>
+              <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                <h2 style={{ textAlign: 'center' }}>Step 1: Choose a Bill</h2>
+                <button
+                  onClick={() => jurisdiction === 'state' ? setShowBillPrefixInfo(true) : setShowFederalBillInfo(true)}
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(71, 85, 105, 0.5)',
+                    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                    color: 'rgba(255, 255, 255, 0.89)',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  title={jurisdiction === 'state' ? "Learn about state bill prefixes" : "Learn about federal bill types"}
+                >
+                  ℹ️ Bill Types
+                </button>
+              </div>
 
               {/* Jurisdiction Selector */}
               <div className="jurisdiction-selector" style={{
@@ -4099,7 +4125,7 @@ const Legislation = ({ user }) => {
 
       {/* Share Modal for Current Analysis - Outside container for proper centering */}
       {showAnalysisShareModal && analysisResult && (
-        <ShareModal 
+        <ShareModal
           isOpen={showAnalysisShareModal}
           onClose={() => setShowAnalysisShareModal(false)}
           transcript={{
@@ -4117,6 +4143,267 @@ const Legislation = ({ user }) => {
           }}
           transcriptId={null}
         />
+      )}
+
+      {/* Federal Bill Info Modal */}
+      {showFederalBillInfo && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowFederalBillInfo(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'rgba(30, 41, 59, 0.95)',
+              padding: '2rem',
+              borderRadius: '12px',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              border: '1px solid rgba(71, 85, 105, 0.5)',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: 'rgba(255, 255, 255, 0.95)', fontSize: '1.5rem' }}>
+                Federal Bill Types — Quick Guide
+              </h3>
+              <button
+                onClick={() => setShowFederalBillInfo(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.25rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.6' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(71, 85, 105, 0.5)' }}>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', color: 'rgba(255, 255, 255, 0.95)' }}>Type</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', color: 'rgba(255, 255, 255, 0.95)' }}>Meaning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HR</td>
+                    <td style={{ padding: '0.75rem' }}>House Bill — legislation originating in the House of Representatives</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>S</td>
+                    <td style={{ padding: '0.75rem' }}>Senate Bill — legislation originating in the Senate</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HJ Res</td>
+                    <td style={{ padding: '0.75rem' }}>House Joint Resolution — requires Presidential signature, used for constitutional amendments</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>SJ Res</td>
+                    <td style={{ padding: '0.75rem' }}>Senate Joint Resolution — same as HJ Res but originates in Senate</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>H Con Res</td>
+                    <td style={{ padding: '0.75rem' }}>House Concurrent Resolution — expresses congressional opinion, no Presidential signature</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>S Con Res</td>
+                    <td style={{ padding: '0.75rem' }}>Senate Concurrent Resolution — same as H Con Res but originates in Senate</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>H Res</td>
+                    <td style={{ padding: '0.75rem' }}>House Simple Resolution — House rules, opinions, matters affecting only the House</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>S Res</td>
+                    <td style={{ padding: '0.75rem' }}>Senate Simple Resolution — Senate rules, opinions, matters affecting only the Senate</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style={{
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                padding: '1rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(0, 123, 255, 0.3)',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
+                  <strong>Bills</strong> (HR, S) become law when passed by both chambers and signed by the President
+                </p>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
+                  <strong>Joint Resolutions</strong> have the same force as bills, often used for constitutional amendments
+                </p>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                  <strong>Resolutions</strong> (Simple & Concurrent) express opinions but don't become law
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowFederalBillInfo(false)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* State Bill Prefix Info Modal */}
+      {showBillPrefixInfo && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowBillPrefixInfo(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'rgba(30, 41, 59, 0.95)',
+              padding: '2rem',
+              borderRadius: '12px',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              border: '1px solid rgba(71, 85, 105, 0.5)',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: 'rgba(255, 255, 255, 0.95)', fontSize: '1.5rem' }}>
+                State Bill Prefixes — Quick Guide
+              </h3>
+              <button
+                onClick={() => setShowBillPrefixInfo(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.25rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ color: 'rgba(255, 255, 255, 0.85)', lineHeight: '1.6' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid rgba(71, 85, 105, 0.5)' }}>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', color: 'rgba(255, 255, 255, 0.95)' }}>Prefix</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem', color: 'rgba(255, 255, 255, 0.95)' }}>Meaning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HB / SB</td>
+                    <td style={{ padding: '0.75rem' }}>House / Senate Bill (standard state format)</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>AB / SB</td>
+                    <td style={{ padding: '0.75rem' }}>Assembly / Senate Bill (CA, NV, NY, WI)</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HJR / SJR</td>
+                    <td style={{ padding: '0.75rem' }}>Joint Resolution — proposes amendments or petitions Congress</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HCR / SCR</td>
+                    <td style={{ padding: '0.75rem' }}>Concurrent Resolution — expresses legislature's intent</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HR / SR</td>
+                    <td style={{ padding: '0.75rem' }}>Simple Resolution — one chamber only</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>ACA / SCA</td>
+                    <td style={{ padding: '0.75rem' }}>Constitutional Amendment (CA only → becomes a proposition)</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid rgba(71, 85, 105, 0.3)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>LB</td>
+                    <td style={{ padding: '0.75rem' }}>Legislative Bill (Nebraska, unicameral)</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '0.75rem', fontWeight: '600' }}>HF / SF</td>
+                    <td style={{ padding: '0.75rem' }}>House / Senate File (Iowa, Minnesota)</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style={{
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                padding: '1rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(0, 123, 255, 0.3)',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem' }}>
+                  <strong>Special sessions</strong> add an "X" (e.g. ABX1 10)
+                </p>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>
+                  Only <strong>bills</strong> (AB/HB/SB) become law; amendments go to voters; resolutions are symbolic
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowBillPrefixInfo(false)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       </div>
