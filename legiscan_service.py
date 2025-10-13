@@ -274,7 +274,7 @@ class LegiScanService:
             return None
 
     async def get_bill_text(self, doc_id: int) -> Optional[str]:
-        """Get bill text (Base64 decoded)"""
+        """Get bill text (Base64 decoded) - handles HTML, PDF, and plain text"""
         try:
             url = self._build_url("getBillText", id=doc_id)
 
@@ -287,34 +287,61 @@ class LegiScanService:
 
                 if data.get("status") == "OK":
                     text_data = data.get("text", {})
-
-                    # Get the Base64 encoded document
+                    mime_type = text_data.get("mime", "")
                     doc_base64 = text_data.get("doc", "")
-                    if doc_base64:
-                        # Decode from Base64
-                        doc_bytes = base64.b64decode(doc_base64)
 
-                        # Try to decode as text (HTML format)
+                    if not doc_base64:
+                        logger.error(f"No document data for doc_id {doc_id}")
+                        return None
+
+                    # Decode from Base64
+                    doc_bytes = base64.b64decode(doc_base64)
+
+                    # Handle PDF documents
+                    if mime_type == "application/pdf" or doc_bytes.startswith(b'%PDF'):
+                        logger.info(f"Processing PDF document for doc_id {doc_id}")
                         try:
-                            doc_text = doc_bytes.decode('utf-8')
+                            import io
+                            import pdfplumber
 
-                            # Strip HTML tags for cleaner text
-                            import re
-                            clean_text = re.sub(r'<[^>]+>', '', doc_text)
-                            clean_text = re.sub(r'&lt;', '<', clean_text)
-                            clean_text = re.sub(r'&gt;', '>', clean_text)
-                            clean_text = re.sub(r'&amp;', '&', clean_text)
-                            clean_text = re.sub(r'&quot;', '"', clean_text)
-                            clean_text = re.sub(r'&apos;', "'", clean_text)
-                            clean_text = re.sub(r'\s+', ' ', clean_text)
-                            clean_text = re.sub(r'\n\s*\n+', '\n\n', clean_text)
+                            with pdfplumber.open(io.BytesIO(doc_bytes)) as pdf:
+                                text_parts = []
+                                for page in pdf.pages:
+                                    page_text = page.extract_text()
+                                    if page_text:
+                                        text_parts.append(page_text)
 
-                            return clean_text.strip()
-                        except UnicodeDecodeError:
-                            logger.error(f"Failed to decode bill text for doc_id {doc_id}")
+                                if text_parts:
+                                    full_text = '\n\n'.join(text_parts)
+                                    logger.info(f"Successfully extracted {len(full_text)} chars from PDF")
+                                    return full_text.strip()
+                                else:
+                                    logger.error(f"No text extracted from PDF for doc_id {doc_id}")
+                                    return None
+                        except Exception as pdf_error:
+                            logger.error(f"Failed to parse PDF for doc_id {doc_id}: {pdf_error}")
                             return None
 
-                    return None
+                    # Handle HTML/text documents
+                    try:
+                        doc_text = doc_bytes.decode('utf-8')
+
+                        # Strip HTML tags for cleaner text
+                        import re
+                        clean_text = re.sub(r'<[^>]+>', '', doc_text)
+                        clean_text = re.sub(r'&lt;', '<', clean_text)
+                        clean_text = re.sub(r'&gt;', '>', clean_text)
+                        clean_text = re.sub(r'&amp;', '&', clean_text)
+                        clean_text = re.sub(r'&quot;', '"', clean_text)
+                        clean_text = re.sub(r'&apos;', "'", clean_text)
+                        clean_text = re.sub(r'\s+', ' ', clean_text)
+                        clean_text = re.sub(r'\n\s*\n+', '\n\n', clean_text)
+
+                        return clean_text.strip()
+                    except UnicodeDecodeError:
+                        logger.error(f"Failed to decode bill text for doc_id {doc_id} as UTF-8")
+                        return None
+
                 else:
                     logger.error(f"LegiScan API error: {data.get('alert', 'Unknown error')}")
                     return None
