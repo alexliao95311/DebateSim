@@ -502,7 +502,9 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     <div className="bill-card compact">
       <div className="bill-header-row">
         <div className="bill-code-line">
-          <span className="bill-type">{bill.number || `Bill ${bill.id}`}</span>
+          <span className="bill-type">
+            {bill.type ? `${bill.type} ${bill.number}` : (bill.number || `Bill ${bill.id}`)}
+          </span>
         </div>
         {billUrl && (
           <a
@@ -640,6 +642,13 @@ const Legislation = ({ user }) => {
   const [selectedState, setSelectedState] = useState(''); // Two-letter state code
   const [statesList, setStatesList] = useState([]);
   const [stateBills, setStateBills] = useState([]);
+  const [allStateBills, setAllStateBills] = useState([]); // Store all bills before filtering
+  const [stateBillTypes, setStateBillTypes] = useState([]); // Available bill types for current state
+  const [selectedBillType, setSelectedBillType] = useState('all'); // Filter by bill type
+
+  // California Propositions state
+  const [caPropositions, setCaPropositions] = useState([]);
+  const [showPropositions, setShowPropositions] = useState(false); // Toggle between bills and props
 
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
@@ -781,13 +790,33 @@ const Legislation = ({ user }) => {
       async function fetchStateBills() {
         setBillsLoading(true);
         setBillsError('');
+        setSelectedBillType('all'); // Reset filter when changing states
         try {
           const response = await fetch(`${API_URL}/state-bills/${selectedState}`);
           if (!response.ok) {
             throw new Error('Failed to fetch state bills');
           }
           const data = await response.json();
-          setStateBills(data.bills || []);
+          const bills = data.bills || [];
+
+          // Store all bills
+          setAllStateBills(bills);
+
+          // Extract unique bill types from bill numbers (e.g., "SB 123" -> "SB", "AB 456" -> "AB")
+          const billTypesSet = new Set();
+          bills.forEach(bill => {
+            const match = bill.number.match(/^([A-Z]+)/);
+            if (match) {
+              billTypesSet.add(match[1]);
+            }
+          });
+
+          // Sort bill types alphabetically
+          const sortedTypes = Array.from(billTypesSet).sort();
+          setStateBillTypes(sortedTypes);
+
+          // Show all bills initially
+          setStateBills(bills);
         } catch (err) {
           console.error("Error fetching state bills:", err);
           let errorMessage = "Unable to load state bills";
@@ -800,11 +829,50 @@ const Legislation = ({ user }) => {
 
           setBillsError(errorMessage);
           setStateBills([]);
+          setAllStateBills([]);
+          setStateBillTypes([]);
         } finally {
           setBillsLoading(false);
         }
       }
       fetchStateBills();
+    }
+  }, [jurisdiction, selectedState, componentsLoaded.bills]);
+
+  // Filter state bills when bill type filter changes
+  useEffect(() => {
+    if (selectedBillType === 'all') {
+      setStateBills(allStateBills);
+    } else {
+      const filtered = allStateBills.filter(bill =>
+        bill.number.startsWith(selectedBillType)
+      );
+      setStateBills(filtered);
+    }
+  }, [selectedBillType, allStateBills]);
+
+  // Fetch CA propositions when California is selected
+  useEffect(() => {
+    if (jurisdiction === 'state' && selectedState === 'CA' && componentsLoaded.bills) {
+      async function fetchCAPropositions() {
+        try {
+          const response = await fetch(`${API_URL}/ca-propositions`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch propositions');
+          }
+          const data = await response.json();
+          setCaPropositions(data.propositions || []);
+        } catch (err) {
+          console.error("Error fetching CA propositions:", err);
+          // Silently fail - propositions are optional
+          setCaPropositions([]);
+        }
+      }
+      fetchCAPropositions();
+    } else {
+      // Clear propositions when leaving CA
+      setCaPropositions([]);
+      setShowPropositions(false);
     }
   }, [jurisdiction, selectedState, componentsLoaded.bills]);
 
@@ -844,6 +912,25 @@ const Legislation = ({ user }) => {
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
+  };
+
+  // Handle CA proposition selection
+  const handleSelectCAProposition = (prop) => {
+    console.log('🔄 Selecting CA proposition:', prop.title);
+    setSelectedBill(prop);
+    setBillSource('proposition');
+    setExtractedBillData(null);
+
+    // Reset section-related state
+    console.log('🗑️ Clearing previous bill sections and selections');
+    setBillSections([]);
+    setSelectedSections([]);
+    setAnalyzeWholeBill(true);
+    setSectionSearchTerm('');
+
+    setCurrentStep(2);
+    setError('');
+    clearInfoNote();
   };
   
   // Extract recommended bill text when needed
@@ -971,6 +1058,61 @@ const Legislation = ({ user }) => {
     console.log('💾 Caching state bill data, final text length:', billData.text?.length || 0);
     setExtractedBillData(billData);
     return billData.text;
+  };
+
+  // Extract CA proposition text when needed
+  const extractCAPropositionText = async (prop) => {
+    if (extractedBillData) {
+      console.log('📋 Using cached proposition data, text length:', extractedBillData.text?.length || 0);
+      return extractedBillData.text;
+    }
+
+    setProcessingStage('Extracting proposition text from CA Secretary of State...');
+
+    console.log('🔗 Fetching CA proposition text from API for:', {
+      prop_id: prop.id,
+      title: prop.title
+    });
+
+    const response = await fetch(`${API_URL}/extract-ca-proposition-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prop_id: prop.id
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('No text available for this proposition yet. The proposition may still be in draft form or pending publication.');
+      } else if (response.status === 503) {
+        throw new Error('Propositions service is not available. Please try again later.');
+      } else {
+        throw new Error(`Failed to extract proposition text: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const data = await response.json();
+
+    console.log('📄 API Response received:', {
+      hasText: !!data.text,
+      textLength: data.text?.length || 0,
+      textPreview: data.text?.substring(0, 200) + '...',
+      title: data.title
+    });
+
+    // Cache the extracted proposition data
+    const propData = {
+      text: data.text,
+      title: data.title,
+      billCode: `Prop ${data.number}`
+    };
+
+    console.log('💾 Caching proposition data, final text length:', propData.text?.length || 0);
+    setExtractedBillData(propData);
+    return propData.text;
   };
 
   // Extract PDF text when needed
@@ -1252,9 +1394,12 @@ const Legislation = ({ user }) => {
   const getBillTitle = () => {
     if (billSource === 'recommended' || billSource === 'link' || billSource === 'state') {
       return selectedBill?.title || 'Unknown Bill';
-    } else {
+    } else if (billSource === 'proposition') {
+      return `Proposition ${selectedBill?.number} - ${selectedBill?.shortTitle || selectedBill?.title}`;
+    } else if (billSource === 'upload') {
       return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
     }
+    return 'Unknown Bill';
   };
 
   // Get text from selected sections with bill context
@@ -1573,6 +1718,44 @@ const Legislation = ({ user }) => {
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
 
+      } else if (billSource === 'proposition') {
+        // Step 1: Extract CA proposition text if not already cached
+        setProcessingStage('Fetching proposition text from CA Secretary of State...');
+        setProgressStep(1);
+
+        const propData = await extractCAPropositionText(selectedBill);
+
+        // Step 2: Analyze proposition
+        setProcessingStage('Analyzing proposition with AI...');
+        setProgressStep(2);
+
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: analyzeWholeBill ? `PROPOSITION TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections,
+            userProfile: userProfile
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+        }
+
+        const data = await response.json();
+
+        // Step 3: Finalizing
+        setProcessingStage('Finalizing analysis and grades...');
+        setProgressStep(3);
+
+        // Stage results
+        await stageAnalysisResults(data.analysis, data.grades, `Proposition Analysis: ${selectedBill.title}`);
+
       } else if (billSource === 'recommended' || billSource === 'link') {
         // Step 1: Extract federal bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
@@ -1713,9 +1896,9 @@ const Legislation = ({ user }) => {
     }
     
     clearInfoNote(); // Clear any info notes when starting debate
-    
-    const billText = (billSource === 'recommended' || billSource === 'link' || billSource === 'state') ? extractedBillData?.text : null;
-    const billTitle = (billSource === 'recommended' || billSource === 'link' || billSource === 'state') ? extractedBillData?.title : debateTopic;
+
+    const billText = (billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') ? extractedBillData?.text : null;
+    const billTitle = (billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') ? extractedBillData?.title : debateTopic;
     
     if (billSource === 'upload') {
       // For uploaded PDFs, extract text first
@@ -1762,15 +1945,26 @@ const Legislation = ({ user }) => {
         setLoadingState(false);
         return;
       }
-    } else if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && selectedBill) {
-      // For recommended/state bills, extract text first
+    } else if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') && selectedBill) {
+      // For recommended/state/proposition bills, extract text first
       setLoadingState(true);
       try {
-        setProcessingStage(billSource === 'state' ? 'Extracting bill text from LegiScan...' : 'Extracting bill text from Congress.gov...');
+        setProcessingStage(
+          billSource === 'state' ? 'Extracting bill text from LegiScan...' :
+          billSource === 'proposition' ? 'Extracting proposition text from CA SOS...' :
+          'Extracting bill text from Congress.gov...'
+        );
 
-        const endpoint = billSource === 'state' ? `${API_URL}/extract-state-bill-text` : `${API_URL}/extract-recommended-bill-text`;
+        const endpoint = billSource === 'state'
+          ? `${API_URL}/extract-state-bill-text`
+          : billSource === 'proposition'
+          ? `${API_URL}/extract-ca-proposition-text`
+          : `${API_URL}/extract-recommended-bill-text`;
+
         const bodyData = billSource === 'state'
           ? { bill_id: selectedBill.id }
+          : billSource === 'proposition'
+          ? { prop_id: selectedBill.id }
           : {
               type: selectedBill.type,
               number: selectedBill.number,
@@ -2503,7 +2697,7 @@ const Legislation = ({ user }) => {
                 }}>
                   Choose Bill Source:
                 </label>
-                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
                   <button
                     className={`jurisdiction-btn ${jurisdiction === 'federal' ? 'active' : ''}`}
                     onClick={() => {
@@ -2631,27 +2825,99 @@ const Legislation = ({ user }) => {
                     )}
 
                     {!billsLoading && !billsError && jurisdiction === 'state' && selectedState && stateBills.length > 0 && (
-                      <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
-                        {stateBills.map((bill, index) => (
-                          <div
-                            key={bill.id}
-                            className="bill-card-wrapper"
-                            style={{
-                              animationDelay: `${index * 100}ms`,
-                              opacity: componentsLoaded.bills ? 1 : 0,
-                              transform: componentsLoaded.bills ? 'translateY(0)' : 'translateY(20px)',
-                              transition: 'opacity 0.6s ease, transform 0.6s ease'
-                            }}
-                          >
-                            <BillCard
-                              bill={bill}
-                              onSelect={handleSelectStateBill}
-                              isProcessing={loadingState && selectedBill?.id === bill.id}
-                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                            />
+                      <>
+                        {/* California Propositions Tab */}
+                        {selectedState === 'CA' && caPropositions.length > 0 && (
+                          <div style={{ marginTop: '1rem' }}>
+                            {/* Tab Switcher */}
+                            <div style={{
+                              display: 'flex',
+                              gap: '0.5rem',
+                              marginBottom: '1rem',
+                              borderBottom: '2px solid rgba(71, 85, 105, 0.3)',
+                              paddingBottom: '0.5rem'
+                            }}>
+                              <button
+                                onClick={() => setShowPropositions(false)}
+                                style={{
+                                  padding: '0.5rem 1.5rem',
+                                  background: !showPropositions ? 'rgba(0, 123, 255, 0.2)' : 'transparent',
+                                  border: 'none',
+                                  borderBottom: !showPropositions ? '3px solid #007bff' : '3px solid transparent',
+                                  color: 'rgba(255, 255, 255, 0.89)',
+                                  fontWeight: !showPropositions ? '600' : 'normal',
+                                  cursor: 'pointer',
+                                  fontSize: '1rem'
+                                }}
+                              >
+                                State Bills ({stateBills.length})
+                              </button>
+                              <button
+                                onClick={() => setShowPropositions(true)}
+                                style={{
+                                  padding: '0.5rem 1.5rem',
+                                  background: showPropositions ? 'rgba(0, 123, 255, 0.2)' : 'transparent',
+                                  border: 'none',
+                                  borderBottom: showPropositions ? '3px solid #007bff' : '3px solid transparent',
+                                  color: 'rgba(255, 255, 255, 0.89)',
+                                  fontWeight: showPropositions ? '600' : 'normal',
+                                  cursor: 'pointer',
+                                  fontSize: '1rem'
+                                }}
+                              >
+                                Ballot Propositions ({caPropositions.length})
+                              </button>
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        )}
+
+                        {/* Show Bills or Propositions based on tab */}
+                        {(!showPropositions || selectedState !== 'CA') ? (
+                          <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                            {stateBills.map((bill, index) => (
+                              <div
+                                key={bill.id}
+                                className="bill-card-wrapper"
+                                style={{
+                                  animationDelay: `${index * 100}ms`,
+                                  opacity: componentsLoaded.bills ? 1 : 0,
+                                  transform: componentsLoaded.bills ? 'translateY(0)' : 'translateY(20px)',
+                                  transition: 'opacity 0.6s ease, transform 0.6s ease'
+                                }}
+                              >
+                                <BillCard
+                                  bill={bill}
+                                  onSelect={handleSelectStateBill}
+                                  isProcessing={loadingState && selectedBill?.id === bill.id}
+                                  processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                            {caPropositions.map((prop, index) => (
+                              <div
+                                key={prop.id}
+                                className="bill-card-wrapper"
+                                style={{
+                                  animationDelay: `${index * 100}ms`,
+                                  opacity: 1,
+                                  transform: 'translateY(0)',
+                                  transition: 'opacity 0.6s ease, transform 0.6s ease'
+                                }}
+                              >
+                                <BillCard
+                                  bill={prop}
+                                  onSelect={handleSelectCAProposition}
+                                  isProcessing={loadingState && selectedBill?.id === prop.id}
+                                  processingStage={loadingState && selectedBill?.id === prop.id ? processingStage : ''}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {jurisdiction === 'state' && !selectedState && !billsLoading && (
@@ -3117,6 +3383,8 @@ const Legislation = ({ user }) => {
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'state' ? (
                       `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'proposition' ? (
+                      `Selected Proposition: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
                     ) : (
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
@@ -3175,6 +3443,8 @@ const Legislation = ({ user }) => {
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'state' ? (
                       `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'proposition' ? (
+                      `Selected Proposition: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
                     ) : (
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
@@ -3253,12 +3523,14 @@ const Legislation = ({ user }) => {
                                 console.log('📊 Debug - initial billText length:', billText?.length || 0);
                                 console.log('📊 Debug - existing billSections count:', billSections.length);
 
-                                // For recommended/link/state bills, extract text if not available
-                                if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && !billText && selectedBill) {
+                                // For recommended/link/state/proposition bills, extract text if not available
+                                if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') && !billText && selectedBill) {
                                   console.log('🔄 Bill text not available, extracting from API...');
                                   try {
                                     if (billSource === 'state') {
                                       billText = await extractStateBillText(selectedBill);
+                                    } else if (billSource === 'proposition') {
+                                      billText = await extractCAPropositionText(selectedBill);
                                     } else {
                                       billText = await extractRecommendedBillText(selectedBill);
                                     }
@@ -3302,12 +3574,14 @@ const Legislation = ({ user }) => {
                                   let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
                                   console.log('📊 Debug - initial billText length:', billText?.length || 0);
 
-                                  // For recommended/link/state bills, extract text if not available
-                                  if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && !billText && selectedBill) {
+                                  // For recommended/link/state/proposition bills, extract text if not available
+                                  if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') && !billText && selectedBill) {
                                     console.log('🔄 Bill text not available, extracting from API...');
                                     try {
                                       if (billSource === 'state') {
                                         billText = await extractStateBillText(selectedBill);
+                                      } else if (billSource === 'proposition') {
+                                        billText = await extractCAPropositionText(selectedBill);
                                       } else {
                                         billText = await extractRecommendedBillText(selectedBill);
                                       }
