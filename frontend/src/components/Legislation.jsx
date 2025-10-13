@@ -475,8 +475,9 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     ? bill.description.substring(0, 120) + "..."
     : bill.description;
 
-  // Generate correct Congress.gov URL
+  // Generate correct bill URL (Congress.gov for federal, LegiScan/state for state bills)
   const getBillTypeUrl = (type) => {
+    if (!type) return 'bill';
     switch(type.toUpperCase()) {
       case 'HR': return 'house-bill';
       case 'S': return 'senate-bill';
@@ -489,30 +490,37 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
       default: return 'bill';
     }
   };
-  
-  const congressUrl = `https://www.congress.gov/bill/119th-congress/${getBillTypeUrl(bill.type)}/${bill.number}`;
+
+  // Use bill.url (state bills) or construct Congress.gov URL (federal bills)
+  const billUrl = bill.url || (bill.type && bill.number
+    ? `https://www.congress.gov/bill/119th-congress/${getBillTypeUrl(bill.type)}/${bill.number}`
+    : null);
+
+  const billLinkTitle = bill.url ? "View on LegiScan" : "View on Congress.gov";
 
   return (
     <div className="bill-card compact">
       <div className="bill-header-row">
         <div className="bill-code-line">
-          <span className="bill-type">{bill.type} {bill.number}</span>
+          <span className="bill-type">{bill.number || `Bill ${bill.id}`}</span>
         </div>
-        <a 
-          href={congressUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="congress-link"
-          title="View on Congress.gov"
-        >
-          View Full Text
-        </a>
+        {billUrl && (
+          <a
+            href={billUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="congress-link"
+            title={billLinkTitle}
+          >
+            View Full Text
+          </a>
+        )}
       </div>
       <div className="bill-status-line">
         <span className="bill-status">{bill.lastAction}</span>
       </div>
       <h3 className="bill-title">{bill.title}</h3>
-      <p className="bill-sponsor">Sponsored by {bill.sponsor}</p>
+      {bill.sponsor && <p className="bill-sponsor">Sponsored by {bill.sponsor}</p>}
       <div className="bill-description-container">
         <p className="bill-description">
           {showFullDescription ? bill.description : truncatedDescription}
@@ -627,6 +635,12 @@ const Legislation = ({ user }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAnalysisShareModal, setShowAnalysisShareModal] = useState(false);
 
+  // Jurisdiction and state bills state
+  const [jurisdiction, setJurisdiction] = useState('federal'); // 'federal' or 'state'
+  const [selectedState, setSelectedState] = useState(''); // Two-letter state code
+  const [statesList, setStatesList] = useState([]);
+  const [stateBills, setStateBills] = useState([]);
+
   // Recommended bills state
   const [recommendedBills, setRecommendedBills] = useState([]);
   const [billsLoading, setBillsLoading] = useState(false);
@@ -688,7 +702,22 @@ const Legislation = ({ user }) => {
     };
   }, []);
 
-
+  // Fetch states list on mount
+  useEffect(() => {
+    async function fetchStates() {
+      try {
+        const response = await fetch(`${API_URL}/states`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch states list');
+        }
+        const data = await response.json();
+        setStatesList(data.states || []);
+      } catch (err) {
+        console.error("Error fetching states:", err);
+      }
+    }
+    fetchStates();
+  }, []);
 
    // Fetch recommended bills from Congress.gov API (after initial loading)
   useEffect(() => {
@@ -746,11 +775,63 @@ const Legislation = ({ user }) => {
       .catch(err => console.error("Logout error:", err));
   };
 
+  // Fetch state bills when state is selected
+  useEffect(() => {
+    if (jurisdiction === 'state' && selectedState && componentsLoaded.bills) {
+      async function fetchStateBills() {
+        setBillsLoading(true);
+        setBillsError('');
+        try {
+          const response = await fetch(`${API_URL}/state-bills/${selectedState}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch state bills');
+          }
+          const data = await response.json();
+          setStateBills(data.bills || []);
+        } catch (err) {
+          console.error("Error fetching state bills:", err);
+          let errorMessage = "Unable to load state bills";
+
+          if (err.message.includes("503")) {
+            errorMessage = "LegiScan API key is required. Please check your configuration.";
+          } else {
+            errorMessage = `Failed to load bills: ${err.message}`;
+          }
+
+          setBillsError(errorMessage);
+          setStateBills([]);
+        } finally {
+          setBillsLoading(false);
+        }
+      }
+      fetchStateBills();
+    }
+  }, [jurisdiction, selectedState, componentsLoaded.bills]);
+
   // Step 1: Handle bill selection from recommended bills (lazy loading)
   const handleSelectRecommendedBill = (bill) => {
     console.log('🔄 Selecting recommended bill:', bill.title);
     setSelectedBill(bill);
     setBillSource('recommended');
+    setExtractedBillData(null); // Clear previous data
+
+    // Reset section-related state
+    console.log('🗑️ Clearing previous bill sections and selections');
+    setBillSections([]); // Clear previous sections
+    setSelectedSections([]); // Clear selected sections
+    setAnalyzeWholeBill(true); // Reset to analyze whole bill
+    setSectionSearchTerm(''); // Clear search term
+
+    setCurrentStep(2);
+    setError('');
+    clearInfoNote(); // Clear any previous info notes
+  };
+
+  // Handle state bill selection
+  const handleSelectStateBill = (bill) => {
+    console.log('🔄 Selecting state bill:', bill.title);
+    setSelectedBill(bill);
+    setBillSource('state');
     setExtractedBillData(null); // Clear previous data
 
     // Reset section-related state
@@ -835,7 +916,63 @@ const Legislation = ({ user }) => {
     setExtractedBillData(billData);
     return billData.text;
   };
-  
+
+  // Extract state bill text when needed
+  const extractStateBillText = async (bill) => {
+    if (extractedBillData) {
+      console.log('📋 Using cached state bill data, text length:', extractedBillData.text?.length || 0);
+      return extractedBillData.text;
+    }
+
+    setProcessingStage('Extracting bill text from LegiScan...');
+
+    console.log('🔗 Fetching state bill text from API for:', {
+      bill_id: bill.id,
+      title: bill.title
+    });
+
+    const response = await fetch(`${API_URL}/extract-state-bill-text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bill_id: bill.id
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication.');
+      } else if (response.status === 503) {
+        throw new Error('LegiScan API is not available. Please check your API key configuration.');
+      } else {
+        const errorData = await response.text();
+        throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const data = await response.json();
+
+    console.log('📄 API Response received:', {
+      hasText: !!data.text,
+      textLength: data.text?.length || 0,
+      textPreview: data.text?.substring(0, 200) + '...',
+      title: data.title
+    });
+
+    // Cache the extracted bill data
+    const billData = {
+      text: data.text,
+      title: data.title || bill.title,
+      billCode: bill.number
+    };
+
+    console.log('💾 Caching state bill data, final text length:', billData.text?.length || 0);
+    setExtractedBillData(billData);
+    return billData.text;
+  };
+
   // Extract PDF text when needed
   const extractPdfText = async (file) => {
     if (extractedPdfText) {
@@ -1113,7 +1250,7 @@ const Legislation = ({ user }) => {
 
   // Get bill title for context
   const getBillTitle = () => {
-    if (billSource === 'recommended' || billSource === 'link') {
+    if (billSource === 'recommended' || billSource === 'link' || billSource === 'state') {
       return selectedBill?.title || 'Unknown Bill';
     } else {
       return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
@@ -1388,8 +1525,56 @@ const Legislation = ({ user }) => {
     }
     
     try {
-      if (billSource === 'recommended' || billSource === 'link') {
-        // Step 1: Extract bill text if not already cached
+      if (billSource === 'state') {
+        // Step 1: Extract state bill text if not already cached
+        setProcessingStage('Fetching bill text from LegiScan...');
+        setProgressStep(1);
+
+        const billData = await extractStateBillText(selectedBill);
+
+        // Step 2: Analyze legislation using selected sections
+        setProcessingStage('Analyzing legislation with AI...');
+        setProgressStep(2);
+
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections,
+            userProfile: userProfile
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+
+          // Handle specific error cases
+          if (response.status === 404) {
+            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+          } else if (response.status === 413) {
+            throw new Error('File too large. Please upload a PDF smaller than 50MB.');
+          } else if (response.status === 400) {
+            throw new Error('Invalid file format. Please upload a valid PDF file.');
+          } else {
+            throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+          }
+        }
+
+        const data = await response.json();
+
+        // Step 3: Finalizing
+        setProcessingStage('Finalizing analysis and grades...');
+        setProgressStep(3);
+
+        // Stage results
+        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
+
+      } else if (billSource === 'recommended' || billSource === 'link') {
+        // Step 1: Extract federal bill text if not already cached
         setProcessingStage('Fetching bill text from Congress.gov...');
         setProgressStep(1);
 
@@ -1435,7 +1620,7 @@ const Legislation = ({ user }) => {
 
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
-        
+
       } else {
         // Handle uploaded PDF analysis - use cached text if available
         let analysisData;
@@ -1529,8 +1714,8 @@ const Legislation = ({ user }) => {
     
     clearInfoNote(); // Clear any info notes when starting debate
     
-    const billText = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.text : null;
-    const billTitle = (billSource === 'recommended' || billSource === 'link') ? extractedBillData?.title : debateTopic;
+    const billText = (billSource === 'recommended' || billSource === 'link' || billSource === 'state') ? extractedBillData?.text : null;
+    const billTitle = (billSource === 'recommended' || billSource === 'link' || billSource === 'state') ? extractedBillData?.title : debateTopic;
     
     if (billSource === 'upload') {
       // For uploaded PDFs, extract text first
@@ -1577,23 +1762,28 @@ const Legislation = ({ user }) => {
         setLoadingState(false);
         return;
       }
-    } else if ((billSource === 'recommended' || billSource === 'link') && selectedBill) {
-      // For recommended bills, extract text first
+    } else if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && selectedBill) {
+      // For recommended/state bills, extract text first
       setLoadingState(true);
       try {
-        setProcessingStage('Extracting bill text from Congress.gov...');
-        
-        const response = await fetch(`${API_URL}/extract-recommended-bill-text`, {
+        setProcessingStage(billSource === 'state' ? 'Extracting bill text from LegiScan...' : 'Extracting bill text from Congress.gov...');
+
+        const endpoint = billSource === 'state' ? `${API_URL}/extract-state-bill-text` : `${API_URL}/extract-recommended-bill-text`;
+        const bodyData = billSource === 'state'
+          ? { bill_id: selectedBill.id }
+          : {
+              type: selectedBill.type,
+              number: selectedBill.number,
+              congress: selectedBill.congress || 119,
+              title: selectedBill.title
+            };
+
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            type: selectedBill.type,
-            number: selectedBill.number,
-            congress: selectedBill.congress || 119,
-            title: selectedBill.title
-          }),
+          body: JSON.stringify(bodyData),
         });
         
         if (!response.ok) {
@@ -1740,7 +1930,7 @@ const Legislation = ({ user }) => {
     if (!analysisResult) return;
     
     try {
-      const billTitle = billSource === 'recommended' || billSource === 'link' ? 
+      const billTitle = billSource === 'recommended' || billSource === 'link' || billSource === 'state' ? 
         selectedBill.title : 
         selectedBill.name?.replace('.pdf', '') || 'Bill Analysis';
 
@@ -2296,12 +2486,91 @@ const Legislation = ({ user }) => {
           {currentStep === 1 && (
             <div className="step-one">
               <h2>Step 1: Choose a Bill</h2>
-              
+
+              {/* Jurisdiction Selector */}
+              <div className="jurisdiction-selector" style={{
+                marginBottom: "1.5rem",
+                padding: "1rem",
+                backgroundColor: "rgba(30, 41, 59, 0.6)",
+                borderRadius: "8px",
+                border: "1px solid rgba(71, 85, 105, 0.3)"
+              }}>
+                <label style={{
+                  display: "block",
+                  marginBottom: "0.75rem",
+                  color: "rgba(255, 255, 255, 0.89)",
+                  fontWeight: "600"
+                }}>
+                  Choose Bill Source:
+                </label>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                  <button
+                    className={`jurisdiction-btn ${jurisdiction === 'federal' ? 'active' : ''}`}
+                    onClick={() => {
+                      setJurisdiction('federal');
+                      setSelectedState('');
+                      setStateBills([]);
+                    }}
+                    style={{
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "6px",
+                      border: jurisdiction === 'federal' ? "2px solid #007bff" : "2px solid rgba(71, 85, 105, 0.5)",
+                      backgroundColor: jurisdiction === 'federal' ? "rgba(0, 123, 255, 0.2)" : "rgba(30, 41, 59, 0.8)",
+                      color: "rgba(255, 255, 255, 0.89)",
+                      cursor: "pointer",
+                      fontWeight: jurisdiction === 'federal' ? "600" : "normal",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    Federal Bills
+                  </button>
+                  <button
+                    className={`jurisdiction-btn ${jurisdiction === 'state' ? 'active' : ''}`}
+                    onClick={() => setJurisdiction('state')}
+                    style={{
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "6px",
+                      border: jurisdiction === 'state' ? "2px solid #007bff" : "2px solid rgba(71, 85, 105, 0.5)",
+                      backgroundColor: jurisdiction === 'state' ? "rgba(0, 123, 255, 0.2)" : "rgba(30, 41, 59, 0.8)",
+                      color: "rgba(255, 255, 255, 0.89)",
+                      cursor: "pointer",
+                      fontWeight: jurisdiction === 'state' ? "600" : "normal",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    State Bills
+                  </button>
+
+                  {jurisdiction === 'state' && (
+                    <select
+                      value={selectedState}
+                      onChange={(e) => setSelectedState(e.target.value)}
+                      style={{
+                        padding: "0.75rem",
+                        borderRadius: "6px",
+                        border: "1px solid rgba(71, 85, 105, 0.5)",
+                        backgroundColor: "rgba(30, 41, 59, 0.8)",
+                        color: "rgba(255, 255, 255, 0.89)",
+                        cursor: "pointer",
+                        minWidth: "200px"
+                      }}
+                    >
+                      <option value="">Select a State...</option>
+                      {statesList.map((state) => (
+                        <option key={state.code} value={state.code}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
               {/* Bills Section with fade-in animation */}
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                 {!isSearchMode && (
                   <>
-                    <h3>Trending Congressional Bills</h3>
+                    <h3>{jurisdiction === 'federal' ? 'Trending Congressional Bills' : `${statesList.find(s => s.code === selectedState)?.name || 'State'} Bills`}</h3>
                     
                     {billsLoading && (
                       <div className="bills-loading">
@@ -2337,10 +2606,10 @@ const Legislation = ({ user }) => {
                       </div>
                     )}
                     
-                    {!billsLoading && !billsError && recommendedBills.length > 0 && (
+                    {!billsLoading && !billsError && jurisdiction === 'federal' && recommendedBills.length > 0 && (
                       <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
                         {recommendedBills.map((bill, index) => (
-                          <div 
+                          <div
                             key={bill.id}
                             className="bill-card-wrapper"
                             style={{
@@ -2350,14 +2619,52 @@ const Legislation = ({ user }) => {
                               transition: 'opacity 0.6s ease, transform 0.6s ease'
                             }}
                           >
-                            <BillCard 
-                              bill={bill} 
+                            <BillCard
+                              bill={bill}
                               onSelect={handleSelectRecommendedBill}
                               isProcessing={loadingState && selectedBill?.id === bill.id}
                               processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
                             />
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {!billsLoading && !billsError && jurisdiction === 'state' && selectedState && stateBills.length > 0 && (
+                      <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                        {stateBills.map((bill, index) => (
+                          <div
+                            key={bill.id}
+                            className="bill-card-wrapper"
+                            style={{
+                              animationDelay: `${index * 100}ms`,
+                              opacity: componentsLoaded.bills ? 1 : 0,
+                              transform: componentsLoaded.bills ? 'translateY(0)' : 'translateY(20px)',
+                              transition: 'opacity 0.6s ease, transform 0.6s ease'
+                            }}
+                          >
+                            <BillCard
+                              bill={bill}
+                              onSelect={handleSelectStateBill}
+                              isProcessing={loadingState && selectedBill?.id === bill.id}
+                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {jurisdiction === 'state' && !selectedState && !billsLoading && (
+                      <div style={{
+                        padding: "2rem",
+                        textAlign: "center",
+                        backgroundColor: "rgba(30, 41, 59, 0.6)",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(71, 85, 105, 0.3)"
+                      }}>
+                        <p style={{ color: "rgba(255, 255, 255, 0.7)", margin: 0 }}>
+                          Please select a state above to view state bills
+                        </p>
                       </div>
                     )}
                   </>
@@ -2942,11 +3249,15 @@ const Legislation = ({ user }) => {
                                 console.log('📊 Debug - initial billText length:', billText?.length || 0);
                                 console.log('📊 Debug - existing billSections count:', billSections.length);
 
-                                // For recommended/link bills, extract text if not available
-                                if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                // For recommended/link/state bills, extract text if not available
+                                if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && !billText && selectedBill) {
                                   console.log('🔄 Bill text not available, extracting from API...');
                                   try {
-                                    billText = await extractRecommendedBillText(selectedBill);
+                                    if (billSource === 'state') {
+                                      billText = await extractStateBillText(selectedBill);
+                                    } else {
+                                      billText = await extractRecommendedBillText(selectedBill);
+                                    }
                                     console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
                                   } catch (error) {
                                     console.error('❌ Failed to extract bill text:', error);
@@ -2987,11 +3298,15 @@ const Legislation = ({ user }) => {
                                   let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
                                   console.log('📊 Debug - initial billText length:', billText?.length || 0);
 
-                                  // For recommended/link bills, extract text if not available
-                                  if ((billSource === 'recommended' || billSource === 'link') && !billText && selectedBill) {
+                                  // For recommended/link/state bills, extract text if not available
+                                  if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state') && !billText && selectedBill) {
                                     console.log('🔄 Bill text not available, extracting from API...');
                                     try {
-                                      billText = await extractRecommendedBillText(selectedBill);
+                                      if (billSource === 'state') {
+                                        billText = await extractStateBillText(selectedBill);
+                                      } else {
+                                        billText = await extractRecommendedBillText(selectedBill);
+                                      }
                                       console.log('✅ Bill text extracted, type:', typeof billText, 'length:', billText?.length || 0);
                                     } catch (error) {
                                       console.error('❌ Failed to extract bill text:', error);
