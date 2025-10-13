@@ -2430,10 +2430,45 @@ const Legislation = ({ user }) => {
     }
   };
 
+  // LegiScan URL parser function
+  const parseLegiScanUrl = (url) => {
+    try {
+      // Handle various LegiScan URL formats
+      const patterns = [
+        // Standard format: https://legiscan.com/CA/bill/AB123/2025
+        /legiscan\.com\/([A-Z]{2})\/bill\/([A-Z]+\d+)\/(\d+)/i,
+        // Text format: https://legiscan.com/CA/text/AB123/2025
+        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/(\d+)/i,
+        // Drafts format: https://legiscan.com/CA/drafts/AB123/2025
+        /legiscan\.com\/([A-Z]{2})\/drafts\/([A-Z]+\d+)\/(\d+)/i,
+      ];
+
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+          const state = match[1].toUpperCase();
+          const billNumber = match[2].toUpperCase();
+          const year = match[3];
+
+          return {
+            state,
+            billNumber,
+            year,
+            url: url
+          };
+        }
+      }
+
+      throw new Error('Invalid LegiScan URL format. Expected format: legiscan.com/STATE/bill/BILLNUMBER/YEAR');
+    } catch (error) {
+      throw new Error(`Could not parse URL: ${error.message}`);
+    }
+  };
+
   // Handle bill link submission
   const handleBillLinkSubmit = async () => {
     if (!billLink.trim()) {
-      setLinkError("Please enter a Congress.gov URL");
+      setLinkError("Please enter a Congress.gov or LegiScan URL");
       return;
     }
 
@@ -2441,41 +2476,95 @@ const Legislation = ({ user }) => {
     setLinkError("");
 
     try {
-      // Parse the URL
-      const parsedBill = parseCongressUrl(billLink);
-      
-      // Fetch bill information from backend
-      const response = await fetch(`${API_URL}/extract-bill-from-url`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          congress: parsedBill.congress,
-          type: parsedBill.type,
-          number: parsedBill.number,
-          url: parsedBill.url
-        }),
-      });
+      // Detect URL type and parse accordingly
+      const isLegiScan = billLink.includes('legiscan.com');
+      const isCongress = billLink.includes('congress.gov');
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch bill information: ${response.status} ${response.statusText}`);
+      if (!isLegiScan && !isCongress) {
+        throw new Error('Please enter a valid Congress.gov or LegiScan URL');
       }
 
-      const billData = await response.json();
-      
-      // Store the parsed bill data and show confirmation
-      setLinkParsedBill({
-        ...parsedBill,
-        title: billData.title,
-        description: billData.description || billData.title,
-        sponsor: billData.sponsor || "Unknown",
-        congress: parsedBill.congress
-      });
-      
+      let parsedBill;
+      let response;
+      let billData;
+
+      if (isLegiScan) {
+        // Parse LegiScan URL
+        parsedBill = parseLegiScanUrl(billLink);
+
+        // Fetch bill information from backend
+        response = await fetch(`${API_URL}/extract-state-bill-from-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            state: parsedBill.state,
+            bill_number: parsedBill.billNumber,
+            year: parsedBill.year,
+            url: parsedBill.url
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch state bill information: ${response.status} ${response.statusText}`);
+        }
+
+        billData = await response.json();
+
+        // Store the parsed bill data and show confirmation
+        setLinkParsedBill({
+          ...parsedBill,
+          title: billData.title,
+          number: billData.number,
+          description: billData.description || billData.title,
+          sponsor: billData.sponsor || "Unknown",
+          status: billData.status || "Unknown",
+          lastAction: billData.lastAction || "",
+          lastActionDate: billData.lastActionDate || "",
+          stateLink: billData.stateLink || "",
+          id: billData.id,
+          isStateBill: true
+        });
+
+      } else {
+        // Parse Congress.gov URL
+        parsedBill = parseCongressUrl(billLink);
+
+        // Fetch bill information from backend
+        response = await fetch(`${API_URL}/extract-bill-from-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            congress: parsedBill.congress,
+            type: parsedBill.type,
+            number: parsedBill.number,
+            url: parsedBill.url
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch federal bill information: ${response.status} ${response.statusText}`);
+        }
+
+        billData = await response.json();
+
+        // Store the parsed bill data and show confirmation
+        setLinkParsedBill({
+          ...parsedBill,
+          title: billData.title,
+          description: billData.description || billData.title,
+          sponsor: billData.sponsor || "Unknown",
+          congress: parsedBill.congress,
+          isStateBill: false
+        });
+      }
+
       setShowLinkConfirmation(true);
       setLinkLoading(false);
-      
+
     } catch (error) {
       console.error("Bill link error:", error);
       setLinkError(error.message);
@@ -2488,7 +2577,15 @@ const Legislation = ({ user }) => {
     if (linkParsedBill) {
       console.log('🔄 Confirming link bill:', linkParsedBill.title);
       setSelectedBill(linkParsedBill);
-      setBillSource('link');
+
+      // Set appropriate bill source based on whether it's a state or federal bill
+      if (linkParsedBill.isStateBill) {
+        setBillSource('state');
+        console.log('📜 Set bill source to state');
+      } else {
+        setBillSource('link');
+        console.log('🏛️ Set bill source to federal link');
+      }
 
       // Reset section-related state
       console.log('🗑️ Clearing previous bill sections and selections');
@@ -3192,7 +3289,7 @@ const Legislation = ({ user }) => {
                         handleBillLinkSubmit();
                       }
                     }}
-                    placeholder="Enter Congress.gov bill link (e.g., https://www.congress.gov/bill/119th-congress/house-bill/1234)"
+                    placeholder="Enter bill URL (Congress.gov or LegiScan, e.g., https://legiscan.com/CA/bill/AB123/2025)"
                     className="link-input"
                     style={{ flex: 1 }}
                     disabled={linkLoading}
