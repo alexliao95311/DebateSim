@@ -16,11 +16,13 @@ from cachetools.keys import hashkey
 from io import BytesIO
 from pdfminer.high_level import extract_text
 import json
-from typing import List, Dict, Any, AsyncGenerator
+from typing import List, Dict, Any, AsyncGenerator, Optional
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
 from billsearch import BillSearcher
+from legiscan_service import LegiScanService
+from ca_propositions_service import CAPropositionsService
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +37,10 @@ if not API_KEY:
 CONGRESS_API_KEY = os.getenv("CONGRESS_API_KEY")
 if not CONGRESS_API_KEY:
     logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
+
+LEGISCAN_API_KEY = os.getenv("LEGISCAN_API_KEY")
+if not LEGISCAN_API_KEY:
+    logger.warning("LEGISCAN_API_KEY not found. State bills will not be available.")
 
 # Global model configuration
 DEFAULT_MODEL = "openai/gpt-4o-mini"
@@ -113,12 +119,23 @@ cache = TTLCache(maxsize=200, ttl=600)  # Cache up to 200 items for 10 minutes
 # Global session variable
 session = None
 bill_searcher = None
+legiscan_service = None
+ca_props_service = None
 
 @app.on_event("startup")
 async def startup_event():
-    global session, bill_searcher
+    global session, bill_searcher, legiscan_service, ca_props_service
     session = aiohttp.ClientSession(connector=get_connector())
     bill_searcher = BillSearcher(session)
+    if LEGISCAN_API_KEY:
+        legiscan_service = LegiScanService(LEGISCAN_API_KEY, session)
+        logger.info("LegiScan service initialized")
+    else:
+        logger.warning("LegiScan service not initialized - API key missing")
+
+    # Initialize CA Propositions service
+    ca_props_service = CAPropositionsService()
+    logger.info("CA Propositions service initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -1604,6 +1621,305 @@ async def extract_bill_from_url(request: BillFromUrlRequest):
     except Exception as e:
         logger.error(f"Error extracting bill from URL: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error extracting bill information: {str(e)}")
+
+# ============================================================================
+# LEGISCAN STATE BILLS ENDPOINTS
+# ============================================================================
+
+@app.get("/states")
+async def get_states():
+    """Get list of all US states for state bill search"""
+    try:
+        states = LegiScanService.get_state_list()
+        return {"states": states}
+    except Exception as e:
+        logger.error(f"Error getting state list: {e}")
+        raise HTTPException(status_code=500, detail="Error getting state list")
+
+@app.get("/state-sessions/{state}")
+async def get_state_sessions(state: str):
+    """Get legislative sessions for a state"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        sessions = await legiscan_service.get_session_list(state.upper())
+        return {"sessions": sessions}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting sessions for {state}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting sessions for {state}")
+
+@app.get("/state-bills/{state}")
+async def get_state_bills(state: str, session_id: Optional[int] = None):
+    """Get bills for a state session"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        bills = await legiscan_service.get_master_list(state.upper(), session_id)
+        return {"bills": bills[:20]}  # Return 20 most recent bills
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting bills for {state}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting bills for {state}")
+
+class StateBillSearchRequest(BaseModel):
+    state: str
+    query: str
+    limit: int = 20
+
+@app.post("/search-state-bills")
+async def search_state_bills(request: StateBillSearchRequest):
+    """Search for state bills"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        logger.info(f"Searching state bills in {request.state} with query: '{request.query}'")
+
+        bills = await legiscan_service.search_bills(request.state.upper(), request.query, request.limit)
+
+        logger.info(f"Found {len(bills)} bills in {request.state} matching query: '{request.query}'")
+
+        return {"bills": bills}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error searching state bills: {e}")
+        raise HTTPException(status_code=500, detail="Error searching state bills")
+
+class StateBillRequest(BaseModel):
+    bill_id: int
+
+@app.post("/get-state-bill")
+async def get_state_bill_details(request: StateBillRequest):
+    """Get detailed information about a specific state bill"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        logger.info(f"Fetching state bill details for ID: {request.bill_id}")
+
+        bill = await legiscan_service.get_bill(request.bill_id)
+
+        if not bill:
+            raise HTTPException(status_code=404, detail="Bill not found")
+
+        return {"bill": bill}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting state bill details: {e}")
+        raise HTTPException(status_code=500, detail="Error getting state bill details")
+
+class StateBillTextRequest(BaseModel):
+    bill_id: int
+
+@app.post("/extract-state-bill-text")
+async def extract_state_bill_text(request: StateBillTextRequest):
+    """Extract text from a state bill"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        logger.info(f"Extracting text for state bill ID: {request.bill_id}")
+
+        # Get bill details first
+        bill = await legiscan_service.get_bill(request.bill_id)
+
+        if not bill:
+            raise HTTPException(status_code=404, detail="Bill not found")
+
+        # Get the most recent text version
+        texts = bill.get("texts", [])
+        if not texts:
+            raise HTTPException(status_code=404, detail="No text available for this bill")
+
+        # Get the first (most recent) text document
+        text_doc = texts[0]
+        doc_id = text_doc.get("doc_id")
+
+        if not doc_id:
+            raise HTTPException(status_code=404, detail="No document ID available")
+
+        # Fetch the bill text
+        bill_text = await legiscan_service.get_bill_text(doc_id)
+
+        if not bill_text:
+            raise HTTPException(status_code=404, detail="Could not retrieve bill text")
+
+        return {
+            "text": f"{bill.get('number', '')} - {bill.get('title', '')}\n\n{bill_text}",
+            "title": bill.get("title", ""),
+            "number": bill.get("number", "")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting state bill text: {e}")
+        raise HTTPException(status_code=500, detail="Error extracting state bill text")
+
+class AnalyzeStateBillRequest(BaseModel):
+    bill_id: int
+    model: str = DEFAULT_MODEL
+    userProfile: dict = None
+
+@app.post("/analyze-state-bill")
+async def analyze_state_bill(request: AnalyzeStateBillRequest):
+    """Analyze a state bill"""
+    try:
+        if not legiscan_service:
+            raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
+
+        logger.info(f"Analyzing state bill ID: {request.bill_id} with model: {request.model}")
+
+        # Get bill details
+        bill = await legiscan_service.get_bill(request.bill_id)
+
+        if not bill:
+            raise HTTPException(status_code=404, detail="Bill not found")
+
+        # Get the most recent text version
+        texts = bill.get("texts", [])
+        if not texts:
+            raise HTTPException(status_code=404, detail="No text available for this bill")
+
+        # Get the first (most recent) text document
+        text_doc = texts[0]
+        doc_id = text_doc.get("doc_id")
+
+        if not doc_id:
+            raise HTTPException(status_code=404, detail="No document ID available")
+
+        # Fetch the bill text
+        bill_text = await legiscan_service.get_bill_text(doc_id)
+
+        if not bill_text:
+            raise HTTPException(status_code=404, detail="Could not retrieve bill text")
+
+        # Format full text with title
+        full_text = f"{bill.get('number', '')} - {bill.get('title', '')}\n\n{bill_text}"
+
+        # Log consolidated processing info
+        logger.info(f"Processing state bill {bill.get('number', '')} with model {request.model}")
+
+        # Check if we need to process large bill text
+        if len(full_text) > 40000:
+            logger.info(f"Large bill detected ({len(full_text)} chars), extracting key sections for analysis")
+            processed_text = extract_key_bill_sections(full_text, 40000)
+            logger.info(f"Key sections extracted: {len(processed_text)} chars")
+
+            # Generate both analysis and grades using processed text
+            analysis = await analyze_legislation_text(processed_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(processed_text, request.model, skip_extraction=True)
+        else:
+            # Generate both analysis and grades using full text
+            analysis = await analyze_legislation_text(full_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(full_text, request.model, skip_extraction=True)
+
+        return {"analysis": analysis, "grades": grades}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing state bill: {e}")
+        raise HTTPException(status_code=500, detail="Error analyzing state bill")
+
+# ============================================================================
+# CALIFORNIA PROPOSITIONS ENDPOINTS
+# ============================================================================
+
+@app.get("/ca-propositions")
+async def get_ca_propositions(election_cycle: Optional[str] = None):
+    """Get list of California ballot propositions"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        propositions = await ca_props_service.get_propositions_list(election_cycle)
+        return {"propositions": propositions}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting CA propositions: {e}")
+        raise HTTPException(status_code=500, detail="Error getting CA propositions")
+
+class CAPropositionTextRequest(BaseModel):
+    prop_id: str
+
+@app.post("/extract-ca-proposition-text")
+async def extract_ca_proposition_text(request: CAPropositionTextRequest):
+    """Extract text from a California proposition"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        logger.info(f"Extracting text for CA proposition: {request.prop_id}")
+
+        prop_data = await ca_props_service.get_proposition_text(request.prop_id)
+
+        if not prop_data:
+            raise HTTPException(status_code=404, detail="Proposition text not found")
+
+        return {
+            "text": f"PROPOSITION {prop_data['number']}\n\n{prop_data['text']}",
+            "title": f"Proposition {prop_data['number']}",
+            "number": prop_data['number']
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting CA proposition text: {e}")
+        raise HTTPException(status_code=500, detail="Error extracting CA proposition text")
+
+class AnalyzeCAPropositionRequest(BaseModel):
+    prop_id: str
+    model: str = DEFAULT_MODEL
+    userProfile: dict = None
+
+@app.post("/analyze-ca-proposition")
+async def analyze_ca_proposition(request: AnalyzeCAPropositionRequest):
+    """Analyze a California proposition"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        logger.info(f"Analyzing CA proposition: {request.prop_id} with model: {request.model}")
+
+        # Get proposition text
+        prop_data = await ca_props_service.get_proposition_text(request.prop_id)
+
+        if not prop_data:
+            raise HTTPException(status_code=404, detail="Proposition text not found")
+
+        # Format full text with title
+        full_text = f"PROPOSITION {prop_data['number']}\n\n{prop_data['text']}"
+
+        # Log processing info
+        logger.info(f"Processing CA Prop {prop_data['number']} with model {request.model}")
+
+        # Check if we need to process large text
+        if len(full_text) > 40000:
+            logger.info(f"Large proposition detected ({len(full_text)} chars), extracting key sections")
+            processed_text = extract_key_bill_sections(full_text, 40000)
+            logger.info(f"Key sections extracted: {len(processed_text)} chars")
+
+            # Generate analysis and grades
+            analysis = await analyze_legislation_text(processed_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(processed_text, request.model, skip_extraction=True)
+        else:
+            # Generate analysis and grades using full text
+            analysis = await analyze_legislation_text(full_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(full_text, request.model, skip_extraction=True)
+
+        return {"analysis": analysis, "grades": grades}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing CA proposition: {e}")
+        raise HTTPException(status_code=500, detail="Error analyzing CA proposition")
 
 # ============================================================================
 # TEXT-TO-SPEECH ENDPOINTS
