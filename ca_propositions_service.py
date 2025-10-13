@@ -72,7 +72,7 @@ class CAPropositionsService:
                     "title": "PROPOSITION 50",
                     "shortTitle": "Redistricting Commission Reform",
                     "description": "Constitutional amendment to reform California's redistricting process and commission structure.",
-                    "type": "Constitutional Amendment",
+                    "type": "Prop",
                     "url": f"{self.BASE_URL}/2025/special/pdf/text-proposed-law.pdf",
                     "lastAction": "On ballot November 4, 2025",
                     "lastActionDate": "2025-11-04",
