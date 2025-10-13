@@ -3115,8 +3115,10 @@ const Legislation = ({ user }) => {
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'link' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'state' ? (
+                      `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
                     ) : (
-                      `Selected Bill: ${selectedBill.name}`
+                      `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
                 </div>
@@ -3171,13 +3173,15 @@ const Legislation = ({ user }) => {
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'link' ? (
                       `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                    ) : billSource === 'state' ? (
+                      `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
                     ) : (
                       `Selected Bill: 📄 ${selectedBill.name}`
                     )}
                   </h3>
                 </div>
               </div>
-              
+
               <div className="action-display">
                 <h3>Action: {actionType === 'analyze' ? 'Analyze Bill' : 'Debate Bill'}</h3>
               </div>
