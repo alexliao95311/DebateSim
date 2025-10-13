@@ -22,6 +22,7 @@ from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
 from billsearch import BillSearcher
 from legiscan_service import LegiScanService
+from ca_propositions_service import CAPropositionsService
 
 # Initialize logging first
 logging.basicConfig(level=logging.INFO)
@@ -119,10 +120,11 @@ cache = TTLCache(maxsize=200, ttl=600)  # Cache up to 200 items for 10 minutes
 session = None
 bill_searcher = None
 legiscan_service = None
+ca_props_service = None
 
 @app.on_event("startup")
 async def startup_event():
-    global session, bill_searcher, legiscan_service
+    global session, bill_searcher, legiscan_service, ca_props_service
     session = aiohttp.ClientSession(connector=get_connector())
     bill_searcher = BillSearcher(session)
     if LEGISCAN_API_KEY:
@@ -130,6 +132,10 @@ async def startup_event():
         logger.info("LegiScan service initialized")
     else:
         logger.warning("LegiScan service not initialized - API key missing")
+
+    # Initialize CA Propositions service
+    ca_props_service = CAPropositionsService()
+    logger.info("CA Propositions service initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -1653,7 +1659,7 @@ async def get_state_bills(state: str, session_id: Optional[int] = None):
             raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
 
         bills = await legiscan_service.get_master_list(state.upper(), session_id)
-        return {"bills": bills[:20]}  # Limit to 20 for display
+        return {"bills": bills[:20]}  # Return 20 most recent bills
     except HTTPException:
         raise
     except Exception as e:
@@ -1820,6 +1826,100 @@ async def analyze_state_bill(request: AnalyzeStateBillRequest):
     except Exception as e:
         logger.error(f"Error analyzing state bill: {e}")
         raise HTTPException(status_code=500, detail="Error analyzing state bill")
+
+# ============================================================================
+# CALIFORNIA PROPOSITIONS ENDPOINTS
+# ============================================================================
+
+@app.get("/ca-propositions")
+async def get_ca_propositions(election_cycle: Optional[str] = None):
+    """Get list of California ballot propositions"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        propositions = await ca_props_service.get_propositions_list(election_cycle)
+        return {"propositions": propositions}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting CA propositions: {e}")
+        raise HTTPException(status_code=500, detail="Error getting CA propositions")
+
+class CAPropositionTextRequest(BaseModel):
+    prop_id: str
+
+@app.post("/extract-ca-proposition-text")
+async def extract_ca_proposition_text(request: CAPropositionTextRequest):
+    """Extract text from a California proposition"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        logger.info(f"Extracting text for CA proposition: {request.prop_id}")
+
+        prop_data = await ca_props_service.get_proposition_text(request.prop_id)
+
+        if not prop_data:
+            raise HTTPException(status_code=404, detail="Proposition text not found")
+
+        return {
+            "text": f"PROPOSITION {prop_data['number']}\n\n{prop_data['text']}",
+            "title": f"Proposition {prop_data['number']}",
+            "number": prop_data['number']
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting CA proposition text: {e}")
+        raise HTTPException(status_code=500, detail="Error extracting CA proposition text")
+
+class AnalyzeCAPropositionRequest(BaseModel):
+    prop_id: str
+    model: str = DEFAULT_MODEL
+    userProfile: dict = None
+
+@app.post("/analyze-ca-proposition")
+async def analyze_ca_proposition(request: AnalyzeCAPropositionRequest):
+    """Analyze a California proposition"""
+    try:
+        if not ca_props_service:
+            raise HTTPException(status_code=503, detail="CA Propositions service not available")
+
+        logger.info(f"Analyzing CA proposition: {request.prop_id} with model: {request.model}")
+
+        # Get proposition text
+        prop_data = await ca_props_service.get_proposition_text(request.prop_id)
+
+        if not prop_data:
+            raise HTTPException(status_code=404, detail="Proposition text not found")
+
+        # Format full text with title
+        full_text = f"PROPOSITION {prop_data['number']}\n\n{prop_data['text']}"
+
+        # Log processing info
+        logger.info(f"Processing CA Prop {prop_data['number']} with model {request.model}")
+
+        # Check if we need to process large text
+        if len(full_text) > 40000:
+            logger.info(f"Large proposition detected ({len(full_text)} chars), extracting key sections")
+            processed_text = extract_key_bill_sections(full_text, 40000)
+            logger.info(f"Key sections extracted: {len(processed_text)} chars")
+
+            # Generate analysis and grades
+            analysis = await analyze_legislation_text(processed_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(processed_text, request.model, skip_extraction=True)
+        else:
+            # Generate analysis and grades using full text
+            analysis = await analyze_legislation_text(full_text, request.model, skip_extraction=True, user_profile=request.userProfile)
+            grades = await grade_legislation_text(full_text, request.model, skip_extraction=True)
+
+        return {"analysis": analysis, "grades": grades}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing CA proposition: {e}")
+        raise HTTPException(status_code=500, detail="Error analyzing CA proposition")
 
 # ============================================================================
 # TEXT-TO-SPEECH ENDPOINTS
