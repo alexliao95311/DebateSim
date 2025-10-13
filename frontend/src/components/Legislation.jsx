@@ -1716,7 +1716,7 @@ const Legislation = ({ user }) => {
         setProgressStep(3);
 
         // Stage results
-        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
+        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${getBillTitle()}`);
 
       } else if (billSource === 'proposition') {
         // Step 1: Extract CA proposition text if not already cached
@@ -1754,7 +1754,7 @@ const Legislation = ({ user }) => {
         setProgressStep(3);
 
         // Stage results
-        await stageAnalysisResults(data.analysis, data.grades, `Proposition Analysis: ${selectedBill.title}`);
+        await stageAnalysisResults(data.analysis, data.grades, `Proposition Analysis: ${getBillTitle()}`);
 
       } else if (billSource === 'recommended' || billSource === 'link') {
         // Step 1: Extract federal bill text if not already cached
@@ -1802,7 +1802,7 @@ const Legislation = ({ user }) => {
         setProgressStep(3);
 
         // Stage results
-        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${selectedBill.title}`);
+        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${getBillTitle()}`);
 
       } else {
         // Handle uploaded PDF analysis - use cached text if available
@@ -1876,7 +1876,7 @@ const Legislation = ({ user }) => {
         }
         
         // Stage results
-        await stageAnalysisResults(analysisData.analysis, analysisData.grades, `Bill Analysis: ${selectedBill.name}`);
+        await stageAnalysisResults(analysisData.analysis, analysisData.grades, `Bill Analysis: ${getBillTitle()}`);
       }
       
     } catch (err) {
@@ -2122,14 +2122,13 @@ const Legislation = ({ user }) => {
 
   const handleDownloadAnalysisPDF = () => {
     if (!analysisResult) return;
-    
+
     try {
-      const billTitle = billSource === 'recommended' || billSource === 'link' || billSource === 'state' ? 
-        selectedBill.title : 
-        selectedBill.name?.replace('.pdf', '') || 'Bill Analysis';
+      const billTitle = getBillTitle();
+      const analysisType = billSource === 'proposition' ? 'Proposition Analysis' : 'Bill Analysis';
 
       PDFGenerator.generateAnalysisPDF({
-        topic: `Bill Analysis: ${billTitle}`,
+        topic: `${analysisType}: ${billTitle}`,
         content: analysisResult,
         grades: analysisGrades,
         model: selectedModel,
@@ -2736,26 +2735,55 @@ const Legislation = ({ user }) => {
                   </button>
 
                   {jurisdiction === 'state' && (
-                    <select
-                      value={selectedState}
-                      onChange={(e) => setSelectedState(e.target.value)}
-                      style={{
-                        padding: "0.75rem",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(71, 85, 105, 0.5)",
-                        backgroundColor: "rgba(30, 41, 59, 0.8)",
-                        color: "rgba(255, 255, 255, 0.89)",
-                        cursor: "pointer",
-                        minWidth: "200px"
-                      }}
-                    >
-                      <option value="">Select a State...</option>
-                      {statesList.map((state) => (
-                        <option key={state.code} value={state.code}>
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        value={selectedState}
+                        onChange={(e) => setSelectedState(e.target.value)}
+                        style={{
+                          padding: "0.75rem",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(71, 85, 105, 0.5)",
+                          backgroundColor: "rgba(30, 41, 59, 0.8)",
+                          color: "rgba(255, 255, 255, 0.89)",
+                          cursor: "pointer",
+                          minWidth: "200px"
+                        }}
+                      >
+                        <option value="">Select a State...</option>
+                        {statesList.map((state) => (
+                          <option key={state.code} value={state.code}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Bill Type Filter - only show when state is selected and bills are loaded */}
+                      {selectedState && stateBillTypes.length > 0 && (
+                        <select
+                          value={selectedBillType}
+                          onChange={(e) => setSelectedBillType(e.target.value)}
+                          style={{
+                            padding: "0.75rem",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(71, 85, 105, 0.5)",
+                            backgroundColor: "rgba(30, 41, 59, 0.8)",
+                            color: "rgba(255, 255, 255, 0.89)",
+                            cursor: "pointer",
+                            minWidth: "150px"
+                          }}
+                        >
+                          <option value="all">All Types ({allStateBills.length})</option>
+                          {stateBillTypes.map((type) => {
+                            const count = allStateBills.filter(b => b.number.startsWith(type)).length;
+                            return (
+                              <option key={type} value={type}>
+                                {type} ({count})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -4077,12 +4105,12 @@ const Legislation = ({ user }) => {
           transcript={{
             transcript: analysisResult,
             topic: selectedBill ? (
-              billSource === 'recommended' ? 
-                `Bill Analysis: ${selectedBill.title}` : 
-                `Bill Analysis: ${selectedBill.name}`
+              billSource === 'proposition'
+                ? `Proposition Analysis: ${getBillTitle()}`
+                : `Bill Analysis: ${getBillTitle()}`
             ) : 'Bill Analysis',
             mode: 'analysis',
-            activityType: 'Analyze Bill',
+            activityType: billSource === 'proposition' ? 'Analyze Proposition' : 'Analyze Bill',
             grades: analysisGrades,
             model: selectedModel,
             createdAt: new Date().toISOString()

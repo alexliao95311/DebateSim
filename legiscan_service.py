@@ -130,8 +130,40 @@ class LegiScanService:
                     # Sort by last action date (most recent first)
                     bills.sort(key=lambda x: x.get("lastActionDate", ""), reverse=True)
 
-                    self.bill_cache[cache_key] = bills
-                    return bills
+                    # Diversify by bill type - get top bills from each type
+                    # This ensures we show a mix of SB, AB, HR, etc. instead of just one type
+                    bill_types = {}
+                    for bill in bills:
+                        # Extract bill type prefix (e.g., "SB" from "SB 123")
+                        import re
+                        match = re.match(r'^([A-Z]+)', bill.get("number", ""))
+                        if match:
+                            bill_type = match.group(1)
+                            if bill_type not in bill_types:
+                                bill_types[bill_type] = []
+                            bill_types[bill_type].append(bill)
+
+                    # Take top bills from each type (round-robin selection)
+                    diversified_bills = []
+                    max_per_type = 10  # Max bills per type to show
+
+                    # Get bills round-robin from each type
+                    type_lists = list(bill_types.values())
+                    if type_lists:
+                        max_length = max(len(lst) for lst in type_lists)
+                        for i in range(max_length):
+                            for type_list in type_lists:
+                                if i < len(type_list) and i < max_per_type:
+                                    diversified_bills.append(type_list[i])
+                    else:
+                        # Fallback if no types found
+                        diversified_bills = bills
+
+                    # Limit to 20 bills total
+                    diversified_bills = diversified_bills[:20]
+
+                    self.bill_cache[cache_key] = diversified_bills
+                    return diversified_bills
                 else:
                     logger.error(f"LegiScan API error: {data.get('alert', 'Unknown error')}")
                     return []
