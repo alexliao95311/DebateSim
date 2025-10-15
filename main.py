@@ -750,7 +750,18 @@ IMPORTANT:
             "temperature": 0.1,  # Even lower temperature for more consistent JSON output
             "max_tokens": 200,   # Further reduced to force just JSON response
         }
-        
+
+        # DEBUG: Print AI call details
+        print("\n" + "="*80)
+        print("🤖 AI CALL - GRADING")
+        print("="*80)
+        print(f"Model: {model}")
+        print(f"System Prompt: {payload['messages'][0]['content']}")
+        print(f"User Prompt (first 500 chars):\n{grading_prompt[:500]}...")
+        print(f"Temperature: {payload['temperature']}")
+        print(f"Max Tokens: {payload['max_tokens']}")
+        print("="*80 + "\n")
+
         async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload) as response:
             if response.status != 200:
                 logger.error(f"OpenRouter API error in grading: {response.status}")
@@ -1118,7 +1129,18 @@ Please ensure your analysis is objective, comprehensive, and provides practical 
             ],
             "temperature": 0.3,  # Lower temperature for more analytical, less creative output
         }
-        
+
+        # DEBUG: Print AI call details
+        print("\n" + "="*80)
+        print("🤖 AI CALL - ANALYSIS")
+        print("="*80)
+        print(f"Model: {model}")
+        print(f"System Prompt: {payload['messages'][0]['content']}")
+        print(f"User Prompt (first 1000 chars):\n{analysis_prompt[:1000]}...")
+        print(f"User Prompt Total Length: {len(analysis_prompt)} characters")
+        print(f"Temperature: {payload['temperature']}")
+        print("="*80 + "\n")
+
         async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload) as response:
             if response.status != 200:
                 logger.error(f"OpenRouter API error in analysis: {response.status}")
@@ -1164,7 +1186,19 @@ Keep response concise and focused.
                     "temperature": 0.3,
                     "max_tokens": 2000  # Limit response size too
                 }
-                
+
+                # DEBUG: Print emergency AI call details
+                print("\n" + "="*80)
+                print("🤖 AI CALL - EMERGENCY ANALYSIS")
+                print("="*80)
+                print(f"Model: {model}")
+                print(f"System Prompt: {payload_emergency['messages'][0]['content']}")
+                print(f"User Prompt (first 500 chars):\n{emergency_prompt[:500]}...")
+                print(f"User Prompt Total Length: {len(emergency_prompt)} characters")
+                print(f"Temperature: {payload_emergency['temperature']}")
+                print(f"Max Tokens: {payload_emergency['max_tokens']}")
+                print("="*80 + "\n")
+
                 async with session.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload_emergency) as response:
                     if response.status == 200:
                         result = await response.json()

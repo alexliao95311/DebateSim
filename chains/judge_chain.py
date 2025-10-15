@@ -81,10 +81,26 @@ class OpenRouterChat(BaseChatModel):
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
+
+        # DEBUG: Print AI call details
+        print("\n" + "="*80)
+        print("🤖 AI CALL - DEBATE JUDGING (SYNC)")
+        print("="*80)
+        print(f"Model: {self._ensure_full_model_name(self.model_name)}")
+        for i, msg in enumerate(formatted_messages):
+            print(f"\nMessage {i+1} ({msg['role']}):")
+            content = msg['content']
+            if len(content) > 1000:
+                print(f"{content[:1000]}...")
+                print(f"[Total length: {len(content)} characters]")
+            else:
+                print(content)
+        print(f"\nTemperature: {self.temperature}")
+        print("="*80 + "\n")
+
         # Synchronous call to OpenRouter API
         import requests
         response = requests.post(self.api_base, headers=headers, json=payload)
@@ -130,10 +146,26 @@ class OpenRouterChat(BaseChatModel):
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
+
+        # DEBUG: Print AI call details
+        print("\n" + "="*80)
+        print("🤖 AI CALL - DEBATE JUDGING (ASYNC)")
+        print("="*80)
+        print(f"Model: {self._ensure_full_model_name(self.model_name)}")
+        for i, msg in enumerate(formatted_messages):
+            print(f"\nMessage {i+1} ({msg['role']}):")
+            content = msg['content']
+            if len(content) > 1000:
+                print(f"{content[:1000]}...")
+                print(f"[Total length: {len(content)} characters]")
+            else:
+                print(content)
+        print(f"\nTemperature: {self.temperature}")
+        print("="*80 + "\n")
+
         # Use aiohttp for async API calls
         async with aiohttp.ClientSession() as session:
             async with session.post(self.api_base, headers=headers, json=payload) as response:
