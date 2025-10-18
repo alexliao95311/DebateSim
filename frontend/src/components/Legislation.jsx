@@ -209,7 +209,7 @@ const H2SectionRenderer = ({ analysisText }) => {
           <h2 className="analysis-heading">
             {section.header}
           </h2>
-          <div style={{ display: 'inline-block', marginLeft: '8px', verticalAlign: 'middle' }}>
+          <div style={{ display: 'none', marginLeft: '8px', verticalAlign: 'middle' }}>
             <EnhancedVoiceOutput
               text={section.fullSectionText}
               showLabel={false}
@@ -2214,13 +2214,16 @@ const Legislation = ({ user }) => {
   const parseLegiScanUrl = (url) => {
     try {
       // Handle various LegiScan URL formats
+      // Updated patterns to handle optional session suffixes (like /X1) and all bill number formats
       const patterns = [
-        // Standard format: https://legiscan.com/CA/bill/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/bill\/([A-Z]+\d+)\/(\d+)/i,
+        // Standard format: https://legiscan.com/CA/bill/AB123/2025 or https://legiscan.com/CO/bill/HB1001/2025/X1
+        /legiscan\.com\/([A-Z]{2})\/bill\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
+        // Text format with ID: https://legiscan.com/CA/text/SB336/id/3117223
+        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/id\/\d+/i,
         // Text format: https://legiscan.com/CA/text/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/(\d+)/i,
+        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
         // Drafts format: https://legiscan.com/CA/drafts/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/drafts\/([A-Z]+\d+)\/(\d+)/i,
+        /legiscan\.com\/([A-Z]{2})\/drafts\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
       ];
 
       for (const pattern of patterns) {
@@ -2228,7 +2231,7 @@ const Legislation = ({ user }) => {
         if (match) {
           const state = match[1].toUpperCase();
           const billNumber = match[2].toUpperCase();
-          const year = match[3];
+          const year = match[3] || null; // Year might not be present in ID-based URLs
 
           return {
             state,
@@ -2239,7 +2242,7 @@ const Legislation = ({ user }) => {
         }
       }
 
-      throw new Error('Invalid LegiScan URL format. Expected format: legiscan.com/STATE/bill/BILLNUMBER/YEAR');
+      throw new Error('Invalid LegiScan URL format. Expected format: legiscan.com/STATE/bill/BILLNUMBER/YEAR or legiscan.com/STATE/text/BILLNUMBER/id/ID');
     } catch (error) {
       throw new Error(`Could not parse URL: ${error.message}`);
     }
@@ -2287,7 +2290,9 @@ const Legislation = ({ user }) => {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch state bill information: ${response.status} ${response.statusText}`);
+          const errorData = await response.json().catch(() => null);
+          const errorMessage = errorData?.detail || `Failed to fetch state bill information: ${response.status} ${response.statusText}`;
+          throw new Error(errorMessage);
         }
 
         billData = await response.json();
@@ -2490,15 +2495,18 @@ const Legislation = ({ user }) => {
               <div className="bill-link-modal-body">
                 <p>Is this the bill you want to use?</p>
                 
-                <div style={{ 
-                  backgroundColor: "#f8f9fa", 
-                  border: "1px solid #ddd", 
-                  borderRadius: "8px", 
-                  padding: "1rem", 
-                  marginBottom: "1.5rem" 
+                <div style={{
+                  backgroundColor: "#f8f9fa",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "1.5rem"
                 }}>
                   <h3 style={{ margin: "0 0 0.5rem 0", color: "#000000" }}>
-                    {linkParsedBill.type} {linkParsedBill.number} - {linkParsedBill.congress}th Congress
+                    {linkParsedBill.isStateBill
+                      ? `${linkParsedBill.number} - ${linkParsedBill.state}`
+                      : `${linkParsedBill.type} ${linkParsedBill.number} - ${linkParsedBill.congress}th Congress`
+                    }
                   </h3>
                   <p style={{ margin: "0 0 0.5rem 0", fontWeight: "bold", color: "#000000" }}>
                     {linkParsedBill.title}
@@ -2928,9 +2936,35 @@ const Legislation = ({ user }) => {
                     padding: "0.5rem",
                     backgroundColor: "#f8d7da",
                     border: "1px solid #f5c6cb",
-                    borderRadius: "4px"
+                    borderRadius: "4px",
+                    position: "relative",
+                    paddingRight: "2rem"
                   }}>
                     {linkError}
+                    <button
+                      onClick={() => setLinkError("")}
+                      style={{
+                        position: "absolute",
+                        top: "0.5rem",
+                        right: "0.5rem",
+                        background: "transparent",
+                        border: "none",
+                        color: "#721c24",
+                        fontSize: "1.2rem",
+                        cursor: "pointer",
+                        padding: "0",
+                        lineHeight: "1",
+                        fontWeight: "bold",
+                        width: "20px",
+                        height: "20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}
+                      aria-label="Close error message"
+                    >
+                      ×
+                    </button>
                   </div>
                 )}
               </div>
