@@ -1575,7 +1575,7 @@ class BillFromUrlRequest(BaseModel):
 class StateBillFromUrlRequest(BaseModel):
     state: str
     bill_number: str
-    year: str
+    year: Optional[str] = None
     url: str
 
 @app.post("/extract-bill-from-url")
@@ -1669,7 +1669,8 @@ async def extract_state_bill_from_url(request: StateBillFromUrlRequest):
         if not legiscan_service:
             raise HTTPException(status_code=503, detail="LegiScan service not available. API key may be missing.")
 
-        logger.info(f"Extracting state bill info from URL: {request.state} {request.bill_number} ({request.year})")
+        year_info = f" ({request.year})" if request.year else ""
+        logger.info(f"Extracting state bill info from URL: {request.state} {request.bill_number}{year_info}")
 
         # Search for the bill by bill number in the state
         # LegiScan API doesn't support direct bill lookup by number, so we search
@@ -1684,16 +1685,34 @@ async def extract_state_bill_from_url(request: StateBillFromUrlRequest):
 
         if not matching_bill:
             # If no exact match in search, try getting from current session
-            logger.info(f"No match in search results, trying master list")
+            logger.info(f"No match in search results, trying master list for current session")
             all_bills = await legiscan_service.get_master_list(request.state, None)
             for bill in all_bills:
                 if bill.get("number", "").upper() == request.bill_number.upper():
                     matching_bill = bill
                     break
 
+        # If still not found and we have a year, try to find the session for that year
+        if not matching_bill and request.year:
+            logger.info(f"Trying to find session for year {request.year}")
+            sessions = await legiscan_service.get_session_list(request.state)
+            for session in sessions:
+                year_start = session.get("year_start")
+                year_end = session.get("year_end")
+                if year_start and year_end:
+                    if int(request.year) >= year_start and int(request.year) <= year_end:
+                        logger.info(f"Found session {session.get('session_id')} for year {request.year}")
+                        session_bills = await legiscan_service.get_master_list(request.state, session.get("session_id"))
+                        for bill in session_bills:
+                            if bill.get("number", "").upper() == request.bill_number.upper():
+                                matching_bill = bill
+                                break
+                        if matching_bill:
+                            break
+
         if not matching_bill:
-            logger.error(f"Bill not found: {request.state} {request.bill_number}")
-            raise HTTPException(status_code=404, detail=f"Bill {request.bill_number} not found in {request.state}")
+            logger.error(f"Bill not found: {request.state} {request.bill_number}{year_info}")
+            raise HTTPException(status_code=404, detail=f"Bill {request.bill_number} not found in {request.state}. The bill may not be available in the LegiScan database, or it may be from a session that is not currently tracked.")
 
         # Get full bill details if we have a bill_id
         bill_id = matching_bill.get("id")
