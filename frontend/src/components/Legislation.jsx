@@ -2928,45 +2928,55 @@ const Legislation = ({ user }) => {
                     {linkLoading ? "Loading..." : "Add Bill"}
                   </button>
                 </div>
-                {linkError && (
-                  <div style={{
-                    color: "#dc3545",
-                    fontSize: "0.9rem",
-                    marginTop: "0.5rem",
-                    padding: "0.5rem",
-                    backgroundColor: "#f8d7da",
-                    border: "1px solid #f5c6cb",
-                    borderRadius: "4px",
-                    position: "relative",
-                    paddingRight: "2rem"
-                  }}>
-                    {linkError}
-                    <button
-                      onClick={() => setLinkError("")}
-                      style={{
-                        position: "absolute",
-                        top: "0.5rem",
-                        right: "0.5rem",
-                        background: "transparent",
-                        border: "none",
-                        color: "#721c24",
-                        fontSize: "1.2rem",
-                        cursor: "pointer",
-                        padding: "0",
-                        lineHeight: "1",
-                        fontWeight: "bold",
-                        width: "20px",
-                        height: "20px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                      aria-label="Close error message"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
+              </div>
+
+              {linkError && (
+                <div style={{
+                  color: "#dc3545",
+                  fontSize: "0.9rem",
+                  marginTop: "0.5rem",
+                  padding: "0.5rem",
+                  backgroundColor: "#f8d7da",
+                  border: "1px solid #f5c6cb",
+                  borderRadius: "4px",
+                  position: "relative",
+                  paddingRight: "2rem"
+                }}>
+                  {linkError}
+                  <button
+                    onClick={() => setLinkError("")}
+                    style={{
+                      position: "absolute",
+                      top: "0.5rem",
+                      right: "0.5rem",
+                      background: "transparent",
+                      border: "none",
+                      color: "#721c24",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      padding: "0",
+                      lineHeight: "1",
+                      fontWeight: "bold",
+                      width: "20px",
+                      height: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    aria-label="Close error message"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              <div style={{
+                fontSize: "0.85rem",
+                color: "#6c757d",
+                marginTop: "0.5rem",
+                fontStyle: "italic"
+              }}>
+                Note: LegiScan tracks bills from active legislative sessions. Some 2025 sessions may not have started yet or may not be fully available.
               </div>
 
               {error && <p className="error-text">{error}</p>}
