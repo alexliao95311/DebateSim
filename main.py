@@ -1712,7 +1712,16 @@ async def extract_state_bill_from_url(request: StateBillFromUrlRequest):
 
         if not matching_bill:
             logger.error(f"Bill not found: {request.state} {request.bill_number}{year_info}")
-            raise HTTPException(status_code=404, detail=f"Bill {request.bill_number} not found in {request.state}. The bill may not be available in the LegiScan database, or it may be from a session that is not currently tracked.")
+
+            # Provide more helpful error message
+            error_detail = f"Bill {request.bill_number} not found in {request.state}."
+
+            if request.year and int(request.year) >= 2025:
+                error_detail += f" Note: {request.year} legislative sessions may not have started yet or may not be fully tracked in LegiScan. Try checking if the session is active on your state legislature's website."
+            else:
+                error_detail += " The bill may not be available in the LegiScan database, it may be from an archived session, or the session may not be currently tracked."
+
+            raise HTTPException(status_code=404, detail=error_detail)
 
         # Get full bill details if we have a bill_id
         bill_id = matching_bill.get("id")
