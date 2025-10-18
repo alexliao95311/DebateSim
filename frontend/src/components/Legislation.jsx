@@ -245,7 +245,9 @@ const H2SectionRenderer = ({ analysisText }) => {
               ),
               p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
               ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />,
+              // Handle unknown tags like <doc> by rendering as div
+              doc: ({node, children, ...props}) => <div {...props}>{children}</div>
             }}
           >
             {section.fullSectionText}
@@ -892,6 +894,10 @@ const Legislation = ({ user }) => {
     setAnalyzeWholeBill(true); // Reset to analyze whole bill
     setSectionSearchTerm(''); // Clear search term
 
+    // Auto-fill debate topic with bill name
+    const billName = `${bill.type} ${bill.number} - ${bill.title}`;
+    setDebateTopic(billName);
+
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
@@ -911,6 +917,10 @@ const Legislation = ({ user }) => {
     setAnalyzeWholeBill(true); // Reset to analyze whole bill
     setSectionSearchTerm(''); // Clear search term
 
+    // Auto-fill debate topic with bill name
+    const billName = `${bill.number} - ${bill.title}`;
+    setDebateTopic(billName);
+
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
@@ -929,6 +939,10 @@ const Legislation = ({ user }) => {
     setSelectedSections([]);
     setAnalyzeWholeBill(true);
     setSectionSearchTerm('');
+
+    // Auto-fill debate topic with proposition name
+    const propName = `${prop.number} - ${prop.title}`;
+    setDebateTopic(propName);
 
     setCurrentStep(2);
     setError('');
@@ -1513,6 +1527,11 @@ const Legislation = ({ user }) => {
       setSelectedSections([]); // Clear selected sections
       setAnalyzeWholeBill(true); // Reset to analyze whole bill
       setSectionSearchTerm(''); // Clear search term
+
+      // Auto-fill debate topic with file name
+      const fileName = file.name.replace('.pdf', '');
+      setDebateTopic(fileName);
+
       setCurrentStep(2);
       setError('');
       clearInfoNote(); // Clear any previous info notes
@@ -1524,18 +1543,20 @@ const Legislation = ({ user }) => {
   // Step 2: Handle action selection
   const handleActionSelection = (action) => {
     setActionType(action);
-    
-    // Auto-fill debate topic when entering debate mode
-    if (action === 'debate' && selectedBill) {
+
+    // Auto-fill debate topic when entering debate mode (if not already filled)
+    if (action === 'debate' && selectedBill && !debateTopic) {
       let billName = '';
-      if (billSource === 'recommended') {
+      if (billSource === 'recommended' || billSource === 'link') {
         billName = `${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`;
-      } else {
+      } else if (billSource === 'state' || billSource === 'proposition') {
+        billName = `${selectedBill.number} - ${selectedBill.title}`;
+      } else if (billSource === 'upload') {
         billName = selectedBill.name.replace('.pdf', '');
       }
       setDebateTopic(billName);
     }
-    
+
     // Auto-extract PDF text and sections when entering analyze mode with uploaded PDF
     if (action === 'analyze' && billSource === 'upload' && selectedBill && !extractedPdfText) {
       extractPdfText(selectedBill).catch(error => {
@@ -2353,6 +2374,15 @@ const Legislation = ({ user }) => {
       setAnalyzeWholeBill(true); // Reset to analyze whole bill
       setSectionSearchTerm(''); // Clear search term
       setExtractedBillData(null); // Clear previous extracted data
+
+      // Auto-fill debate topic with bill name
+      let billName;
+      if (linkParsedBill.isStateBill) {
+        billName = `${linkParsedBill.number} - ${linkParsedBill.title}`;
+      } else {
+        billName = `${linkParsedBill.type} ${linkParsedBill.number} - ${linkParsedBill.title}`;
+      }
+      setDebateTopic(billName);
 
       setShowLinkConfirmation(false);
       setBillLink("");
@@ -3300,7 +3330,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
-                        <span className="label-icon">📝</span>
                         Bill Name for Debate
                       </label>
                       <input
@@ -3320,7 +3349,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
-                        <span className="label-icon">⚔️</span>
                         Select Debate Mode
                       </label>
                       <div className="debate-mode-cards">
@@ -3353,7 +3381,6 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-format-section">
                         <label className="debate-label">
-                          <span className="label-icon">📋</span>
                           Select Debate Format
                         </label>
                         <div className="debate-format-cards">
@@ -3387,7 +3414,6 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-persona-section">
                         <label className="debate-label">
-                          <span className="label-icon">🎭</span>
                           Select AI Personas
                         </label>
                         <p className="persona-description-text">
