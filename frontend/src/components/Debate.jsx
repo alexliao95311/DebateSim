@@ -362,7 +362,17 @@ function Debate() {
       }
 
       // Add round information for ALL speeches
-      if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
+      // Check if speaker name already contains speech type labels (AC, NC, 1AR, NR, 2AR, CONSTRUCTIVE, REBUTTAL, SUMMARY, FINAL FOCUS)
+      const alreadyHasLabel = msg.speaker.includes(" - AC") || msg.speaker.includes(" - NC") ||
+                               msg.speaker.includes(" - 1AR") || msg.speaker.includes(" - NR") ||
+                               msg.speaker.includes(" - 2AR") || msg.speaker.includes(" - CONSTRUCTIVE") ||
+                               msg.speaker.includes(" - REBUTTAL") || msg.speaker.includes(" - SUMMARY") ||
+                               msg.speaker.includes(" - FINAL FOCUS");
+
+      if (alreadyHasLabel) {
+        // Speaker name already has the label, use as-is
+        title = msg.speaker;
+      } else if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
         title = speechTypeLabel
           ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum}/${maxRounds})`
           : `${msg.speaker} - Round ${roundNum}/${maxRounds}`;
@@ -906,7 +916,12 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
            `;
         }
         console.log(`DEBUG: Pro Prompt Preview: ${proPrompt.substring(0, 200)}...`);
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, currentRound, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
+        // For Lincoln-Douglas, pass speechNum as the round number (each speech is its own round)
+        // For other formats, use currentRound
+        const roundToPass = debateFormat === "lincoln-douglas"
+          ? messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length + 1
+          : currentRound;
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, roundToPass, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Pro.*?\n/gi, '')
@@ -1392,7 +1407,12 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
            `;
         }
         console.log(`🔍 DEBUG: Con Prompt Preview: ${conPrompt.substring(0, 200)}...`);
-        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, currentRound, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
+        // For Lincoln-Douglas, pass speechNum as the round number (each speech is its own round)
+        // For other formats, use currentRound
+        const roundToPass = debateFormat === "lincoln-douglas"
+          ? messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length + 1
+          : currentRound;
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, roundToPass, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Con.*?\n/gi, '')
@@ -1571,8 +1591,17 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       const currentSpeeches = messageList.length;
       const userSpeechNumber = currentSpeeches + 1;
       const aiSpeechNumber = currentSpeeches + 2;
-      const userRound = Math.ceil(userSpeechNumber / 2);
-      const aiRound = Math.ceil(aiSpeechNumber / 2);
+
+      // For Lincoln-Douglas, each speech is its own round (1 speaker per round)
+      // For other formats, 2 speakers per round
+      let userRound, aiRound;
+      if (debateFormat === "lincoln-douglas") {
+        userRound = userSpeechNumber;  // Speech 1 = Round 1, Speech 2 = Round 2, etc.
+        aiRound = aiSpeechNumber;
+      } else {
+        userRound = Math.ceil(userSpeechNumber / 2);  // 2 speeches per round
+        aiRound = Math.ceil(aiSpeechNumber / 2);
+      }
 
       console.log(`🔍 DEBUG [User vs AI]: Current speeches: ${currentSpeeches}, User speech #${userSpeechNumber} (Round ${userRound}), AI speech #${aiSpeechNumber} (Round ${aiRound})`);
 
@@ -1839,27 +1868,6 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
   return (
     <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
-      {/* DEBUG: Visual indicator */}
-      <div style={{
-        position: 'fixed',
-        top: '10px',
-        right: '10px',
-        background: '#ff6b6b',
-        color: 'white',
-        padding: '10px 15px',
-        borderRadius: '8px',
-        zIndex: 9999,
-        fontSize: '12px',
-        fontWeight: 'bold',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        fontFamily: 'monospace'
-      }}>
-        🔍 DEBUG MODE<br/>
-        Format: <span style={{color: '#ffeb3b'}}>{debateFormat || 'default'}</span><br/>
-        Mode: {actualMode}<br/>
-        PF Order: {pfSpeakingOrder}
-      </div>
-
       {/* Back to Home button in the top right corner */}
       <button className="back-to-home" onClick={handleBackToHome}>
         Back to Home
@@ -2276,7 +2284,16 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             <>
               {!userSide && (
                 <div className="ai-vs-user-setup">
-                  <h3>Setup Your Debate</h3>
+                  <div className="setup-header">
+                    <h3>Setup Your Debate</h3>
+                    <button
+                      className="info-button"
+                      onClick={() => debateFormat === 'public-forum' ? setShowPfInfo(true) : setShowLdInfo(true)}
+                      title={`More information about ${debateFormat === 'public-forum' ? 'Public Forum' : 'Lincoln-Douglas'} debate format`}
+                    >
+                      ?
+                    </button>
+                  </div>
                   <p style={{ color: '#fff' }}>
                     {debateFormat === 'lincoln-douglas'
                       ? 'Choose your SIDE. In LD, the Affirmative (Pro) always starts.'
