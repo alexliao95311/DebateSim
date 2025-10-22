@@ -274,10 +274,10 @@ function Debate() {
   };
 
   // Append a new message object to messageList
-  const appendMessage = (speaker, text, modelName = null) => {
+  const appendMessage = (speaker, text, modelName = null, roundOverride = null) => {
     setMessageList(prev => [
       ...prev,
-      { speaker, text: text.trim(), model: modelName, round: currentRound },
+      { speaker, text: text.trim(), model: modelName, round: roundOverride || currentRound },
     ]);
   };
 
@@ -341,24 +341,54 @@ function Debate() {
       // Calculate round number more accurately
       const roundNum = msg.round || Math.ceil((index + 1) / 2);
 
+      // Determine speech type for PF/LD formats
+      let speechTypeLabel = "";
+      if (debateFormat === "public-forum") {
+        // PF has 4 rounds: Constructive, Rebuttal, Summary, Final Focus
+        // Each round has 2 speeches
+        const totalSpeeches = index + 1;
+        if (totalSpeeches <= 2) speechTypeLabel = "CONSTRUCTIVE";
+        else if (totalSpeeches <= 4) speechTypeLabel = "REBUTTAL";
+        else if (totalSpeeches <= 6) speechTypeLabel = "SUMMARY";
+        else if (totalSpeeches <= 8) speechTypeLabel = "FINAL FOCUS";
+      } else if (debateFormat === "lincoln-douglas") {
+        // LD has specific speech names based on order
+        const totalSpeeches = index + 1;
+        if (totalSpeeches === 1) speechTypeLabel = "AC";
+        else if (totalSpeeches === 2) speechTypeLabel = "NC";
+        else if (totalSpeeches === 3) speechTypeLabel = "1AR";
+        else if (totalSpeeches === 4) speechTypeLabel = "NR";
+        else if (totalSpeeches === 5) speechTypeLabel = "2AR";
+      }
+
       // Add round information for ALL speeches
       if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
-        title = `${msg.speaker} - Round ${roundNum}/${maxRounds}`;
+        title = speechTypeLabel
+          ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum}/${maxRounds})`
+          : `${msg.speaker} - Round ${roundNum}/${maxRounds}`;
       } else if (msg.speaker.includes("(AI)")) {
         // For User vs AI mode, add round info for AI responses
-        title = `${msg.speaker} - Round ${roundNum}`;
+        title = speechTypeLabel
+          ? `${msg.speaker} - ${speechTypeLabel}`
+          : `${msg.speaker} - Round ${roundNum}`;
       } else if (msg.speaker.includes("(User)")) {
         // For User vs AI mode, add round info for user responses
-        title = `${msg.speaker} - Round ${roundNum}`;
+        title = speechTypeLabel
+          ? `${msg.speaker} - ${speechTypeLabel}`
+          : `${msg.speaker} - Round ${roundNum}`;
       } else if (msg.speaker.includes("Pro (User)") || msg.speaker.includes("Con (User)")) {
         // For User vs User mode, add round info
-        title = `${msg.speaker} - Round ${roundNum}`;
+        title = speechTypeLabel
+          ? `${msg.speaker} - ${speechTypeLabel}`
+          : `${msg.speaker} - Round ${roundNum}`;
       } else if (msg.speaker.includes("Judge")) {
         // For judge feedback, don't add round number
         title = msg.speaker;
       } else {
         // For any other speaker, add round number
-        title = `${msg.speaker} - Round ${roundNum}`;
+        title = speechTypeLabel
+          ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum})`
+          : `${msg.speaker} - Round ${roundNum}`;
       }
 
       const speechItem = {
@@ -1434,8 +1464,23 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
     setLoading(true);
     try {
+      console.log(`🔍 DEBUG [handleChooseSide]: ===== AI OPENING GENERATION =====`);
+      console.log(`🔍 DEBUG [handleChooseSide]: firstSide = "${firstSide}"`);
+      console.log(`🔍 DEBUG [handleChooseSide]: user selected side = "${side}"`);
+      console.log(`🔍 DEBUG [handleChooseSide]: debateFormat = "${debateFormat}"`);
+      console.log(`🔍 DEBUG [handleChooseSide]: pfSpeakingOrder = "${pfSpeakingOrder}"`);
+
       if (firstSide === "con" && side === "pro") {
-        const conPrompt = `
+        // AI goes first as Con, user will be Pro
+        console.log(`🔍 DEBUG [handleChooseSide]: AI will open as CON, user is PRO`);
+        let conPrompt;
+        if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+          // Use minimal prompt - backend will apply format-specific template
+          conPrompt = `Debate on: "${topic}". Your role: CON (opening speaker).`;
+          console.log(`🔍 DEBUG [handleChooseSide]: Using minimal prompt for ${debateFormat}`);
+          console.log(`🔍 DEBUG [handleChooseSide]: conPrompt = "${conPrompt}"`);
+        } else {
+          conPrompt = `
              Debate topic: "${topic}"
              Bill description: "${truncatedDescription}"
              Your role: Opening speaker for the CON side
@@ -1449,13 +1494,30 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
+        }
+        console.log(`🔍 DEBUG [handleChooseSide]: Calling generateAIResponse with:`);
+        console.log(`  - debater: "AI Debater (Con)"`);
+        console.log(`  - model: "${singleAIModel}"`);
+        console.log(`  - round_num: 1`);
+        console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
+        console.log(`  - debate_format: "${debateFormat}"`);
+        console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
         const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
-        const aiDisplayName = aiPersona !== "default" ? 
-          `Con (AI - ${getPersonaName(aiPersona)})` : 
+        const aiDisplayName = aiPersona !== "default" ?
+          `Con (AI - ${getPersonaName(aiPersona)})` :
           "Con (AI)";
         appendMessage(aiDisplayName, conResponse, singleAIModel);
       } else if (firstSide === "pro" && side === "con") {
-        const proPrompt = `
+        // AI goes first as Pro, user will be Con
+        console.log(`🔍 DEBUG [handleChooseSide]: AI will open as PRO, user is CON`);
+        let proPrompt;
+        if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+          // Use minimal prompt - backend will apply format-specific template
+          proPrompt = `Debate on: "${topic}". Your role: PRO (opening speaker).`;
+          console.log(`🔍 DEBUG [handleChooseSide]: Using minimal prompt for ${debateFormat}`);
+          console.log(`🔍 DEBUG [handleChooseSide]: proPrompt = "${proPrompt}"`);
+        } else {
+          proPrompt = `
              Debate topic: "${topic}"
              Bill description: "${truncatedDescription}"
              Your role: Opening speaker for the PRO side
@@ -1469,9 +1531,17 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
              4. Be persuasive and clear
              5. End with a strong statement
            `;
+        }
+        console.log(`🔍 DEBUG [handleChooseSide]: Calling generateAIResponse with:`);
+        console.log(`  - debater: "AI Debater (Pro)"`);
+        console.log(`  - model: "${singleAIModel}"`);
+        console.log(`  - round_num: 1`);
+        console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
+        console.log(`  - debate_format: "${debateFormat}"`);
+        console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
         const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
-        const aiDisplayName = aiPersona !== "default" ? 
-          `Pro (AI - ${getPersonaName(aiPersona)})` : 
+        const aiDisplayName = aiPersona !== "default" ?
+          `Pro (AI - ${getPersonaName(aiPersona)})` :
           "Pro (AI)";
         appendMessage(aiDisplayName, proResponse, singleAIModel);
       }
@@ -1494,9 +1564,23 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
     setLoading(true);
     setError("");
     try {
+      // Calculate round BEFORE appending message, since state updates are async
+      // messageList.length = current speeches
+      // +1 = user message we're about to add
+      // +1 = AI message we're about to generate
+      const currentSpeeches = messageList.length;
+      const userSpeechNumber = currentSpeeches + 1;
+      const aiSpeechNumber = currentSpeeches + 2;
+      const userRound = Math.ceil(userSpeechNumber / 2);
+      const aiRound = Math.ceil(aiSpeechNumber / 2);
+
+      console.log(`🔍 DEBUG [User vs AI]: Current speeches: ${currentSpeeches}, User speech #${userSpeechNumber} (Round ${userRound}), AI speech #${aiSpeechNumber} (Round ${aiRound})`);
+
       appendMessage(
         userSide === "pro" ? "Pro (User)" : "Con (User)",
-        userInput
+        userInput,
+        null,  // no model for user
+        userRound  // pass calculated round
       );
       setUserInput("");
 
@@ -1513,11 +1597,33 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         : description;
 
       const aiSideLocal = userSide === "pro" ? "Con" : "Pro";
-      // Check if this AI side has spoken before
-      const aiHasSpoken = messageList.some(msg => msg.speaker.includes(aiSideLocal));
-      const isOpening = !aiHasSpoken;
 
-      const prompt = `
+      console.log(`🔍 DEBUG [User vs AI]: ===== PROMPT GENERATION START =====`);
+      console.log(`🔍 DEBUG [User vs AI]: debateFormat = "${debateFormat}"`);
+      console.log(`🔍 DEBUG [User vs AI]: aiSideLocal = "${aiSideLocal}"`);
+      console.log(`🔍 DEBUG [User vs AI]: userSide = "${userSide}"`);
+      console.log(`🔍 DEBUG [User vs AI]: pfSpeakingOrder = "${pfSpeakingOrder}"`);
+
+      // Use the same prompt building logic as AI vs AI mode
+      // This ensures PF/LD formats are respected in User vs AI mode
+      let aiPrompt;
+
+      // For Public Forum and Lincoln-Douglas, use short prompts and let backend templates handle it
+      // The backend will see debate_format parameter and use the appropriate template
+      // This is simpler and ensures consistency with AI vs AI mode
+      if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+        // Pass a minimal prompt - the backend will use the format-specific template based on debate_format
+        aiPrompt = `Debate on: "${topic}". Your role: ${aiSideLocal}.`;
+        console.log(`🔍 DEBUG [User vs AI]: Using minimal prompt for ${debateFormat} format`);
+        console.log(`🔍 DEBUG [User vs AI]: aiPrompt = "${aiPrompt}"`);
+      } else {
+        console.log(`🔍 DEBUG [User vs AI]: Using default 5-round format prompt`);
+
+        // Default 5-round format - use the existing logic
+        const aiHasSpoken = messageList.some(msg => msg.speaker.includes(aiSideLocal));
+        const isOpening = !aiHasSpoken;
+
+        aiPrompt = `
 You are an AI debater in a structured debate on: "${topic}"
 
 BILL CONTEXT:
@@ -1529,24 +1635,24 @@ ${fullTranscript}
 YOUR ROLE: ${aiSideLocal.toUpperCase()} (opposing the user's ${userSide.toUpperCase()} position)
 
 RIGID DEBATE FORMAT:
-${isOpening && messageList.length === 1 ? 
+${isOpening && messageList.length === 1 ?
           `AI CONSTRUCTIVE + REBUTTAL:
 RIGID FORMAT REQUIREMENT:
 PART 1 - PRESENT YOUR CASE (3 arguments for ${aiSideLocal.toUpperCase()}):
 • 1. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact
-• 2. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact  
+• 2. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact
 • 3. [${aiSideLocal} Argument Title] - Build with evidence, reasoning, and impact
 These will be your ONLY contentions for the entire debate.
 
 PART 2 - REFUTE USER'S CASE (from their previous speech):
 • Address User's Argument 1: Quote their exact words, explain why it's wrong
-• Address User's Argument 2: Quote their exact words, explain why it's wrong  
+• Address User's Argument 2: Quote their exact words, explain why it's wrong
 • Address User's Argument 3: Quote their exact words, explain why it's wrong` :
           isOpening ?
           `AI CONSTRUCTIVE:
 RIGID FORMAT REQUIREMENT:
 • Present exactly 3 main arguments for the ${aiSideLocal.toUpperCase()} position
-• Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]  
+• Label them clearly as: 1. [Argument Title], 2. [Argument Title], 3. [Argument Title]
 • These will be your ONLY contentions for the entire debate
 • Build each argument with evidence, reasoning, and impact
 • Do NOT address user arguments (they haven't spoken yet)` :
@@ -1580,6 +1686,14 @@ CONTENT REQUIREMENTS:
 - Provide evidence, reasoning, and impact for all points
 - DO NOT discuss unrelated topics like paper airplanes, coffee, or anything else
 
+**CRITICAL - RESPONSIVE DEBATE ENGAGEMENT:**
+• **DO NOT simply restate your previous arguments** - you must EVOLVE your position based on opponent's responses
+• **DIRECTLY QUOTE** specific words/phrases from opponent's last speech and explain why they're wrong
+• **ADDRESS NEW POINTS** - if opponent raised new objections, you MUST respond to them specifically
+• **BUILD ON THE CLASH** - identify where you and opponent disagree and explain why your view is superior
+• **AVOID REPETITION** - each speech should add NEW analysis, evidence, or framing, not just repeat old points
+• **SHOW PROGRESSION** - demonstrate you're listening and adapting, not reading from a script
+
 ${getPersonaPrompt(aiPersona)}
 - Use specific evidence, examples, or logical reasoning
 - Keep your response concise (max 400 words)
@@ -1588,12 +1702,13 @@ ${getPersonaPrompt(aiPersona)}
 
 IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of the user's argument before presenting your own points.
          `;
+      }
 
       // Build the full transcript to send to the AI
       const updatedMessageList = [...messageList, {
         speaker: userSide === "pro" ? "Pro (User)" : "Con (User)",
         text: userInput,
-        round: currentRound
+        round: userRound
       }];
 
       const fullTranscriptForAI = updatedMessageList
@@ -1603,14 +1718,28 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         })
         .join("\n\n---\n\n");
 
-      console.log(`🔍 DEBUG [Debate.jsx]: Sending full transcript to AI (${fullTranscriptForAI.length} chars)`);
-      console.log(`🔍 DEBUG [Debate.jsx]: Full transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
+      console.log(`🔍 DEBUG [User vs AI]: ===== SENDING TO BACKEND =====`);
+      console.log(`🔍 DEBUG [User vs AI]: Current speeches: ${currentSpeeches}, User speech #${userSpeechNumber} (Round ${userRound}), AI speech #${aiSpeechNumber} (Round ${aiRound})`);
+      console.log(`🔍 DEBUG [User vs AI]: Full prompt being sent:`);
+      console.log(`🔍 DEBUG [User vs AI]: ===== PROMPT START =====`);
+      console.log(aiPrompt);
+      console.log(`🔍 DEBUG [User vs AI]: ===== PROMPT END =====`);
+      console.log(`🔍 DEBUG [User vs AI]: Full transcript to AI (${fullTranscriptForAI.length} chars)`);
+      console.log(`🔍 DEBUG [User vs AI]: Transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
+      console.log(`🔍 DEBUG [User vs AI]: Parameters:`);
+      console.log(`  - debater: "AI Debater (${aiSideLocal})"`);
+      console.log(`  - model: "${singleAIModel}"`);
+      console.log(`  - actualDescription length: ${actualDescription?.length || 0}`);
+      console.log(`  - round_num: ${aiRound}`);
+      console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
+      console.log(`  - debate_format: "${debateFormat}"`);
+      console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, prompt, singleAIModel, actualDescription, fullTranscriptForAI, currentRound, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
-      const aiDisplayName = aiPersona !== "default" ? 
-        `${aiSideLocal} (AI - ${getPersonaName(aiPersona)})` : 
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, aiPrompt, singleAIModel, actualDescription, fullTranscriptForAI, aiRound, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
+      const aiDisplayName = aiPersona !== "default" ?
+        `${aiSideLocal} (AI - ${getPersonaName(aiPersona)})` :
         `${aiSideLocal} (AI)`;
-      appendMessage(aiDisplayName, aiResponse, singleAIModel);
+      appendMessage(aiDisplayName, aiResponse, singleAIModel, aiRound);
       setCurrentRound(prev => prev + 1);
     } catch (err) {
       console.error("Error in User vs AI debate:", err);
@@ -1710,6 +1839,27 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
   return (
     <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
+      {/* DEBUG: Visual indicator */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        background: '#ff6b6b',
+        color: 'white',
+        padding: '10px 15px',
+        borderRadius: '8px',
+        zIndex: 9999,
+        fontSize: '12px',
+        fontWeight: 'bold',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        fontFamily: 'monospace'
+      }}>
+        🔍 DEBUG MODE<br/>
+        Format: <span style={{color: '#ffeb3b'}}>{debateFormat || 'default'}</span><br/>
+        Mode: {actualMode}<br/>
+        PF Order: {pfSpeakingOrder}
+      </div>
+
       {/* Back to Home button in the top right corner */}
       <button className="back-to-home" onClick={handleBackToHome}>
         Back to Home

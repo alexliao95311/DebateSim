@@ -369,6 +369,7 @@ FULL DEBATE TRANSCRIPT SO FAR:
 CURRENT ROUND: {round_num} of 4 (PUBLIC FORUM)
 YOUR ROLE: {debater_role}
 
+PUBLIC FORUM SPEECH STRUCTURE:
 {opening_instruction}
 
 PUBLIC FORUM ARGUMENTATION REQUIREMENTS:
@@ -418,12 +419,17 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
    `# {debater_role} – Round {round_num}/4 (Public Forum)`
-   
-2. After the title, produce *at most* **180 words** total (shorter for PF accessibility).
+
+2. **WORD COUNT REQUIREMENTS (CRITICAL):**
+   - **Constructive (Round 1)**: 550-600 words - Build your case with 2 substantive contentions
+   - **Rebuttal (Round 2)**: 550-600 words - Attack opponent's case AND defend your own
+   - **Summary (Round 3)**: 400-450 words - Crystallize the debate and weigh impacts
+   - **Final Focus (Round 4)**: 250-300 words - Make your final appeal to the judge
+   - **Count your words carefully** - responses that are too short will lose credibility
 
 3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
-   
+
 4. Keep paragraphs short (≤ 2 sentences for PF accessibility).
 
 5. Do not add extra blank lines at the end of the message.
@@ -613,21 +619,117 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
                 speech_type = "CONSTRUCTIVE"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - First Speaker (Round 1 of 4)"
-                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. Build each argument with clear evidence and impact analysis."
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). Focus on building a clear, accessible case."
+                    rebuttal_requirement = """• **CONSTRUCTIVE** (550-600 words):
+
+MANDATORY STRUCTURE - Follow EXACTLY:
+
+1. BRIEF INTRODUCTION (30-50 words):
+   - State your side and the resolution
+   - Preview your two contentions
+
+2. CONTENTION 1: [Insert compelling title] (250-300 words):
+
+   A. UNIQUENESS (80-100 words):
+   - Explain the current problem/status quo failure in detail
+   - Provide specific statistics, examples, or evidence
+   - Explain why this problem persists now
+
+   B. LINK (80-100 words):
+   - Explain HOW the topic/resolution solves this problem
+   - Provide the mechanism/causal chain
+   - Include multiple pathways if possible
+
+   C. IMPACT (80-100 words):
+   - Explain the specific benefits/harms that result
+   - Include magnitude (how many people affected)
+   - Include timeframe (when impacts occur)
+   - Include probability (likelihood of success)
+
+3. CONTENTION 2: [Insert compelling title] (250-300 words):
+   Follow same A-B-C structure as Contention 1
+
+4. CONCLUSION (50-70 words):
+   - Tie contentions together with value framework
+   - Strong closing statement"""
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). Build a complete case with 2 detailed contentions using the A-B-C structure."
                 else:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - Second Speaker (Round 1 of 4)"
-                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. You may also address opponent's arguments if time permits."
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). Focus on building your case, with optional refutation."
+                    rebuttal_requirement = """• **CONSTRUCTIVE** (550-600 words):
+
+MANDATORY STRUCTURE - Follow EXACTLY (same as first speaker):
+
+1. BRIEF INTRODUCTION (30-50 words)
+2. CONTENTION 1: [Title] (250-300 words) - A-B-C structure (Uniqueness, Link, Impact)
+3. CONTENTION 2: [Title] (250-300 words) - A-B-C structure
+4. CONCLUSION (50-70 words)
+
+You may briefly reference opponent's arguments in your conclusion if time permits, but focus primarily on building your own case."""
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). Focus on building your case with the same A-B-C structure."
             elif round_num_val == 2:
                 # Round 2: Rebuttals
                 speech_type = "REBUTTAL"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - First Speaker (Round 2 of 4)"
+                    rebuttal_requirement = """• **REBUTTAL** (550-600 words) - Line-by-line refutation ONLY:
+
+For EACH of opponent's contentions, provide systematic refutation:
+
+CONTENTION 1: [Quote opponent's title]
+
+1. UNIQUENESS ATTACKS (labeled "NU"):
+   - "NU: [Opponent's uniqueness claim is wrong because...]"
+   - Provide counter-evidence that problem doesn't exist
+   - Show trend is improving, not worsening
+   - Must be 80-120 words of detailed refutation
+
+2. LINK ATTACKS (labeled "DL" - De-Link):
+   - "DL: [Opponent's link is wrong because...]"
+   - Explain why their solution doesn't solve
+   - Show alternative causes or barriers
+   - Must be 80-120 words of detailed refutation
+
+3. IMPACT ATTACKS (labeled "No Impact"):
+   - "No Impact: [Opponent's impact is wrong because...]"
+   - Challenge magnitude, timeframe, or probability
+   - Provide counter-evidence
+   - Must be 80-120 words of detailed refutation
+
+4. TURNS (labeled "T"):
+   - "T: [Their plan actually makes things worse because...]"
+   - Explain how their solution backfires
+   - Must be 60-100 words
+
+CONTENTION 2: [Quote opponent's title]
+[Repeat same structure: NU, DL, No Impact, T]
+
+REQUIREMENTS:
+- Quote opponent's exact words before refuting
+- Label every attack (NU, DL, No Impact, T)
+- Provide evidence for each refutation
+- Be systematic and thorough
+- Do NOT defend your own case - pure offense only"""
+                    rebuttal_importance = f"This is {debater_role}'s first rebuttal (speaking first). Attack opponent's case with labeled refutations. Do NOT defend your own case yet."
                 else:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - Second Speaker (Round 2 of 4)"
-                rebuttal_requirement = "• **REBUTTAL**: Attack opponent's case with clear refutation and evidence. Address each of their arguments directly. Defend your own case against any attacks they made."
-                rebuttal_importance = f"This is {debater_role}'s rebuttal speech. Focus on attacking opponent's case and defending yours."
+                    rebuttal_requirement = """• **SECOND REBUTTAL** (550-600 words) - Frontline AND Respond:
+
+STRUCTURE:
+1. FRONTLINES (50% of speech - 275-300 words):
+   Defend your case against their attacks:
+   - Address their strongest attacks on your contentions
+   - Provide new evidence or analysis
+   - Explain why their refutations fail
+   - Extend your impacts: "Even post-refutation, we still win [X] because..."
+
+2. RESPONSES TO THEIR CASE (50% of speech - 275-300 words):
+   Continue attacking their contentions:
+   - Extend your best attacks from their first rebuttal
+   - Add new refutations if time permits
+   - Use labels: "NU, DL, No Impact, T"
+   - Include comparative weighing
+
+SPLIT MANAGEMENT: Divide time roughly equally between defense and offense. Prioritize your strongest arguments and their weakest points."""
+                    rebuttal_importance = f"This is {debater_role}'s second rebuttal. Balance frontlining your case AND attacking theirs."
             elif round_num_val == 3:
                 # Round 3: Summary
                 speech_type = "SUMMARY"
@@ -870,16 +972,23 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         if inputs.get("_direct_prompt"):
             print(f"🔍 DEBUG [select_prompt]: Using direct prompt")
             return inputs["_direct_prompt"]
-        
+
         # Otherwise use template-based approach
         print(f"🔍 DEBUG [select_prompt]: Using template-based prompt")
+        print(f"🔍 DEBUG [select_prompt]: debate_format = '{debate_format}'")
+        print(f"🔍 DEBUG [select_prompt]: debate_type = '{debate_type}'")
+
         if debate_format == "public-forum":
+            print(f"🔍 DEBUG [select_prompt]: ✅ USING PUBLIC FORUM TEMPLATE")
             selected_template = public_forum_prompt
         elif debate_format == "lincoln-douglas":
+            print(f"🔍 DEBUG [select_prompt]: ✅ USING LINCOLN-DOUGLAS TEMPLATE")
             selected_template = lincoln_douglas_prompt
         elif debate_type == "bill":
+            print(f"🔍 DEBUG [select_prompt]: Using bill debate template")
             selected_template = bill_debate_prompt
         else:
+            print(f"🔍 DEBUG [select_prompt]: Using topic debate template (default)")
             selected_template = topic_debate_prompt
             
         return selected_template.invoke(inputs)
