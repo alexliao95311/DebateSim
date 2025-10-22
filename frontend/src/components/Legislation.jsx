@@ -209,7 +209,7 @@ const H2SectionRenderer = ({ analysisText }) => {
           <h2 className="analysis-heading">
             {section.header}
           </h2>
-          <div style={{ display: 'inline-block', marginLeft: '8px', verticalAlign: 'middle' }}>
+          <div style={{ display: 'none', marginLeft: '8px', verticalAlign: 'middle' }}>
             <EnhancedVoiceOutput
               text={section.fullSectionText}
               showLabel={false}
@@ -245,7 +245,9 @@ const H2SectionRenderer = ({ analysisText }) => {
               ),
               p: ({node, ...props}) => <p className="analysis-paragraph" {...props} />,
               ul: ({node, ...props}) => <ul className="analysis-list" {...props} />,
-              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />
+              ol: ({node, ...props}) => <ol className="analysis-numbered-list" {...props} />,
+              // Handle unknown tags like <doc> by rendering as div
+              doc: ({node, children, ...props}) => <div {...props}>{children}</div>
             }}
           >
             {section.fullSectionText}
@@ -892,6 +894,10 @@ const Legislation = ({ user }) => {
     setAnalyzeWholeBill(true); // Reset to analyze whole bill
     setSectionSearchTerm(''); // Clear search term
 
+    // Auto-fill debate topic with bill name
+    const billName = `${bill.type} ${bill.number} - ${bill.title}`;
+    setDebateTopic(billName);
+
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
@@ -911,6 +917,10 @@ const Legislation = ({ user }) => {
     setAnalyzeWholeBill(true); // Reset to analyze whole bill
     setSectionSearchTerm(''); // Clear search term
 
+    // Auto-fill debate topic with bill name
+    const billName = `${bill.number} - ${bill.title}`;
+    setDebateTopic(billName);
+
     setCurrentStep(2);
     setError('');
     clearInfoNote(); // Clear any previous info notes
@@ -929,6 +939,10 @@ const Legislation = ({ user }) => {
     setSelectedSections([]);
     setAnalyzeWholeBill(true);
     setSectionSearchTerm('');
+
+    // Auto-fill debate topic with proposition name
+    const propName = `${prop.number} - ${prop.title}`;
+    setDebateTopic(propName);
 
     setCurrentStep(2);
     setError('');
@@ -1513,6 +1527,11 @@ const Legislation = ({ user }) => {
       setSelectedSections([]); // Clear selected sections
       setAnalyzeWholeBill(true); // Reset to analyze whole bill
       setSectionSearchTerm(''); // Clear search term
+
+      // Auto-fill debate topic with file name
+      const fileName = file.name.replace('.pdf', '');
+      setDebateTopic(fileName);
+
       setCurrentStep(2);
       setError('');
       clearInfoNote(); // Clear any previous info notes
@@ -1524,18 +1543,20 @@ const Legislation = ({ user }) => {
   // Step 2: Handle action selection
   const handleActionSelection = (action) => {
     setActionType(action);
-    
-    // Auto-fill debate topic when entering debate mode
-    if (action === 'debate' && selectedBill) {
+
+    // Auto-fill debate topic when entering debate mode (if not already filled)
+    if (action === 'debate' && selectedBill && !debateTopic) {
       let billName = '';
-      if (billSource === 'recommended') {
+      if (billSource === 'recommended' || billSource === 'link') {
         billName = `${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`;
-      } else {
+      } else if (billSource === 'state' || billSource === 'proposition') {
+        billName = `${selectedBill.number} - ${selectedBill.title}`;
+      } else if (billSource === 'upload') {
         billName = selectedBill.name.replace('.pdf', '');
       }
       setDebateTopic(billName);
     }
-    
+
     // Auto-extract PDF text and sections when entering analyze mode with uploaded PDF
     if (action === 'analyze' && billSource === 'upload' && selectedBill && !extractedPdfText) {
       extractPdfText(selectedBill).catch(error => {
@@ -2142,16 +2163,6 @@ const Legislation = ({ user }) => {
   };
 
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredBills, setFilteredBills] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState("");
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [liveSearchLoading, setLiveSearchLoading] = useState(false);
-  const [searchAbortController, setSearchAbortController] = useState(null);
 
   // Bill link functionality state
   const [billLink, setBillLink] = useState("");
@@ -2159,237 +2170,6 @@ const Legislation = ({ user }) => {
   const [showLinkConfirmation, setShowLinkConfirmation] = useState(false);
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError, setLinkError] = useState("");
-
-  useEffect(() => {
-    setFilteredBills(recommendedBills);
-  }, [recommendedBills]);
-
-  // Real-time search suggestions with debouncing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.trim() && searchQuery.trim().length >= 2) {
-        generateSuggestions(searchQuery);
-      } else {
-        setSearchSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
-
-  // Live search with debouncing - update bills view as user types
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      // Cancel previous search if still running
-      if (searchAbortController) {
-        searchAbortController.abort();
-      }
-
-      if (searchQuery.trim() && searchQuery.trim().length >= 2) {
-        const controller = new AbortController();
-        setSearchAbortController(controller);
-        setLiveSearchLoading(true);
-        
-        performSearch(searchQuery, controller.signal)
-          .finally(() => {
-            setLiveSearchLoading(false);
-            setSearchAbortController(null);
-          });
-      } else if (searchQuery.trim().length === 0) {
-        // Clear search when input is empty
-        setIsSearchMode(false);
-        setSearchResults([]);
-        setFilteredBills(recommendedBills);
-        setShowSuggestions(false);
-        setSearchError("");
-        setLiveSearchLoading(false);
-      }
-    }, 500); // 500ms debounce for live search (slightly longer to avoid too many API calls)
-
-    return () => {
-      clearTimeout(timeoutId);
-      // Cancel any pending search when component unmounts or query changes
-      if (searchAbortController) {
-        searchAbortController.abort();
-      }
-    };
-  }, [searchQuery, recommendedBills]);
-
-  const performSearch = async (query, abortSignal = null) => {
-    if (!query.trim()) {
-      setIsSearchMode(false);
-      setSearchResults([]);
-      setFilteredBills(recommendedBills);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setSearchLoading(true);
-    setSearchError("");
-    setIsSearchMode(true);
-    setShowSuggestions(false);
-    
-    try {
-      const fetchOptions = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: query.trim(),
-          limit: 15 // Reduced limit for faster search
-        }),
-      };
-
-      if (abortSignal) {
-        fetchOptions.signal = abortSignal;
-      }
-
-      const response = await fetch(`${API_URL}/search-bills`, fetchOptions);
-
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.bills && Array.isArray(data.bills)) {
-        setSearchResults(data.bills);
-        setFilteredBills(data.bills);
-        
-        // Log search success
-        console.log(`Found ${data.bills.length} bills for query: "${query}"`);
-      } else {
-        setSearchResults([]);
-        setFilteredBills([]);
-        console.log(`No bills found for query: "${query}"`);
-      }
-      
-    } catch (err) {
-      // Don't show error for aborted requests
-      if (err.name === 'AbortError') {
-        console.log("Search aborted:", query);
-        return;
-      }
-      
-      console.error("Search error:", err);
-      let errorMessage = "Search failed";
-      
-      if (err.message.includes("CONGRESS_API_KEY")) {
-        errorMessage = "Congress.gov API key is required for bill search. Please check your configuration.";
-      } else if (err.message.includes("500")) {
-        errorMessage = "Congress.gov API is currently unavailable. Please try again later.";
-      } else if (err.message.includes("404")) {
-        errorMessage = "No bills found for your search query.";
-      } else {
-        errorMessage = `Search failed: ${err.message}`;
-      }
-      
-      setSearchError(errorMessage);
-      setSearchResults([]);
-      setFilteredBills([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const generateSuggestions = async (query) => {
-    if (!query.trim() || query.trim().length < 2) {
-      setSearchSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/search-suggestions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: query.trim(),
-          limit: 5
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.suggestions && Array.isArray(data.suggestions)) {
-          setSearchSuggestions(data.suggestions);
-          setShowSuggestions(data.suggestions.length > 0);
-        }
-      }
-    } catch (err) {
-      console.error("Suggestions error:", err);
-      setSearchSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
-    if (searchQuery.trim()) {
-      // Clear debounce and search immediately
-      performSearch(searchQuery);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
-    performSearch(suggestion);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsSearchMode(false);
-    setFilteredBills(recommendedBills);
-    setShowSuggestions(false);
-    setSearchError("");
-  };
-
-  // Keyboard navigation for suggestions
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSearchSubmit();
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSearchInputChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    // Show suggestions when typing
-    if (value.trim().length >= 2) {
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
-    
-    // Clear search error when user starts typing
-    if (searchError) {
-      setSearchError("");
-    }
-  };
-
-  const handleSearchInputFocus = () => {
-    if (searchQuery.trim().length >= 2 && searchSuggestions.length > 0) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleSearchInputBlur = () => {
-    // Delay hiding suggestions to allow clicking on them
-    setTimeout(() => {
-      setShowSuggestions(false);
-    }, 300);
-  };
 
   // Congress.gov URL parser function
   const parseCongressUrl = (url) => {
@@ -2434,13 +2214,16 @@ const Legislation = ({ user }) => {
   const parseLegiScanUrl = (url) => {
     try {
       // Handle various LegiScan URL formats
+      // Updated patterns to handle optional session suffixes (like /X1) and all bill number formats
       const patterns = [
-        // Standard format: https://legiscan.com/CA/bill/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/bill\/([A-Z]+\d+)\/(\d+)/i,
+        // Standard format: https://legiscan.com/CA/bill/AB123/2025 or https://legiscan.com/CO/bill/HB1001/2025/X1
+        /legiscan\.com\/([A-Z]{2})\/bill\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
+        // Text format with ID: https://legiscan.com/CA/text/SB336/id/3117223
+        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/id\/\d+/i,
         // Text format: https://legiscan.com/CA/text/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/(\d+)/i,
+        /legiscan\.com\/([A-Z]{2})\/text\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
         // Drafts format: https://legiscan.com/CA/drafts/AB123/2025
-        /legiscan\.com\/([A-Z]{2})\/drafts\/([A-Z]+\d+)\/(\d+)/i,
+        /legiscan\.com\/([A-Z]{2})\/drafts\/([A-Z]+\d+)\/(\d+)(?:\/[A-Z0-9]+)?/i,
       ];
 
       for (const pattern of patterns) {
@@ -2448,7 +2231,7 @@ const Legislation = ({ user }) => {
         if (match) {
           const state = match[1].toUpperCase();
           const billNumber = match[2].toUpperCase();
-          const year = match[3];
+          const year = match[3] || null; // Year might not be present in ID-based URLs
 
           return {
             state,
@@ -2459,7 +2242,7 @@ const Legislation = ({ user }) => {
         }
       }
 
-      throw new Error('Invalid LegiScan URL format. Expected format: legiscan.com/STATE/bill/BILLNUMBER/YEAR');
+      throw new Error('Invalid LegiScan URL format. Expected format: legiscan.com/STATE/bill/BILLNUMBER/YEAR or legiscan.com/STATE/text/BILLNUMBER/id/ID');
     } catch (error) {
       throw new Error(`Could not parse URL: ${error.message}`);
     }
@@ -2507,7 +2290,9 @@ const Legislation = ({ user }) => {
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch state bill information: ${response.status} ${response.statusText}`);
+          const errorData = await response.json().catch(() => null);
+          const errorMessage = errorData?.detail || `Failed to fetch state bill information: ${response.status} ${response.statusText}`;
+          throw new Error(errorMessage);
         }
 
         billData = await response.json();
@@ -2594,6 +2379,15 @@ const Legislation = ({ user }) => {
       setAnalyzeWholeBill(true); // Reset to analyze whole bill
       setSectionSearchTerm(''); // Clear search term
       setExtractedBillData(null); // Clear previous extracted data
+
+      // Auto-fill debate topic with bill name
+      let billName;
+      if (linkParsedBill.isStateBill) {
+        billName = `${linkParsedBill.number} - ${linkParsedBill.title}`;
+      } else {
+        billName = `${linkParsedBill.type} ${linkParsedBill.number} - ${linkParsedBill.title}`;
+      }
+      setDebateTopic(billName);
 
       setShowLinkConfirmation(false);
       setBillLink("");
@@ -2701,15 +2495,18 @@ const Legislation = ({ user }) => {
               <div className="bill-link-modal-body">
                 <p>Is this the bill you want to use?</p>
                 
-                <div style={{ 
-                  backgroundColor: "#f8f9fa", 
-                  border: "1px solid #ddd", 
-                  borderRadius: "8px", 
-                  padding: "1rem", 
-                  marginBottom: "1.5rem" 
+                <div style={{
+                  backgroundColor: "#f8f9fa",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  marginBottom: "1.5rem"
                 }}>
                   <h3 style={{ margin: "0 0 0.5rem 0", color: "#000000" }}>
-                    {linkParsedBill.type} {linkParsedBill.number} - {linkParsedBill.congress}th Congress
+                    {linkParsedBill.isStateBill
+                      ? `${linkParsedBill.number} - ${linkParsedBill.state}`
+                      : `${linkParsedBill.type} ${linkParsedBill.number} - ${linkParsedBill.congress}th Congress`
+                    }
                   </h3>
                   <p style={{ margin: "0 0 0.5rem 0", fontWeight: "bold", color: "#000000" }}>
                     {linkParsedBill.title}
@@ -2913,7 +2710,6 @@ const Legislation = ({ user }) => {
 
               {/* Bills Section with fade-in animation */}
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
-                {!isSearchMode && (
                   <>
                     <h3>{jurisdiction === 'federal' ? 'Trending Congressional Bills' : `${statesList.find(s => s.code === selectedState)?.name || 'State'} Bills`}</h3>
                     
@@ -2952,7 +2748,7 @@ const Legislation = ({ user }) => {
                     )}
                     
                     {!billsLoading && !billsError && jurisdiction === 'federal' && recommendedBills.length > 0 && (
-                      <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                      <div className={`bills-horizontal-scroll ${billsLoading ? 'searching' : ''}`}>
                         {recommendedBills.map((bill, index) => (
                           <div
                             key={bill.id}
@@ -3024,7 +2820,7 @@ const Legislation = ({ user }) => {
 
                         {/* Show Bills or Propositions based on tab */}
                         {(!showPropositions || selectedState !== 'CA') ? (
-                          <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                          <div className={`bills-horizontal-scroll ${billsLoading ? 'searching' : ''}`}>
                             {stateBills.map((bill, index) => (
                               <div
                                 key={bill.id}
@@ -3046,7 +2842,7 @@ const Legislation = ({ user }) => {
                             ))}
                           </div>
                         ) : (
-                          <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
+                          <div className={`bills-horizontal-scroll ${billsLoading ? 'searching' : ''}`}>
                             {caPropositions.map((prop, index) => (
                               <div
                                 key={prop.id}
@@ -3085,185 +2881,6 @@ const Legislation = ({ user }) => {
                       </div>
                     )}
                   </>
-                )}
-                
-                {isSearchMode && (
-                  <>
-                    <h3>🔍 Search Results</h3>
-                    
-                    {searchLoading && (
-                      <div className="search-loading" style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        padding: "2rem",
-                        backgroundColor: "rgba(30, 41, 59, 0.6)",
-                        borderRadius: "8px",
-                        border: "1px solid rgba(71, 85, 105, 0.3)",
-                        margin: "1rem 0"
-                      }}>
-                        <div className="loading-spinner" style={{
-                          width: "2rem",
-                          height: "2rem",
-                          border: "3px solid #e9ecef",
-                          borderTop: "3px solid #007bff",
-                          borderRadius: "50%",
-                          animation: "spin 1s linear infinite",
-                          marginBottom: "1rem"
-                        }}></div>
-                        <p style={{ margin: 0, color: "rgba(255, 255, 255, 0.89)" }}>Searching Congress.gov for bills...</p>
-                        <small style={{ color: "rgba(255, 255, 255, 0.89)", marginTop: "0.5rem" }}>
-                          This may take a few seconds
-                        </small>
-                      </div>
-                    )}
-                    
-                    {searchError && (
-                      <div className="search-error" style={{
-                        padding: "1rem",
-                        backgroundColor: "#f8d7da",
-                        border: "1px solid #f5c6cb",
-                        borderRadius: "8px",
-                        margin: "1rem 0"
-                      }}>
-                        <div style={{ 
-                          display: "flex", 
-                          alignItems: "center", 
-                          gap: "0.5rem",
-                          marginBottom: "0.5rem"
-                        }}>
-                          <span style={{ color: "#721c24", fontSize: "1.2rem" }}>⚠️</span>
-                          <strong style={{ color: "#721c24" }}>Search Error</strong>
-                        </div>
-                        <p style={{ margin: 0, color: "#721c24" }}>{searchError}</p>
-                        <button 
-                          onClick={() => performSearch(searchQuery)}
-                          style={{
-                            marginTop: "0.75rem",
-                            padding: "0.5rem 1rem",
-                            backgroundColor: "#dc3545",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "0.9rem",
-                            transition: "background-color 0.2s"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "#c82333";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "#dc3545";
-                          }}
-                        >
-                          Try Again
-                        </button>
-                      </div>
-                    )}
-                    
-                    {!searchLoading && !searchError && filteredBills.length > 0 && (
-                      <>
-                        <div style={{
-                          backgroundColor: "rgba(30, 41, 59, 0.6)",
-                          border: "1px solid rgba(71, 85, 105, 0.3)",
-                          borderRadius: "4px",
-                          padding: "0.75rem",
-                          marginBottom: "1rem",
-                          fontSize: "0.9rem",
-                          color: "rgba(255, 255, 255, 0.89)"
-                        }}>
-                          💡 <strong>Search Tips:</strong> Try bill numbers (e.g., "HR 1234"), topics (e.g., "healthcare"), 
-                          or sponsor names for better results.
-                        </div>
-                        
-                        <div className={`bills-horizontal-scroll ${liveSearchLoading ? 'searching' : ''}`}>
-                          {filteredBills.map((bill) => (
-                            <BillCard 
-                              key={bill.id} 
-                              bill={bill} 
-                              onSelect={handleSelectRecommendedBill}
-                              isProcessing={loadingState && selectedBill?.id === bill.id}
-                              processingStage={loadingState && selectedBill?.id === bill.id ? processingStage : ''}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                    
-                    {!searchLoading && !searchError && filteredBills.length === 0 && searchQuery && (
-                      <div style={{
-                        textAlign: "center",
-                        padding: "2rem",
-                        backgroundColor: "rgba(30, 41, 59, 0.6)",
-                        borderRadius: "8px",
-                        border: "2px dashed rgba(71, 85, 105, 0.3)"
-                      }}>
-                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔍</div>
-                        <h4 style={{ margin: "0 0 0.5rem 0", color: "rgba(255, 255, 255, 0.89)" }}>
-                          No bills found for "{searchQuery}"
-                        </h4>
-                        <p style={{ margin: "0 0 1rem 0", color: "rgba(255, 255, 255, 0.89)" }}>
-                          Try different keywords, check spelling, or browse trending bills below.
-                        </p>
-                        <div style={{ 
-                          display: "flex", 
-                          gap: "0.5rem", 
-                          justifyContent: "center",
-                          flexWrap: "wrap"
-                        }}>
-                          <button
-                            onClick={handleClearSearch}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              backgroundColor: "#007bff",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "0.9rem"
-                            }}
-                          >
-                            Browse Trending Bills
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSearchQuery("healthcare");
-                              performSearch("healthcare");
-                            }}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              backgroundColor: "#28a745",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "0.9rem"
-                            }}
-                          >
-                            Try "Healthcare"
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSearchQuery("infrastructure");
-                              performSearch("infrastructure");
-                            }}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              backgroundColor: "#17a2b8",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "0.9rem"
-                            }}
-                          >
-                            Try "Infrastructure"
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
               </div>
 
               {/* Upload Section */}
@@ -3311,186 +2928,56 @@ const Legislation = ({ user }) => {
                     {linkLoading ? "Loading..." : "Add Bill"}
                   </button>
                 </div>
-                {linkError && (
-                  <div style={{
-                    color: "#dc3545",
-                    fontSize: "0.9rem",
-                    marginTop: "0.5rem",
-                    padding: "0.5rem",
-                    backgroundColor: "#f8d7da",
-                    border: "1px solid #f5c6cb",
-                    borderRadius: "4px"
-                  }}>
-                    {linkError}
-                  </div>
-                )}
               </div>
-              
-              <div className="search-container" style={{ position: "relative", marginBottom: "1rem" }}>
-                  <div className="search-wrapper" style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={handleSearchInputChange}
-                        onFocus={handleSearchInputFocus}
-                        onBlur={handleSearchInputBlur}
-                        onKeyDown={handleSearchKeyDown}
-                        placeholder="Start typing to search bills live (e.g., 'HR 1234', 'healthcare', 'climate')..."
-                        className={`search-bar ${liveSearchLoading ? 'live-searching' : ''}`}
-                        style={{
-                          width: "100%",
-                          padding: "0.75rem 2.5rem 0.75rem 1rem",
-                          border: "1px solid #ddd",
-                          borderRadius: "8px",
-                          fontSize: "1rem",
-                          outline: "none",
-                          transition: "border-color 0.2s, box-shadow 0.2s",
-                        }}
-                      />
-                      
-                      {/* Search Icon / Loading Indicator */}
-                      <div style={{
-                        position: "absolute",
-                        right: "0.75rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#666",
-                        pointerEvents: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.25rem"
-                      }}>
-                        {liveSearchLoading ? (
-                          <div className="live-search-spinner"></div>
-                        ) : (
-                          "🔍"
-                        )}
-                      </div>
-                      
-                      {/* Search Suggestions Dropdown */}
-                      {showSuggestions && searchSuggestions.length > 0 && (
-                        <div className="suggestions-dropdown" style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          backgroundColor: "white",
-                          border: "1px solid #ddd",
-                          borderTop: "none",
-                          borderRadius: "0 0 8px 8px",
-                          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                          zIndex: 1000,
-                          maxHeight: "200px",
-                          overflowY: "auto"
-                        }}>
-                          {searchSuggestions.map((suggestion, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleSuggestionClick(suggestion)}
-                              style={{
-                                padding: "0.75rem 1rem",
-                                cursor: "pointer",
-                                borderBottom: index < searchSuggestions.length - 1 ? "1px solid #eee" : "none",
-                                transition: "background-color 0.2s"
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = "#f8f9fa";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = "white";
-                              }}
-                            >
-                              <span style={{ color: "#495057" }}>{suggestion}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <button
-                      onClick={handleSearchSubmit}
-                      disabled={searchLoading || liveSearchLoading || !searchQuery.trim()}
-                      style={{
-                        padding: "0.75rem 1.5rem",
-                        backgroundColor: (searchLoading || liveSearchLoading || !searchQuery.trim()) ? "#ccc" : "#007bff",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        cursor: (searchLoading || liveSearchLoading || !searchQuery.trim()) ? "not-allowed" : "pointer",
-                        fontSize: "1rem",
-                        fontWeight: "500",
-                        minWidth: "80px",
-                        transition: "all 0.2s"
-                      }}
-                    >
-                      {searchLoading || liveSearchLoading ? "..." : "Search"}
-                    </button>
-                    
-                    {(isSearchMode || searchQuery) && (
-                      <button
-                        onClick={handleClearSearch}
-                        style={{
-                          padding: "0.75rem",
-                          backgroundColor: "#6c757d",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          transition: "all 0.2s"
-                        }}
-                        title="Clear search"
-                      >
-                        ❌
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Live Search Help Text */}
-                  {!isSearchMode && !liveSearchLoading && searchQuery.trim().length === 0 && (
-                    <div style={{
-                      marginTop: "0.5rem",
-                      padding: "0.5rem",
-                      backgroundColor: "rgba(30, 41, 59, 0.6)",
-                      border: "1px solid rgba(71, 85, 105, 0.3)",
-                      borderRadius: "4px",
-                      fontSize: "0.85rem",
-                      color: "rgba(255, 255, 255, 0.89)",
-                      textAlign: "center",
-                      fontStyle: "italic"
-                    }}>
-                      💡 Start typing above to search bills in real-time. Results update automatically as you type!
-                    </div>
-                  )}
-                  
-                  {/* Search Status */}
-                  {(isSearchMode || liveSearchLoading) && !searchLoading && !searchError && (
-                    <div style={{
-                      marginTop: "0.5rem",
-                      padding: "0.5rem",
-                      backgroundColor: liveSearchLoading ? "#fff3cd" : "rgba(30, 41, 59, 0.6)",
-                      border: `1px solid ${liveSearchLoading ? "#ffeaa7" : "rgba(71, 85, 105, 0.3)"}`,
-                      borderRadius: "4px",
-                      fontSize: "0.9rem",
-                      color: liveSearchLoading ? "#856404" : "rgba(255, 255, 255, 0.89)",
+
+              {linkError && (
+                <div style={{
+                  color: "#dc3545",
+                  fontSize: "0.9rem",
+                  marginTop: "0.5rem",
+                  padding: "0.5rem",
+                  backgroundColor: "#f8d7da",
+                  border: "1px solid #f5c6cb",
+                  borderRadius: "4px",
+                  position: "relative",
+                  paddingRight: "2rem"
+                }}>
+                  {linkError}
+                  <button
+                    onClick={() => setLinkError("")}
+                    style={{
+                      position: "absolute",
+                      top: "0.5rem",
+                      right: "0.5rem",
+                      background: "transparent",
+                      border: "none",
+                      color: "#721c24",
+                      fontSize: "1.2rem",
+                      cursor: "pointer",
+                      padding: "0",
+                      lineHeight: "1",
+                      fontWeight: "bold",
+                      width: "20px",
+                      height: "20px",
                       display: "flex",
                       alignItems: "center",
-                      gap: "0.5rem"
-                    }}>
-                      {liveSearchLoading && (
-                        <div className="live-search-status-spinner"></div>
-                      )}
-                      {liveSearchLoading ? (
-                        `Searching for "${searchQuery}"...`
-                      ) : (
-                        filteredBills.length === 0 
-                          ? `No bills found for "${searchQuery}". Try different keywords or check spelling.`
-                          : `Found ${filteredBills.length} bill${filteredBills.length === 1 ? '' : 's'} for "${searchQuery}"`
-                      )}
-                    </div>
-                  )}
+                      justifyContent: "center"
+                    }}
+                    aria-label="Close error message"
+                  >
+                    ×
+                  </button>
                 </div>
+              )}
+
+              <div style={{
+                fontSize: "0.85rem",
+                color: "#6c757d",
+                marginTop: "0.5rem",
+                fontStyle: "italic"
+              }}>
+                Note: LegiScan tracks bills from active legislative sessions. Some 2025 sessions may not have started yet or may not be fully available.
+              </div>
 
               {error && <p className="error-text">{error}</p>}
               {showInfoNote && (
@@ -3887,7 +3374,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
-                        <span className="label-icon">📝</span>
                         Bill Name for Debate
                       </label>
                       <input
@@ -3907,7 +3393,6 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
-                        <span className="label-icon">⚔️</span>
                         Select Debate Mode
                       </label>
                       <div className="debate-mode-cards">
@@ -3940,7 +3425,6 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-format-section">
                         <label className="debate-label">
-                          <span className="label-icon">📋</span>
                           Select Debate Format
                         </label>
                         <div className="debate-format-cards">
@@ -3974,7 +3458,6 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-persona-section">
                         <label className="debate-label">
-                          <span className="label-icon">🎭</span>
                           Select AI Personas
                         </label>
                         <p className="persona-description-text">

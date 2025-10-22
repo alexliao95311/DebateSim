@@ -1,4 +1,9 @@
-/* Voice Output Container */
+/* TEMPORARY: Hide all TTS buttons - not working currently */
+.voice-output-container {
+  display: none !important;
+}
+
+/* Voice Output Container (original styles preserved for when TTS is re-enabled)
 .voice-output-container {
   display: flex;
   align-items: center;
@@ -11,6 +16,7 @@
   position: relative;
   z-index: 10;
 }
+*/
 
 
 
