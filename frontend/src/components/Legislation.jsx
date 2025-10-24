@@ -1185,9 +1185,9 @@ const Legislation = ({ user }) => {
     console.log('🚀 Starting direct section extraction...');
 
     // Extract sections directly from the text using SEC. markers
-    // Pattern matches section headers like: SEC. 1. SHORT TITLE
-    // Captures: SEC/SECTION, number, and TITLE (uppercase words until sentence starts)
-    const sectionPattern = /(?:^|\n)SEC(?:TION)?\.?\s+(\d+[A-Z]?)\.\s+([A-Z][A-Z\s\-,()&'.]+?)(?=\s+[A-Z][a-z][a-z]|\s*\n|$)/gi;
+    // Pattern matches section headers: SEC. or SECTION followed by number and period
+    // Captures the section number and everything on that line as the title
+    const sectionPattern = /(?:^|\n)(SEC(?:TION)?\.?\s+(\d+[A-Z]?)\.)\s*([^\n]+)/gi;
     const sections = [];
     const matches = [...text.matchAll(sectionPattern)];
 
@@ -1212,21 +1212,47 @@ const Legislation = ({ user }) => {
     // Extract content for each section
     for (let i = 0; i < matches.length; i++) {
       const match = matches[i];
-      const sectionNumber = match[1]; // Just the number like "1"
-      let sectionTitle = match[2].trim(); // Title like "SHORT TITLE" or "CONTINUING APPROPRIATIONS FOR..."
+      const sectionNumber = match[2]; // Just the number like "1"
+      let rawTitle = match[3].trim(); // Everything after "SEC. X."
+
+      // Extract just the title part (before the actual content starts)
+      // Title is typically in ALL CAPS or Title Case, content starts with regular sentence
+      let sectionTitle = rawTitle;
+
+      // Try to find where the title ends and content begins
+      // Look for a period followed by a space and a capital letter starting a sentence
+      const titleEndMatch = rawTitle.match(/^(.+?\.)(?:\s+[A-Z][a-z])/);
+      if (titleEndMatch) {
+        // Found a clear title ending
+        sectionTitle = titleEndMatch[1];
+      } else {
+        // Check if the whole line is in caps (likely all title)
+        const isAllCaps = rawTitle === rawTitle.toUpperCase();
+        if (!isAllCaps) {
+          // Mixed case - try to extract just the caps part
+          const capsMatch = rawTitle.match(/^([A-Z][A-Z\s\-,()&'.]+?)(?:\s+[A-Z][a-z])/);
+          if (capsMatch) {
+            sectionTitle = capsMatch[1].trim();
+          }
+        }
+      }
 
       // Convert title to sentence case and ensure it ends with a period
-      sectionTitle = toSentenceCase(sectionTitle);
+      sectionTitle = toSentenceCase(sectionTitle.trim());
       if (!sectionTitle.endsWith('.')) {
         sectionTitle += '.';
       }
 
-      // Find where this section header ends and content begins
-      const headerEnd = match.index + match[0].length;
+      // Find where this section starts in the original text
+      const sectionStart = match.index;
       const nextSectionStart = i < matches.length - 1 ? matches[i + 1].index : text.length;
 
-      // Extract the content between this section header and the next section
-      const sectionContent = text.substring(headerEnd, nextSectionStart).trim();
+      // Extract everything from the section header to the next section
+      const sectionFullText = text.substring(sectionStart, nextSectionStart).trim();
+
+      // Remove the header line to get just the content
+      const headerLine = match[0];
+      const sectionContent = sectionFullText.substring(headerLine.length).trim();
 
       const section = {
         id: `section-${i}`,
@@ -1238,8 +1264,9 @@ const Legislation = ({ user }) => {
 
       console.log('✅ Extracted section:', {
         number: section.number,
-        title: section.title.substring(0, 60) + '...',
-        contentLength: section.content.length
+        title: section.title,
+        contentLength: section.content.length,
+        contentPreview: section.content.substring(0, 100)
       });
 
       sections.push(section);
