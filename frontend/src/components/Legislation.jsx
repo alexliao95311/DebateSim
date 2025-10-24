@@ -1165,9 +1165,9 @@ const Legislation = ({ user }) => {
     return data.text;
   };
 
-  // Extract sections from text using TOC-first approach
+  // Extract sections from text by directly parsing section markers
   const extractSectionsFromText = (text) => {
-    console.log('🔧 TOC-first extractSectionsFromText called');
+    console.log('🔧 Direct section extraction called');
     console.log('📊 Input text type:', typeof text);
     console.log('📊 Input text length:', text?.length || 0);
     console.log('📊 Input text preview:', text.substring(0, 100));
@@ -1182,15 +1182,19 @@ const Legislation = ({ user }) => {
       return [];
     }
 
-    console.log('🚀 Starting TOC-first section extraction...');
-    console.log('📊 Input text length:', text.length);
+    console.log('🚀 Starting direct section extraction...');
 
-    // Step 1: Find and extract table of contents sections
-    const tocSections = extractTOCSections(text);
-    console.log('📋 Found', tocSections.length, 'sections in table of contents');
+    // Extract sections directly from the text using SEC. markers
+    // Pattern matches section headers like: SEC. 1. SHORT TITLE
+    // Captures: SEC/SECTION, number, and TITLE (uppercase words until sentence starts)
+    const sectionPattern = /(?:^|\n)SEC(?:TION)?\.?\s+(\d+[A-Z]?)\.\s+([A-Z][A-Z\s\-,()&'.]+?)(?=\s+[A-Z][a-z][a-z]|\s*\n|$)/gi;
+    const sections = [];
+    const matches = [...text.matchAll(sectionPattern)];
 
-    if (tocSections.length === 0) {
-      console.log('⚠️ No TOC found, falling back to full text as single section');
+    console.log(`📋 Found ${matches.length} section headers using pattern matching`);
+
+    if (matches.length === 0) {
+      console.log('⚠️ No sections found, falling back to full text');
       return [{
         id: 'full-bill',
         number: 'Full Bill',
@@ -1200,37 +1204,49 @@ const Legislation = ({ user }) => {
       }];
     }
 
-    // Step 2: Find each TOC section in the full document
-    const sections = [];
-    console.log('🔍 Searching for each TOC section in the full document...');
+    // Helper function to convert title to sentence case
+    const toSentenceCase = (str) => {
+      return str.toLowerCase().replace(/(^\w|\.\s+\w)/g, (letter) => letter.toUpperCase());
+    };
 
-    for (let i = 0; i < tocSections.length; i++) {
-      const tocSection = tocSections[i];
-      const sectionContent = findSectionInText(text, tocSection, tocSections);
+    // Extract content for each section
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const sectionNumber = match[1]; // Just the number like "1"
+      let sectionTitle = match[2].trim(); // Title like "SHORT TITLE" or "CONTINUING APPROPRIATIONS FOR..."
 
-      if (sectionContent) {
-        const section = {
-          id: `section-${i}`,
-          number: tocSection.number,
-          title: tocSection.title,
-          type: 'section',
-          content: sectionContent
-        };
-
-        console.log('✅ Found section:', {
-          number: section.number,
-          title: section.title.substring(0, 60) + '...',
-          contentLength: section.content.length
-        });
-
-        sections.push(section);
-      } else {
-        console.log('❌ Could not find content for section:', tocSection.number, tocSection.title);
+      // Convert title to sentence case and ensure it ends with a period
+      sectionTitle = toSentenceCase(sectionTitle);
+      if (!sectionTitle.endsWith('.')) {
+        sectionTitle += '.';
       }
+
+      // Find where this section header ends and content begins
+      const headerEnd = match.index + match[0].length;
+      const nextSectionStart = i < matches.length - 1 ? matches[i + 1].index : text.length;
+
+      // Extract the content between this section header and the next section
+      const sectionContent = text.substring(headerEnd, nextSectionStart).trim();
+
+      const section = {
+        id: `section-${i}`,
+        number: sectionNumber,
+        title: `SEC. ${sectionNumber}. ${sectionTitle}`,
+        type: 'section',
+        content: sectionContent
+      };
+
+      console.log('✅ Extracted section:', {
+        number: section.number,
+        title: section.title.substring(0, 60) + '...',
+        contentLength: section.content.length
+      });
+
+      sections.push(section);
     }
 
     console.log('✅ Section extraction completed!');
-    console.log('📊 Final sections count:', sections.length, 'out of', tocSections.length, 'TOC entries');
+    console.log('📊 Final sections count:', sections.length);
 
     if (sections.length > 0) {
       console.log('📏 Content length range:', {
@@ -3161,6 +3177,18 @@ const Legislation = ({ user }) => {
                                 console.log('📊 Debug - initial billText length:', billText?.length || 0);
                                 console.log('📊 Debug - existing billSections count:', billSections.length);
 
+                                // For uploaded PDFs, extract text if not available
+                                if (billSource === 'upload' && !billText && selectedBill) {
+                                  console.log('🔄 PDF text not available, extracting from file...');
+                                  try {
+                                    billText = await extractPdfText(selectedBill);
+                                    console.log('✅ PDF text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                  } catch (error) {
+                                    console.error('❌ Failed to extract PDF text:', error);
+                                    return;
+                                  }
+                                }
+
                                 // For recommended/link/state/proposition bills, extract text if not available
                                 if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') && !billText && selectedBill) {
                                   console.log('🔄 Bill text not available, extracting from API...');
@@ -3211,6 +3239,18 @@ const Legislation = ({ user }) => {
 
                                   let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
                                   console.log('📊 Debug - initial billText length:', billText?.length || 0);
+
+                                  // For uploaded PDFs, extract text if not available
+                                  if (billSource === 'upload' && !billText && selectedBill) {
+                                    console.log('🔄 PDF text not available, extracting from file...');
+                                    try {
+                                      billText = await extractPdfText(selectedBill);
+                                      console.log('✅ PDF text extracted, type:', typeof billText, 'length:', billText?.length || 0);
+                                    } catch (error) {
+                                      console.error('❌ Failed to extract PDF text:', error);
+                                      return;
+                                    }
+                                  }
 
                                   // For recommended/link/state/proposition bills, extract text if not available
                                   if ((billSource === 'recommended' || billSource === 'link' || billSource === 'state' || billSource === 'proposition') && !billText && selectedBill) {
