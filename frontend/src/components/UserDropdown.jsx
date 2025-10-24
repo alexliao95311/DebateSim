@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, User, Settings, LogOut, History } from 'lucide-react';
+import { Menu, User, Settings, LogOut, History, Home } from 'lucide-react';
 import './UserDropdown.css';
 
 const UserDropdown = ({ user, onLogout, className = '' }) => {
@@ -25,6 +25,11 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
   const handleSettingsClick = () => {
     setIsOpen(false);
     navigate('/settings');
+  };
+
+  const handleHomeClick = () => {
+    setIsOpen(false);
+    navigate('/');
   };
 
   const handleHistoryClick = () => {
@@ -53,6 +58,14 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
             <User size={16} />
             <span>{user?.displayName || 'Guest'}</span>
           </div>
+
+          <button
+            className="user-dropdown-item user-dropdown-button"
+            onClick={handleHomeClick}
+          >
+            <Home size={16} />
+            <span>Back to Home</span>
+          </button>
 
           <button
             className="user-dropdown-item user-dropdown-button"
