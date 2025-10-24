@@ -1243,11 +1243,100 @@ You can try uploading a PDF of specific sections you're most interested in analy
 *Note: This is an automated response due to processing limitations with very large bills.*
         """.strip()
 
+def parse_bill_xml(xml_content: str) -> str:
+    """
+    Parse Congress.gov XML bill format and extract structured text with sections.
+
+    Congress bills use XML with tags like:
+    - <section> for sections
+    - <header> for section headers
+    - <enum> for section numbers
+    - <text> for content
+    - <title> for titles
+    - <chapter>, <part>, <subtitle> for organizational units
+    """
+    try:
+        import xml.etree.ElementTree as ET
+
+        logger.info("Parsing XML bill content")
+
+        # Parse the XML
+        try:
+            root = ET.fromstring(xml_content)
+        except ET.ParseError as e:
+            logger.warning(f"XML parsing failed: {e}. Falling back to text extraction.")
+            # Fallback: just strip XML tags
+            import re
+            return re.sub(r'<[^>]+>', '', xml_content)
+
+        # Extract bill text with structure
+        bill_parts = []
+
+        def extract_text_recursive(element, level=0):
+            """Recursively extract text from XML elements while preserving structure"""
+            text_parts = []
+
+            # Extract section header information
+            if element.tag in ['section', 'title', 'chapter', 'part', 'subtitle']:
+                # Look for enum (section number) and header
+                enum = element.find('.//enum')
+                header = element.find('.//header')
+
+                section_text = []
+                if enum is not None and enum.text:
+                    section_text.append(f"\n\nSEC. {enum.text.strip()}")
+                if header is not None and header.text:
+                    section_text.append(f" {header.text.strip().upper()}")
+
+                if section_text:
+                    text_parts.append(''.join(section_text))
+
+            # Extract regular text content
+            if element.tag == 'text' and element.text:
+                text_parts.append(f"\n{element.text.strip()}")
+
+            # Recursively process child elements
+            for child in element:
+                child_text = extract_text_recursive(child, level + 1)
+                if child_text:
+                    text_parts.extend(child_text)
+
+                # Also get tail text (text after the child element)
+                if child.tail and child.tail.strip():
+                    text_parts.append(child.tail.strip())
+
+            return text_parts
+
+        # Extract text from the root element
+        extracted_parts = extract_text_recursive(root)
+        bill_text = ' '.join(extracted_parts)
+
+        # Clean up the text
+        import re
+        # Normalize whitespace
+        bill_text = re.sub(r'\s+', ' ', bill_text)
+        # Add proper spacing around section markers
+        bill_text = re.sub(r'(\n\n)(SEC\.\s+\d+)', r'\1\n\2', bill_text)
+        # Clean up excessive newlines
+        bill_text = re.sub(r'\n{3,}', '\n\n', bill_text)
+        bill_text = bill_text.strip()
+
+        logger.info(f"Extracted {len(bill_text)} characters from XML")
+        logger.info(f"XML parsing preview: {bill_text[:300]}...")
+
+        return bill_text
+
+    except Exception as e:
+        logger.error(f"Error parsing XML bill: {e}")
+        # Fallback: return raw text with XML tags stripped
+        import re
+        return re.sub(r'<[^>]+>', '', xml_content)
+
 async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119) -> str:
     """Fetch full text of a specific bill from Congress.gov API"""
     if not CONGRESS_API_KEY:
         raise ValueError("CONGRESS_API_KEY is required for bill text retrieval")
-    
+
     try:
         # Get bill text versions from Congress API
         url = f"https://api.congress.gov/v3/bill/{congress}/{bill_type.lower()}/{bill_number}/text"
@@ -1255,7 +1344,7 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
             "api_key": CONGRESS_API_KEY,
             "format": "json"
         }
-        
+
         async with session.get(url, params=params) as response:
             if response.status == 404:
                 logger.error(f"Bill text not found: {bill_type} {bill_number}")
@@ -1263,31 +1352,47 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
             elif response.status != 200:
                 logger.error(f"Congress API error fetching bill text: {response.status}")
                 raise HTTPException(status_code=500, detail="Error fetching bill text from Congress API")
-            
+
             data = await response.json()
             text_versions = data.get("textVersions", [])
-            
+
             if not text_versions:
                 raise ValueError("No text versions available for this bill")
-            
+
             # Get the most recent text version (usually the first one)
             latest_version = text_versions[0]
             text_url = latest_version.get("formats", [])
-            
-            # Look for plain text format first, then XML
+
+            # Try XML format first (most structured), then formatted text
             text_content = None
+            is_xml = False
+
             for format_info in text_url:
-                if format_info.get("type") == "Formatted Text":
+                format_type = format_info.get("type", "")
+                if "XML" in format_type.upper():
                     format_url = format_info.get("url")
                     if format_url:
-                        # Fetch the actual text content
+                        logger.info(f"Fetching XML format from: {format_url}")
                         async with session.get(format_url) as text_response:
                             if text_response.status == 200:
                                 text_content = await text_response.text()
+                                is_xml = True
+                                logger.info(f"Successfully fetched XML format ({len(text_content)} chars)")
                                 break
-            
+
+            # Fallback to formatted text if XML not available
             if not text_content:
-                # If no formatted text, try to get any available format
+                for format_info in text_url:
+                    if format_info.get("type") == "Formatted Text":
+                        format_url = format_info.get("url")
+                        if format_url:
+                            async with session.get(format_url) as text_response:
+                                if text_response.status == 200:
+                                    text_content = await text_response.text()
+                                    break
+
+            # Last resort - try any available format
+            if not text_content:
                 for format_info in text_url:
                     format_url = format_info.get("url")
                     if format_url:
@@ -1295,9 +1400,14 @@ async def fetch_bill_text(bill_type: str, bill_number: str, congress: int = 119)
                             if text_response.status == 200:
                                 text_content = await text_response.text()
                                 break
-            
+
             if not text_content:
                 raise ValueError("Could not retrieve bill text content")
+
+            # Parse XML if we got XML format
+            if is_xml:
+                logger.info("Parsing XML bill format")
+                text_content = parse_bill_xml(text_content)
             
             # Clean up the text (remove HTML tags if present, etc.)
             import re
