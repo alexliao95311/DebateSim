@@ -291,6 +291,37 @@ function Debate() {
       .join("\n\n---\n\n");
   };
 
+  // Check if Lincoln-Douglas debate is complete (5 speeches total)
+  const isLDDebateComplete = () => {
+    if (debateFormat !== "lincoln-douglas") return false;
+    const totalSpeeches = messageList.length;
+    return totalSpeeches >= 5;
+  };
+
+  // Check if user can still input in Lincoln-Douglas User vs AI mode
+  const canUserInputLD = () => {
+    if (debateFormat !== "lincoln-douglas" || actualMode !== "ai-vs-user") return true;
+
+    const totalSpeeches = messageList.length;
+    const isUserAff = userSide === "pro"; // Pro = Affirmative
+
+    // If debate has 5 speeches, it's complete
+    if (totalSpeeches >= 5) return false;
+
+    // Determine whose turn it is
+    // Aff speaks in rounds 1, 3, 5 (odd rounds)
+    // Neg speaks in rounds 2, 4 (even rounds)
+    const nextRound = totalSpeeches + 1;
+    const isAffTurn = nextRound % 2 === 1; // Odd rounds are Aff's turn
+
+    // User can input if it's their turn
+    if (isUserAff) {
+      return isAffTurn; // User can input in rounds 1, 3, 5
+    } else {
+      return !isAffTurn; // User can input in rounds 2, 4
+    }
+  };
+
   const scrollToSpeech = (id) => {
     console.log(`Attempting to scroll to speech: ${id}`);
 
@@ -1581,6 +1612,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       setError("Please choose Pro or Con before proceeding.");
       return;
     }
+    // Check if Lincoln-Douglas debate is complete
+    if (debateFormat === "lincoln-douglas" && !canUserInputLD()) {
+      alert("Debate is complete. Please click 'End Debate & Get Judgment'.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -1612,6 +1648,13 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         userRound  // pass calculated round
       );
       setUserInput("");
+
+      // For Lincoln-Douglas, if user just submitted the 2AR (round 5), don't generate AI response
+      if (debateFormat === "lincoln-douglas" && userSpeechNumber === 5) {
+        console.log(`🔍 DEBUG [User vs AI]: User submitted 2AR (final speech). Debate complete.`);
+        setLoading(false);
+        return; // Don't generate AI response after 2AR
+      }
 
       // Get the full debate transcript so far
       const fullTranscript = messageList
@@ -1746,6 +1789,13 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           return `## ${speaker}\n${modelInfo}${text}`;
         })
         .join("\n\n---\n\n");
+
+      // Additional safety check for Lincoln-Douglas
+      if (debateFormat === "lincoln-douglas" && aiSpeechNumber > 5) {
+        console.log(`🔍 DEBUG [User vs AI]: AI speech would exceed 5 speeches limit. Stopping.`);
+        setLoading(false);
+        return;
+      }
 
       console.log(`🔍 DEBUG [User vs AI]: ===== SENDING TO BACKEND =====`);
       console.log(`🔍 DEBUG [User vs AI]: Current speeches: ${currentSpeeches}, User speech #${userSpeechNumber} (Round ${userRound}), AI speech #${aiSpeechNumber} (Round ${aiRound})`);
@@ -2360,23 +2410,28 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
                   <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
-                    disabled={loading}
+                    disabled={loading || !canUserInputLD()}
                   />
 
                   <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
-                    disabled={loading}
+                    disabled={loading || !canUserInputLD()}
                     placeholder={`Speak your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                   />
 
                   <textarea
-                    placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={
+                      !canUserInputLD() && debateFormat === "lincoln-douglas"
+                        ? "Debate complete - Click 'End Debate & Get Judgment'"
+                        : `Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`
+                    }
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
+                    disabled={!canUserInputLD()}
                     style={{ width: "100%", resize: "vertical", marginBottom: "1rem" }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
+                      if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0 && canUserInputLD()) {
                         e.preventDefault();
                         handleUserVsAISubmit();
                       }
@@ -2386,33 +2441,33 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
                     <button
                       onClick={handleUserVsAISubmit}
-                      disabled={loading || !userInput.trim()}
+                      disabled={loading || !userInput.trim() || !canUserInputLD()}
                       style={{
                         background: "#4a90e2",
                         color: "white",
                         border: "none",
                         padding: "0.75rem 1.5rem",
                         borderRadius: "6px",
-                        cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
-                        opacity: loading || !userInput.trim() ? 0.6 : 1
+                        cursor: loading || !userInput.trim() || !canUserInputLD() ? "not-allowed" : "pointer",
+                        opacity: loading || !userInput.trim() || !canUserInputLD() ? 0.6 : 1
                       }}
                     >
-                      {loading ? "Generating Response..." : "Send & Get AI Reply"}
+                      {loading ? "Generating Response..." : !canUserInputLD() && debateFormat === "lincoln-douglas" ? "Debate Complete" : "Send & Get AI Reply"}
                     </button>
 
                     {(firstSide === "con" && userSide === "pro") ||
                       (firstSide === "pro" && userSide === "con") ? (
                       <button
                         onClick={handleUserVsAISubmitAndEnd}
-                        disabled={loading || !userInput.trim()}
+                        disabled={loading || !userInput.trim() || !canUserInputLD()}
                         style={{
                           background: "#6c757d",
                           color: "white",
                           border: "none",
                           padding: "0.75rem 1.5rem",
                           borderRadius: "6px",
-                          cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
-                          opacity: loading || !userInput.trim() ? 0.6 : 1
+                          cursor: loading || !userInput.trim() || !canUserInputLD() ? "not-allowed" : "pointer",
+                          opacity: loading || !userInput.trim() || !canUserInputLD() ? 0.6 : 1
                         }}
                       >
                         Send & End (No AI Reply)
