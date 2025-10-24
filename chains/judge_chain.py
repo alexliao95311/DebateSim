@@ -200,11 +200,30 @@ class OpenRouterChat(BaseChatModel):
             "temperature": self.temperature,
         }
 
+# New standardized judge prompt
+JUDGE_PROMPT = """
+You are an AI judge evaluating a debate round. Follow these judging standards:
+
+1. Evaluate **only** what was actually said in the round.
+   - Do NOT fill in missing links, assume arguments, or interpret unstated logic.
+
+2. Decision structure:
+   - Begin with a **clear, concise decision at the top** ("Decision: Affirmative wins" or "Decision: Negative wins").
+   - Follow with a structured justification explaining why — referencing specific arguments and comparative weighing.
+
+3. Feedback:
+   - Provide **critical and actionable** feedback for both debaters.
+   - Highlight what each did well, what they could improve, and how to better execute strategy or weighing next time.
+   - Be concrete, not generic.
+
+Maintain objectivity, depth, and clarity throughout your evaluation.
+"""
+
 # Define the template for the judge
-template = """You are an expert debate judge. Analyze the following debate transcript and provide comprehensive feedback.
+template = f"""{JUDGE_PROMPT}
 
 DEBATE TRANSCRIPT:
-{transcript}
+{{transcript}}
 
 Please provide your judgement with the following sections:
 1. Summary of Main Arguments from both sides
@@ -215,10 +234,12 @@ Format your response with clear headings using markdown (###).
 """
 
 # Define the Lincoln-Douglas specific judge template
-ld_judge_template = """You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
+ld_judge_template = f"""{JUDGE_PROMPT}
+
+You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
 
 DEBATE TRANSCRIPT:
-{transcript}
+{{transcript}}
 
 LINCOLN-DOUGLAS JUDGING CRITERIA:
 - **Framework Analysis**: Evaluate the value premises, value criteria, and how well debaters uphold their frameworks
