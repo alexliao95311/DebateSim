@@ -177,11 +177,37 @@ class OpenRouterChat(BaseChatModel):
 
 # --- Prompt templates ----------------------------------------------------
 
+# New standardized debater prompt
+DEBATER_PROMPT = """
+You are an AI debater participating in a formal round. Follow these debate rules strictly:
+
+1. Only respond to points that your opponent actually made. 
+   - Do NOT fill in gaps, assume arguments, or create new ones for them under any circumstances.
+
+2. Weigh comparatively:
+   - Explain *why* your arguments outweigh the opponent's using clear metrics such as magnitude, scope, and timeframe.
+   - Avoid vague or non-comparative reasoning (e.g., "ours matter more because they're ethical").
+
+3. Address opponent arguments properly:
+   - Directly respond to their claims and evidence.
+   - Engage with their logic, not just restate your own points.
+
+4. **Summary speeches** must follow this structure:
+   - Begin by *going for* (extending) one or more of your main arguments (frontlining them if necessary).
+   - Provide comparative weighing (magnitude, scope, timeframe, probability, etc.).
+   - Respond to the opponent's case — focus on responses they mishandled or dropped, and explain why their case fails.
+   - End with a concise crystallization of why you win under comparative weighing.
+
+Be organized, concise, and strategic — debate like a top-level varsity debater.
+"""
+
 # Template for bill debates - includes evidence requirements
 bill_debate_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{debater_prompt}
 
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
@@ -271,6 +297,8 @@ topic_debate_template = """
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
 
+{debater_prompt}
+
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
 
 FULL DEBATE TRANSCRIPT SO FAR:
@@ -355,6 +383,8 @@ public_forum_template = """
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
 
+{debater_prompt}
+
 You are **{debater_role}**, engaged in a Public Forum debate on **"{topic}"**.
 
 PUBLIC FORUM FORMAT (4 ROUNDS EXACTLY):
@@ -369,7 +399,6 @@ FULL DEBATE TRANSCRIPT SO FAR:
 CURRENT ROUND: {round_num} of 4 (PUBLIC FORUM)
 YOUR ROLE: {debater_role}
 
-PUBLIC FORUM SPEECH STRUCTURE:
 {opening_instruction}
 
 PUBLIC FORUM ARGUMENTATION REQUIREMENTS:
@@ -419,17 +448,12 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
    `# {debater_role} – Round {round_num}/4 (Public Forum)`
-
-2. **WORD COUNT REQUIREMENTS (CRITICAL):**
-   - **Constructive (Round 1)**: 550-600 words - Build your case with 2 substantive contentions
-   - **Rebuttal (Round 2)**: 550-600 words - Attack opponent's case AND defend your own
-   - **Summary (Round 3)**: 400-450 words - Crystallize the debate and weigh impacts
-   - **Final Focus (Round 4)**: 250-300 words - Make your final appeal to the judge
-   - **Count your words carefully** - responses that are too short will lose credibility
+   
+2. After the title, produce *at most* **180 words** total (shorter for PF accessibility).
 
 3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
-
+   
 4. Keep paragraphs short (≤ 2 sentences for PF accessibility).
 
 5. Do not add extra blank lines at the end of the message.
@@ -450,6 +474,8 @@ lincoln_douglas_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{debater_prompt}
 
 You are **{debater_role}**, engaged in a Lincoln-Douglas debate on **"{topic}"**.
 
@@ -518,32 +544,18 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 ------------------------------------------------------------------
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
-   `# {debater_role} – {speech_type} ({speech_number}/5)`
-
-2. **WORD COUNT REQUIREMENTS (CRITICAL):**
-   - **Affirmative Constructive (AC) - Speech 1**: 800-900 words (6 minutes)
-   - **Negative Constructive (NC) - Speech 2**: 950-1050 words (7 minutes)
-   - **First Affirmative Rebuttal (1AR) - Speech 3**: 500-600 words (4 minutes)
-   - **Negative Rebuttal (NR) - Speech 4**: 800-900 words (6 minutes)
-   - **Second Affirmative Rebuttal (2AR) - Speech 5**: 350-450 words (3 minutes)
-   - **Count your words carefully** - responses that are too short will lose credibility
+   `# {debater_role} – {speech_type} ({speech_number}/6)`
+   
+2. After the title, produce *at most* **250 words** total (LD allows more depth).
 
 3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
-
+   
 4. Keep paragraphs short (≤ 3 sentences for LD clarity).
 
 5. Do not add extra blank lines at the end of the message.
 
 6. **NEVER include parameter names, variable information, or any technical details in your response.**
-
-**CRITICAL - RESPONSIVE DEBATE ENGAGEMENT:**
-• **DO NOT simply restate your previous arguments** - you must EVOLVE your position based on opponent's responses
-• **DIRECTLY QUOTE** specific words/phrases from opponent's last speech and explain why they're wrong
-• **ADDRESS NEW POINTS** - if opponent raised new objections, you MUST respond to them specifically
-• **BUILD ON THE CLASH** - identify where you and opponent disagree and explain why your view is superior
-• **AVOID REPETITION** - each speech should add NEW analysis, evidence, or framing, not just repeat old points
-• **SHOW PROGRESSION** - demonstrate you're listening and adapting, not reading from a script
 
 ------------------------------------------------------------------
 Strategic Content Guidelines
@@ -633,117 +645,21 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
                 speech_type = "CONSTRUCTIVE"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - First Speaker (Round 1 of 4)"
-                    rebuttal_requirement = """• **CONSTRUCTIVE** (550-600 words):
-
-MANDATORY STRUCTURE - Follow EXACTLY:
-
-1. BRIEF INTRODUCTION (30-50 words):
-   - State your side and the resolution
-   - Preview your two contentions
-
-2. CONTENTION 1: [Insert compelling title] (250-300 words):
-
-   A. UNIQUENESS (80-100 words):
-   - Explain the current problem/status quo failure in detail
-   - Provide specific statistics, examples, or evidence
-   - Explain why this problem persists now
-
-   B. LINK (80-100 words):
-   - Explain HOW the topic/resolution solves this problem
-   - Provide the mechanism/causal chain
-   - Include multiple pathways if possible
-
-   C. IMPACT (80-100 words):
-   - Explain the specific benefits/harms that result
-   - Include magnitude (how many people affected)
-   - Include timeframe (when impacts occur)
-   - Include probability (likelihood of success)
-
-3. CONTENTION 2: [Insert compelling title] (250-300 words):
-   Follow same A-B-C structure as Contention 1
-
-4. CONCLUSION (50-70 words):
-   - Tie contentions together with value framework
-   - Strong closing statement"""
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). Build a complete case with 2 detailed contentions using the A-B-C structure."
+                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. Build each argument with clear evidence and impact analysis."
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). Focus on building a clear, accessible case."
                 else:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - Second Speaker (Round 1 of 4)"
-                    rebuttal_requirement = """• **CONSTRUCTIVE** (550-600 words):
-
-MANDATORY STRUCTURE - Follow EXACTLY (same as first speaker):
-
-1. BRIEF INTRODUCTION (30-50 words)
-2. CONTENTION 1: [Title] (250-300 words) - A-B-C structure (Uniqueness, Link, Impact)
-3. CONTENTION 2: [Title] (250-300 words) - A-B-C structure
-4. CONCLUSION (50-70 words)
-
-You may briefly reference opponent's arguments in your conclusion if time permits, but focus primarily on building your own case."""
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). Focus on building your case with the same A-B-C structure."
+                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. You may also address opponent's arguments if time permits."
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). Focus on building your case, with optional refutation."
             elif round_num_val == 2:
                 # Round 2: Rebuttals
                 speech_type = "REBUTTAL"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - First Speaker (Round 2 of 4)"
-                    rebuttal_requirement = """• **REBUTTAL** (550-600 words) - Line-by-line refutation ONLY:
-
-For EACH of opponent's contentions, provide systematic refutation:
-
-CONTENTION 1: [Quote opponent's title]
-
-1. UNIQUENESS ATTACKS (labeled "NU"):
-   - "NU: [Opponent's uniqueness claim is wrong because...]"
-   - Provide counter-evidence that problem doesn't exist
-   - Show trend is improving, not worsening
-   - Must be 80-120 words of detailed refutation
-
-2. LINK ATTACKS (labeled "DL" - De-Link):
-   - "DL: [Opponent's link is wrong because...]"
-   - Explain why their solution doesn't solve
-   - Show alternative causes or barriers
-   - Must be 80-120 words of detailed refutation
-
-3. IMPACT ATTACKS (labeled "No Impact"):
-   - "No Impact: [Opponent's impact is wrong because...]"
-   - Challenge magnitude, timeframe, or probability
-   - Provide counter-evidence
-   - Must be 80-120 words of detailed refutation
-
-4. TURNS (labeled "T"):
-   - "T: [Their plan actually makes things worse because...]"
-   - Explain how their solution backfires
-   - Must be 60-100 words
-
-CONTENTION 2: [Quote opponent's title]
-[Repeat same structure: NU, DL, No Impact, T]
-
-REQUIREMENTS:
-- Quote opponent's exact words before refuting
-- Label every attack (NU, DL, No Impact, T)
-- Provide evidence for each refutation
-- Be systematic and thorough
-- Do NOT defend your own case - pure offense only"""
-                    rebuttal_importance = f"This is {debater_role}'s first rebuttal (speaking first). Attack opponent's case with labeled refutations. Do NOT defend your own case yet."
                 else:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - Second Speaker (Round 2 of 4)"
-                    rebuttal_requirement = """• **SECOND REBUTTAL** (550-600 words) - Frontline AND Respond:
-
-STRUCTURE:
-1. FRONTLINES (50% of speech - 275-300 words):
-   Defend your case against their attacks:
-   - Address their strongest attacks on your contentions
-   - Provide new evidence or analysis
-   - Explain why their refutations fail
-   - Extend your impacts: "Even post-refutation, we still win [X] because..."
-
-2. RESPONSES TO THEIR CASE (50% of speech - 275-300 words):
-   Continue attacking their contentions:
-   - Extend your best attacks from their first rebuttal
-   - Add new refutations if time permits
-   - Use labels: "NU, DL, No Impact, T"
-   - Include comparative weighing
-
-SPLIT MANAGEMENT: Divide time roughly equally between defense and offense. Prioritize your strongest arguments and their weakest points."""
-                    rebuttal_importance = f"This is {debater_role}'s second rebuttal. Balance frontlining your case AND attacking theirs."
+                rebuttal_requirement = "• **REBUTTAL**: Attack opponent's case with clear refutation and evidence. Address each of their arguments directly. Defend your own case against any attacks they made."
+                rebuttal_importance = f"This is {debater_role}'s rebuttal speech. Focus on attacking opponent's case and defending yours."
             elif round_num_val == 3:
                 # Round 3: Summary
                 speech_type = "SUMMARY"
@@ -763,214 +679,82 @@ SPLIT MANAGEMENT: Divide time roughly equally between defense and offense. Prior
                 rebuttal_requirement = "• **FINAL FOCUS**: Make your final appeal on the most important issues. No new arguments. Focus on why your side wins on the key impacts and values. Crystallize the voting issues."
                 rebuttal_importance = f"This is {debater_role}'s final focus. Make your final appeal - no new arguments, just crystallization."
         elif debate_format == "lincoln-douglas":
-            max_rounds = 5  # 5 speeches total: AC, NC, 1AR, NR, 2AR (no cross-examinations)
-
-            # Lincoln-Douglas has 5 speeches total with specific timing and structure
-            # Speech order: AC (Aff), NC (Neg), 1AR (Aff), NR (Neg), 2AR (Aff)
-            # No cross-examinations in this simplified format
-
+            max_rounds = 6  # 6 speeches total: AC, NC, 1AR, 2NR, 2AR (plus CX periods)
+            
+            # Lincoln-Douglas has 6 speeches total with specific timing and structure
+            # Speech order: AC (Aff), NC (Neg), 1AR (Aff), 2NR (Neg), 2AR (Aff)
+            # Cross-examinations happen after AC and NC
+            
             # Determine speech number and type based on round_num
             if round_num_val == 1:
                 if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
                     speech_type = "Affirmative Constructive"
                     speech_number = 1
-                    opening_instruction = "AFFIRMATIVE CONSTRUCTIVE (AC) - 6 minutes (800-900 words)"
-                    speech_requirements = """• **AFFIRMATIVE CONSTRUCTIVE** (800-900 words):
-
-MANDATORY STRUCTURE - Follow EXACTLY:
-
-1. FRAMEWORK (Required) (150-200 words):
-   - Present your VALUE PREMISE (what should be most valued in this debate)
-   - Present your VALUE CRITERION (how we measure/achieve your value)
-   - Explain why your framework should be preferred
-
-2. FRAMEWORK JUSTIFICATION (100-150 words):
-   - Explain why this framework is best for evaluating the resolution
-   - Show philosophical grounding for your values
-
-3. CONTENTION 1 with evidence (200-250 words):
-   - Clear claim/thesis
-   - Strong evidence and reasoning
-   - Connection to your value framework
-   - Real-world examples/impacts
-
-4. CONTENTION 2 with evidence (200-250 words):
-   - Follow same structure as Contention 1
-   - Independent reason to affirm
-
-5. CONTENTION 3 with evidence (150-200 words):
-   - Additional support for affirmation
-   - Link to framework
-
-6. SUMMARY linking back to framework (100 words):
-   - Tie contentions together
-   - Strong closing statement"""
-                    speech_importance = "This is your opening case - establish your philosophical framework and core arguments with 800-900 words."
+                    opening_instruction = "AFFIRMATIVE CONSTRUCTIVE (AC) - 6 minutes"
+                    speech_requirements = "• **AFFIRMATIVE CONSTRUCTIVE**: Present your complete case with: 1. Value Premise (core ethical value), 2. Value Criterion (standard to measure the value), 3. Contentions (2-3 main arguments linking resolution to your value). Build philosophical framework and logical syllogisms."
+                    speech_importance = "This is your opening case - establish your philosophical framework and core arguments."
                 else:
-                    # Negative should not speak in round 1
-                    speech_type = "Error - Wrong Speaker"
-                    speech_number = 1
-                    opening_instruction = "ERROR: Negative should not speak in Round 1"
-                    speech_requirements = "• In Lincoln-Douglas, only the Affirmative speaks in Round 1 (AC)."
-                    speech_importance = "This is an error state - Negative should wait until Round 2."
+                    # This shouldn't happen in LD, but handle gracefully
+                    speech_type = "Cross-Examination"
+                    speech_number = 2
+                    opening_instruction = "CROSS-EXAMINATION - 3 minutes (Neg questions Aff)"
+                    speech_requirements = "• **CROSS-EXAMINATION**: Ask clarifying questions about opponent's case. Expose logical flaws, clarify definitions, challenge evidence. Focus on value premise, criterion, and contention structure."
+                    speech_importance = "Use this time to understand and challenge the affirmative's framework."
             elif round_num_val == 2:
                 if 'Negative' in debater_role or 'Neg' in debater_role or 'Con' in debater_role:
                     speech_type = "Negative Constructive"
-                    speech_number = 2
-                    opening_instruction = "NEGATIVE CONSTRUCTIVE (NC) - 7 minutes (950-1050 words)"
-                    speech_requirements = """• **NEGATIVE CONSTRUCTIVE** (950-1050 words):
-
-MANDATORY STRUCTURE - Follow EXACTLY:
-
-1. FRAMEWORK ATTACK (First Priority) (300-350 words):
-   - Attack their value premise as inappropriate for this resolution
-   - Prove your framework is superior for evaluating this debate
-   - Show why their criterion fails or is outweighed
-
-2. YOUR FRAMEWORK (150-200 words):
-   - Present your VALUE PREMISE (what should be prioritized)
-   - Present your VALUE CRITERION (how we achieve/measure it)
-   - Justify why your framework is better than theirs
-
-3. CONTENTION 1 with evidence (250-300 words):
-   - Attack a key Affirmative argument
-   - Present independent reasons to reject resolution
-   - Connect to your value framework
-   - Include strong evidence and examples
-
-4. CONTENTION 2 with evidence (250-300 words):
-   - Follow same structure as Contention 1
-   - Different attack angle or independent harm
-
-5. CONTENTION 3 with evidence (200-250 words):
-   - Additional reason to negate
-   - Link to framework
-
-6. SUMMARY of why Negative wins (100 words):
-   - Crystallize framework superiority
-   - Preview voting issues"""
-                    speech_importance = "Present your case AND attack the affirmative's case with 950-1050 words - this is your most important speech."
+                    speech_number = 3
+                    opening_instruction = "NEGATIVE CONSTRUCTIVE (NC) - 7 minutes"
+                    speech_requirements = "• **NEGATIVE CONSTRUCTIVE**: PART 1 - Present your case with value premise, criterion, and contentions opposing the resolution. PART 2 - Attack affirmative's case: challenge their value, criterion, and contentions. Use philosophical arguments and logical reasoning."
+                    speech_importance = "Present your case AND attack the affirmative's case - this is your most important speech."
                 else:
-                    # Affirmative should not speak in round 2
-                    speech_type = "Error - Wrong Speaker"
-                    speech_number = 2
-                    opening_instruction = "ERROR: Affirmative should not speak in Round 2"
-                    speech_requirements = "• In Lincoln-Douglas, only the Negative speaks in Round 2 (NC)."
-                    speech_importance = "This is an error state - Affirmative should wait until Round 3."
+                    speech_type = "Cross-Examination"
+                    speech_number = 4
+                    opening_instruction = "CROSS-EXAMINATION - 3 minutes (Aff questions Neg)"
+                    speech_requirements = "• **CROSS-EXAMINATION**: Ask clarifying questions about opponent's case. Challenge their framework, clarify their arguments, expose weaknesses in their value structure."
+                    speech_importance = "Use this time to understand and challenge the negative's framework."
             elif round_num_val == 3:
                 if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
                     speech_type = "First Affirmative Rebuttal"
-                    speech_number = 3
-                    opening_instruction = "FIRST AFFIRMATIVE REBUTTAL (1AR) - 4 minutes (500-600 words)"
-                    speech_requirements = """• **FIRST AFFIRMATIVE REBUTTAL** (500-600 words):
-
-CRITICAL: This is the hardest speech in LD - you must cover everything efficiently.
-
-MANDATORY STRUCTURE:
-
-1. DEFENSE (First Half - ~300 words):
-   - Respond to Negative attacks on your framework
-   - Defend your value premise and criterion
-   - Extend your strongest contentions with new evidence
-   - Clarify any misrepresented arguments
-
-2. OFFENSE (Second Half - ~300 words):
-   - Attack the Negative's framework if weak
-   - Point out contradictions in their case
-   - Extend impacts from your contentions
-   - Show why you're winning key framework debates
-
-STRATEGY:
-- Prioritize framework debates - they determine the round
-- Don't drop major arguments or concede framework
-- Set up voting issues for 2AR
-- Be efficient - every word counts in this short speech"""
-                    speech_importance = "This is your most difficult speech with 500-600 words - you must cover everything in only 4 minutes. Arguments dropped here cannot return in 2AR."
+                    speech_number = 5
+                    opening_instruction = "FIRST AFFIRMATIVE REBUTTAL (1AR) - 4 minutes"
+                    speech_requirements = "• **FIRST AFFIRMATIVE REBUTTAL**: PART 1 - Rebuild your case against negative's attacks. PART 2 - Attack negative's case. Address all arguments - dropped arguments cannot be brought back in 2AR. This is the hardest speech in LD."
+                    speech_importance = "This is your most difficult speech - you must cover everything in only 4 minutes."
                 else:
-                    # Negative should not speak in round 3
-                    speech_type = "Error - Wrong Speaker"
-                    speech_number = 3
-                    opening_instruction = "ERROR: Negative should not speak in Round 3"
-                    speech_requirements = "• In Lincoln-Douglas, only the Affirmative speaks in Round 3 (1AR)."
-                    speech_importance = "This is an error state - Negative should wait until Round 4."
+                    # This shouldn't happen, but handle gracefully
+                    speech_type = "Preparation Time"
+                    speech_number = 6
+                    opening_instruction = "PREPARATION TIME - Up to 4 minutes"
+                    speech_requirements = "• **PREPARATION TIME**: Prepare your final rebuttal. Focus on crystallization and voting issues."
+                    speech_importance = "Use this time to prepare your final speech."
             elif round_num_val == 4:
                 if 'Negative' in debater_role or 'Neg' in debater_role or 'Con' in debater_role:
                     speech_type = "Negative Rebuttal"
-                    speech_number = 4
-                    opening_instruction = "NEGATIVE REBUTTAL (NR) - 6 minutes (800-900 words)"
-                    speech_requirements = """• **NEGATIVE REBUTTAL** (800-900 words):
-
-CRITICAL: This is your last constructive speech. No new arguments allowed.
-
-MANDATORY STRUCTURE:
-
-1. FRAMEWORK CRYSTALLIZATION (~200 words):
-   - Extend why your framework should be preferred
-   - Respond to any Affirmative framework attacks
-   - Show you're winning the framework debate
-
-2. CONTENTION EXTENSION (~300 words):
-   - Extend your strongest contentions from NC
-   - Add new evidence and analysis
-   - Respond to 1AR attacks on your case
-   - Show these contentions still stand
-
-3. AFFIRMATIVE TAKEOUTS (~300 words):
-   - Attack their weakest contentions from AC
-   - Show why their impacts don't matter under your framework
-   - Point out arguments they dropped in 1AR
-
-4. STRATEGIC FOCUS (~100-200 words):
-   - Set up clear voting issues for the judge
-   - Make it difficult for 2AR to recover
-   - Comparative weighing of frameworks"""
-                    speech_importance = "This is your final speech with 800-900 words - crystallize the round and show why you win. No new arguments allowed."
+                    speech_number = 7
+                    opening_instruction = "NEGATIVE REBUTTAL (2NR) - 6 minutes"
+                    speech_requirements = "• **NEGATIVE REBUTTAL**: PART 1 - Attack 1AR arguments. PART 2 - Rebuild your case. PART 3 - Crystallize key voting issues and comparative weighing. No new arguments allowed."
+                    speech_importance = "This is your final speech - crystallize the round and show why you win."
                 else:
-                    # Affirmative should not speak in round 4
-                    speech_type = "Error - Wrong Speaker"
-                    speech_number = 4
-                    opening_instruction = "ERROR: Affirmative should not speak in Round 4"
-                    speech_requirements = "• In Lincoln-Douglas, only the Negative speaks in Round 4 (NR)."
-                    speech_importance = "This is an error state - Affirmative should wait until Round 5."
+                    # This shouldn't happen, but handle gracefully
+                    speech_type = "Preparation Time"
+                    speech_number = 8
+                    opening_instruction = "PREPARATION TIME - Up to 4 minutes"
+                    speech_requirements = "• **PREPARATION TIME**: Prepare your final speech. Focus on voting issues and crystallization."
+                    speech_importance = "Use this time to prepare your final appeal."
             elif round_num_val == 5:
                 if 'Affirmative' in debater_role or 'Aff' in debater_role or 'Pro' in debater_role:
                     speech_type = "Second Affirmative Rebuttal"
-                    speech_number = 5
-                    opening_instruction = "SECOND AFFIRMATIVE REBUTTAL (2AR) - 3 minutes (350-450 words)"
-                    speech_requirements = """• **SECOND AFFIRMATIVE REBUTTAL** (350-450 words):
-
-CRITICAL: This is your final speech. No new arguments allowed. Make it count.
-
-MANDATORY STRUCTURE:
-
-1. CRYSTALLIZATION (~100 words):
-   - Identify 2-3 key voting issues that win you the round
-   - Explain why you win the framework debate
-   - Show how your impacts matter more under your framework
-   - Address any critical Negative arguments still standing
-
-2. FRAMEWORK SUMMARY (~100 words):
-   - Final defense of your value premise/criterion
-   - Show why framework debate favors Affirmative
-
-3. VOTING ISSUES (3 issues, ~75 words each):
-   - Voting Issue #1: [Specify and explain]
-   - Voting Issue #2: [Specify and explain]
-   - Voting Issue #3: [Specify and explain if needed]
-
-4. FINAL APPEAL (~75 words):
-   - Make your strongest philosophical/moral arguments
-   - Demonstrate why affirming the resolution is imperative
-   - Connect your arguments to real-world significance
-   - End with compelling reason to vote Affirmative"""
-                    speech_importance = "This is your final speech with 350-450 words - make your strongest appeal for why you win. No new arguments allowed."
+                    speech_number = 9
+                    opening_instruction = "SECOND AFFIRMATIVE REBUTTAL (2AR) - 3 minutes"
+                    speech_requirements = "• **SECOND AFFIRMATIVE REBUTTAL**: PART 1 - Attack 2NR arguments. PART 2 - Final crystallization of voting issues. PART 3 - Comparative weighing showing why your framework wins. No new arguments allowed."
+                    speech_importance = "This is your final speech - make your strongest appeal for why you win."
                 else:
-                    # Negative should not speak in round 5
-                    speech_type = "Error - Wrong Speaker"
-                    speech_number = 5
-                    opening_instruction = "ERROR: Negative should not speak in Round 5"
-                    speech_requirements = "• In Lincoln-Douglas, only the Affirmative speaks in Round 5 (2AR). The debate ends after this speech."
-                    speech_importance = "This is an error state - Negative has already given their final speech in Round 4."
+                    # This shouldn't happen in proper LD format
+                    speech_type = "Debate Complete"
+                    speech_number = 10
+                    opening_instruction = "DEBATE COMPLETE"
+                    speech_requirements = "• **DEBATE COMPLETE**: The Lincoln-Douglas debate has concluded."
+                    speech_importance = "The debate is over - await judge's decision."
             else:
                 # Handle any other round numbers gracefully
                 speech_type = "Additional Round"
@@ -1099,6 +883,7 @@ MANDATORY STRUCTURE:
             "rebuttal_requirement": debate_context["rebuttal_requirement"],
             "rebuttal_importance": debate_context["rebuttal_importance"],
             "persona_instructions": persona_instructions,
+            "debater_prompt": DEBATER_PROMPT,
             "_direct_prompt": False  # Mark as template-based
         }
         
@@ -1118,23 +903,16 @@ MANDATORY STRUCTURE:
         if inputs.get("_direct_prompt"):
             print(f"🔍 DEBUG [select_prompt]: Using direct prompt")
             return inputs["_direct_prompt"]
-
+        
         # Otherwise use template-based approach
         print(f"🔍 DEBUG [select_prompt]: Using template-based prompt")
-        print(f"🔍 DEBUG [select_prompt]: debate_format = '{debate_format}'")
-        print(f"🔍 DEBUG [select_prompt]: debate_type = '{debate_type}'")
-
         if debate_format == "public-forum":
-            print(f"🔍 DEBUG [select_prompt]: ✅ USING PUBLIC FORUM TEMPLATE")
             selected_template = public_forum_prompt
         elif debate_format == "lincoln-douglas":
-            print(f"🔍 DEBUG [select_prompt]: ✅ USING LINCOLN-DOUGLAS TEMPLATE")
             selected_template = lincoln_douglas_prompt
         elif debate_type == "bill":
-            print(f"🔍 DEBUG [select_prompt]: Using bill debate template")
             selected_template = bill_debate_prompt
         else:
-            print(f"🔍 DEBUG [select_prompt]: Using topic debate template (default)")
             selected_template = topic_debate_prompt
             
         return selected_template.invoke(inputs)

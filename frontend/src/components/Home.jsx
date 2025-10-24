@@ -159,7 +159,7 @@ function Home({ user, onLogout }) {
       route: null,
       tags: ["Coming Soon", "Analysis"],
       gradient: "from-orange-500 to-red-600"
-    }
+    },
   ];
 
   const getStatusBadge = (status) => {
