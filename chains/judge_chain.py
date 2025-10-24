@@ -81,26 +81,10 @@ class OpenRouterChat(BaseChatModel):
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
-
+        
         if stop:
             payload["stop"] = stop
-
-        # DEBUG: Print AI call details
-        print("\n" + "="*80)
-        print("🤖 AI CALL - DEBATE JUDGING (SYNC)")
-        print("="*80)
-        print(f"Model: {self._ensure_full_model_name(self.model_name)}")
-        for i, msg in enumerate(formatted_messages):
-            print(f"\nMessage {i+1} ({msg['role']}):")
-            content = msg['content']
-            if len(content) > 1000:
-                print(f"{content[:1000]}...")
-                print(f"[Total length: {len(content)} characters]")
-            else:
-                print(content)
-        print(f"\nTemperature: {self.temperature}")
-        print("="*80 + "\n")
-
+        
         # Synchronous call to OpenRouter API
         import requests
         response = requests.post(self.api_base, headers=headers, json=payload)
@@ -146,26 +130,10 @@ class OpenRouterChat(BaseChatModel):
             "messages": formatted_messages,
             "temperature": self.temperature,
         }
-
+        
         if stop:
             payload["stop"] = stop
-
-        # DEBUG: Print AI call details
-        print("\n" + "="*80)
-        print("🤖 AI CALL - DEBATE JUDGING (ASYNC)")
-        print("="*80)
-        print(f"Model: {self._ensure_full_model_name(self.model_name)}")
-        for i, msg in enumerate(formatted_messages):
-            print(f"\nMessage {i+1} ({msg['role']}):")
-            content = msg['content']
-            if len(content) > 1000:
-                print(f"{content[:1000]}...")
-                print(f"[Total length: {len(content)} characters]")
-            else:
-                print(content)
-        print(f"\nTemperature: {self.temperature}")
-        print("="*80 + "\n")
-
+        
         # Use aiohttp for async API calls
         async with aiohttp.ClientSession() as session:
             async with session.post(self.api_base, headers=headers, json=payload) as response:
@@ -200,8 +168,27 @@ class OpenRouterChat(BaseChatModel):
             "temperature": self.temperature,
         }
 
+# New standardized judge prompt
+JUDGE_PROMPT = """
+You are an AI judge evaluating a debate round. Follow these judging standards:
+
+1. Evaluate **only** what was actually said in the round.
+   - Do NOT fill in missing links, assume arguments, or interpret unstated logic.
+
+2. Decision structure:
+   - Begin with a **clear, concise decision at the top** ("Decision: Affirmative wins" or "Decision: Negative wins").
+   - Follow with a structured justification explaining why — referencing specific arguments and comparative weighing.
+
+3. Feedback:
+   - Provide **critical and actionable** feedback for both debaters.
+   - Highlight what each did well, what they could improve, and how to better execute strategy or weighing next time.
+   - Be concrete, not generic.
+
+Maintain objectivity, depth, and clarity throughout your evaluation.
+"""
+
 # Define the template for the judge
-template = """You are an expert debate judge. Analyze the following debate transcript and provide comprehensive feedback.
+template = """{judge_prompt}
 
 DEBATE TRANSCRIPT:
 {transcript}
@@ -215,7 +202,9 @@ Format your response with clear headings using markdown (###).
 """
 
 # Define the Lincoln-Douglas specific judge template
-ld_judge_template = """You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
+ld_judge_template = """{judge_prompt}
+
+You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
 
 DEBATE TRANSCRIPT:
 {transcript}
@@ -259,8 +248,11 @@ def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default"):
         selected_prompt = chat_prompt
     
     # Build the runnable chain using LCEL
+    def format_prompt(transcript):
+        return {"transcript": transcript, "judge_prompt": JUDGE_PROMPT}
+    
     chain = (
-        {"transcript": RunnablePassthrough()}
+        format_prompt
         | selected_prompt
         | llm
         | StrOutputParser()
