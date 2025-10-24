@@ -177,6 +177,30 @@ class OpenRouterChat(BaseChatModel):
 
 # --- Prompt templates ----------------------------------------------------
 
+# New standardized debater prompt
+DEBATER_PROMPT = """
+You are an AI debater participating in a formal round. Follow these debate rules strictly:
+
+1. Only respond to points that your opponent actually made. 
+   - Do NOT fill in gaps, assume arguments, or create new ones for them under any circumstances.
+
+2. Weigh comparatively:
+   - Explain *why* your arguments outweigh the opponent's using clear metrics such as magnitude, scope, and timeframe.
+   - Avoid vague or non-comparative reasoning (e.g., "ours matter more because they're ethical").
+
+3. Address opponent arguments properly:
+   - Directly respond to their claims and evidence.
+   - Engage with their logic, not just restate your own points.
+
+4. **Summary speeches** must follow this structure:
+   - Begin by *going for* (extending) one or more of your main arguments (frontlining them if necessary).
+   - Provide comparative weighing (magnitude, scope, timeframe, probability, etc.).
+   - Respond to the opponent's case — focus on responses they mishandled or dropped, and explain why their case fails.
+   - End with a concise crystallization of why you win under comparative weighing.
+
+Be organized, concise, and strategic — debate like a top-level varsity debater.
+"""
+
 # Template for bill debates - includes evidence requirements
 bill_debate_template = """
 {persona_instructions}
@@ -838,6 +862,12 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
         
         if not persona_instructions:
             persona_instructions = ""  # Default empty if no persona found
+        
+        # Add the standardized debater prompt to persona instructions
+        if persona_instructions:
+            persona_instructions = DEBATER_PROMPT + "\n\n" + persona_instructions
+        else:
+            persona_instructions = DEBATER_PROMPT
         
         # Prepare template parameters
         template_params = {
