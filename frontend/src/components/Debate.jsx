@@ -302,44 +302,53 @@ function Debate() {
     return totalSpeeches >= (maxRounds * 2); // Default: 5 rounds * 2 speakers = 10
   };
 
-  // Check if user can still input in User vs AI mode
+  // Check if user can still input in User vs AI or User vs User mode
   const canUserInput = () => {
-    if (actualMode !== "ai-vs-user") return true;
+    // For User vs AI mode
+    if (actualMode === "ai-vs-user") {
+      const totalSpeeches = messageList.length;
 
-    const totalSpeeches = messageList.length;
+      // Check if debate is complete
+      if (isDebateComplete()) return false;
 
-    // Check if debate is complete
-    if (isDebateComplete()) return false;
+      // For Lincoln-Douglas: specific turn-based logic
+      if (debateFormat === "lincoln-douglas") {
+        const isUserAff = userSide === "pro"; // Pro = Affirmative
+        // Aff speaks in rounds 1, 3, 5 (odd rounds)
+        // Neg speaks in rounds 2, 4 (even rounds)
+        const nextRound = totalSpeeches + 1;
+        const isAffTurn = nextRound % 2 === 1; // Odd rounds are Aff's turn
 
-    // For Lincoln-Douglas: specific turn-based logic
-    if (debateFormat === "lincoln-douglas") {
-      const isUserAff = userSide === "pro"; // Pro = Affirmative
-      // Aff speaks in rounds 1, 3, 5 (odd rounds)
-      // Neg speaks in rounds 2, 4 (even rounds)
-      const nextRound = totalSpeeches + 1;
-      const isAffTurn = nextRound % 2 === 1; // Odd rounds are Aff's turn
-
-      // User can input if it's their turn
-      if (isUserAff) {
-        return isAffTurn; // User can input in rounds 1, 3, 5
-      } else {
-        return !isAffTurn; // User can input in rounds 2, 4
+        // User can input if it's their turn
+        if (isUserAff) {
+          return isAffTurn; // User can input in rounds 1, 3, 5
+        } else {
+          return !isAffTurn; // User can input in rounds 2, 4
+        }
       }
+
+      // For Public Forum: check speaking order
+      if (debateFormat === "public-forum") {
+        const nextSpeechNumber = totalSpeeches + 1;
+        const isProTurn = (pfSpeakingOrder === "pro-first")
+          ? (nextSpeechNumber % 2 === 1) // Pro speaks on odd speeches (1, 3, 5, 7)
+          : (nextSpeechNumber % 2 === 0); // Pro speaks on even speeches (2, 4, 6, 8)
+
+        const isUserPro = userSide === "pro";
+        return isUserPro === isProTurn; // User can input if it's their turn
+      }
+
+      // For other formats, allow input until max rounds
+      return totalSpeeches < (maxRounds * 2);
     }
 
-    // For Public Forum: check speaking order
-    if (debateFormat === "public-forum") {
-      const nextSpeechNumber = totalSpeeches + 1;
-      const isProTurn = (pfSpeakingOrder === "pro-first")
-        ? (nextSpeechNumber % 2 === 1) // Pro speaks on odd speeches (1, 3, 5, 7)
-        : (nextSpeechNumber % 2 === 0); // Pro speaks on even speeches (2, 4, 6, 8)
-
-      const isUserPro = userSide === "pro";
-      return isUserPro === isProTurn; // User can input if it's their turn
+    // For User vs User mode - just check if debate is complete
+    if (actualMode === "user-vs-user") {
+      return !isDebateComplete();
     }
 
-    // For other formats, allow input until max rounds
-    return totalSpeeches < (maxRounds * 2);
+    // For other modes (ai-vs-ai), always return true
+    return true;
   };
 
   const scrollToSpeech = (id) => {
@@ -437,11 +446,20 @@ function Debate() {
         title = speechTypeLabel
           ? `${msg.speaker} - ${speechTypeLabel}`
           : `${msg.speaker} - Round ${roundNum}`;
-      } else if (msg.speaker.includes("Pro (User)") || msg.speaker.includes("Con (User)")) {
-        // For User vs User mode, add round info
-        title = speechTypeLabel
-          ? `${msg.speaker} - ${speechTypeLabel}`
-          : `${msg.speaker} - Round ${roundNum}`;
+      } else if ((msg.speaker.startsWith("PRO (") || msg.speaker.startsWith("CON (")) &&
+                 (msg.speaker.includes("Pro (User)") || msg.speaker.includes("Con (User)") ||
+                  actualMode === "user-vs-user")) {
+        // For User vs User mode, don't add round number for PF/LD (speech type is sufficient)
+        // For other formats, add round number
+        if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+          title = speechTypeLabel
+            ? `${msg.speaker} - ${speechTypeLabel}`
+            : `${msg.speaker}`;
+        } else {
+          title = speechTypeLabel
+            ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum})`
+            : `${msg.speaker} - Round ${roundNum}`;
+        }
       } else if (msg.speaker.includes("Judge")) {
         // For judge feedback, don't add round number
         title = msg.speaker;
@@ -1932,10 +1950,31 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       return;
     }
 
+    // Check if debate is complete
+    if (!canUserInput()) {
+      alert("Debate is complete. Please click 'End Debate & Get Judgment'.");
+      return;
+    }
+
     const currentUserName = userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser;
     const speakerLabel = `${userVsUserSide.toUpperCase()} (${currentUserName})`;
 
-    appendMessage(speakerLabel, userInput.trim());
+    // Calculate correct round number based on format
+    let roundNumber;
+    const totalSpeeches = messageList.length + 1;
+
+    if (debateFormat === "lincoln-douglas") {
+      // LD: each speech is its own round (5 speeches = 5 rounds)
+      roundNumber = totalSpeeches;
+    } else if (debateFormat === "public-forum") {
+      // PF: 2 speeches per round (8 speeches = 4 rounds)
+      roundNumber = Math.ceil(totalSpeeches / 2);
+    } else {
+      // Default: 2 speeches per round
+      roundNumber = Math.ceil(totalSpeeches / 2);
+    }
+
+    appendMessage(speakerLabel, userInput.trim(), null, roundNumber);
     setUserInput("");
     setError("");
 
@@ -2623,27 +2662,38 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 <div className="user-vs-user-setup">
                   <h3>User vs User Debate</h3>
                   <p style={{ marginBottom: "1rem", color: "#fff" }}>
-                    Current turn: <strong>
-                      {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
-                    </strong> ({userVsUserSide.toUpperCase()})
+                    {canUserInput() ? (
+                      <>
+                        Current turn: <strong>
+                          {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                        </strong> ({userVsUserSide.toUpperCase()})
+                      </>
+                    ) : (
+                      <strong>Debate Complete - Click "End Debate & Get Judgment"</strong>
+                    )}
                   </p>
 
                   <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
-                    disabled={loading}
+                    disabled={loading || !canUserInput()}
                   />
 
                   <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
-                    disabled={loading}
+                    disabled={loading || !canUserInput()}
                     placeholder={`Speak your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                   />
 
                   <textarea
-                    placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={
+                      !canUserInput()
+                        ? "Debate complete - Click 'End Debate & Get Judgment'"
+                        : `Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`
+                    }
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
+                    disabled={!canUserInput()}
                     style={{
                       width: "100%",
                       resize: "vertical",
@@ -2654,7 +2704,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       fontSize: "1rem"
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0) {
+                      if (e.key === "Enter" && !e.shiftKey && !loading && userInput.trim().length > 0 && canUserInput()) {
                         e.preventDefault();
                         handleUserVsUser();
                       }
@@ -2664,19 +2714,19 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
                     <button
                       onClick={handleUserVsUser}
-                      disabled={loading || !userInput.trim()}
+                      disabled={loading || !userInput.trim() || !canUserInput()}
                       style={{
                         background: "#4a90e2",
                         color: "white",
                         border: "none",
                         padding: "0.75rem 1.5rem",
                         borderRadius: "6px",
-                        cursor: loading || !userInput.trim() ? "not-allowed" : "pointer",
-                        opacity: loading || !userInput.trim() ? 0.6 : 1,
+                        cursor: loading || !userInput.trim() || !canUserInput() ? "not-allowed" : "pointer",
+                        opacity: loading || !userInput.trim() || !canUserInput() ? 0.6 : 1,
                         fontSize: "1rem"
                       }}
                     >
-                      Send as {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                      {!canUserInput() ? "Debate Complete" : `Send as ${userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}`}
                     </button>
 
                     <button

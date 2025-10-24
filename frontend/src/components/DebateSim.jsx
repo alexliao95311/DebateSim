@@ -143,9 +143,9 @@ function DebateSim({ user }) {
   useEffect(() => {
     if (mode && topicSectionRef.current) {
       let shouldScroll = false;
-      
-      if (mode === 'user-vs-user') {
-        // For user vs user, scroll immediately since no personas needed
+
+      if (mode === 'user-vs-user' && debateFormat) {
+        // For user vs user, scroll when format is selected (since no personas needed)
         shouldScroll = true;
       } else if (mode === 'ai-vs-user' && aiPersona) {
         // For AI vs user, scroll when AI persona is selected
@@ -154,18 +154,18 @@ function DebateSim({ user }) {
         // For AI vs AI, scroll when both personas are selected
         shouldScroll = true;
       }
-      
+
       if (shouldScroll) {
         setTimeout(() => {
-          topicSectionRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
+          topicSectionRef.current?.scrollIntoView({
+            behavior: 'smooth',
             block: 'start',
             inline: 'nearest'
           });
         }, 300);
       }
     }
-  }, [mode, aiPersona, proPersona, conPersona]);
+  }, [mode, debateFormat, aiPersona, proPersona, conPersona]);
 
   // Persona cards scroll behavior
   useEffect(() => {
