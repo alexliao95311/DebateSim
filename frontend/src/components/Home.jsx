@@ -151,13 +151,13 @@ function Home({ user, onLogout }) {
       gradient: "from-green-500 to-teal-600"
     },
     {
-      id: "bias-detector",
-      title: "Bias Detector",
-      description: "Evaluate online content for accuracy and bias! Analyze websites, news articles, or any text to identify potential slant and misinformation.",
-      icon: <Shield className="home-feature-icon" />,
+      id: "debate-trainer",
+      title: "DebateTrainer",
+      description: "Practice specific skills like rebuttals, weighing, or summary speeches with AI opponents at different skill levels and receive targeted feedback to improve quickly.",
+      icon: <Award className="home-feature-icon" />,
       status: "coming-soon",
       route: null,
-      tags: ["Coming Soon", "Analysis"],
+      tags: ["Coming Soon", "Training"],
       gradient: "from-orange-500 to-red-600"
     },
   ];
