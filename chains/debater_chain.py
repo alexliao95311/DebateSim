@@ -545,12 +545,19 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
    `# {debater_role} – {speech_type} ({speech_number}/6)`
-   
-2. After the title, produce *at most* **250 words** total (LD allows more depth).
+
+2. **WORD COUNT REQUIREMENTS (CRITICAL - USE 150 WORDS PER MINUTE):**
+   - **Affirmative Constructive (AC)** - 6 min: Write EXACTLY **800-900 words**
+   - **Negative Constructive (NC)** - 7 min: Write EXACTLY **950-1050 words**
+   - **First Affirmative Rebuttal (1AR)** - 4 min: Write EXACTLY **500-600 words**
+   - **Negative Rebuttal (2NR)** - 6 min: Write EXACTLY **800-900 words**
+   - **Second Affirmative Rebuttal (2AR)** - 3 min: Write EXACTLY **350-450 words**
+
+   **THIS IS CRITICAL**: Your response WILL BE REJECTED if it doesn't meet the word count for your speech type. Count your words carefully.
 
 3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
-   
+
 4. Keep paragraphs short (≤ 3 sentences for LD clarity).
 
 5. Do not add extra blank lines at the end of the message.
@@ -564,6 +571,8 @@ Strategic Content Guidelines
 • Close with a **one‑sentence** summary emphasizing your framework's superiority.
 
 IMPORTANT: {speech_importance}
+
+**REMINDER: Check your word count before submitting. Your speech must be within the required word range for {speech_type}.**
 """
 
 # Create chat prompt templates for all types
