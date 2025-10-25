@@ -594,77 +594,119 @@ ${actualDescription}
 SPEECH TYPE: ${speechType} (${timeLimit} - ${minWords}-${wordLimit} words)
 
 ${speechNum === 1 ? `
-=== AFFIRMATIVE CONSTRUCTIVE REQUIREMENTS ===
+=== FIRST AFFIRMATIVE CONSTRUCTIVE (1AC) - 6 MINUTES ===
 
-FRAMEWORK (Required):
-- Present your VALUE PREMISE (what should be most valued in this debate)
-- Present your VALUE CRITERION (how we measure/achieve your value)
-- Explain why your framework should be preferred
+This is your prewritten case. Present it clearly and confidently.
 
-CONTENTIONS (Required):
-- Present 2-3 main contentions supporting the resolution
-- Each contention should have:
-  * Clear claim/thesis
-  * Strong evidence and reasoning
-  * Connection to your value framework
-  * Real-world examples/impacts
+PART 1: FRAMEWORK (200-250 words)
+- VALUE PREMISE: State what should be most valued in this debate (e.g., Justice, Morality, Util, Human Dignity)
+- VALUE CRITERION: Explain how we achieve/measure your value (e.g., Protecting Rights, Maximizing Welfare, Kant's Categorical Imperative)
+- JUSTIFICATION: Explain why your framework is the best lens to evaluate this resolution
 
-STRUCTURE:
-1. Value Premise and Criterion (150-200 words)
-2. Framework Justification (100-150 words)
-3. Contention 1 with evidence (200-250 words)
-4. Contention 2 with evidence (200-250 words)
-5. Contention 3 with evidence (150-200 words)
-6. Summary linking back to framework (100 words)
+PART 2: CONTENTIONS (600-650 words total)
+Present 2-3 contentions that support the resolution and link to your framework:
 
-CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+CONTENTION 1 (250-300 words):
+- Clear thesis statement
+- Evidence and warrants (explain why evidence matters)
+- Link to framework (how this contention upholds your value)
+- Impact (real-world significance)
+
+CONTENTION 2 (250-300 words):
+- Clear thesis statement
+- Evidence and warrants
+- Link to framework
+- Impact
+
+CONTENTION 3 (optional, 150-200 words):
+- Clear thesis statement
+- Evidence and warrants
+- Link to framework
+- Impact
+
+PART 3: CONCLUSION (50-100 words)
+- Restate your value framework
+- Preview why affirming the resolution is imperative
+
+CRITICAL: This is a CONSTRUCTIVE speech only. Do NOT address opponent arguments (they haven't spoken yet). Your response must be exactly ${minWords}-${wordLimit} words.` :
 
 speechNum === 3 ? `
-=== 1ST AFFIRMATIVE REBUTTAL REQUIREMENTS ===
+=== FIRST AFFIRMATIVE REBUTTAL (1AR) - 4 MINUTES ===
 
-DEFENSE (First Half):
-- Respond to Negative attacks on your framework
-- Defend your value premise and criterion
-- Extend your strongest contentions with new evidence
-- Clarify any misrepresented arguments
+This is the HARDEST speech in LD. You must cover the entire 7-minute NC in just 4 minutes. Be efficient.
 
-OFFENSE (Second Half):
-- Attack the Negative's framework if weak
-- Point out contradictions in their case
-- Extend impacts from your contentions
-- Show why you're winning key framework debates
+PART 1: REBUILD YOUR CASE (~2 minutes / 250-300 words)
 
-STRATEGY:
-- Spend ~300 words on defense, ~300 words on offense
-- Prioritize framework debates - they determine the round
-- Don't drop major arguments or concede framework
+FRAMEWORK DEFENSE:
+- Respond to their framework attacks
+- Extend why your value/criterion should be preferred
+- Show you're winning the framework debate
+
+CONTENTION EXTENSIONS:
+- Extend your strongest 1-2 contentions from AC
+- Respond to their attacks on your contentions
+- Add new evidence if possible
+- Explain why your impacts still matter
+
+PART 2: ATTACK THEIR CASE (~2 minutes / 250-300 words)
+
+THEIR FRAMEWORK:
+- Contest their value premise/criterion if weak
+- Show inconsistencies or flaws
+
+THEIR CONTENTIONS:
+- Attack their weakest contentions
+- Show why their impacts don't matter under your framework
+- Point out dropped arguments or weak warrants
+
+CRITICAL STRATEGY:
+- Any argument NOT addressed in 1AR is "dropped" and CANNOT be brought back in 2AR
+- Prioritize the most important arguments
+- Be efficient - signpost clearly ("On their framework...", "On Contention 1...")
 - Set up voting issues for 2AR
 
-CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+Your response must be exactly ${minWords}-${wordLimit} words. This speech determines the round - make every word count.` :
 
 speechNum === 5 ? `
-=== 2ND AFFIRMATIVE REBUTTAL REQUIREMENTS ===
+=== SECOND AFFIRMATIVE REBUTTAL (2AR) - 3 MINUTES ===
 
-CRYSTALLIZATION:
-- Identify 2-3 key voting issues that win you the round
-- Explain why you win the framework debate
-- Show how your impacts matter more under your framework
-- Address any critical Negative arguments still standing
+This is your FINAL speech. The Negative does NOT get a 3NR to reply. Crystallize the round and give voting issues.
 
-FINAL APPEAL:
-- Make your strongest philosophical/moral arguments
-- Demonstrate why affirming the resolution is imperative
-- Connect your arguments to real-world significance
-- End with compelling reason to vote Affirmative
+STRICT RULES:
+- NO NEW ARGUMENTS - Only extend arguments from 1AR
+- Judges apply the strictest standard of "newness" to 2AR
+- Any argument not in 1AR is FORBIDDEN in 2AR
 
 STRUCTURE:
-1. Framework summary (100 words)
-2. Voting Issue #1 (100 words)
-3. Voting Issue #2 (100 words)
-4. Voting Issue #3 (if needed, 75 words)
-5. Final impact/appeal (75 words)
 
-CRITICAL: This is your final speech. Make it count. ${minWords}-${wordLimit} words exactly.` : ''}
+PART 1: FRAMEWORK (75-100 words)
+- Extend why you win the framework debate
+- Explain why your value/criterion should be preferred
+- Show the judge how to evaluate the round
+
+PART 2: VOTING ISSUES (250-300 words)
+Give 2-3 clear reasons why the Affirmative wins:
+
+VOTING ISSUE #1 (100-120 words):
+- State the argument clearly
+- Explain why you're winning this point
+- Show why it's a reason to vote Aff
+
+VOTING ISSUE #2 (100-120 words):
+- State the argument clearly
+- Explain why you're winning this point
+- Show why it's a reason to vote Aff
+
+VOTING ISSUE #3 (optional, 50-80 words):
+- Additional reason to vote Aff if needed
+
+PART 3: FINAL APPEAL (50-75 words)
+- Respond briefly to the 2NR's key argument
+- Emphasize your strongest impact
+- Give a compelling reason to affirm the resolution
+- End with confidence and clarity
+
+CRITICAL: This is your last chance. Make every second count. Crystallize why you win. ${minWords}-${wordLimit} words exactly.` : ''}
           `;
         } else if (debateFormat === "public-forum") {
           // Public Forum format with 4 rounds: Constructive, Rebuttal, Summary, Final Focus
@@ -1092,66 +1134,90 @@ ${actualDescription}
 SPEECH TYPE: ${speechType} (${timeLimit} - ${minWords}-${wordLimit} words)
 
 ${speechNum === 2 ? `
-=== NEGATIVE CONSTRUCTIVE REQUIREMENTS ===
+=== FIRST NEGATIVE CONSTRUCTIVE (1NC/NC) - 7 MINUTES ===
 
-FRAMEWORK ATTACK (First Priority):
-- Attack their value premise as inappropriate for this resolution
-- Prove your framework is superior for evaluating this debate
-- Show why their criterion fails or is outweighed
+You have TWO jobs in this speech: (1) Present your OWN case, and (2) Attack the Affirmative's case.
+
+PART 1: YOUR FRAMEWORK (250-300 words)
+
+ATTACK THEIR FRAMEWORK:
+- Explain why their value premise is inappropriate for this resolution
+- Show why their criterion fails or doesn't achieve their value
+- Point out contradictions or weaknesses
 
 YOUR FRAMEWORK:
-- Present your VALUE PREMISE (what should be prioritized)
-- Present your VALUE CRITERION (how we achieve/measure it)
-- Justify why your framework is better than theirs
+- VALUE PREMISE: State what should be valued in this debate
+- VALUE CRITERION: Explain how we achieve/measure your value
+- JUSTIFY: Explain why your framework is superior to theirs
 
-CONTENTIONS (Required):
-- Present 2-3 contentions negating the resolution
-- Each contention should:
-  * Attack a key Affirmative argument
-  * Present independent reasons to reject resolution
-  * Connect to your value framework
-  * Include strong evidence and examples
+PART 2: YOUR CONTENTIONS (400-450 words)
 
-STRUCTURE:
-1. Framework attack and defense (300-350 words)
-2. Contention 1 with evidence (250-300 words)
-3. Contention 2 with evidence (250-300 words)
-4. Contention 3 with evidence (200-250 words)
-5. Summary of why Negative wins (100 words)
+Present 2-3 contentions that NEGATE the resolution:
 
-CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` :
+CONTENTION 1 (200-225 words):
+- Clear thesis negating the resolution
+- Evidence and warrants
+- Link to YOUR framework
+- Impact (why this matters)
+
+CONTENTION 2 (200-225 words):
+- Clear thesis negating the resolution
+- Evidence and warrants
+- Link to YOUR framework
+- Impact
+
+CONTENTION 3 (optional, if traditional debate):
+- Additional contention if needed
+
+PART 3: ATTACK AFFIRMATIVE CASE (300-350 words)
+
+THEIR CONTENTIONS:
+- Attack their strongest contentions
+- Point out weak evidence, flawed warrants, or false impacts
+- Show why their arguments don't link to their framework
+- Use offense (show why they're wrong) AND defense (minimize their impacts)
+
+CRITICAL: In traditional LD, you present Framework + Contentions first, THEN attack their case. In circuit LD, you might read "off-case" positions (Kritiks, Counterplans, Disads). Your response must be ${minWords}-${wordLimit} words.` :
 
 speechNum === 4 ? `
-=== NEGATIVE REBUTTAL REQUIREMENTS ===
+=== SECOND NEGATIVE REBUTTAL (2NR/NR) - 6 MINUTES ===
 
-FRAMEWORK CRYSTALLIZATION:
+This is your FINAL speech. You must defeat the 1AR, rebuild your case, and crystallize the round for the judge.
+
+STRATEGIC PRIORITY: Often, debaters "collapse" down to 1-2 core positions rather than trying to cover everything. Focus on your BEST arguments.
+
+PART 1: FRAMEWORK (150-200 words)
 - Extend why your framework should be preferred
-- Respond to any Affirmative framework attacks
+- Respond to their 1AR framework attacks
 - Show you're winning the framework debate
+- Explain how the judge should evaluate the round under YOUR framework
 
-CONTENTION EXTENSION:
-- Extend your strongest contentions from NC
-- Add new evidence and analysis
-- Respond to 1AR attacks on your case
+PART 2: REBUILD YOUR CASE (300-350 words)
 
-AFFIRMATIVE TAKEOUTS:
-- Attack their weakest contentions from AC
+EXTEND YOUR STRONGEST CONTENTIONS:
+- Choose your 1-2 best contentions from NC
+- Respond to 1AR attacks on these contentions
+- Add new evidence and analysis if possible
+- Explain why these contentions still stand strong
+- Show why your impacts matter more
+
+PART 3: ATTACK THEIR CASE (300-350 words)
+
+DEFEAT THE 1AR:
+- Attack their strongest contentions from AC
 - Show why their impacts don't matter under your framework
-- Point out arguments they dropped in 1AR
+- Point out arguments they dropped in 1AR (these are conceded!)
+- Consolidate to 2-3 core attacks rather than spreading yourself thin
 
-STRATEGIC FOCUS:
-- This is your last constructive speech
-- Set up clear voting issues for the judge
+PART 4: VOTING ISSUES (100-150 words)
+- Preview 2-3 reasons why Negative wins
 - Make it difficult for 2AR to recover
-- Emphasize framework and your strongest arguments
+- Emphasize your strongest arguments
 
-STRUCTURE:
-1. Framework extension (200-250 words)
-2. Extend best contentions (300-350 words)
-3. Attack Aff case (250-300 words)
-4. Voting issues preview (100-150 words)
-
-CRITICAL: Your response must be exactly ${minWords}-${wordLimit} words. Count your words carefully.` : ''}
+CRITICAL RULES:
+- NO NEW ARGUMENTS - if it wasn't in the 1NC, it can't be in the 2NR (except answering new 1AR arguments)
+- This is your last speech - make every word count
+- Your response must be ${minWords}-${wordLimit} words exactly.` : ''}
           `;
         } else if (debateFormat === "public-forum") {
           // Public Forum format for Con
