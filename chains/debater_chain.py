@@ -448,12 +448,18 @@ CRITICAL: You must respond ONLY with properly formatted markdown content. Do NOT
 Formatting Rules  **(STRICT — the UI parses your markdown)**
 1. **Title line (exact format):**
    `# {debater_role} – Round {round_num}/4 (Public Forum)`
-   
-2. After the title, produce *at most* **180 words** total (shorter for PF accessibility).
+
+2. **WORD COUNT REQUIREMENTS (CRITICAL - USE 150 WORDS PER MINUTE):**
+   - **Round 1 (Constructive)** - 4 min: Write EXACTLY **550-600 words**
+   - **Round 2 (Rebuttal)** - 4 min: Write EXACTLY **550-600 words**
+   - **Round 3 (Summary)** - 3 min: Write EXACTLY **400-450 words**
+   - **Round 4 (Final Focus)** - 2 min: Write EXACTLY **250-300 words**
+
+   **THIS IS CRITICAL**: Your response WILL BE REJECTED if it doesn't meet the word count for Round {round_num}. Count your words carefully.
 
 3. Use only *level‑3* markdown headings (`###`) for your main points.
    – No other markdown syntax (no lists, tables, code blocks, or images).
-   
+
 4. Keep paragraphs short (≤ 2 sentences for PF accessibility).
 
 5. Do not add extra blank lines at the end of the message.
@@ -467,6 +473,8 @@ Strategic Content Guidelines
 • Close with a **one‑sentence** summary emphasizing why your framework/values win.
 
 IMPORTANT: {rebuttal_importance}
+
+**REMINDER: Check your word count before submitting. Your speech must be within the required word range for Round {round_num}.**
 """
 
 # Template for Lincoln-Douglas debates - 6 speeches with philosophical framework
@@ -654,39 +662,150 @@ def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, deb
                 speech_type = "CONSTRUCTIVE"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - First Speaker (Round 1 of 4)"
-                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. Build each argument with clear evidence and impact analysis."
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). Focus on building a clear, accessible case."
+                    rebuttal_requirement = """• **CONSTRUCTIVE SPEECH STRUCTURE (550-600 words total)**:
+
+**INTRODUCTION (30-50 words)**: State your side and preview your two contentions.
+
+**CONTENTION 1: [Compelling Title]** (250-275 words):
+   - **A. UNIQUENESS (80-100 words)**: Explain the current problem/status quo failure in detail with specific statistics, examples, or evidence. Explain why this problem persists now.
+   - **B. LINK (80-100 words)**: Explain HOW the topic/resolution solves this problem. Provide the mechanism/causal chain. Include multiple pathways if possible.
+   - **C. IMPACT (80-100 words)**: Explain specific benefits with MAGNITUDE (how many affected), TIMEFRAME (when benefits occur), and PROBABILITY (likelihood of success).
+
+**CONTENTION 2: [Compelling Title]** (250-275 words):
+   - Follow same A-B-C structure (Uniqueness, Link, Impact)
+
+**CONCLUSION (50 words)**: Tie contentions together, strong closing statement."""
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking first). You MUST follow the Uniqueness-Link-Impact structure for EACH contention. Write 550-600 words total."
                 else:
                     opening_instruction = f"{debater_role.upper()} CONSTRUCTIVE - Second Speaker (Round 1 of 4)"
-                    rebuttal_requirement = "• **CONSTRUCTIVE**: Present exactly 2 main arguments in favor of/against the topic. Label them clearly as: 1. [Framework/Value], 2. [Key Contention]. Focus on accessible language and real-world impacts. You may also address opponent's arguments if time permits."
-                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). Focus on building your case, with optional refutation."
+                    rebuttal_requirement = """• **CONSTRUCTIVE SPEECH STRUCTURE (550-600 words total)**:
+
+**INTRODUCTION (30-50 words)**: State your side and preview your two contentions.
+
+**CONTENTION 1: [Compelling Title]** (250-275 words):
+   - **A. UNIQUENESS (80-100 words)**: Explain the current problem/status quo failure in detail with specific statistics, examples, or evidence. Explain why this problem persists now.
+   - **B. LINK (80-100 words)**: Explain HOW the topic/resolution solves this problem. Provide the mechanism/causal chain. Include multiple pathways if possible.
+   - **C. IMPACT (80-100 words)**: Explain specific benefits with MAGNITUDE (how many affected), TIMEFRAME (when benefits occur), and PROBABILITY (likelihood of success).
+
+**CONTENTION 2: [Compelling Title]** (250-275 words):
+   - Follow same A-B-C structure (Uniqueness, Link, Impact)
+
+**CONCLUSION (50 words)**: Tie contentions together, strong closing statement."""
+                    rebuttal_importance = f"This is {debater_role}'s constructive speech (speaking second). You MUST follow the Uniqueness-Link-Impact structure for EACH contention. Write 550-600 words total. You may briefly note opponent's case but focus on building yours."
             elif round_num_val == 2:
                 # Round 2: Rebuttals
                 speech_type = "REBUTTAL"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - First Speaker (Round 2 of 4)"
+                    rebuttal_requirement = """• **REBUTTAL SPEECH STRUCTURE (550-600 words total)**:
+
+Line-by-line refutation of opponent's case. For EACH of their contentions:
+
+**OPPONENT'S CONTENTION 1: [Quote their title]** (250-275 words of attacks):
+   - **NU (No Uniqueness) (80-100 words)**: "NU: [Their uniqueness is wrong because...]" - Provide counter-evidence that the problem doesn't exist or trend is improving.
+   - **DL (De-Link) (80-100 words)**: "DL: [Their link is wrong because...]" - Explain why their solution doesn't solve, show alternative causes or barriers.
+   - **No Impact (80-100 words)**: "No Impact: [Their impact is wrong because...]" - Challenge magnitude, timeframe, or probability with counter-evidence.
+   - **TURN (optional, 60 words)**: "T: [Their plan makes things worse because...]"
+
+**OPPONENT'S CONTENTION 2: [Quote their title]** (250-275 words of attacks):
+   - Follow same structure: NU, DL, No Impact, optional Turn
+
+**CRITICAL**: Quote opponent's exact words, label every attack (NU, DL, No Impact, T), provide evidence for each refutation. Write 550-600 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s rebuttal speech (speaking first). Focus ENTIRELY on attacking opponent's case with labeled refutations (NU, DL, No Impact). Write 550-600 words."
                 else:
                     opening_instruction = f"{debater_role.upper()} REBUTTAL - Second Speaker (Round 2 of 4)"
-                rebuttal_requirement = "• **REBUTTAL**: Attack opponent's case with clear refutation and evidence. Address each of their arguments directly. Defend your own case against any attacks they made."
-                rebuttal_importance = f"This is {debater_role}'s rebuttal speech. Focus on attacking opponent's case and defending yours."
+                    rebuttal_requirement = """• **REBUTTAL SPEECH STRUCTURE (550-600 words total)**:
+
+**PART 1: DEFENSE (250-300 words)** - Defend your case against their attacks:
+   - Rebuild CONTENTION 1 against their NU/DL/Impact attacks (125-150 words)
+   - Rebuild CONTENTION 2 against their NU/DL/Impact attacks (125-150 words)
+
+**PART 2: OFFENSE (250-300 words)** - Attack their case:
+   - Attack their CONTENTION 1 with NU, DL, No Impact (125-150 words)
+   - Attack their CONTENTION 2 with NU, DL, No Impact (125-150 words)
+
+**CRITICAL**: Address their specific attacks on your case, then attack their case. Write 550-600 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s rebuttal speech (speaking second). Defend your case first (Part 1), then attack theirs (Part 2). Write 550-600 words."
             elif round_num_val == 3:
                 # Round 3: Summary
                 speech_type = "SUMMARY"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} SUMMARY - First Speaker (Round 3 of 4)"
+                    rebuttal_requirement = """• **SUMMARY SPEECH STRUCTURE (400-450 words total)**:
+
+**PART 1: EXTEND YOUR STRONGEST CONTENTION (200-225 words)**:
+   - Choose your BEST contention and frontline it against all their attacks
+   - Explain why your Uniqueness, Link, and Impact still stand
+   - Add new evidence or analysis strengthening this argument
+
+**PART 2: COMPARATIVE WEIGHING (150-175 words)**:
+   - Compare your strongest contention vs. their strongest contention
+   - Use weighing metrics: MAGNITUDE (who affects more people?), TIMEFRAME (whose impacts happen first?), PROBABILITY (whose scenario is more likely?)
+   - Explain why your impacts outweigh theirs on these metrics
+
+**PART 3: COLLAPSE THEIR CASE (50-75 words)**:
+   - Briefly explain why their case fails (dropped arguments, failed links, mitigated impacts)
+   - Focus on their weakest points
+
+**CRITICAL**: NO NEW ARGUMENTS. Only extend/crystallize existing arguments. Write 400-450 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s summary speech (speaking first). Extend your strongest argument, weigh comparatively, collapse their case. Write 400-450 words."
                 else:
                     opening_instruction = f"{debater_role.upper()} SUMMARY - Second Speaker (Round 3 of 4)"
-                rebuttal_requirement = "• **SUMMARY**: Crystallize the key arguments and impacts. Extend your strongest points and explain why they outweigh opponent's case. Begin weighing and comparative analysis."
-                rebuttal_importance = f"This is {debater_role}'s summary speech. Crystallize your strongest arguments and start comparative weighing."
+                    rebuttal_requirement = """• **SUMMARY SPEECH STRUCTURE (400-450 words total)**:
+
+**PART 1: FRONTLINE YOUR CASE (125-150 words)**:
+   - Defend your strongest contention against their summary attacks
+   - Rebuild your Uniqueness, Link, Impact
+
+**PART 2: EXTEND YOUR OFFENSE (125-150 words)**:
+   - Extend your best attacks on THEIR case (NU, DL, No Impact that they dropped or mishandled)
+   - Explain why their case fails
+
+**PART 3: COMPARATIVE WEIGHING (150-175 words)**:
+   - Weigh your impacts vs. their impacts using MAGNITUDE, TIMEFRAME, PROBABILITY
+   - Explain why you're winning the key clash points
+   - Crystallize voting issues
+
+**CRITICAL**: NO NEW ARGUMENTS. Only extend/crystallize existing arguments. Write 400-450 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s summary speech (speaking second). Frontline, extend offense, weigh comparatively. Write 400-450 words."
             elif round_num_val == 4:
                 # Round 4: Final Focus
                 speech_type = "FINAL FOCUS"
                 if is_first_speaker:
                     opening_instruction = f"{debater_role.upper()} FINAL FOCUS - First Speaker (Round 4 of 4)"
+                    rebuttal_requirement = """• **FINAL FOCUS STRUCTURE (250-300 words total)**:
+
+**VOTING ISSUE #1 (125-150 words)**: Your strongest argument/impact that wins you the debate:
+   - Explain why this argument is still standing
+   - Weigh its impact (magnitude, timeframe, probability)
+   - Explain why it outweighs anything on their side
+
+**VOTING ISSUE #2 (optional, 75-100 words)**: Secondary reason you win:
+   - Brief extension of your second-best argument OR
+   - Key turn/takeout on their case
+
+**CONCLUSION (50 words)**: Final appeal - one sentence on why your side wins.
+
+**CRITICAL**: NO NEW ARGUMENTS ALLOWED. Only crystallize existing arguments. Focus on 1-2 key voting issues. Write 250-300 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s final focus (speaking first). Present 1-2 voting issues, weigh impacts, make final appeal. NO NEW ARGS. Write 250-300 words."
                 else:
                     opening_instruction = f"{debater_role.upper()} FINAL FOCUS - Second Speaker (Round 4 of 4)"
-                rebuttal_requirement = "• **FINAL FOCUS**: Make your final appeal on the most important issues. No new arguments. Focus on why your side wins on the key impacts and values. Crystallize the voting issues."
-                rebuttal_importance = f"This is {debater_role}'s final focus. Make your final appeal - no new arguments, just crystallization."
+                    rebuttal_requirement = """• **FINAL FOCUS STRUCTURE (250-300 words total)**:
+
+**RESPOND TO THEIR VOTING ISSUES (75-100 words)**:
+   - Briefly address their claimed voting issues
+   - Explain why they don't win on those issues
+
+**YOUR VOTING ISSUE (125-150 words)**:
+   - Present THE most important reason you win the debate
+   - Explain why this argument/impact is still standing after all speeches
+   - Weigh its impact vs. anything they presented
+   - Make this the crystallized reason judges vote for you
+
+**CONCLUSION (50 words)**: Final appeal - one sentence on why your side wins.
+
+**CRITICAL**: NO NEW ARGUMENTS ALLOWED. Only crystallize existing arguments. Focus on THE key voting issue. Write 250-300 words total."""
+                    rebuttal_importance = f"This is {debater_role}'s final focus (speaking second - LAST SPEECH). Respond to their voting issues, present YOUR voting issue, make final appeal. NO NEW ARGS. Write 250-300 words."
         elif debate_format == "lincoln-douglas":
             max_rounds = 6  # 6 speeches total: AC, NC, 1AR, 2NR, 2AR (plus CX periods)
             
