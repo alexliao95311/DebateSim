@@ -1718,7 +1718,6 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
     }
     // Check if debate is complete
     if (!canUserInput()) {
-      alert("Debate is complete. Please click 'End Debate & Get Judgment'.");
       return;
     }
     setLoading(true);
@@ -2018,7 +2017,6 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
     // Check if debate is complete
     if (!canUserInput()) {
-      alert("Debate is complete. Please click 'End Debate & Get Judgment'.");
       return;
     }
 
@@ -2571,11 +2569,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   />
 
                   <textarea
-                    placeholder={
-                      !canUserInput()
-                        ? "Debate complete - Click 'End Debate & Get Judgment'"
-                        : `Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`
-                    }
+                    placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
@@ -2728,15 +2722,9 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 <div className="user-vs-user-setup">
                   <h3>User vs User Debate</h3>
                   <p style={{ marginBottom: "1rem", color: "#fff" }}>
-                    {canUserInput() ? (
-                      <>
-                        Current turn: <strong>
-                          {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
-                        </strong> ({userVsUserSide.toUpperCase()})
-                      </>
-                    ) : (
-                      <strong>Debate Complete - Click "End Debate & Get Judgment"</strong>
-                    )}
+                    Current turn: <strong>
+                      {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
+                    </strong> ({userVsUserSide.toUpperCase()})
                   </p>
 
                   <SimpleFileUpload
@@ -2751,11 +2739,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   />
 
                   <textarea
-                    placeholder={
-                      !canUserInput()
-                        ? "Debate complete - Click 'End Debate & Get Judgment'"
-                        : `Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`
-                    }
+                    placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
