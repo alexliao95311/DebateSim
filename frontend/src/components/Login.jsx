@@ -435,13 +435,11 @@ function Login({ onLogin }) {
               </div>
             </div>
             <div className="login-feature-card" onClick={handleGoogleLogin}>
-              <div className="login-feature-icon">🔍</div>
+              <div className="login-feature-icon">🏆</div>
               <div className="login-feature-content">
-                <h3>Bias Detector</h3>
+                <h3>DebateTrainer</h3>
                 <p>
-                  Evaluate online content for accuracy and bias! Analyze
-                  websites, news articles, or any text to identify potential slant
-                  and misinformation. Perfect for fact-checking and media literacy.
+                  Practice specific skills like rebuttals, weighing, or summary speeches with AI opponents at different skill levels and receive targeted feedback to improve quickly.
                 </p>
                 <div className="login-feature-status coming-soon">Coming Soon</div>
               </div>
