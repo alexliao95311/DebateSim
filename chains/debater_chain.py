@@ -81,16 +81,17 @@ class OpenRouterChat(BaseChatModel):
             else:
                 # Handle any other types of messages
                 formatted_messages.append({"role": "user", "content": str(message)})
-        
+
         payload = {
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
+            "max_tokens": 2000,  # Ensure model generates complete responses (600 words ~= 800 tokens)
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
+
         # Synchronous call to OpenRouter API
         import requests
         response = requests.post(self.api_base, headers=headers, json=payload)
@@ -136,11 +137,12 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
+            "max_tokens": 2000,  # Ensure model generates complete responses (600 words ~= 800 tokens)
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
+
         # Use aiohttp for async API calls
         async with aiohttp.ClientSession() as session:
             async with session.post(self.api_base, headers=headers, json=payload) as response:
@@ -955,19 +957,24 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         incoming_prompt = inputs.get('prompt', '')
 
         # Detect detailed frontend prompts by checking for multiple indicators:
-        # 1. "CRITICAL WORD COUNT" - used in Public Forum prompts
+        # 1. "CRITICAL WORD COUNT" - used in AI vs AI Public Forum prompts
         # 2. Format-specific keywords indicating frontend built the full prompt
         # 3. Presence of persona instructions (optional but counts as indicator)
         has_word_count = "CRITICAL WORD COUNT" in incoming_prompt
         has_persona = "SPEAKING STYLE:" in incoming_prompt
         is_detailed_ld = "LINCOLN-DOUGLAS" in incoming_prompt.upper() or "AFFIRMATIVE CONSTRUCTIVE" in incoming_prompt
-        is_detailed_pf = "CONSTRUCTIVE SPEECH REQUIREMENTS" in incoming_prompt or ("Public Forum" in incoming_prompt and has_word_count)
+        is_detailed_pf = (
+            "CONSTRUCTIVE SPEECH REQUIREMENTS" in incoming_prompt or  # AI vs AI PF
+            ("Public Forum" in incoming_prompt and has_word_count) or  # AI vs AI PF
+            "PUBLIC FORUM REQUIREMENTS" in incoming_prompt  # User vs AI PF
+        )
         is_detailed_default = ("RIGID FORMAT" in incoming_prompt or "FRONTLINE YOUR CASE" in incoming_prompt) and len(incoming_prompt) > 500
 
         # Use direct prompt if any of these conditions are met:
         use_direct_prompt = (
-            has_word_count or  # Public Forum always uses direct prompts
-            (len(incoming_prompt) > 800 and is_detailed_ld) or  # Detailed Lincoln-Douglas prompts (with or without persona)
+            has_word_count or  # AI vs AI Public Forum always uses direct prompts
+            (len(incoming_prompt) > 800 and is_detailed_ld) or  # Detailed Lincoln-Douglas prompts (AI vs AI or User vs AI)
+            (len(incoming_prompt) > 800 and is_detailed_pf) or  # Detailed Public Forum prompts (AI vs AI or User vs AI)
             (len(incoming_prompt) > 800 and is_detailed_default)  # Detailed default format prompts (with or without persona)
         )
 
