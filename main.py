@@ -172,18 +172,38 @@ async def generate_response(request: GenerateResponseRequest):
     debater_role = request.debater.strip().title().replace("Ai ", "AI ")
     
     try:
-        # Parse out topic and opponent argument if applicable
-        parts = request.prompt.split('.', 1)
-        if len(parts) > 1:
-            topic = parts[0].strip()
-            opponent_arg = parts[1].strip()
-        else:
-            topic = request.prompt.strip()
+        # Check if this is a detailed frontend prompt (direct prompt)
+        # These should NOT be parsed - they're complete prompts ready to send to the LLM
+        is_detailed_prompt = (
+            len(request.prompt) > 800 and (
+                "ABSOLUTE PRIORITY" in request.prompt or
+                "CRITICAL WORD COUNT" in request.prompt or
+                "SPEAKING STYLE:" in request.prompt or
+                "PUBLIC FORUM REQUIREMENTS" in request.prompt or
+                "LINCOLN-DOUGLAS REQUIREMENTS" in request.prompt or
+                "RIGID FORMAT" in request.prompt
+            )
+        )
+
+        if is_detailed_prompt:
+            # Don't parse detailed prompts - they're already complete
+            # Just use a placeholder topic since the chain will use the full prompt directly
+            topic = "Debate topic (see full prompt)"
             opponent_arg = ""
-        
-        # DEBUG: Show what we parsed
-        logger.info(f"🔍 DEBUG: Parsed topic: {topic}")
-        logger.info(f"🔍 DEBUG: Opponent argument: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: No opponent argument")
+            logger.info(f"🔍 DEBUG: Detected detailed frontend prompt ({len(request.prompt)} chars) - skipping parsing")
+        else:
+            # Parse out topic and opponent argument for simple prompts
+            parts = request.prompt.split('.', 1)
+            if len(parts) > 1:
+                topic = parts[0].strip()
+                opponent_arg = parts[1].strip()
+            else:
+                topic = request.prompt.strip()
+                opponent_arg = ""
+
+            # DEBUG: Show what we parsed
+            logger.info(f"🔍 DEBUG: Parsed topic: {topic}")
+            logger.info(f"🔍 DEBUG: Opponent argument: {opponent_arg[:200]}..." if opponent_arg else "🔍 DEBUG: No opponent argument")
         
         # Determine debate type based on bill_description content
         has_bill_text = bool(request.bill_description.strip())
