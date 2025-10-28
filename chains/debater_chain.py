@@ -950,11 +950,29 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         print(f"🔍 DEBUG [process_inputs]: Prompt length: {len(inputs.get('prompt', ''))}")
         print(f"🔍 DEBUG [process_inputs]: Prompt preview: {inputs.get('prompt', '')[:200]}...")
         
-        # Check if we should use the frontend prompt directly for detailed Public Forum prompts
+        # Check if we should use the frontend prompt directly for detailed prompts
+        # Frontend sends detailed prompts for all formats (PF, LD, default) with embedded persona instructions
         incoming_prompt = inputs.get('prompt', '')
-        use_direct_prompt = len(incoming_prompt) > 500 and "CRITICAL WORD COUNT" in incoming_prompt
-        
+
+        # Detect detailed frontend prompts by checking for multiple indicators:
+        # 1. "CRITICAL WORD COUNT" - used in Public Forum prompts
+        # 2. Format-specific keywords indicating frontend built the full prompt
+        # 3. Presence of persona instructions (optional but counts as indicator)
+        has_word_count = "CRITICAL WORD COUNT" in incoming_prompt
+        has_persona = "SPEAKING STYLE:" in incoming_prompt
+        is_detailed_ld = "LINCOLN-DOUGLAS" in incoming_prompt.upper() or "AFFIRMATIVE CONSTRUCTIVE" in incoming_prompt
+        is_detailed_pf = "CONSTRUCTIVE SPEECH REQUIREMENTS" in incoming_prompt or ("Public Forum" in incoming_prompt and has_word_count)
+        is_detailed_default = ("RIGID FORMAT" in incoming_prompt or "FRONTLINE YOUR CASE" in incoming_prompt) and len(incoming_prompt) > 500
+
+        # Use direct prompt if any of these conditions are met:
+        use_direct_prompt = (
+            has_word_count or  # Public Forum always uses direct prompts
+            (len(incoming_prompt) > 800 and is_detailed_ld) or  # Detailed Lincoln-Douglas prompts (with or without persona)
+            (len(incoming_prompt) > 800 and is_detailed_default)  # Detailed default format prompts (with or without persona)
+        )
+
         print(f"🔍 DEBUG [process_inputs]: Using direct prompt: {use_direct_prompt}")
+        print(f"🔍 DEBUG [process_inputs]: Detection - word_count:{has_word_count}, persona:{has_persona}, LD:{is_detailed_ld}, PF:{is_detailed_pf}, default:{is_detailed_default}")
         
         if use_direct_prompt:
             # Return the prompt directly for detailed frontend prompts
