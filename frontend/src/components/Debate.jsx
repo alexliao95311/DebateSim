@@ -137,8 +137,9 @@ function Debate() {
         (m.speaker.includes("Negative (AI)") || m.speaker.includes("Negative (") && m.speaker.includes(") -"))
       ).length;
     } else {
+      // Default 5-round format - match AI speakers with or without persona names
       return messages.filter(m =>
-        m.speaker === "AI Debater Pro" || m.speaker === "AI Debater Con"
+        m.speaker.includes("AI Debater Pro") || m.speaker.includes("AI Debater Con")
       ).length;
     }
   };
@@ -707,6 +708,13 @@ PART 3: FINAL APPEAL (50-75 words)
 - End with confidence and clarity
 
 CRITICAL: This is your last chance. Make every second count. Crystallize why you win. ${minWords}-${wordLimit} words exactly.` : ''}
+
+${getPersonaPrompt(proPersona)}
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Display will show: "Affirmative (AI) - ${speechType}"
           `;
         } else if (debateFormat === "public-forum") {
           // Public Forum format with 4 rounds: Constructive, Rebuttal, Summary, Final Focus
@@ -753,6 +761,26 @@ CRITICAL: This is your last chance. Make every second count. Crystallize why you
           proPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
 
+YOUR ROLE: PRO (supporting the topic)
+
+${getPersonaPrompt(proPersona)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 ABSOLUTE PRIORITY - READ THIS FIRST 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YOU ARE REQUIRED TO USE THE SPEAKING STYLE SPECIFIED ABOVE IN EVERY SINGLE SENTENCE.
+
+This is NOT optional. This is NOT a suggestion. The structural requirements below must be fulfilled WHILE MAINTAINING THE PERSONA STYLE.
+
+Example: If you're speaking as Trump, you would say:
+- "Look, let me tell you about healthcare, okay? It's a disaster, a total disaster, believe me."
+- NOT: "The current healthcare landscape is plagued by inefficiencies."
+
+Every argument, every piece of evidence, every transition MUST use the persona's language patterns. Do NOT write in formal academic style. Write as the CHARACTER would speak.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
 
@@ -760,7 +788,6 @@ FULL DEBATE TRANSCRIPT SO FAR:
 ${fullTranscript}
 
 CURRENT SPEECH: PRO ${speechType} (${timeLimit})
-YOUR ROLE: PRO (supporting the topic)
 
 CRITICAL WORD COUNT REQUIREMENT: 
 - MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
@@ -959,8 +986,7 @@ FORMATTING:
 - Start immediately with speech content
 - Never include speaker name or round information
 - Display will show: "Pro (AI) - ${speechType}"
-
-${getPersonaPrompt(proPersona)}
+- Remember to use the speaking style specified at the beginning throughout your entire response
 `;
         } else {
           // Default 5-round format
@@ -1218,6 +1244,13 @@ CRITICAL RULES:
 - NO NEW ARGUMENTS - if it wasn't in the 1NC, it can't be in the 2NR (except answering new 1AR arguments)
 - This is your last speech - make every word count
 - Your response must be ${minWords}-${wordLimit} words exactly.` : ''}
+
+${getPersonaPrompt(conPersona)}
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Display will show: "Negative (AI) - ${speechType}"
           `;
         } else if (debateFormat === "public-forum") {
           // Public Forum format for Con
@@ -1264,6 +1297,26 @@ CRITICAL RULES:
           conPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
 
+YOUR ROLE: CON (opposing the topic)
+
+${getPersonaPrompt(conPersona)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 ABSOLUTE PRIORITY - READ THIS FIRST 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YOU ARE REQUIRED TO USE THE SPEAKING STYLE SPECIFIED ABOVE IN EVERY SINGLE SENTENCE.
+
+This is NOT optional. This is NOT a suggestion. The structural requirements below must be fulfilled WHILE MAINTAINING THE PERSONA STYLE.
+
+Example: If you're speaking as Harris, you would say:
+- "Let me be clear - what we know to be true is that AI presents serious challenges."
+- NOT: "The current technological landscape presents various challenges."
+
+Every argument, every piece of evidence, every transition MUST use the persona's language patterns. Do NOT write in formal academic style. Write as the CHARACTER would speak.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
 
@@ -1271,7 +1324,6 @@ FULL DEBATE TRANSCRIPT SO FAR:
 ${fullTranscript}
 
 CURRENT SPEECH: CON ${speechType} (${timeLimit})
-YOUR ROLE: CON (opposing the topic)
 
 CRITICAL WORD COUNT REQUIREMENT: 
 - MINIMUM ${minWords} words, MAXIMUM ${wordLimit} words
@@ -1470,8 +1522,7 @@ FORMATTING:
 - Start immediately with speech content
 - Never include speaker name or round information
 - Display will show: "Con (AI) - ${speechType}"
-
-${getPersonaPrompt(conPersona)}
+- Remember to use the speaking style specified at the beginning throughout your entire response
 `;
         } else {
           // Default 5-round format
@@ -1797,14 +1848,104 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       // This ensures PF/LD formats are respected in User vs AI mode
       let aiPrompt;
 
-      // For Public Forum and Lincoln-Douglas, use short prompts and let backend templates handle it
-      // The backend will see debate_format parameter and use the appropriate template
-      // This is simpler and ensures consistency with AI vs AI mode
+      // For Public Forum and Lincoln-Douglas, build full prompts with persona
+      // This ensures personas work correctly in User vs AI mode
       if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
-        // Pass a minimal prompt - the backend will use the format-specific template based on debate_format
-        aiPrompt = `Debate on: "${topic}". Your role: ${aiSideLocal}.`;
-        console.log(`🔍 DEBUG [User vs AI]: Using minimal prompt for ${debateFormat} format`);
-        console.log(`🔍 DEBUG [User vs AI]: aiPrompt = "${aiPrompt}"`);
+        console.log(`🔍 DEBUG [User vs AI]: Building full ${debateFormat} prompt with persona`);
+
+        // Determine which side AI is on
+        const aiIsProOrAff = aiSideLocal.toLowerCase() === "pro";
+        const currentPersona = aiIsProOrAff ? proPersona : conPersona;
+
+        // Build format-specific prompt with persona
+        if (debateFormat === "public-forum") {
+          // Public Forum prompts for User vs AI
+          const pfRoundType = aiSpeechNumber <= 2 ? "CONSTRUCTIVE" :
+                             aiSpeechNumber <= 4 ? "REBUTTAL" :
+                             aiSpeechNumber <= 6 ? "SUMMARY" : "FINAL FOCUS";
+
+          aiPrompt = `You are competing in a Public Forum debate on: "${topic}"
+
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+YOUR ROLE: ${aiSideLocal.toUpperCase()} (debating against the user's ${userSide.toUpperCase()} position)
+CURRENT SPEECH: ${aiSideLocal.toUpperCase()} ${pfRoundType}
+
+PUBLIC FORUM REQUIREMENTS:
+- Present arguments that any educated citizen can understand
+- Focus on real-world impacts on real people and society
+- Connect arguments to core values like justice, security, prosperity, freedom
+- Use clear, credible sources that support concrete impacts
+- Show why your side's approach leads to better outcomes
+
+${getPersonaPrompt(currentPersona)}
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Your response will be displayed with proper identification
+- Remember to use the speaking style specified at the beginning throughout your entire response
+
+CRITICAL:
+- Directly respond to the user's arguments from their last speech
+- Quote their specific points when refuting
+- Build on the debate that has occurred - don't just repeat previous speeches
+- Keep your response clear and accessible (max 500 words)
+- USE THE PERSONA STYLE in every sentence
+`;
+        } else {
+          // Lincoln-Douglas prompts for User vs AI
+          const ldSpeechType = aiSpeechNumber === 1 ? "AFFIRMATIVE CONSTRUCTIVE" :
+                              aiSpeechNumber === 2 ? "NEGATIVE CONSTRUCTIVE" :
+                              aiSpeechNumber === 3 ? "FIRST AFFIRMATIVE REBUTTAL" :
+                              aiSpeechNumber === 4 ? "NEGATIVE REBUTTAL" :
+                              "SECOND AFFIRMATIVE REBUTTAL";
+
+          const isConstructive = aiSpeechNumber <= 2;
+
+          aiPrompt = `You are competing in a Lincoln-Douglas debate on: "${topic}"
+
+YOUR ROLE: ${aiSideLocal.toUpperCase() === "PRO" ? "AFFIRMATIVE" : "NEGATIVE"} (debating against the user's ${userSide.toUpperCase()} position)
+
+${getPersonaPrompt(currentPersona)}
+
+**CRITICAL**: You MUST adopt the speaking style specified above throughout your ENTIRE speech. Every sentence should reflect this persona's linguistic patterns and rhetorical style.
+
+BILL CONTEXT:
+${truncatedDescription || "No specific bill context provided."}
+
+FULL DEBATE TRANSCRIPT SO FAR:
+${fullTranscript}
+
+SPEECH TYPE: ${ldSpeechType}
+
+LINCOLN-DOUGLAS REQUIREMENTS:
+- Build arguments around ethical values and moral principles
+- ${isConstructive ? 'Establish your Value Premise and Value Criterion' : 'Extend your framework and contentions'}
+- Use philosophical arguments and logical reasoning
+- ${isConstructive ? 'Present 2-3 main contentions' : 'Attack opponent\'s framework and contentions'}
+- Link all arguments to your value framework
+- ${!isConstructive ? 'Focus on key clash points and voting issues' : 'Build your philosophical case clearly'}
+
+FORMATTING:
+- Start immediately with speech content
+- Never include speaker name or round information
+- Your response will be displayed with proper identification
+- Remember to use the speaking style specified at the beginning throughout your entire response
+
+CRITICAL:
+- Directly respond to the user's arguments from their last speech
+- Quote their specific points when refuting
+- ${!isConstructive ? 'Focus on extending your strongest arguments' : 'Present your case with clear framework and contentions'}
+- Keep your response substantive but clear (max 600 words)
+- USE THE PERSONA STYLE in every sentence
+`;
+        }
+        console.log(`🔍 DEBUG [User vs AI]: Built ${debateFormat} prompt with ${currentPersona} persona`);
       } else {
         console.log(`🔍 DEBUG [User vs AI]: Using default 5-round format prompt`);
 
