@@ -155,9 +155,9 @@ function Home({ user, onLogout }) {
       title: "DebateTrainer",
       description: "Practice specific skills like rebuttals, weighing, or summary speeches with AI opponents at different skill levels and receive targeted feedback to improve quickly.",
       icon: <Award className="home-feature-icon" />,
-      status: "coming-soon",
-      route: null,
-      tags: ["Coming Soon", "Training"],
+      status: "active",
+      route: "/debatetrainer",
+      tags: ["Training"],
       gradient: "from-orange-500 to-red-600"
     },
   ];
