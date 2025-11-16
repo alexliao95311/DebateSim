@@ -102,3 +102,34 @@ export const saveTranscript = async (transcript, topic, mode, judgeFeedback) => 
     throw error;
   }
 };
+
+// Dedicated Trainer: Speech Efficiency Analysis (separate chain)
+export const analyzeSpeechEfficiency = async (speech, options = {}) => {
+  try {
+    const payload = {
+      speech,
+      // Allow passing a model or fall back to a safe default
+      model: options.model || "openai/gpt-4o-mini",
+      // Optional flags to make backend select non-debate pipeline
+      mode: "trainer-speech-efficiency",
+      persona: "none",
+      debate_format: "none",
+      speaking_order: "none",
+      round_num: 0,
+    };
+    const response = await apiClient.post('/trainer/speech-efficiency', payload);
+    if (!response?.data || typeof response.data.response !== 'string') {
+      throw new Error('Invalid response from server');
+    }
+    return response.data.response;
+  } catch (error) {
+    // Normalize axios error details
+    const status = error?.response?.status;
+    const detail = error?.response?.data?.detail || error?.message || 'Unknown error';
+    console.error("Error analyzing speech efficiency:", status, detail);
+    const err = new Error(`Analyze failed${status ? ` (${status})` : ''}: ${detail}`);
+    err.status = status;
+    err.detail = detail;
+    throw err;
+  }
+};
