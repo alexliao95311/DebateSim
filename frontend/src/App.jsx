@@ -13,6 +13,7 @@ import SpeechTest from "./components/SpeechTest";
 import Settings from "./components/Settings";
 import History from "./components/History";
 import voicePreferenceService from "./services/voicePreferenceService";
+import DebateTrainer from "./components/debatetrainer";
 
 // Component to handle scroll reset on route changes
 function ScrollToTop() {
@@ -122,6 +123,7 @@ function App() {
             <Route path="/legislation" element={<Legislation user={user} />} />
             <Route path="/settings" element={<Settings user={user} onLogout={handleLogout} />} />
             <Route path="/history" element={<History user={user} onLogout={handleLogout} />} />
+            <Route path="/debatetrainer" element={<DebateTrainer user={user} onLogout={handleLogout} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
