@@ -20,6 +20,7 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
+from chains.trainer_chain import get_trainer_chain
 from billsearch import BillSearcher
 from legiscan_service import LegiScanService
 from ca_propositions_service import CAPropositionsService
@@ -270,6 +271,43 @@ async def judge_debate(request: JudgeRequest):
         raise HTTPException(status_code=500, detail="Error generating judge feedback")
     logger.info(f"✅ [LangChain] Judge feedback: {feedback[:200]}...")
     return {"feedback": feedback}
+
+# ===================== Debate Trainer – Speech Efficiency =====================
+class TrainerSpeechEfficiencyRequest(BaseModel):
+    speech: str
+    model: str = DEFAULT_MODEL
+    mode: str = "trainer-speech-efficiency"
+    persona: str = "none"
+    debate_format: str = "none"
+    speaking_order: str = "none"
+    round_num: int = 0
+
+@app.post("/trainer/speech-efficiency")
+async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
+    """
+    Dedicated, non-debate chain for Speech Efficiency analysis.
+    Produces concise coaching focused on word efficiency only.
+    """
+    try:
+        if not request.speech or not request.speech.strip():
+            raise HTTPException(status_code=400, detail="Speech text is required.")
+
+        # Use dedicated trainer chain to keep behavior separate from debate chains
+        trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL)
+        content = trainer_chain.run(speech=request.speech)
+
+        # Fallback: if chain produced nothing, throw an error so frontend can show a message
+        if not content or not str(content).strip():
+            logger.error("Trainer chain returned empty content for speech-efficiency")
+            raise HTTPException(status_code=500, detail="Trainer model returned empty feedback. Try again or shorten the speech.")
+
+        return {"response": content}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unhandled error in /trainer/speech-efficiency")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 @app.post("/save-transcript")
 async def save_transcript(request: SaveTranscriptRequest, background_tasks: BackgroundTasks):
