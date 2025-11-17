@@ -41,6 +41,148 @@
   gap: 1rem !important;
   flex: 1 !important;
   min-width: 0 !important;
+  position: relative !important;
+}
+
+/* Speech Sidebar - Matching DebateSidebar format */
+.toggle-sidebar {
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1rem !important;
+  padding: 0.5rem 1rem !important;
+  background-color: #4a90e2 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  z-index: 1001 !important;
+  transition: background 0.2s ease !important;
+}
+
+.toggle-sidebar:hover {
+  background-color: #357abd !important;
+}
+
+/* Clean sidebar styling - matching DebateSidebar */
+.debate-sidebar {
+  position: fixed !important;
+  top: 4rem !important;
+  left: 0 !important;
+  width: 240px !important;
+  height: calc(100vh - 4rem) !important;
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 0 8px 8px 0 !important;
+  padding: 1rem !important;
+  overflow-y: auto !important;
+  transform: translateX(-100%) !important;
+  transition: transform 0.3s ease !important;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3) !important;
+  z-index: 1001 !important;
+  color: #e2e8f0 !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.debate-sidebar.expanded {
+  transform: translateX(0) !important;
+}
+
+.sidebar-title {
+  margin-bottom: 0.5rem !important;
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+  color: #f1f5f9 !important;
+}
+
+.sidebar-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-item {
+  padding: 0.5rem !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease !important;
+  font-weight: 500 !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 2px !important;
+}
+
+.sidebar-text {
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(74, 144, 226, 0.3) !important;
+}
+
+.sidebar-item:hover .sidebar-text {
+  color: #ffffff !important;
+}
+
+/* Mobile responsive - matching DebateSidebar */
+@media (max-width: 768px) {
+  .toggle-sidebar {
+    top: 0.5rem !important;
+    left: 0.5rem !important;
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
+    z-index: 1001 !important;
+  }
+  
+  .debate-sidebar {
+    top: 3rem !important;
+    width: 220px !important;
+    height: calc(100vh - 3rem) !important;
+    padding: 0.75rem !important;
+  }
+  
+  .sidebar-title {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+  
+  .sidebar-item {
+    padding: 0.4rem !important;
+    font-size: 0.9rem !important;
+    margin-bottom: 1px !important;
+  }
+  
+  .sidebar-text {
+    font-size: 0.9rem !important;
+    line-height: 1.3 !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .toggle-sidebar {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .debate-sidebar {
+    width: 200px !important;
+    padding: 0.5rem !important;
+  }
+  
+  .sidebar-title {
+    font-size: 1rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+  
+  .sidebar-item {
+    padding: 0.3rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .sidebar-text {
+    font-size: 0.85rem !important;
+    line-height: 1.2 !important;
+  }
 }
 .debate-trainer-header-center {
   flex: 0 0 auto !important;
@@ -64,11 +206,12 @@
 .debate-trainer-main {
   flex: 1 !important;
   width: 100% !important;
-  max-width: 1000px !important;
+  max-width: 1600px !important;
   margin: 0 auto !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
 }
 
 /* Card (match glass style) */
@@ -320,6 +463,640 @@
   .speech-feedback-output {
     min-height: 300px !important;
     max-height: 400px !important;
+  }
+}
+
+/* Setup UI Styles */
+.trainer-setup-section {
+  margin-top: 2rem !important;
+  text-align: left !important;
+}
+
+.trainer-setup-title {
+  font-size: 1.5rem !important;
+  color: #f8fafc !important;
+  margin-bottom: 1.5rem !important;
+  text-align: center !important;
+}
+
+.trainer-back-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  background: rgba(71, 85, 105, 0.3) !important;
+  border: 1px solid rgba(71, 85, 105, 0.5) !important;
+  color: #cbd5e1 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  margin-bottom: 1.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.trainer-back-btn:hover {
+  background: rgba(71, 85, 105, 0.5) !important;
+  color: #f8fafc !important;
+}
+
+.trainer-mode-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 1.5rem !important;
+  margin-bottom: 2rem !important;
+}
+
+.trainer-mode-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-align: center !important;
+}
+
+.trainer-mode-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 15px 30px rgba(74, 144, 226, 0.2) !important;
+}
+
+.trainer-mode-card.selected {
+  border-color: #4a90e2 !important;
+  background: rgba(74, 144, 226, 0.15) !important;
+}
+
+.trainer-mode-icon {
+  color: #4a90e2 !important;
+  margin-bottom: 1rem !important;
+}
+
+.trainer-mode-card h4 {
+  font-size: 1.3rem !important;
+  color: #f8fafc !important;
+  margin: 0.5rem 0 !important;
+}
+
+.trainer-mode-card p {
+  color: #cbd5e1 !important;
+  font-size: 0.95rem !important;
+  margin: 0.75rem 0 !important;
+}
+
+.trainer-mode-tags {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  margin-top: 1rem !important;
+  flex-wrap: wrap !important;
+}
+
+.trainer-mode-tag {
+  background: rgba(74, 144, 226, 0.2) !important;
+  color: #93c5fd !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 12px !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+}
+
+.trainer-topic-input {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+}
+
+.trainer-input {
+  width: 100% !important;
+  padding: 1rem 1.5rem !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.trainer-input:focus {
+  outline: none !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 20px rgba(74, 144, 226, 0.3) !important;
+}
+
+.trainer-side-selection,
+.trainer-order-selection {
+  display: flex !important;
+  gap: 1rem !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+
+.trainer-side-btn,
+.trainer-order-btn {
+  flex: 1 !important;
+  min-width: 200px !important;
+  padding: 1.5rem 2rem !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.trainer-side-btn:hover,
+.trainer-order-btn:hover {
+  transform: translateY(-2px) !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 8px 20px rgba(74, 144, 226, 0.2) !important;
+}
+
+.trainer-side-btn.selected,
+.trainer-order-btn.selected {
+  border-color: #4a90e2 !important;
+  background: rgba(74, 144, 226, 0.2) !important;
+  color: #93c5fd !important;
+}
+
+.trainer-btn {
+  appearance: none !important;
+  border: 2px solid rgba(74, 144, 226, 0.3) !important;
+  background: rgba(74, 144, 226, 0.1) !important;
+  color: #4a90e2 !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.trainer-btn:hover:not(:disabled) {
+  background: rgba(74, 144, 226, 0.2) !important;
+  border-color: #4a90e2 !important;
+  transform: translateY(-1px) !important;
+}
+
+.trainer-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.trainer-btn.primary {
+  background: rgba(74, 144, 226, 0.6) !important;
+  border-color: #4a90e2 !important;
+  color: #ffffff !important;
+}
+
+.trainer-btn.primary:hover:not(:disabled) {
+  background: rgba(74, 144, 226, 0.8) !important;
+  box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3) !important;
+}
+
+/* Debate Info Container - Centered */
+.trainer-debate-info-container {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  margin: 0 auto 2rem auto !important;
+}
+
+.trainer-debate-info {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  backdrop-filter: blur(10px) !important;
+  text-align: center !important;
+}
+
+/* Debate Practice Layout */
+.trainer-debate-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 400px !important;
+  gap: 2rem !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  align-items: stretch !important;
+}
+
+/* Speech Selector Sidebar */
+.trainer-speech-selector {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 1200px !important;
+  max-height: 1200px !important;
+  overflow: hidden !important;
+}
+
+.trainer-speech-selector h3 {
+  color: #f1f5f9 !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 1rem 0 !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+.trainer-speech-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  min-height: 0 !important;
+}
+
+.trainer-speech-list-empty {
+  color: #94a3b8 !important;
+  text-align: center !important;
+  padding: 2rem 0 !important;
+  font-size: 0.9rem !important;
+}
+
+.trainer-speech-selector-item {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.trainer-speech-selector-item:hover {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(71, 85, 105, 0.5) !important;
+  transform: translateX(2px) !important;
+}
+
+.trainer-speech-selector-item.user-speech {
+  border-left: 3px solid #3b82f6 !important;
+}
+
+.trainer-speech-selector-item.ai-speech {
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.trainer-speech-selector-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.trainer-speech-selector-header strong {
+  color: #f1f5f9 !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+}
+
+.trainer-speech-selector-meta {
+  color: #94a3b8 !important;
+  font-size: 0.75rem !important;
+  white-space: nowrap !important;
+}
+
+.trainer-speech-selector-preview {
+  color: #cbd5e1 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.trainer-transcript-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 1200px !important;
+  max-height: 1200px !important;
+  overflow: hidden !important;
+}
+
+.trainer-voice-input-wrapper {
+  margin-bottom: 0.75rem !important;
+}
+
+.trainer-speech-input-header-compact {
+  margin-bottom: 0.75rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.trainer-speech-input-header-compact label {
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+}
+
+.trainer-speech-input-row {
+  display: flex !important;
+  gap: 0.75rem !important;
+  align-items: flex-end !important;
+}
+
+.trainer-speech-textarea-compact {
+  flex: 1 !important;
+  padding: 0.75rem !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 8px !important;
+  color: #f8fafc !important;
+  font-size: 0.95rem !important;
+  resize: vertical !important;
+  min-height: 60px !important;
+  transition: all 0.3s ease !important;
+}
+
+.trainer-speech-textarea-compact:focus {
+  outline: none !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.2) !important;
+}
+
+.trainer-speech-textarea-compact:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.trainer-debate-info h3 {
+  color: #f8fafc !important;
+  font-size: 1.5rem !important;
+  margin: 0 0 1rem 0 !important;
+}
+
+.trainer-debate-meta {
+  display: flex !important;
+  gap: 1.5rem !important;
+  flex-wrap: wrap !important;
+  color: #cbd5e1 !important;
+  font-size: 0.9rem !important;
+  justify-content: center !important;
+}
+
+.trainer-transcript {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.5rem !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+.trainer-transcript-empty {
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  text-align: center !important;
+  padding: 2rem !important;
+}
+
+.trainer-message {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 1px solid rgba(71, 85, 105, 0.5) !important;
+  border-radius: 12px !important;
+  padding: 1.25rem !important;
+}
+
+.trainer-message.user-message {
+  border-left: 4px solid #4a90e2 !important;
+}
+
+.trainer-message.ai-message {
+  border-left: 4px solid #22c55e !important;
+}
+
+.trainer-message-header {
+  margin-bottom: 0.75rem !important;
+}
+
+.trainer-message-title {
+  color: #f8fafc !important;
+  font-size: 1.75rem !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid rgba(74, 144, 226, 0.3) !important;
+  padding-bottom: 0.5rem !important;
+  margin: 0 0 0.75rem 0 !important;
+}
+
+.trainer-message-header strong {
+  color: #f8fafc !important;
+  font-size: 1.1rem !important;
+}
+
+.trainer-message-meta {
+  color: #94a3b8 !important;
+  font-size: 0.85rem !important;
+}
+
+.trainer-message-content {
+  color: #e2e8f0 !important;
+  line-height: 1.6 !important;
+}
+
+.trainer-speech-input-container {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  margin: 0 auto 2rem auto !important;
+}
+
+.trainer-speech-input-compact {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  backdrop-filter: blur(10px) !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+}
+
+.trainer-speech-input-header {
+  margin-bottom: 1rem !important;
+}
+
+.trainer-speech-input-header label {
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+}
+
+.trainer-speech-textarea {
+  width: 100% !important;
+  padding: 1rem !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-size: 1rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+  resize: vertical !important;
+  min-height: 150px !important;
+  transition: all 0.3s ease !important;
+}
+
+.trainer-speech-textarea:focus {
+  outline: none !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 20px rgba(74, 144, 226, 0.3) !important;
+}
+
+.trainer-debate-complete-container {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 1600px !important;
+  margin: 2rem auto 0 auto !important;
+}
+
+.trainer-debate-complete {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(34, 197, 94, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  text-align: center !important;
+  backdrop-filter: blur(10px) !important;
+  width: 100% !important;
+  max-width: 1000px !important;
+}
+
+.trainer-debate-complete h3 {
+  color: #22c55e !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.trainer-debate-complete p {
+  color: #cbd5e1 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.trainer-feedback-panel {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 2px solid rgba(71, 85, 105, 0.3) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 1200px !important;
+  max-height: 1200px !important;
+}
+
+.trainer-feedback-panel h3 {
+  color: #f8fafc !important;
+  font-size: 1.3rem !important;
+  margin: 0 0 1rem 0 !important;
+  border-bottom: 2px solid rgba(74, 144, 226, 0.3) !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.trainer-feedback-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+.trainer-feedback-header {
+  margin-bottom: 1rem !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+.trainer-feedback-header strong {
+  color: #4a90e2 !important;
+  font-size: 1rem !important;
+}
+
+.trainer-feedback-item {
+  margin-bottom: 1.5rem !important;
+}
+
+.trainer-feedback-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.trainer-feedback-divider {
+  height: 1px !important;
+  background: rgba(71, 85, 105, 0.3) !important;
+  margin: 1.5rem 0 !important;
+}
+
+.trainer-feedback-empty {
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  text-align: center !important;
+  padding: 2rem !important;
+}
+
+/* Loading Indicators */
+.trainer-loading-indicator {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2rem !important;
+  gap: 1rem !important;
+}
+
+.trainer-spinner {
+  width: 40px !important;
+  height: 40px !important;
+  border: 4px solid rgba(74, 144, 226, 0.2) !important;
+  border-top-color: #4a90e2 !important;
+  border-radius: 50% !important;
+  animation: trainer-spin 1s linear infinite !important;
+}
+
+@keyframes trainer-spin {
+  to {
+    transform: rotate(360deg) !important;
+  }
+}
+
+.trainer-loading-indicator p {
+  color: #cbd5e1 !important;
+  font-size: 0.95rem !important;
+  margin: 0 !important;
+}
+
+.trainer-message-loading {
+  opacity: 0.8 !important;
+  border-style: dashed !important;
+}
+
+.trainer-feedback-loading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 200px !important;
+}
+
+/* Responsive for debate layout */
+@media (max-width: 1200px) {
+  .trainer-debate-layout {
+    grid-template-columns: 1fr !important;
   }
 }
 
