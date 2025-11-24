@@ -281,12 +281,14 @@ class TrainerSpeechEfficiencyRequest(BaseModel):
     debate_format: str = "none"
     speaking_order: str = "none"
     round_num: int = 0
+    speech_type: str = ""
+    speech_number: int = 0
 
 @app.post("/trainer/speech-efficiency")
 async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
     """
-    Dedicated, non-debate chain for Speech Efficiency analysis.
-    Produces concise coaching focused on word efficiency only.
+    Comprehensive speech feedback chain (content + efficiency).
+    Provides format-specific coaching including Public Forum strategy, weighing, responses, etc.
     """
     try:
         if not request.speech or not request.speech.strip():
@@ -294,7 +296,13 @@ async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
 
         # Use dedicated trainer chain to keep behavior separate from debate chains
         trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL)
-        content = trainer_chain.run(speech=request.speech)
+        content = trainer_chain.run(
+            speech=request.speech,
+            debate_format=request.debate_format or "none",
+            round_num=request.round_num or 0,
+            speech_type=request.speech_type or "",
+            speech_number=request.speech_number or 0
+        )
 
         # Fallback: if chain produced nothing, throw an error so frontend can show a message
         if not content or not str(content).strip():

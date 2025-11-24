@@ -12,7 +12,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
-  z-index: 30;
+  z-index: 1100;
   transition: background 0.2s ease;
 }
 
@@ -25,7 +25,7 @@
   position: fixed;
   top: 4rem;
   left: 0;
-  width: 240px;
+  width: 300px;
   height: calc(100vh - 4rem);
   background: #ffffff;
   border: 1px solid #e0e7ee;
@@ -37,10 +37,14 @@
   box-shadow: 2px 0 6px rgba(0,0,0,0.1);
   z-index: 20;
   color: #333;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .debate-sidebar.expanded {
   transform: translateX(0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 .sidebar-title {

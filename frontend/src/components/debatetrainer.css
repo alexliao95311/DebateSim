@@ -349,6 +349,21 @@
   color: #4a90e2 !important;
 }
 
+.trainer-section-header {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin: 1.5rem 0 0.75rem 0 !important;
+  padding: 0.5rem 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.trainer-section-header:first-child {
+  margin-top: 0 !important;
+}
+
 .trainer-markdown-h3 {
   font-size: 1.25rem !important;
   color: #93c5fd !important;

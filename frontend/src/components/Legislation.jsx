@@ -15,6 +15,7 @@ import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
 import UserProfileService from '../utils/userProfileService';
+import AnalysisSidebar from "./AnalysisSidebar";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -203,9 +204,12 @@ const H2SectionRenderer = ({ analysisText }) => {
         elements.push(<hr key={`divider-${index}`} className="section-divider" />);
       }
       
+      // Generate a unique ID for the section based on the header text
+      const sectionId = `analysis-section-${index}-${section.header.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      
       // Add H2 header with TTS button
       elements.push(
-        <div key={`header-${index}`} className="analysis-heading-container">
+        <div key={`header-${index}`} id={sectionId} className="analysis-heading-container">
           <h2 className="analysis-heading">
             {section.header}
           </h2>
@@ -626,6 +630,10 @@ const Legislation = ({ user }) => {
   const [analysisResult, setAnalysisResult] = useState('');
   const [analysisGrades, setAnalysisGrades] = useState(null);
   const [selectedModel, setSelectedModel] = useState(modelOptions[0]);
+  
+  // Analysis sidebar state
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [analysisSectionList, setAnalysisSectionList] = useState([]);
 
   // Debate state
   const [debateTopic, setDebateTopic] = useState('');
@@ -2205,7 +2213,68 @@ const Legislation = ({ user }) => {
     }
   };
 
+  // Extract H2 sections from analysis text for sidebar
+  const extractAnalysisSections = (analysisText) => {
+    if (!analysisText) return [];
+    
+    const lines = analysisText.split('\n');
+    const sections = [];
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('## ')) {
+        const headerText = line.replace('## ', '').trim();
+        if (headerText) {
+          const sectionId = `analysis-section-${sections.length}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+          sections.push({
+            id: sectionId,
+            title: headerText,
+            index: sections.length
+          });
+        }
+      }
+    });
+    
+    return sections;
+  };
 
+  // Scroll to a specific analysis section
+  const scrollToSection = (id) => {
+    console.log(`Attempting to scroll to section: ${id}`);
+    
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      console.log(`Found element for ${id}:`, el);
+
+      if (el) {
+        // Ensure the element is visible and scrollable
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest"
+        });
+        console.log(`Successfully scrolled to ${id}`);
+
+        // Add a visual highlight to confirm the scroll worked
+        el.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        setTimeout(() => {
+          el.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        console.warn(`Element with id ${id} not found`);
+      }
+    }, 200);
+  };
+
+  // Update section list when analysis changes
+  useEffect(() => {
+    if (analysisResult) {
+      const fullAnalysisText = `## Detailed Analysis\n\n${analysisResult}`;
+      const sections = extractAnalysisSections(fullAnalysisText);
+      setAnalysisSectionList(sections);
+    } else {
+      setAnalysisSectionList([]);
+    }
+  }, [analysisResult]);
 
   // Bill link functionality state
   const [billLink, setBillLink] = useState("");
@@ -2494,7 +2563,17 @@ const Legislation = ({ user }) => {
       {/* NEW: Page Loader */}
       <PageLoader isLoading={isPageLoading} />
       
-      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
+      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'} ${sidebarExpanded ? 'legislation-sidebar-open' : ''}`}>
+        {/* Analysis Sidebar */}
+        {analysisResult && analysisSectionList.length > 0 && (
+          <AnalysisSidebar
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sectionList={analysisSectionList}
+            scrollToSection={scrollToSection}
+          />
+        )}
+        
         {/* Header with fade-in animation */}
         <header className={`legislation-header ${componentsLoaded.header ? 'component-visible' : 'component-hidden'}`}>
           <div className="legislation-header-content">
