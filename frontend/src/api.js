@@ -113,9 +113,11 @@ export const analyzeSpeechEfficiency = async (speech, options = {}) => {
       // Optional flags to make backend select non-debate pipeline
       mode: "trainer-speech-efficiency",
       persona: "none",
-      debate_format: "none",
+      debate_format: options.debate_format || "none",
       speaking_order: "none",
-      round_num: 0,
+      round_num: options.round_num || 0,
+      speech_type: options.speech_type || "",
+      speech_number: options.speech_number || 0,
     };
     const response = await apiClient.post('/trainer/speech-efficiency', payload);
     if (!response?.data || typeof response.data.response !== 'string') {

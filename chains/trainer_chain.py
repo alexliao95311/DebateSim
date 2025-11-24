@@ -147,27 +147,32 @@ class OpenRouterChat(BaseChatModel):
     }
 
 
-TRAINER_PROMPT = """SYSTEM: You are a Speech Efficiency Coach. This is NOT a debate.
+TRAINER_PROMPT = """SYSTEM: You are a Debate Speech Coach providing concise, critical feedback. This is NOT a debate simulation.
 Do NOT simulate opponents, judges, rounds, personas, crossfire, rebuttals, or win/loss language.
 Do NOT include any headers or text that references "Round", "Opponent", "Frontline", "Judge", or "I win".
-Only provide coaching on concision and efficiency for the single user speech. Respond as a coaching note, not as a speech.
+ONLY point out flaws and problems. Do NOT praise or say what's good. Be direct and concise.
 
-Output using EXACT section headings:
+{format_specific_instructions}
+
+Follow the section headers specified in the format-specific instructions above. If no specific headers are provided, use these defaults:
+== Content Analysis ==
 == Efficiency Critique ==
 == Precise Cuts and Rewrites ==
-== Tighter Rewrite ==
-== Checklist ==
+== Improvements ==
 
-Requirements:
-1) Efficiency Critique (bulleted): where to cut fluff, redundancy, filler, hedging, throat‑clearing, and overlong phrasing. Note pacing and signposting improvements. Be concrete.
-2) Precise Cuts and Rewrites (most important): for each item, QUOTE the exact original span to cut or reword, include its first and last 5 characters in quotes to locate it, and give:
+Requirements (BE CONCISE - no fluff):
+1) Content sections: List ONLY problems and flaws in the areas specified. Be direct. No praise.
+
+2) Efficiency Critique (bulleted): List ONLY inefficiencies - fluff, redundancy, filler, hedging, throat‑clearing, overlong phrasing. Be concrete and brief.
+
+3) Precise Cuts and Rewrites (most important): For each problem, QUOTE the exact span and give:
    - Original: "…quoted span…"
-   - Location hint: "…first5…" → "…last5…"
+   - Location: "…first5…" → "…last5…"
    - Action: CUT or REWORD
    - Replacement (if REWORD): "…shorter alternative…"
    - Words saved: ~N
-3) Tighter Rewrite: provide a rewritten version 20–35% shorter that preserves claims → warrants → impacts and clear weighing. Use crisp signposts and concise impact calculus.
-4) Checklist: 5 one‑line rules they can apply next attempt.
+
+4) Improvements: List 4-6 specific fixes to address the identified problems. Be concrete and actionable.
 
 Student speech:
 {speech}
@@ -176,12 +181,203 @@ Student speech:
 trainer_prompt = ChatPromptTemplate.from_template(TRAINER_PROMPT)
 
 
+def get_format_specific_instructions(debate_format: str, round_num: int, speech_type: str, speech_number: int = 0) -> str:
+  """Generate format-specific coaching instructions with speech-type-specific prompts."""
+  if debate_format == "public-forum":
+    if speech_type == "Constructive":
+      return f"""
+PUBLIC FORUM CONSTRUCTIVE (Round {round_num} of 4)
+
+Speech Purpose: A PF constructive MUST:
+- Present the case
+- Introduce framework/value/weighing if used
+- Present contentions with claims → warrants → impacts
+- Provide all offense for the round
+- Include evidence citations and internal links
+
+It should NOT respond to opponents (none exist yet).
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Case structure and clarity
+- Evidence quality and warrant development
+- Logic and internal links
+- Impact analysis
+- Strategic value (what will matter later)
+
+Use these section headers:
+== Case Structure & Clarity ==
+== Evidence & Warrant Quality ==
+== Logic & Internal Links ==
+== Impact Analysis ==
+== Strategic Value ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    elif speech_type == "Rebuttal" and round_num == 2 and speech_number == 3:
+      return f"""
+PUBLIC FORUM FIRST REBUTTAL (Round {round_num} of 4)
+
+Speech Purpose: First rebuttal MUST:
+- Respond ONLY to the opponent's case
+- Provide refutation (link takeouts, impact takeouts, evidence comparison)
+- No extensions of your own case yet
+- No frontlining (that happens in second rebuttal)
+- No collapse or weighing (summary does that)
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Direct refutation quality
+- Evidence comparison and logic
+- Clash and coverage
+- Strategic layering (grouping, prioritization)
+
+Use these section headers:
+== Direct Refutation Quality ==
+== Evidence Comparison & Logic ==
+== Clash & Coverage ==
+== Strategic Layering ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    elif speech_type == "Rebuttal" and round_num == 2 and speech_number == 4:
+      return f"""
+PUBLIC FORUM SECOND REBUTTAL (Round {round_num} of 4)
+
+Speech Purpose: Second rebuttal MUST:
+- Frontline attacks from opponent's rebuttal
+- Defend your own case (clean, warranted, direct)
+- Respond to opponent's case (same as first rebuttal)
+- Begin laying groundwork for collapse
+- NO extensions yet
+- Very light weighing allowed but not required
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Frontline quality and case defense
+- Refutation of opponent's case
+- Coverage, clarity, and prioritization
+- Setup for summary (weighing setups, collapse prep)
+
+Use these section headers:
+== Frontline Quality & Case Defense ==
+== Refutation of Opponent's Case ==
+== Coverage, Clarity, and Prioritization ==
+== Setup for Summary ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    elif speech_type == "Rebuttal":
+      # Fallback for rebuttals that don't match specific speech numbers
+      # Default to first rebuttal guidance
+      return f"""
+PUBLIC FORUM REBUTTAL (Round {round_num} of 4)
+
+Speech Purpose: Rebuttal MUST respond to opponent arguments and provide refutation.
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Direct refutation quality
+- Evidence comparison and logic
+- Clash and coverage
+- Strategic approach
+
+Use these section headers:
+== Direct Refutation Quality ==
+== Evidence Comparison & Logic ==
+== Clash & Coverage ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    elif speech_type == "Summary":
+      return f"""
+PUBLIC FORUM SUMMARY (Round {round_num} of 4)
+
+Speech Purpose: Summary MUST:
+- Collapse — choose 1 or 2 winning arguments
+- Extend offense with full warrants + impacts
+- Extend frontlines to keep your case alive
+- Refute any remaining key responses
+- Introduce weighing
+- Create the round vision for the judge
+
+It should NOT introduce new responses.
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Collapse and prioritization
+- Extensions (warrants, links, impacts)
+- Weighing quality (comparative)
+- Frontline extensions
+- Strategic refutation coverage
+
+Use these section headers:
+== Collapse & Prioritization ==
+== Extensions (warrants, links, impacts) ==
+== Weighing Quality (comparative) ==
+== Frontline Extensions ==
+== Strategic Refutation Coverage ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    elif speech_type == "Final Focus":
+      return f"""
+PUBLIC FORUM FINAL FOCUS (Round {round_num} of 4)
+
+Speech Purpose: Final Focus MUST:
+- Be consistent with the summary (no new arguments)
+- Re-extend ONLY the collapsed offense
+- Provide sharp weighing
+- Give clean voters
+- Tell the judge exactly how to sign the ballot
+- Be short, crisp, and fully comparative
+
+No new responses or evidence.
+
+FEEDBACK FOCUS: Identify ONLY problems and flaws in:
+- Crystallization and round vision
+- Weighing quality (probability, magnitude, timeframe)
+- Voters and judge instruction
+- Consistency with summary
+
+Use these section headers:
+== Crystallization & Round Vision ==
+== Weighing Quality (probability, magnitude, timeframe) ==
+== Voters & Judge Instruction ==
+== Consistency With Summary ==
+== Efficiency Critique ==
+== Precise Cuts and Rewrites ==
+== Improvements ==
+"""
+    else:
+      return f"""
+PUBLIC FORUM CONTEXT:
+- Round: {round_num} of 4
+- Speech Type: {speech_type}
+
+Provide feedback appropriate to this Public Forum speech type.
+"""
+  else:
+    return f"""
+DEBATE CONTEXT:
+- Round: {round_num}
+- Speech Type: {speech_type}
+- Format: {debate_format}
+
+Provide feedback appropriate to this debate format and round type.
+"""
+
+
 def get_trainer_chain(model_name: str = "openai/gpt-4o-mini"):
-  """Return a chain that gives speech feedback + word-efficiency analysis."""
+  """Return a chain that gives comprehensive speech feedback (content + efficiency)."""
   llm = OpenRouterChat(model_name=model_name, temperature=0.3)
 
-  def format_input(speech: str):
-    return {"speech": speech}
+  def format_input(speech: str, debate_format: str = "none", round_num: int = 0, speech_type: str = "", speech_number: int = 0):
+    format_instructions = get_format_specific_instructions(debate_format, round_num, speech_type, speech_number)
+    return {
+      "speech": speech,
+      "format_specific_instructions": format_instructions
+    }
 
   chain = (
     format_input
@@ -194,8 +390,14 @@ def get_trainer_chain(model_name: str = "openai/gpt-4o-mini"):
     def __init__(self, c):
       self.chain = c
 
-    def run(self, *, speech: str):
-      return self.chain.invoke(speech)
+    def run(self, *, speech: str, debate_format: str = "none", round_num: int = 0, speech_type: str = "", speech_number: int = 0):
+      return self.chain.invoke({
+        "speech": speech,
+        "debate_format": debate_format,
+        "round_num": round_num,
+        "speech_type": speech_type,
+        "speech_number": speech_number
+      })
 
   return ChainWrapper(chain)
 

@@ -165,12 +165,18 @@ function DebateTrainer({ user, onLogout }) {
   };
 
   // Get feedback on a speech
-  const getSpeechFeedback = async (speechText) => {
+  const getSpeechFeedback = async (speechText, roundNum, speechType, speechNumber) => {
     if (!speechText.trim()) return null;
     setGettingFeedback(true);
     try {
       const model = "openai/gpt-4o-mini";
-      const out = await analyzeSpeechEfficiency(speechText, { model });
+      const out = await analyzeSpeechEfficiency(speechText, { 
+        model,
+        debate_format: debateFormat,
+        round_num: roundNum,
+        speech_type: speechType,
+        speech_number: speechNumber
+      });
       return out || "";
     } catch (e) {
       console.error("[Trainer] Feedback error:", e);
@@ -220,7 +226,7 @@ function DebateTrainer({ user, onLogout }) {
       setCurrentSpeechText("");
 
       // Get feedback on this speech (async, don't wait)
-      getSpeechFeedback(speechText).then(feedbackText => {
+      getSpeechFeedback(speechText, roundNum, speechType, nextSpeechNumber).then(feedbackText => {
         if (feedbackText) {
           const newFeedback = {
             speech: speechText,
@@ -764,7 +770,7 @@ Keep it concise and structured.`;
                       rehypePlugins={[rehypeRaw]}
                       components={{
                         h1: ({ node, ...props }) => <h1 className="trainer-markdown-h1" {...props} />,
-                        h2: ({ node, ...props }) => <h2 className="trainer-markdown-h2" {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="trainer-section-header" {...props} />,
                         h3: ({ node, ...props }) => <h3 className="trainer-markdown-h3" {...props} />,
                         h4: ({ node, ...props }) => <h4 className="trainer-markdown-h4" {...props} />,
                         p: ({ node, ...props }) => <p className="trainer-markdown-p" {...props} />,
@@ -775,7 +781,7 @@ Keep it concise and structured.`;
                         em: ({ node, ...props }) => <em className="trainer-markdown-em" {...props} />,
                       }}
                     >
-                      {feedback.feedback}
+                      {feedback.feedback.replace(/^==\s*(.+?)\s*==$/gm, '## $1')}
                     </ReactMarkdown>
                     {idx < feedbackList.length - 1 && <div className="trainer-feedback-divider"></div>}
                   </div>
