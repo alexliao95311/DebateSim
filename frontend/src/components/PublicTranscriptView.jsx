@@ -11,6 +11,7 @@ import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
 import "./Debate.css"; // For debate speech header and TTS button styles
+import AnalysisSidebar from "./AnalysisSidebar";
 
 // Speech Sidebar Component for Public Transcript View
 const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript, extractSpeechText }) => {
@@ -64,11 +65,19 @@ const TTSComponent = memo(({ speechText, context, headerId, headerText }) => (
 ));
 
 // Split content into speech blocks similar to Debate.jsx
-const TranscriptContent = memo(({ transcript, speechList, extractSpeechText }) => {
+const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, analysisSectionList }) => {
   const renderSpeechBlocks = () => {
     if (!transcript.transcript || !speechList.length) {
       // For bill analysis, use TTS functionality
       if (transcript.activityType === 'Analyze Bill') {
+        // Create a map of header text to section IDs for consistent ID generation
+        const headerToIdMap = new Map();
+        analysisSectionList.forEach((section) => {
+          headerToIdMap.set(section.title.toLowerCase().trim(), section.id);
+        });
+        
+        let h2Index = 0;
+        
         return (
           <TTSProvider analysisText={transcript.transcript}>
             <div className="transcript-content">
@@ -79,11 +88,17 @@ const TranscriptContent = memo(({ transcript, speechList, extractSpeechText }) =
                   h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
                   h2: ({node, ...props}) => {
                     const headerText = typeof props.children === 'string' ? props.children : props.children?.join?.('') || '';
+                    // Try to find matching ID from section list, otherwise generate one
+                    const sectionId = headerToIdMap.get(headerText.toLowerCase().trim()) || 
+                                     `analysis-section-${h2Index}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                    h2Index++;
                     return (
-                      <h2 className="markdown-h2" {...props}>
-                        {props.children}
-                        <HeaderPlayButton headerText={headerText} />
-                      </h2>
+                      <div id={sectionId} className="analysis-heading-container">
+                        <h2 className="markdown-h2" {...props}>
+                          {props.children}
+                          <HeaderPlayButton headerText={headerText} />
+                        </h2>
+                      </div>
                     );
                   },
                   h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
@@ -436,6 +451,10 @@ function PublicTranscriptView() {
   const [error, setError] = useState("");
   const [speechList, setSpeechList] = useState([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  
+  // Analysis sidebar state (only for bill analyses)
+  const [analysisSidebarExpanded, setAnalysisSidebarExpanded] = useState(false);
+  const [analysisSectionList, setAnalysisSectionList] = useState([]);
 
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
@@ -543,6 +562,58 @@ function PublicTranscriptView() {
     }, 200);
   };
 
+  // Extract H2 sections from analysis text for sidebar (only for bill analyses)
+  const extractAnalysisSections = (analysisText) => {
+    if (!analysisText) return [];
+    
+    const lines = analysisText.split('\n');
+    const sections = [];
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('## ')) {
+        const headerText = line.replace('## ', '').trim();
+        if (headerText) {
+          const sectionId = `analysis-section-${sections.length}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+          sections.push({
+            id: sectionId,
+            title: headerText,
+            index: sections.length
+          });
+        }
+      }
+    });
+    
+    return sections;
+  };
+
+  // Scroll to a specific analysis section
+  const scrollToSection = (id) => {
+    console.log(`Attempting to scroll to section: ${id}`);
+    
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      console.log(`Found element for ${id}:`, el);
+
+      if (el) {
+        // Ensure the element is visible and scrollable
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest"
+        });
+        console.log(`Successfully scrolled to ${id}`);
+
+        // Add a visual highlight to confirm the scroll worked
+        el.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        setTimeout(() => {
+          el.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        console.warn(`Element with id ${id} not found`);
+      }
+    }, 200);
+  };
+
 
   useEffect(() => {
     const fetchSharedTranscript = async () => {
@@ -569,6 +640,16 @@ function PublicTranscriptView() {
 
     if (shareId) fetchSharedTranscript();
   }, [shareId]);
+
+  // Update analysis section list when transcript changes (only for bill analyses)
+  useEffect(() => {
+    if (transcript && transcript.activityType === 'Analyze Bill' && transcript.transcript) {
+      const sections = extractAnalysisSections(transcript.transcript);
+      setAnalysisSectionList(sections);
+    } else {
+      setAnalysisSectionList([]);
+    }
+  }, [transcript]);
 
   const handleBackToHome = () => {
     window.location.href = "https://debatesim.us";
@@ -629,11 +710,12 @@ function PublicTranscriptView() {
   }
 
   return (
-    <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
+    <div className={`debate-container ${(sidebarExpanded || analysisSidebarExpanded) ? 'sidebar-open' : ''}`}>
       <button className="back-to-home" onClick={handleBackToHome}>
         Try DebateSim
       </button>
 
+      {/* Debate sidebar - only for debate transcripts */}
       {transcript && transcript.activityType !== 'Analyze Bill' && speechList.length > 0 && (
         <PublicSpeechSidebar 
           speechList={speechList}
@@ -642,6 +724,16 @@ function PublicTranscriptView() {
           setSidebarExpanded={setSidebarExpanded}
           transcript={transcript.transcript}
           extractSpeechText={extractSpeechText}
+        />
+      )}
+      
+      {/* Analysis sidebar - only for bill analyses */}
+      {transcript && transcript.activityType === 'Analyze Bill' && analysisSectionList.length > 0 && (
+        <AnalysisSidebar
+          sidebarExpanded={analysisSidebarExpanded}
+          setSidebarExpanded={setAnalysisSidebarExpanded}
+          sectionList={analysisSectionList}
+          scrollToSection={scrollToSection}
         />
       )}
       
@@ -669,6 +761,7 @@ function PublicTranscriptView() {
             transcript={transcript}
             speechList={speechList}
             extractSpeechText={extractSpeechText}
+            analysisSectionList={analysisSectionList}
           />
           
           <div className="public-transcript-footer">
