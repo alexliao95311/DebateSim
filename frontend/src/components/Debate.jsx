@@ -12,6 +12,8 @@ import { Code, MessageSquare, Download, Share2, ArrowLeft, Volume2, VolumeX } fr
 import "./Debate.css";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
+import languagePreferenceService from '../services/languagePreferenceService';
+import { useTranslation } from '../utils/translations';
 
 const modelOptions = [
   "openai/gpt-4o-mini",
@@ -35,6 +37,21 @@ function getPersonaName(persona) {
     "drake": "Drake"
   };
   return personaMap[persona] || "Default AI";
+}
+
+// Helper function to get language instructions for prompts
+function getLanguageInstructions(languageCode) {
+  if (languageCode === 'zh') {
+    return `
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your debate arguments, rebuttals, and responses must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same debate quality and argumentation standards as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+`;
+  }
+  return ''; // No language instructions needed for English
 }
 
 function getPersonaPrompt(persona) {
@@ -123,6 +140,7 @@ function Debate() {
   // Retrieve debate parameters: short topic (bill name) and full description.
   const { mode, debateMode, topic, description, billText, billTitle, selectedModel, debateFormat, proPersona: initialProPersona, conPersona: initialConPersona, aiPersona: initialAiPersona } = useLocation().state || {};
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Helper function to count AI speeches for all formats
   const countAISpeeches = (messages) => {
@@ -500,7 +518,7 @@ function Debate() {
       navigate("/judge", { state: { transcript: finalTranscript, topic, mode: isBillDebate ? 'bill-debate' : actualMode, judgeModel } });
     } catch (err) {
       console.error("Error ending debate:", err);
-      setError("Failed to end debate.");
+      setError(t('error.failedToEnd'));
     } finally {
       setLoading(false);
     }
@@ -586,8 +604,13 @@ function Debate() {
             return;
           }
 
+          const currentLanguage = languagePreferenceService.getCurrentLanguage();
+          const languageInstructions = getLanguageInstructions(currentLanguage);
+          
           proPrompt = `
 You are competing in a Lincoln-Douglas debate on: "${topic}"
+
+${languageInstructions}
 
 BILL CONTEXT:
 ${actualDescription}
@@ -758,8 +781,13 @@ FORMATTING:
           
           console.log(`🔍 DEBUG: Pro Speech - Total speeches: ${totalSpeeches}, Speech type index: ${speechTypeIndex}, Round: ${roundNumber}, Speech Type: ${speechType}`);
           
+          const currentLanguage = languagePreferenceService.getCurrentLanguage();
+          const languageInstructions = getLanguageInstructions(currentLanguage);
+          
           proPrompt = `
 You are competing in a Public Forum debate on: "${topic}"
+
+${languageInstructions}
 
 YOUR ROLE: PRO (supporting the topic)
 
@@ -991,8 +1019,13 @@ FORMATTING:
         } else {
           // Default 5-round format
           const isOpening = messageList.length === 0;
+          const currentLanguage = languagePreferenceService.getCurrentLanguage();
+          const languageInstructions = getLanguageInstructions(currentLanguage);
+          
           proPrompt = `
 You are an AI debater in a 5-round structured debate on: "${topic}"
+
+${languageInstructions}
 
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
@@ -1654,7 +1687,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       }
     } catch (err) {
       console.error("Error in AI debate:", err);
-      setError("Failed to generate AI response.");
+      setError(t('error.failedToGenerate'));
     } finally {
       setLoading(false);
     }
@@ -1794,10 +1827,15 @@ Present your framework (Value/Criterion) and 2-3 contentions against the resolut
       } else if (firstSide === "pro" && side === "con") {
         // AI goes first as Pro, user will be Con
         console.log(`🔍 DEBUG [handleChooseSide]: AI will open as PRO, user is CON`);
+        const currentLanguage = languagePreferenceService.getCurrentLanguage();
+        const languageInstructions = getLanguageInstructions(currentLanguage);
+        
         let proPrompt;
         if (debateFormat === "public-forum") {
           // Build detailed PF prompt with persona (same as when AI goes second)
           proPrompt = `You are competing in a Public Forum debate on: "${topic}"
+
+${languageInstructions}
 
 YOUR ROLE: PRO (supporting the topic)
 
@@ -1854,6 +1892,8 @@ FORMATTING:
           // Build detailed LD prompt with persona
           proPrompt = `You are competing in a Lincoln-Douglas debate on: "${topic}"
 
+${languageInstructions}
+
 YOUR ROLE: AFFIRMATIVE (affirming the resolution)
 
 ${getPersonaPrompt(aiPersona)}
@@ -1881,6 +1921,9 @@ Present your framework (Value/Criterion) and 2-3 contentions supporting the reso
         } else {
           proPrompt = `
              Debate topic: "${topic}"
+             
+${languageInstructions}
+             
              Bill description: "${truncatedDescription}"
              Your role: Opening speaker for the PRO side
 
@@ -1908,7 +1951,7 @@ Present your framework (Value/Criterion) and 2-3 contentions supporting the reso
         appendMessage(aiDisplayName, proResponse, singleAIModel);
       }
     } catch (err) {
-      setError(`Failed to fetch AI's ${side === "pro" ? "Pro" : "Con"} opening argument.`);
+      setError(t('error.failedToFetchOpening'));
     } finally {
       setLoading(false);
     }
@@ -1916,11 +1959,11 @@ Present your framework (Value/Criterion) and 2-3 contentions supporting the reso
 
   const handleUserVsAISubmit = async () => {
     if (!userInput.trim()) {
-      alert("Input field cannot be blank. Please enter your argument.");
+      alert(t('error.inputBlank'));
       return;
     }
     if (!userSide) {
-      setError("Please choose Pro or Con before proceeding.");
+      setError(t('error.chooseSide'));
       return;
     }
     // Check if debate is complete
@@ -2020,7 +2063,12 @@ Present your framework (Value/Criterion) and 2-3 contentions supporting the reso
                              aiSpeechNumber <= 4 ? "REBUTTAL" :
                              aiSpeechNumber <= 6 ? "SUMMARY" : "FINAL FOCUS";
 
+          const currentLanguage = languagePreferenceService.getCurrentLanguage();
+          const languageInstructions = getLanguageInstructions(currentLanguage);
+          
           aiPrompt = `You are competing in a Public Forum debate on: "${topic}"
+
+${languageInstructions}
 
 YOUR ROLE: ${aiSideLocal.toUpperCase()} (debating against the user's ${userSide.toUpperCase()} position)
 
@@ -2125,7 +2173,12 @@ CRITICAL:
 
           const isConstructive = aiSpeechNumber <= 2;
 
+          const currentLanguage = languagePreferenceService.getCurrentLanguage();
+          const languageInstructions = getLanguageInstructions(currentLanguage);
+          
           aiPrompt = `You are competing in a Lincoln-Douglas debate on: "${topic}"
+
+${languageInstructions}
 
 YOUR ROLE: ${aiSideLocal.toUpperCase() === "PRO" ? "AFFIRMATIVE" : "NEGATIVE"} (debating against the user's ${userSide.toUpperCase()} position)
 
@@ -2184,8 +2237,13 @@ CRITICAL:
         const aiHasSpoken = messageList.some(msg => msg.speaker.includes(aiSideLocal));
         const isOpening = !aiHasSpoken;
 
+        const currentLanguage = languagePreferenceService.getCurrentLanguage();
+        const languageInstructions = getLanguageInstructions(currentLanguage);
+        
         aiPrompt = `
 You are an AI debater in a structured debate on: "${topic}"
+
+${languageInstructions}
 
 BILL CONTEXT:
 ${truncatedDescription || "No specific bill context provided."}
@@ -2323,7 +2381,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       setCurrentRound(prev => prev + 1);
     } catch (err) {
       console.error("Error in User vs AI debate:", err);
-      setError("Failed to fetch AI rebuttal.");
+      setError(t('error.failedToFetchRebuttal'));
     } finally {
       setLoading(false);
     }
@@ -2331,11 +2389,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
   const handleUserVsAISubmitAndEnd = async () => {
     if (!userInput.trim()) {
-      alert("Input field cannot be blank. Please enter your argument.");
+      alert(t('error.inputBlank'));
       return;
     }
     if (!userSide) {
-      setError("Please choose Pro or Con before proceeding.");
+      setError(t('error.chooseSide'));
       return;
     }
     setLoading(true);
@@ -2375,7 +2433,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         }
       });
     } catch (err) {
-      setError("Failed to send final user argument.");
+      setError(t('error.failedToSend'));
     } finally {
       setLoading(false);
     }
@@ -2383,7 +2441,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
   const handleUserVsUser = () => {
     if (!userInput.trim()) {
-      alert("Input field cannot be blank. Please enter your argument.");
+      alert(t('error.inputBlank'));
       return;
     }
 
@@ -2424,7 +2482,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
   const handleUserVsUserConfirm = () => {
     if (!userVsUserSetup.proUser.trim() || !userVsUserSetup.conUser.trim()) {
-      setError("Please enter names for both Pro and Con debaters.");
+      setError(t('error.enterNames'));
       return;
     }
     setUserVsUserSetup(prev => ({ ...prev, confirmed: true }));
@@ -2441,7 +2499,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
     <div className={`debate-container ${sidebarExpanded ? 'sidebar-open' : ''}`}>
       {/* Back to Home button in the top right corner */}
       <button className="back-to-home" onClick={handleBackToHome}>
-        Back to Home
+        {t('debate.backToHome')}
       </button>
 
       <DebateSidebar
@@ -2453,13 +2511,13 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       <div className="debate-wrapper">
         <div className="debate-content">
           <div className="topic-header-section">
-            <h2 className="debate-topic-header">Debate Topic: {topic}</h2>
+            <h2 className="debate-topic-header">{t('debate.topic')}: {topic}</h2>
             {actualDescription && (
               <button
                 className="toggle-description"
                 onClick={() => setDescriptionExpanded(!descriptionExpanded)}
               >
-                {descriptionExpanded ? "Hide Bill Text" : "Show Bill Text"}
+                {descriptionExpanded ? t('debate.hideBillText') : t('debate.showBillText')}
               </button>
             )}
           </div>
@@ -2478,7 +2536,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {actualMode === "ai-vs-ai" && (
                 <>
                   <label className="debate-model-label">
-                    Pro Model:
+                    {t('debate.proModel')}:
                     <select className="debate-model-select" value={proModel} onChange={(e) => setProModel(e.target.value)}>
                       {modelOptions.map((m) => (
                         <option key={m} value={m}>
@@ -2488,7 +2546,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     </select>
                   </label>
                   <label className="debate-model-label">
-                    Con Model:
+                    {t('debate.conModel')}:
                     <select className="debate-model-select" value={conModel} onChange={(e) => setConModel(e.target.value)}>
                       {modelOptions.map((m) => (
                         <option key={m} value={m}>
@@ -2502,7 +2560,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {actualMode === "ai-vs-user" && (
                 <>
                   <label className="debate-model-label">
-                    AI Model:
+                    {t('debate.aiModel')}:
                     <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
                       {modelOptions.map((m) => (
                         <option key={m} value={m}>
@@ -2514,7 +2572,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 </>
               )}
               <label className="debate-model-label">
-                Judge Model:
+                {t('debate.judgeModel')}:
                 <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                   {modelOptions.map((m) => (
                     <option key={m} value={m}>
@@ -2549,7 +2607,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     />
                   </div>
                 </div>
-                {model && <div className="debate-model-info">Model: {model}</div>}
+                {model && <div className="debate-model-info">{t('debate.model')}: {model}</div>}
 
                 <div className="debate-speech-content">
                   <ReactMarkdown
@@ -2605,10 +2663,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   >
                     {(() => {
                       const aiSpeeches = countAISpeeches(messageList);
-                      if (loading) return "Generating Response...";
+                      if (loading) return t('debate.generating');
 
                       const limitReached = debateFormat === "lincoln-douglas" ? aiSpeeches >= 5 : aiSpeeches >= (maxRounds * 2);
-                      if (limitReached) return "Round Limit Reached";
+                      if (limitReached) return t('debate.roundLimitReached');
                       
                       // Calculate the correct display for different formats
                       let buttonText;
@@ -2621,7 +2679,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         else if (totalSpeeches === 3) speechName = "NR";
                         else if (totalSpeeches === 4) speechName = "2AR";
 
-                        return `Generate ${speechName} (${totalSpeeches + 1}/5)`;
+                        return `${t('debate.generateSpeech')} ${speechName} (${totalSpeeches + 1}/5)`;
                       } else if (debateFormat === "public-forum") {
                         const totalSpeeches = aiSpeeches;
                         let displayRound;
@@ -2632,12 +2690,12 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         else displayRound = 4; // Should never reach here due to disable logic
 
                         return aiSide === "pro"
-                          ? `Generate Pro Round ${displayRound}/${maxRounds}`
-                          : `Generate Con Round ${displayRound}/${maxRounds}`;
+                          ? `${t('debate.generateProRound')} ${t('debate.round')} ${displayRound}/${maxRounds}`
+                          : `${t('debate.generateConRound')} ${t('debate.round')} ${displayRound}/${maxRounds}`;
                       } else {
                         return aiSide === "pro"
-                          ? `Generate Pro Round ${currentRound}/${maxRounds}`
-                          : `Generate Con Round ${currentRound}/${maxRounds}`;
+                          ? `${t('debate.generateProRound')} ${t('debate.round')} ${currentRound}/${maxRounds}`
+                          : `${t('debate.generateConRound')} ${t('debate.round')} ${currentRound}/${maxRounds}`;
                       }
                     })()}
                   </button>
@@ -2663,7 +2721,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       })() ? 0.6 : 1
                     }}
                   >
-                    Auto-Generate All Rounds
+                    {t('debate.autoGenerate')}
                   </button>
                 </>
               ) : (
@@ -2678,7 +2736,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     cursor: "pointer"
                   }}
                 >
-                  Stop Auto-Generation
+                  {t('debate.stopAuto')}
                 </button>
               )}
             </div>
@@ -2686,7 +2744,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           {debateFormat === "public-forum" && actualMode === "ai-vs-ai" && !pfOrderSelected && (
             <div className="ai-vs-user-setup">
               <div className="setup-header">
-                <h3>Public Forum Debate Setup</h3>
+                <h3>{t('debate.publicForumSetup')}</h3>
                 <button 
                   className="info-button"
                   onClick={() => setShowPfInfo(true)}
@@ -2695,21 +2753,21 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   ?
                 </button>
               </div>
-              <p style={{ color: '#fff' }}>Choose the speaking order for all 4 rounds</p>
+              <p style={{ color: '#fff' }}>{t('debate.chooseSpeakingOrder')}</p>
               <div className="order-selection">
-                <label>Speaking Order</label>
+                <label>{t('debate.speakingOrder')}</label>
                 <div className="order-buttons">
                   <button
                     className={`order-button ${pfSpeakingOrder === 'pro-first' ? 'selected' : ''}`}
                     onClick={() => setPfSpeakingOrder('pro-first')}
                   >
-                    PRO speaks first in each round
+                    {t('debate.proSpeaksFirstRound')}
                   </button>
                   <button
                     className={`order-button ${pfSpeakingOrder === 'con-first' ? 'selected' : ''}`}
                     onClick={() => setPfSpeakingOrder('con-first')}
                   >
-                    CON speaks first in each round
+                    {t('debate.conSpeaksFirstRound')}
                   </button>
                 </div>
               </div>
@@ -2719,7 +2777,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   className="confirm-button"
                   onClick={() => setPfOrderSelected(true)}
                 >
-                  Start Public Forum Debate
+                  {t('debate.startPublicForum')}
                 </button>
               </div>
             </div>
@@ -2727,7 +2785,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           {debateFormat === "lincoln-douglas" && actualMode === "ai-vs-ai" && !ldOrderSelected && (
                       <div className="ai-vs-user-setup">
                         <div className="setup-header">
-                          <h3>Lincoln-Douglas Debate Setup</h3>
+                          <h3>{t('debate.lincolnDouglasSetup')}</h3>
                           <button
                             className="info-button"
                             onClick={() => setShowLdInfo(true)}
@@ -2737,7 +2795,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                           </button>
                         </div>
                         <p style={{ color: '#fff' }}>
-                          In LD, the Affirmative always starts: AC → NC → 1AR → NR → 2AR.
+                          {t('debate.affirmativeStarts')}
                         </p>
 
                         <div className="confirm-section">
@@ -2745,7 +2803,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                             className="confirm-button"
                             onClick={() => setLdOrderSelected(true)}
                           >
-                            Start Lincoln-Douglas Debate
+                            {t('debate.startLincolnDouglas')}
                           </button>
                         </div>
                       </div>
@@ -2856,7 +2914,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               {!userSide && (
                 <div className="ai-vs-user-setup">
                   <div className="setup-header">
-                    <h3>Setup Your Debate</h3>
+                    <h3>{t('debate.setupDebate')}</h3>
                     <button
                       className="info-button"
                       onClick={() => debateFormat === 'public-forum' ? setShowPfInfo(true) : setShowLdInfo(true)}
@@ -2867,18 +2925,18 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </div>
                   <p style={{ color: '#fff' }}>
                     {debateFormat === 'lincoln-douglas'
-                      ? 'Choose your SIDE. In LD, the Affirmative (Pro) always starts.'
-                      : 'Choose your SIDE and SPEAKING ORDER'}
+                      ? t('debate.chooseSideLD')
+                      : t('debate.chooseSideOrder')}
                   </p>
                   <div className="side-selection-cards">
                     <div
                       className={`side-card ${selectedSide === 'pro' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("pro")}
                     >
-                      <h4>Argue PRO</h4>
-                      <p>Support the topic</p>
+                      <h4>{t('debate.arguePro')}</h4>
+                      <p>{t('debate.supportTopic')}</p>
                       <p className="speaking-order">
-                        You will go {firstSide === 'pro' ? 'FIRST' : 'SECOND'}
+                        {t('debate.youWillGo')} {firstSide === 'pro' ? t('debate.first') : t('debate.second')}
                       </p>
                     </div>
 
@@ -2886,29 +2944,29 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       className={`side-card ${selectedSide === 'con' ? 'selected' : ''}`}
                       onClick={() => setSelectedSide("con")}
                     >
-                      <h4>Argue CON</h4>
-                      <p>Oppose the topic</p>
+                      <h4>{t('debate.argueCon')}</h4>
+                      <p>{t('debate.opposeTopic')}</p>
                       <p className="speaking-order">
-                        You will go {firstSide === 'con' ? 'FIRST' : 'SECOND'}
+                        {t('debate.youWillGo')} {firstSide === 'con' ? t('debate.first') : t('debate.second')}
                       </p>
                     </div>
                   </div>
 
                   {debateFormat !== 'lincoln-douglas' && (
                     <div className="order-selection">
-                      <label>Speaking Order</label>
+                      <label>{t('debate.speakingOrder')}</label>
                       <div className="order-buttons">
                         <button
                           className={`order-button ${firstSide === 'pro' ? 'selected' : ''}`}
                           onClick={() => setFirstSide('pro')}
                         >
-                          PRO speaks first
+                          {t('debate.proSpeaksFirst')}
                         </button>
                         <button
                           className={`order-button ${firstSide === 'con' ? 'selected' : ''}`}
                           onClick={() => setFirstSide('con')}
                         >
-                          CON speaks first
+                          {t('debate.conSpeaksFirst')}
                         </button>
                       </div>
                     </div>
@@ -2920,14 +2978,14 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       disabled={!selectedSide}
                       onClick={() => handleChooseSide(selectedSide)}
                     >
-                      {selectedSide ? `Start Debate as ${selectedSide.toUpperCase()}` : 'Select your position first'}
+                      {selectedSide ? `${t('debate.startAs')} ${selectedSide.toUpperCase()}` : t('debate.selectPosition')}
                     </button>
                   </div>
                 </div>
               )}
               {userSide && (
                 <div className="ai-vs-user-setup">
-                  <h3>Debate as {userSide.toUpperCase()} vs AI</h3>
+                  <h3>{t('debate.debateAs')} {userSide.toUpperCase()} {t('debate.vsAI')}</h3>
 
                   <SimpleFileUpload
                     onTextExtracted={(text) => setUserInput(text)}
@@ -2937,11 +2995,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
                     disabled={loading || !canUserInput()}
-                    placeholder={`Speak your ${userSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={`${t('debate.speakArgument')} ${userSide === "pro" ? t('debate.arguePro') : t('debate.argueCon')} ${t('debate.argument')}`}
                   />
 
                   <textarea
-                    placeholder={`Enter your ${userSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={`${t('debate.enterArgument')} ${userSide === "pro" ? t('debate.arguePro') : t('debate.argueCon')}`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
@@ -2969,7 +3027,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         opacity: loading || !userInput.trim() || !canUserInput() ? 0.6 : 1
                       }}
                     >
-                      {loading ? "Generating Response..." : !canUserInput() ? "Debate Complete" : "Send & Get AI Reply"}
+                      {loading ? t('debate.generating') : !canUserInput() ? t('debate.debateComplete') : t('debate.sendGetReply')}
                     </button>
 
                     {(firstSide === "con" && userSide === "pro") ||
@@ -2987,7 +3045,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                           opacity: loading || !userInput.trim() || !canUserInput() ? 0.6 : 1
                         }}
                       >
-                        Send & End (No AI Reply)
+                        {t('debate.sendEnd')}
                       </button>
                     ) : null}
 
@@ -3000,14 +3058,14 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             <>
               {!userVsUserSetup.confirmed && (
                 <div className="ai-vs-user-setup">
-                  <h3>Setup User vs User Debate</h3>
+                  <h3>{t('debate.setupUserVsUser')}</h3>
 
                   <div className="user-name-inputs">
                     <div className="name-input-group">
-                      <label>Pro Debater Name:</label>
+                      <label>{t('debate.proDebaterName')}</label>
                       <input
                         type="text"
-                        placeholder="Enter Pro debater's name"
+                        placeholder={t('debate.enterProName')}
                         value={userVsUserSetup.proUser}
                         onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, proUser: e.target.value }))}
                         style={{
@@ -3022,10 +3080,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     </div>
 
                     <div className="name-input-group">
-                      <label>Con Debater Name:</label>
+                      <label>{t('debate.conDebaterName')}</label>
                       <input
                         type="text"
-                        placeholder="Enter Con debater's name"
+                        placeholder={t('debate.enterConName')}
                         value={userVsUserSetup.conUser}
                         onChange={(e) => setUserVsUserSetup(prev => ({ ...prev, conUser: e.target.value }))}
                         style={{
@@ -3041,22 +3099,22 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </div>
 
                   {debateFormat === 'lincoln-douglas' ? (
-                    <p style={{ color: '#fff' }}>In LD, the Affirmative (Pro) always starts.</p>
+                    <p style={{ color: '#fff' }}>{t('debate.affirmativeStarts')}</p>
                   ) : (
                     <div className="order-selection">
-                      <label>Who speaks first?</label>
+                      <label>{t('debate.whoSpeaksFirst')}</label>
                       <div className="order-buttons">
                         <button
                           className={`order-button ${userVsUserSetup.firstSpeaker === 'pro' ? 'selected' : ''}`}
                           onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'pro' }))}
                         >
-                          {userVsUserSetup.proUser || 'Pro'} speaks first
+                          {userVsUserSetup.proUser || t('debate.arguePro')} {t('debate.speaksFirst')}
                         </button>
                         <button
                           className={`order-button ${userVsUserSetup.firstSpeaker === 'con' ? 'selected' : ''}`}
                           onClick={() => setUserVsUserSetup(prev => ({ ...prev, firstSpeaker: 'con' }))}
                         >
-                          {userVsUserSetup.conUser || 'Con'} speaks first
+                          {userVsUserSetup.conUser || t('debate.argueCon')} {t('debate.speaksFirst')}
                         </button>
                       </div>
                     </div>
@@ -3064,7 +3122,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
                   <div className="debate-model-selection" style={{ marginBottom: "1.5rem" }}>
                     <label className="debate-model-label">
-                      Judge Model:
+                      {t('debate.judgeModel')}:
                       <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
                         {modelOptions.map((m) => (
                           <option key={m} value={m}>
@@ -3107,11 +3165,11 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   <VoiceInput
                     onTranscript={(text) => setUserInput(text)}
                     disabled={loading || !canUserInput()}
-                    placeholder={`Speak your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={`${t('debate.speakArgument')} ${userVsUserSide === "pro" ? t('debate.arguePro') : t('debate.argueCon')} ${t('debate.argument')}`}
                   />
 
                   <textarea
-                    placeholder={`Enter your ${userVsUserSide === "pro" ? "Pro" : "Con"} argument`}
+                    placeholder={`${t('debate.enterArgument')} ${userVsUserSide === "pro" ? t('debate.arguePro') : t('debate.argueCon')}`}
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     rows={4}
@@ -3148,7 +3206,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         fontSize: "1rem"
                       }}
                     >
-                      {!canUserInput() ? "Debate Complete" : `Send as ${userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}`}
+                      {!canUserInput() ? t('debate.debateComplete') : `${t('debate.sendAs')} ${userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}`}
                     </button>
 
                     <button
@@ -3163,7 +3221,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                         fontSize: "1rem"
                       }}
                     >
-                      Restart Setup
+                      {t('debate.restartSetup')}
                     </button>
                   </div>
                 </div>
@@ -3173,7 +3231,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           {error && <p style={{ color: "red" }}>{error}</p>}
           {loading && !error && (
             <LoadingSpinner
-              message="Generating AI response"
+              message={t('debate.generatingAI')}
               showProgress={true}
               estimatedTime={45000}
             />
@@ -3184,7 +3242,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
               onClick={() => handleEndDebate()}
               disabled={loading || messageList.length === 0}
             >
-              End Debate & Get Judgment
+              {t('debate.endDebate')}
             </button>
           </div>
         </div>
@@ -3199,7 +3257,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             className="feedback-link"
           >
             <MessageSquare size={16} />
-            Give Feedback
+            {t('debate.giveFeedback')}
           </a>
           <a
             href="https://github.com/alexliao95311/DebateSim"
@@ -3208,10 +3266,10 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             className="github-link"
           >
             <Code size={16} />
-            GitHub
+            {t('debate.github')}
           </a>
         </div>
-        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. {t('debate.allRightsReserved')}</span>
       </footer>
     </div>
   );

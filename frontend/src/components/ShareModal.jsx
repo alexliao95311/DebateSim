@@ -3,9 +3,11 @@ import React, { useState, useEffect } from "react";
 import { shareTranscript, unshareTranscript } from "../firebase/shareTranscript";
 import { marked } from 'marked';
 import PDFGenerator from "../utils/pdfGenerator";
+import { useTranslation } from '../utils/translations';
 import "./ShareModal.css";
 
 function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
+  const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState("");
@@ -47,9 +49,9 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
       if (err.message && err.message.includes("too old or corrupted")) {
         setError(err.message);
       } else if (err.message && err.message.includes("logged in")) {
-          setError("You must be logged in to share transcripts.");
+          setError(t('shareModal.mustLogin'));
       } else {
-        setError("Failed to share transcript. Please try again.");
+        setError(t('shareModal.failedShare'));
       }
       console.error("Share error:", err);
     } finally {
@@ -68,9 +70,9 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
       if (err.message && err.message.includes("too old or corrupted")) {
         setError(err.message);
       } else if (err.message && err.message.includes("logged in")) {
-          setError("You must be logged in to unshare transcripts.");
+          setError(t('shareModal.mustLogin'));
       } else {
-        setError("Failed to unshare transcript. Please try again.");
+        setError(t('shareModal.failedUnshare'));
       }
       console.error("Unshare error:", err);
     } finally {
@@ -117,7 +119,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
         PDFGenerator.generateDebatePDF(pdfData);
       }     
     } catch (err) {
-      setPdfError("Failed to generate PDF. Please try again.");
+      setPdfError(t('shareModal.failedPDF'));
       console.error("PDF generation error:", err);
     }
   };
@@ -128,7 +130,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
     <div className="share-modal-overlay" onClick={onClose}>
       <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="share-modal-header">
-          <h3>Share Debate Transcript</h3>
+          <h3>{t('shareModal.title')}</h3>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         
@@ -145,31 +147,31 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
 
           {/* PDF Download Section */}
           <div className="download-section">
-            <h4>Download Options</h4>
+            <h4>{t('shareModal.downloadOptions')}</h4>
             <button 
               className="download-button pdf"
               onClick={handleDownloadPDF}
             >
-              📄 Download as PDF
+              📄 {t('shareModal.downloadPDF')}
             </button>
           </div>
 
           {!shareUrl ? (
             <div className="share-actions">
-              <h4>Online Sharing</h4>
-              <p>Share this transcript publicly so others can view it with a link.</p>
+              <h4>{t('shareModal.onlineSharing')}</h4>
+              <p>{t('shareModal.shareDescription')}</p>
               <button 
                 className="share-button primary"
                 onClick={handleShare}
                 disabled={isSharing}
               >
-                {isSharing ? "Creating Share Link..." : "Create Share Link"}
+                {isSharing ? t('shareModal.creatingLink') : t('shareModal.createLink')}
               </button>
             </div>
           ) : (
             <div className="share-actions">
-              <h4>Online Sharing</h4>
-              <p>This transcript is now publicly shareable:</p>
+              <h4>{t('shareModal.onlineSharing')}</h4>
+              <p>{t('shareModal.shareable')}</p>
               
               <div className="share-link-container">
                 <input 
@@ -182,7 +184,7 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
                   className="copy-button"
                   onClick={handleCopyLink}
                 >
-                  {copySuccess ? "Copied!" : "Copy"}
+                  {copySuccess ? t('shareModal.copied') : t('shareModal.copy')}
                 </button>
               </div>
 

@@ -8,6 +8,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTSProvider, HeaderPlayButton } from './EnhancedAnalysisTTS';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
+import { useTranslation } from '../utils/translations';
 import "./PublicTranscriptView.css";
 import "./Legislation.css"; // For grading section styles
 import "./Debate.css"; // For debate speech header and TTS button styles
@@ -15,17 +16,18 @@ import AnalysisSidebar from "./AnalysisSidebar";
 
 // Speech Sidebar Component for Public Transcript View
 const PublicSpeechSidebar = ({ speechList, scrollToSpeech, sidebarExpanded, setSidebarExpanded, transcript, extractSpeechText }) => {
+  const { t } = useTranslation();
   return (
     <>
       <button 
         className="toggle-sidebar" 
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
       >
-        {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
+        {sidebarExpanded ? t('publicTranscript.hideSpeeches') : t('publicTranscript.showSpeeches')}
       </button>
       
       <div className={`debate-sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <h3 className="sidebar-title">Speeches</h3>
+        <h3 className="sidebar-title">{t('publicTranscript.speeches')}</h3>
         <ul className="sidebar-list">
           {speechList.map((item) => (
             <li 
@@ -359,50 +361,51 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
 };
 
 const BillGradingSection = ({ grades }) => {
+  const { t } = useTranslation();
   const gradingCriteria = {
     economicImpact: {
-      label: 'Economic Impact',
-      description: 'Fiscal responsibility & benefits',
+      label: t('legislation.grading.economicImpact'),
+      description: t('legislation.grading.economicImpact'),
       tooltip: 'Economic benefits and fiscal impact',
       icon: '💰',
       category: 'moderate',
       order: 1
     },
     publicBenefit: {
-      label: 'Public Benefit', 
-      description: 'Benefits to citizens',
+      label: t('legislation.grading.publicBenefit'), 
+      description: t('legislation.grading.publicBenefit'),
       tooltip: 'Addresses public needs effectively',
       icon: '👥',
       category: 'positive',
       order: 2
     },
     feasibility: {
-      label: 'Implementation Feasibility',
-      description: 'Practicality of execution',
+      label: t('legislation.grading.feasibility'),
+      description: t('legislation.grading.feasibility'),
       tooltip: 'Can be realistically implemented',
       icon: '🛠',
       category: 'caution',
       order: 3
     },
     legalSoundness: {
-      label: 'Legal Soundness',
-      description: 'Constitutional compliance',
+      label: t('legislation.grading.legalSoundness'),
+      description: t('legislation.grading.legalSoundness'),
       tooltip: 'Constitutional and legal compliance',
       icon: '⚖️',
       category: 'positive',
       order: 4
     },
     effectiveness: {
-      label: 'Goal Effectiveness',
-      description: 'Achievement of stated objectives',
+      label: t('legislation.grading.effectiveness'),
+      description: t('legislation.grading.effectiveness'),
       tooltip: 'Achieves stated objectives well',
       icon: '🎯',
       category: 'moderate',
       order: 5
     },
     overall: {
-      label: 'Overall Rating',
-      description: 'Comprehensive assessment',
+      label: t('legislation.grading.overall'),
+      description: t('legislation.grading.overall'),
       tooltip: 'Weighted average of all criteria',
       icon: '📊',
       category: 'overall',
@@ -413,8 +416,8 @@ const BillGradingSection = ({ grades }) => {
   return (
     <div className="grading-section">
       <div className="grading-header">
-        <h2>Bill Analysis Grades</h2>
-        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+        <h2>{t('legislation.grading.title')}</h2>
+        <div className="grading-subtitle">{t('legislation.grading.subtitle')}</div>
       </div>
       
       <div className="grading-grid">
@@ -446,6 +449,7 @@ const BillGradingSection = ({ grades }) => {
 function PublicTranscriptView() {
   const { shareId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [transcript, setTranscript] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -628,11 +632,11 @@ function PublicTranscriptView() {
             setSpeechList(speeches);
           }
         } else {
-          setError("This transcript is no longer available or the link is invalid.");
+          setError(t('publicTranscript.notFoundDesc'));
         }
       } catch (err) {
         console.error("Error fetching shared transcript:", err);
-        setError("Failed to load the shared transcript. Please try again later.");
+        setError(t('error.failedToGenerate'));
       } finally {
         setLoading(false);
       }
@@ -662,18 +666,18 @@ function PublicTranscriptView() {
           <div className="public-header-content">
             <div className="public-header-center">
               <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
-                Debate Simulator
+                {t('publicTranscript.debateSimulator')}
               </h1>
             </div>
             <div className="public-header-right">
               <button className="public-home-button" onClick={handleBackToHome}>
-                Try DebateSim
+                {t('publicTranscript.tryDebateSim')}
               </button>
             </div>
           </div>
         </header>
         <div className="public-main-content">
-          <LoadingSpinner message="Loading shared transcript..." />
+          <LoadingSpinner message={t('publicTranscript.loadingShared')} />
         </div>
       </div>
     );
@@ -686,22 +690,22 @@ function PublicTranscriptView() {
           <div className="public-header-content">
             <div className="public-header-center">
               <h1 className="public-site-title" onClick={handleBackToHome} style={{ cursor: "pointer" }}>
-                Debate Simulator
+                {t('publicTranscript.debateSimulator')}
               </h1>
             </div>
             <div className="public-header-right">
               <button className="public-home-button" onClick={handleBackToHome}>
-                Try DebateSim
+                {t('publicTranscript.tryDebateSim')}
               </button>
             </div>
           </div>
         </header>
         <div className="public-main-content">
           <div className="public-error-container">
-            <h2 className="public-error-title">Transcript Not Found</h2>
-            <p className="public-error-text">{error || "The shared transcript you're looking for doesn't exist."}</p>
+            <h2 className="public-error-title">{t('publicTranscript.notFound')}</h2>
+            <p className="public-error-text">{error || t('publicTranscript.notFoundDesc')}</p>
             <button className="public-home-button" onClick={handleBackToHome}>
-              Go to DebateSim
+              {t('publicTranscript.goToDebateSim')}
             </button>
           </div>
         </div>
@@ -712,7 +716,7 @@ function PublicTranscriptView() {
   return (
     <div className={`debate-container ${(sidebarExpanded || analysisSidebarExpanded) ? 'sidebar-open' : ''}`}>
       <button className="back-to-home" onClick={handleBackToHome}>
-        Try DebateSim
+        {t('publicTranscript.tryDebateSim')}
       </button>
 
       {/* Debate sidebar - only for debate transcripts */}
@@ -741,7 +745,7 @@ function PublicTranscriptView() {
         <div className="debate-content">
           <div className="topic-header-section">
             <h2 className="debate-topic-header">
-              Shared {transcript.activityType === 'Analyze Bill' ? 'Bill Analysis' : 'Debate Transcript'}: {transcript.topic}
+              {transcript.activityType === 'Analyze Bill' ? t('publicTranscript.sharedBillAnalysis') : t('publicTranscript.sharedDebateTranscript')}: {transcript.topic}
             </h2>
             <div className="public-transcript-meta">
               <span className="public-mode">{transcript.mode}</span>
@@ -766,14 +770,14 @@ function PublicTranscriptView() {
           
           <div className="public-transcript-footer">
             <p className="public-footer-text">
-              This debate transcript was generated using{" "}
+              {t('publicTranscript.footerText')}{" "}
               <span className="public-debatesim-link" onClick={handleBackToHome}>
-                DebateSim
+                {t('publicTranscript.footerLink')}
               </span>
-              {" "}— Try creating your own AI-powered debates!
+              {" "}{t('publicTranscript.footerSuffix')}
             </p>
             <p className="public-shared-info">
-              Shared on {new Date(transcript.sharedAt).toLocaleDateString()}
+              {t('publicTranscript.sharedOn')} {new Date(transcript.sharedAt).toLocaleDateString()}
             </p>
           </div>
         </div>

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, User, Settings, LogOut, History, Home } from 'lucide-react';
+import { useTranslation } from '../utils/translations';
 import './UserDropdown.css';
 
 const UserDropdown = ({ user, onLogout, className = '' }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -56,7 +58,7 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
         <div className="user-dropdown-menu">
           <div className="user-dropdown-item user-info">
             <User size={16} />
-            <span>{user?.displayName || 'Guest'}</span>
+            <span>{user?.displayName || t('userDropdown.guest')}</span>
           </div>
 
           <button
@@ -64,7 +66,7 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
             onClick={handleHomeClick}
           >
             <Home size={16} />
-            <span>Back to Home</span>
+            <span>{t('userDropdown.backToHome')}</span>
           </button>
 
           <button
@@ -72,7 +74,7 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
             onClick={handleHistoryClick}
           >
             <History size={16} />
-            <span>History</span>
+            <span>{t('userDropdown.history')}</span>
           </button>
 
           <button
@@ -80,7 +82,7 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
             onClick={handleSettingsClick}
           >
             <Settings size={16} />
-            <span>Settings</span>
+            <span>{t('userDropdown.settings')}</span>
           </button>
 
           <button
@@ -88,7 +90,7 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
             onClick={handleLogoutClick}
           >
             <LogOut size={16} />
-            <span>Logout</span>
+            <span>{t('userDropdown.logout')}</span>
           </button>
         </div>
       )}

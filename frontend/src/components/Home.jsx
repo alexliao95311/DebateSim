@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import UserDropdown from "./UserDropdown";
+import { useTranslation } from "../utils/translations";
 import {
   Code,
   Gavel,
@@ -23,6 +24,7 @@ console.log("API_URL:", import.meta.env.VITE_API_URL);
 
 function Home({ user, onLogout }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -132,32 +134,32 @@ function Home({ user, onLogout }) {
   const features = [
     {
       id: "debate-sim",
-      title: "Debate Simulator",
-      description: "Experience dynamic debates with AI. Challenge your thinking by exploring multiple perspectives, enhance your argumentation skills, and deepen your understanding of complex topics.",
+      title: t('home.feature.debateSim.title'),
+      description: t('home.feature.debateSim.description'),
       icon: <Gavel className="home-feature-icon" />,
       status: "active",
       route: "/debatesim",
-      tags: ["AI Powered", "Interactive"],
+      tags: [t('home.tag.aiPowered'), t('home.tag.interactive')],
       gradient: "from-blue-500 to-purple-600"
     },
     {
       id: "legislation",
-      title: "Bill and Legislation Debate",
-      description: "Upload any Congressional bill and engage in thoughtful debates about its merits with friends or AI opponents. Explore legislation from multiple perspectives.",
+      title: t('home.feature.legislation.title'),
+      description: t('home.feature.legislation.description'),
       icon: <Code className="home-feature-icon" />,
       status: "active",
       route: "/legislation",
-      tags: ["AI Powered Analysis", "Collaborative"],
+      tags: [t('home.tag.aiPoweredAnalysis'), t('home.tag.collaborative')],
       gradient: "from-green-500 to-teal-600"
     },
     {
       id: "debate-trainer",
-      title: "DebateTrainer",
-      description: "Practice specific skills like rebuttals, weighing, or summary speeches with AI opponents at different skill levels and receive targeted feedback to improve quickly.",
+      title: t('home.feature.debateTrainer.title'),
+      description: t('home.feature.debateTrainer.description'),
       icon: <Award className="home-feature-icon" />,
       status: "active",
       route: "/debatetrainer",
-      tags: ["Training"],
+      tags: [t('home.tag.training')],
       gradient: "from-orange-500 to-red-600"
     },
   ];
@@ -168,21 +170,21 @@ function Home({ user, onLogout }) {
         return (
           <div className="home-status-badge home-status-active">
             <CheckCircle size={14} />
-            <span>Live</span>
+            <span>{t('home.live')}</span>
           </div>
         );
       case "beta":
         return (
           <div className="home-status-badge home-status-beta">
             <Zap size={14} />
-            <span>Beta</span>
+            <span>{t('home.beta')}</span>
           </div>
         );
       case "coming-soon":
         return (
           <div className="home-status-badge home-status-coming-soon">
             <Clock size={14} />
-            <span>Coming Soon</span>
+            <span>{t('home.comingSoon')}</span>
           </div>
         );
       default:
@@ -214,7 +216,7 @@ function Home({ user, onLogout }) {
             justifyContent: 'center',
             flex: 1
           }}>
-            <h1 className="home-site-title">Feature Hub</h1>
+            <h1 className="home-site-title">{t('home.featureHub')}</h1>
           </div>
 
           <div className="home-header-right">
@@ -226,32 +228,32 @@ function Home({ user, onLogout }) {
       <div className="home-main-content">
         <div className={`home-hero-section ${isVisible ? 'visible' : ''}`}>
           <h1 className="home-welcome-message">
-            Welcome back, <span className="home-username-highlight">{user?.displayName}</span>
+            {t('home.welcomeBack')} <span className="home-username-highlight">{user?.displayName}</span>
           </h1>
           <p className="home-hero-subtitle">
-            Explore powerful tools for debate, analysis, and critical thinking
+            {t('home.exploreTools')}
           </p>
         </div>
 
         <div className="home-section-header">
-          <h2>Select a Feature</h2>
+          <h2>{t('home.selectFeature')}</h2>
           <div className="home-feature-stats">
             {features.filter(f => f.status === 'active').length > 0 && (
               <div className="home-stat-item">
                 <TrendingUp size={16} />
-                <span>{features.filter(f => f.status === 'active').length} Active</span>
+                <span>{features.filter(f => f.status === 'active').length} {t('home.active')}</span>
               </div>
             )}
             {features.filter(f => f.status === 'beta').length > 0 && (
               <div className="home-stat-item">
                 <Clock size={16} />
-                <span>{features.filter(f => f.status === 'beta').length} In Progress</span>
+                <span>{features.filter(f => f.status === 'beta').length} {t('home.inProgress')}</span>
               </div>
             )}
             {features.filter(f => f.status === 'coming-soon').length > 0 && (
               <div className="home-stat-item">
                 <TrendingUp size={16} />
-                <span>{features.filter(f => f.status === 'coming-soon').length} Coming Soon</span>
+                <span>{features.filter(f => f.status === 'coming-soon').length} {t('home.comingSoon')}</span>
               </div>
             )}
           </div>
@@ -307,9 +309,9 @@ function Home({ user, onLogout }) {
                       disabled={feature.status === 'coming-soon'}
                     >
                       <span>
-                        {feature.status === 'coming-soon' ? 'Coming Soon' : 
-                         feature.status === 'beta' ? 'Try Beta' : 
-                         `Launch ${feature.title.split(' ')[0]}`}
+                        {feature.status === 'coming-soon' ? t('home.comingSoon') : 
+                         feature.status === 'beta' ? t('home.tryBeta') : 
+                         `${t('home.launch')} ${feature.title.split(' ')[0]}`}
                       </span>
                       {feature.status !== 'coming-soon' && (
                         <ChevronRight 
@@ -332,8 +334,8 @@ function Home({ user, onLogout }) {
           <div className="home-info-card">
             <Star className="home-info-icon" />
             <div>
-              <h4>More Features Coming Soon</h4>
-              <p>We're constantly working on new tools to enhance your experience</p>
+              <h4>{t('home.moreFeatures')}</h4>
+              <p>{t('home.moreFeaturesDesc')}</p>
             </div>
           </div>
         </div>

@@ -156,6 +156,7 @@ class GenerateResponseRequest(BaseModel):
     persona: str = "Default AI"  # Persona name for logging
     debate_format: str = "default"  # Debate format (default, public-forum)
     speaking_order: str = "pro-first"  # Speaking order for public forum (pro-first, con-first)
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):

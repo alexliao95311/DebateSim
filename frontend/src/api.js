@@ -1,4 +1,5 @@
 import axios from "axios";
+import languagePreferenceService from './services/languagePreferenceService';
 
 // Adjust the URL if using a custom port or domain
 // Use the environment variable; default to local URL if not set
@@ -46,6 +47,8 @@ export const generateAIResponse = async (debater, prompt, model, billDescription
     
     const startTime = Date.now();
     
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
+    
     const response = await apiClient.post('/generate-response', {
       debater,
       prompt,
@@ -56,6 +59,7 @@ export const generateAIResponse = async (debater, prompt, model, billDescription
       persona: persona, // Pass the persona name for logging
       debate_format: debateFormat, // Pass the debate format
       speaking_order: speakingOrder, // Pass the speaking order for public forum
+      language: currentLanguage, // Pass the language preference
     });
     
     const duration = Date.now() - startTime;
@@ -72,15 +76,18 @@ export const getAIJudgeFeedback = async (transcript, model) => {
   try {
     console.log(`🏛️ Generating judge feedback using ${model}`);
     const startTime = Date.now();
-    
+
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
+
     const response = await apiClient.post('/judge-feedback', {
       transcript,
       model, // Pass along the chosen judge model
+      language: currentLanguage, // Pass the language preference
     });
-    
+
     const duration = Date.now() - startTime;
     console.log(`✅ Judge feedback generated in ${duration}ms`);
-    
+
     return response.data.response;
   } catch (error) {
     console.error("Error fetching AI judge feedback:", error);
