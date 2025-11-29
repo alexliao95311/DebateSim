@@ -1,18 +1,20 @@
 import React from 'react';
+import { useTranslation } from '../utils/translations';
 import './DebateSidebar.css';
 
 const AnalysisSidebar = ({ sidebarExpanded, setSidebarExpanded, sectionList, scrollToSection }) => {
+  const { t } = useTranslation();
   return (
     <>
       <button 
         className="toggle-sidebar" 
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
       >
-        {sidebarExpanded ? "Hide Sections" : "Show Sections"}
+        {sidebarExpanded ? t('analysisSidebar.hideSections') : t('analysisSidebar.showSections')}
       </button>
       
       <div className={`debate-sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <h3 className="sidebar-title">Table of Contents</h3>
+        <h3 className="sidebar-title">{t('analysisSidebar.tableOfContents')}</h3>
         <ul className="sidebar-list">
           {sectionList.map((item) => (
             <li 

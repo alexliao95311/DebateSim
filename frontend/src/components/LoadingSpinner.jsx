@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../utils/translations';
 import './LoadingSpinner.css';
 
 const LoadingSpinner = ({ message = "Loading...", showProgress = false }) => {
+  const { t } = useTranslation();
   const [dots, setDots] = useState('');
 
   // Animated dots effect
@@ -28,7 +30,7 @@ const LoadingSpinner = ({ message = "Loading...", showProgress = false }) => {
             <div className="progress-bar">
               <div className="progress-fill infinite-slide"></div>
             </div>
-            <span className="progress-text">Processing...</span>
+            <span className="progress-text">{t('loadingSpinner.processing')}</span>
           </div>
         )}
       </div>

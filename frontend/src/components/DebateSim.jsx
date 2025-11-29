@@ -4,6 +4,7 @@ import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import UserDropdown from "./UserDropdown";
+import { useTranslation } from "../utils/translations";
 import {
   Users,
   Bot,
@@ -17,6 +18,7 @@ import "./DebateSim.css";
 import Footer from "./Footer.jsx";
 
 function DebateSim({ user }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState("");
   const [debateFormat, setDebateFormat] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
@@ -213,26 +215,26 @@ function DebateSim({ user }) {
   const modes = [
     {
       id: "ai-vs-ai",
-      title: "AI vs AI",
-      description: "Watch two AI systems debate each other with advanced reasoning and counter-arguments",
+      title: t('debatesim.mode.aiVsAi.title'),
+      description: t('debatesim.mode.aiVsAi.description'),
       icon: <Bot size={48} />,
-      tags: ["Automated", "Analysis"],
+      tags: [t('debatesim.tag.automated'), t('debatesim.tag.analysis')],
       color: "from-blue-500 to-purple-600"
     },
     {
       id: "ai-vs-user",
-      title: "AI vs User",
-      description: "Challenge yourself against AI. Test your debating skills and learn new perspectives",
+      title: t('debatesim.mode.aiVsUser.title'),
+      description: t('debatesim.mode.aiVsUser.description'),
       icon: <UserCheck size={48} />,
-      tags: ["Interactive", "Educational"],
+      tags: [t('debatesim.tag.interactive'), t('debatesim.tag.educational')],
       color: "from-green-500 to-teal-600"
     },
     {
       id: "user-vs-user",
-      title: "User vs User",
-      description: "Debate with friends or colleagues. Perfect for educational discussions and team activities",
+      title: t('debatesim.mode.userVsUser.title'),
+      description: t('debatesim.mode.userVsUser.description'),
       icon: <Users size={48} />,
-      tags: ["Collaborative", "Social"],
+      tags: [t('debatesim.tag.collaborative'), t('debatesim.tag.social')],
       color: "from-orange-500 to-red-600"
     }
   ];
@@ -240,27 +242,27 @@ function DebateSim({ user }) {
   const debateFormats = [
     {
       id: "default",
-      title: "Default Format",
-      description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
+      title: t('debatesim.format.default.title'),
+      description: t('debatesim.format.default.description'),
       icon: <Award size={48} />,
-      tags: ["Academic", "Structured"],
+      tags: [t('debatesim.tag.academic'), t('debatesim.tag.structured')],
       color: "from-indigo-500 to-blue-600"
     },
     {
       id: "public-forum",
-      title: "Public Forum",
-      description: "Public Forum debate style with 4 rounds exactly: Constructive, Rebuttal, Summary, Final Focus",
+      title: t('debatesim.format.publicForum.title'),
+      description: t('debatesim.format.publicForum.description'),
       icon: <Users size={48} />,
-      tags: ["Accessible", "Structured"],
+      tags: [t('debatesim.tag.accessible'), t('debatesim.tag.structured')],
       color: "from-emerald-500 to-green-600"
     }
     ,
     {
       id: "lincoln-douglas",
-      title: "LD Debate",
-      description: "Philosophical debate format with value premise, criterion, and contentions. 5 rounds with Affirmative starting first.",
+      title: t('debatesim.format.lincolnDouglas.title'),
+      description: t('debatesim.format.lincolnDouglas.description'),
       icon: <Award size={48} />,
-      tags: ["Philosophy", "Framework", "LD"],
+      tags: [t('debatesim.tag.philosophy'), t('debatesim.tag.framework'), t('debatesim.tag.ld')],
       color: "from-yellow-500 to-orange-600"
     }
   ];
@@ -269,32 +271,32 @@ function DebateSim({ user }) {
   const personas = [
     {
       id: "default",
-      name: "Default AI",
-      description: "Standard debate style",
+      name: t('debatesim.persona.default.name'),
+      description: t('debatesim.persona.default.description'),
       image: "/images/ai.jpg"
     },
     {
       id: "trump",
-      name: "Donald Trump",
-      description: "Bold, direct speaking style",
+      name: t('debatesim.persona.trump.name'),
+      description: t('debatesim.persona.trump.description'),
       image: "/images/trump.jpeg"
     },
     {
       id: "harris",
-      name: "Kamala Harris",
-      description: "Prosecutorial, precise debate style",
+      name: t('debatesim.persona.harris.name'),
+      description: t('debatesim.persona.harris.description'),
       image: "/images/harris.webp"
     },
     {
       id: "musk",
-      name: "Elon Musk",
-      description: "Innovative, tech-focused approach",
+      name: t('debatesim.persona.musk.name'),
+      description: t('debatesim.persona.musk.description'),
       image: "/images/elon.jpg"
     },
     {
       id: "drake",
-      name: "Drake",
-      description: "Charismatic, cultural references",
+      name: t('debatesim.persona.drake.name'),
+      description: t('debatesim.persona.drake.description'),
       image: "/images/drake.jpg"
     }
   ];
@@ -350,11 +352,11 @@ function DebateSim({ user }) {
 
   const handleStartDebate = () => {
     if (!mode) {
-      alert("Please select a debate mode before starting.");
+      alert(t('debatesim.selectModeFirst'));
       return;
     }
     if (!debateTopic.trim()) {
-      alert("Please enter a debate topic.");
+      alert(t('debatesim.enterTopicFirst'));
       return;
     }
     // Default to "default" format if none selected
@@ -407,7 +409,7 @@ function DebateSim({ user }) {
             flex: 1
           }}>
             <h1 className="debatesim-site-title" onClick={() => navigate("/")}>
-              Debate Simulator
+              {t('debatesim.title')}
             </h1>
           </div>
 
@@ -422,16 +424,16 @@ function DebateSim({ user }) {
         {/* Hero Section */}
         <div className={`debatesim-hero-section ${isVisible ? 'debatesim-visible' : ''}`}>
           <h1 className="debatesim-welcome-message">
-            Welcome back, <span className="debatesim-username-highlight">{user?.displayName}</span>
+            {t('debatesim.welcomeBack')} <span className="debatesim-username-highlight">{user?.displayName}</span>
           </h1>
           <p className="debatesim-hero-subtitle">
-            Choose your debate mode and engage in thoughtful discussions
+            {t('debatesim.heroSubtitle')}
           </p>
         </div>
 
         {/* Mode Selection Section */}
         <div className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.2s' }}>
-          <h2 className="debatesim-section-title">Select a Debate Mode</h2>
+          <h2 className="debatesim-section-title">{t('debatesim.selectMode')}</h2>
           <div className="debatesim-mode-grid">
             {modes.map((modeOption, index) => (
               <div
@@ -462,11 +464,11 @@ function DebateSim({ user }) {
                 >
                   {mode === modeOption.id ? (
                     <>
-                      <span>✓ Selected</span>
+                      <span>{t('debatesim.mode.selected')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Select Mode</span>
+                      <span>{t('debatesim.mode.selectMode')}</span>
                       <ChevronRight size={16} />
                     </>
                   )}
@@ -478,7 +480,7 @@ function DebateSim({ user }) {
 
         {/* Debate Format Selection Section */}
         <div ref={formatSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.3s' }}>
-          <h2 className="debatesim-section-title">Select Debate Format</h2>
+          <h2 className="debatesim-section-title">{t('debatesim.selectFormat')}</h2>
           <div className="debatesim-mode-grid">
             {debateFormats.map((formatOption, index) => (
               <div
@@ -507,11 +509,11 @@ function DebateSim({ user }) {
                 >
                   {debateFormat === formatOption.id ? (
                     <>
-                      <span>✓ Selected</span>
+                      <span>{t('debatesim.mode.selected')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Select Format</span>
+                      <span>{t('debatesim.format.selectFormat')}</span>
                       <ChevronRight size={16} />
                     </>
                   )}
@@ -523,9 +525,9 @@ function DebateSim({ user }) {
 
         {/* Persona Selection Section */}
         <div ref={personaSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.4s' }}>
-          <h2 className="debatesim-section-title">Select Debate Personas</h2>
+          <h2 className="debatesim-section-title">{t('debatesim.selectPersonas')}</h2>
           <p className="debatesim-section-subtitle">
-            Choose personas for your debate participants. Different personas will be available based on your selected mode.
+            {t('debatesim.personasSubtitle')}
           </p>
           
           <div className="debatesim-persona-container">
@@ -571,7 +573,7 @@ function DebateSim({ user }) {
                             setTimeout(() => updateArrowVisibility(), 100);
                           }}
                         >
-                          {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                          {proPersona === persona.id ? t('debatesim.persona.proSide') : t('debatesim.persona.selectPro')}
                         </button>
                         <button 
                           className={`debatesim-persona-select-btn ${conPersona === persona.id ? 'debatesim-selected' : ''}`}
@@ -580,7 +582,7 @@ function DebateSim({ user }) {
                             setTimeout(() => updateArrowVisibility(), 100);
                           }}
                         >
-                          {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                          {conPersona === persona.id ? t('debatesim.persona.conSide') : t('debatesim.persona.selectCon')}
                         </button>
                       </div>
                     )}
@@ -593,13 +595,13 @@ function DebateSim({ user }) {
                           setTimeout(() => updateArrowVisibility(), 100);
                         }}
                       >
-                        {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                        {aiPersona === persona.id ? t('debatesim.mode.selected') : t('debatesim.persona.selectAi')}
                       </button>
                     )}
 
                     {mode === 'user-vs-user' && (
                       <div className="debatesim-persona-info">
-                        <p className="debatesim-persona-disabled">No AI personas needed for user vs user mode</p>
+                        <p className="debatesim-persona-disabled">{t('debatesim.persona.noPersonasNeeded')}</p>
                       </div>
                     )}
 
@@ -609,7 +611,7 @@ function DebateSim({ user }) {
                           className="debatesim-persona-select-btn debatesim-disabled"
                           disabled
                         >
-                          Select a mode first
+                          {t('debatesim.persona.selectModeFirst')}
                         </button>
                       </div>
                     )}
@@ -622,7 +624,7 @@ function DebateSim({ user }) {
 
         {/* Topic Input Section */}
         <div ref={topicSectionRef} className={`debatesim-section ${isVisible ? 'debatesim-visible' : ''}`} style={{ animationDelay: '0.6s' }}>
-          <h2 className="debatesim-section-title">Enter Debate Topic</h2>
+          <h2 className="debatesim-section-title">{t('debatesim.enterTopic')}</h2>
           <div className="debatesim-input-section">
             <div className="debatesim-input-wrapper">
               <div className="debatesim-input-container">
@@ -630,7 +632,7 @@ function DebateSim({ user }) {
                   ref={inputRef}
                   className="debatesim-topic-input"
                   type="text"
-                  placeholder="Enter a compelling debate topic..."
+                  placeholder={t('debatesim.topicPlaceholder')}
                   value={debateTopic}
                   onChange={(e) => setDebateTopic(e.target.value)}
                 />
@@ -639,7 +641,7 @@ function DebateSim({ user }) {
                 <button 
                   className="debatesim-clear-button" 
                   onClick={() => setDebateTopic("")}
-                  title="Clear input"
+                  title={t('debatesim.clearInput')}
                 >
                   ❌
                 </button>
@@ -652,7 +654,7 @@ function DebateSim({ user }) {
               disabled={!mode || !debateTopic.trim()}
             >
               <PlayCircle size={20} />
-              Start Debate
+              {t('debatesim.startDebate')}
               <ChevronRight size={16} />
             </button>
           </div>

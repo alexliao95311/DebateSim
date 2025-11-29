@@ -16,6 +16,8 @@ import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
 import UserProfileService from '../utils/userProfileService';
 import AnalysisSidebar from "./AnalysisSidebar";
+import { useTranslation } from '../utils/translations';
+import languagePreferenceService from '../services/languagePreferenceService';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -85,6 +87,7 @@ const personas = [
 
 // Profile Status Indicator Component
 const ProfileStatusIndicator = ({ user }) => {
+  const { t } = useTranslation();
   const [profileStatus, setProfileStatus] = useState({
     hasProfile: false,
     isLoading: true,
@@ -118,7 +121,7 @@ const ProfileStatusIndicator = ({ user }) => {
     return (
       <div className="profile-status-indicator loading">
         <span className="status-icon">⏳</span>
-        <span className="status-text">Checking profile...</span>
+        <span className="status-text">{t('legislation.checkingProfile')}</span>
       </div>
     );
   }
@@ -127,12 +130,12 @@ const ProfileStatusIndicator = ({ user }) => {
     return (
       <div className="profile-status-indicator has-profile">
         <div className="status-content">
-          <span className="status-text">Profile configured - will include personalized "Impacts on You" section</span>
+          <span className="status-text">{t('legislation.profileConfigured')}</span>
           <button
             className="profile-settings-link"
             onClick={() => window.open('/settings', '_blank')}
           >
-            View/Edit Profile
+            {t('legislation.viewEditProfile')}
           </button>
         </div>
       </div>
@@ -142,12 +145,12 @@ const ProfileStatusIndicator = ({ user }) => {
   return (
     <div className="profile-status-indicator no-profile">
       <div className="status-content">
-        <span className="status-text">No profile configured - analysis will be general</span>
+        <span className="status-text">{t('legislation.noProfile')}</span>
         <button
           className="profile-settings-link"
           onClick={() => window.open('/settings', '_blank')}
         >
-          Set Up Profile for Personalized Analysis
+          {t('legislation.setUpProfile')}
         </button>
       </div>
     </div>
@@ -272,13 +275,14 @@ const H2SectionRenderer = ({ analysisText }) => {
 
 // NEW: Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
+  const { t } = useTranslation();
   if (!isLoading) return null;
   
   return (
     <div className="page-loader">
       <div className="page-loader-content">
         <div className="page-loader-spinner"></div>
-        <div className="page-loader-text">Loading Bill Analysis Platform...</div>
+        <div className="page-loader-text">{t('legislation.loading')}</div>
       </div>
     </div>
   );
@@ -286,6 +290,7 @@ const PageLoader = ({ isLoading }) => {
 
 // Progress Bar Component for Streaming
 const ProgressBar = ({ step, total, message }) => {
+  const { t } = useTranslation();
   const percentage = total > 0 ? (step / total) * 100 : 0;
   
   return (
@@ -298,7 +303,7 @@ const ProgressBar = ({ step, total, message }) => {
         ></div>
       </div>
       <div className="progress-text">
-        Step {step} of {total}
+        {t('legislation.step')} {step} {t('legislation.of')} {total}
       </div>
     </div>
   );
@@ -384,50 +389,51 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
 
 // Bill Grading Section Component
 const BillGradingSection = ({ grades }) => {
+  const { t } = useTranslation();
   const gradingCriteria = {
     economicImpact: {
-      label: 'Economic Impact',
-      description: 'Fiscal responsibility & benefits',
+      label: t('legislation.grading.economicImpact'),
+      description: t('legislation.grading.economicImpact'),
       tooltip: 'Economic benefits and fiscal impact',
       icon: '💰',
       category: 'moderate',
       order: 1
     },
     publicBenefit: {
-      label: 'Public Benefit',
-      description: 'Benefits to citizens',
+      label: t('legislation.grading.publicBenefit'),
+      description: t('legislation.grading.publicBenefit'),
       tooltip: 'Addresses public needs effectively',
       icon: '👥',
       category: 'positive',
       order: 2
     },
     feasibility: {
-      label: 'Implementation Feasibility',
-      description: 'Practicality of execution',
+      label: t('legislation.grading.feasibility'),
+      description: t('legislation.grading.feasibility'),
       tooltip: 'Can be realistically implemented',
       icon: '🛠',
       category: 'caution',
       order: 3
     },
     legalSoundness: {
-      label: 'Legal Soundness',
-      description: 'Constitutional compliance',
+      label: t('legislation.grading.legalSoundness'),
+      description: t('legislation.grading.legalSoundness'),
       tooltip: 'Constitutional and legal compliance',
       icon: '⚖️',
       category: 'positive',
       order: 4
     },
     effectiveness: {
-      label: 'Goal Effectiveness',
-      description: 'Achievement of stated objectives',
+      label: t('legislation.grading.effectiveness'),
+      description: t('legislation.grading.effectiveness'),
       tooltip: 'Achieves stated objectives well',
       icon: '🎯',
       category: 'moderate',
       order: 5
     },
     overall: {
-      label: 'Overall Rating',
-      description: 'Comprehensive assessment',
+      label: t('legislation.grading.overall'),
+      description: t('legislation.grading.overall'),
       tooltip: 'Weighted average of all criteria',
       icon: '📊',
       category: 'overall',
@@ -438,8 +444,8 @@ const BillGradingSection = ({ grades }) => {
   return (
     <div className="grading-section">
       <div className="grading-header">
-        <h2>Bill Analysis Grades</h2>
-        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+        <h2>{t('legislation.grading.title')}</h2>
+        <div className="grading-subtitle">{t('legislation.grading.subtitle')}</div>
       </div>
       
       <div className="grading-grid">
@@ -469,6 +475,7 @@ const BillGradingSection = ({ grades }) => {
 
 // BillCard component for better organization
 const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingStage = '' }) => {
+  const { t } = useTranslation();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   
@@ -502,7 +509,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     ? `https://www.congress.gov/bill/119th-congress/${getBillTypeUrl(bill.type)}/${bill.number}`
     : null);
 
-  const billLinkTitle = bill.url ? "View on LegiScan" : "View on Congress.gov";
+  const billLinkTitle = bill.url ? t('legislation.viewOnLegiScan') : t('legislation.viewOnCongress');
 
   return (
     <div className="bill-card compact">
@@ -520,7 +527,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
             className="congress-link"
             title={billLinkTitle}
           >
-            View Full Text
+            {t('legislation.viewFullText')}
           </a>
         )}
       </div>
@@ -528,7 +535,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
         <span className="bill-status">{bill.lastAction}</span>
       </div>
       <h3 className="bill-title">{bill.title}</h3>
-      {bill.sponsor && <p className="bill-sponsor">Sponsored by {bill.sponsor}</p>}
+      {bill.sponsor && <p className="bill-sponsor">{t('legislation.sponsoredBy')} {bill.sponsor}</p>}
       <div className="bill-description-container">
         <p className="bill-description">
           {showFullDescription ? bill.description : truncatedDescription}
@@ -538,7 +545,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
             className="read-more-button"
             onClick={() => setShowFullDescription(!showFullDescription)}
           >
-            {showFullDescription ? "Read Less" : "Read More"}
+            {showFullDescription ? t('legislation.readLess') : t('legislation.readMore')}
           </button>
         )}
       </div>
@@ -551,14 +558,14 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
           <div className="processing-container">
             <div className="button-spinner"></div>
             <div className="processing-text">
-              <div className="processing-main">Processing...</div>
+              <div className="processing-main">{t('legislation.processing')}</div>
               {processingStage && (
                 <div className="processing-stage">{processingStage}</div>
               )}
             </div>
           </div>
         ) : (
-          "Select"
+          t('legislation.selectBill')
         )}
       </button>
     </div>
@@ -593,6 +600,7 @@ const InfoNote = ({ message, expanded, onToggle }) => {
 };
 
 const Legislation = ({ user }) => {
+  const { t } = useTranslation();
   // NEW: Initial page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isContentReady, setIsContentReady] = useState(false);
@@ -1764,7 +1772,8 @@ const Legislation = ({ user }) => {
             text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
             model: selectedModel,
             sections: analyzeWholeBill ? null : selectedSections,
-            userProfile: userProfile
+            userProfile: userProfile,
+            language: languagePreferenceService.getCurrentLanguage()
           }),
         });
 
@@ -1850,7 +1859,8 @@ const Legislation = ({ user }) => {
             text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
             model: selectedModel,
             sections: analyzeWholeBill ? null : selectedSections,
-            userProfile: userProfile
+            userProfile: userProfile,
+            language: languagePreferenceService.getCurrentLanguage()
           }),
         });
 
@@ -1921,6 +1931,7 @@ const Legislation = ({ user }) => {
           const formData = new FormData();
           formData.append('file', selectedBill);
           formData.append('model', selectedModel);
+          formData.append('language', languagePreferenceService.getCurrentLanguage());
           if (userProfile) {
             formData.append('userProfile', JSON.stringify(userProfile));
           }
@@ -2589,8 +2600,8 @@ const Legislation = ({ user }) => {
               flex: 1
             }}>
               <h1 className="legislation-site-title" onClick={() => navigate("/")}>
-                <span className="legislation-title-full">Bill and Legislation Debate</span>
-                <span className="legislation-title-mobile">Bill Debate</span>
+                <span className="legislation-title-full">{t('legislation.title')}</span>
+                <span className="legislation-title-mobile">{t('legislation.title')}</span>
               </h1>
             </div>
 
@@ -2677,17 +2688,17 @@ const Legislation = ({ user }) => {
           <div className="legislation-progress-steps">
             <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
               <div className="legislation-step-number">1</div>
-              <div className="legislation-step-label">Select Bill</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.select')}</div>
             </div>
             <div className="legislation-step-arrow">→</div>
             <div className={`legislation-step ${currentStep >= 2 ? 'active' : ''}`}>
               <div className="legislation-step-number">2</div>
-              <div className="legislation-step-label">Choose Action</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.action')}</div>
             </div>
             <div className="legislation-step-arrow">→</div>
             <div className={`legislation-step ${currentStep >= 3 ? 'active' : ''}`}>
               <div className="legislation-step-number">3</div>
-              <div className="legislation-step-label">Configure & Execute</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.configure')}</div>
             </div>
           </div>
 
@@ -2697,7 +2708,7 @@ const Legislation = ({ user }) => {
           {currentStep === 1 && (
             <div className="step-one">
               <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                <h2 style={{ textAlign: 'center' }}>Step 1: Choose a Bill</h2>
+                <h2 style={{ textAlign: 'center' }}>{t('legislation.step1.title')}</h2>
                 <button
                   onClick={() => jurisdiction === 'state' ? setShowBillPrefixInfo(true) : setShowFederalBillInfo(true)}
                   style={{
@@ -2718,7 +2729,7 @@ const Legislation = ({ user }) => {
                   }}
                   title={jurisdiction === 'state' ? "Learn about state bill prefixes" : "Learn about federal bill types"}
                 >
-                  ℹ️ Bill Types
+                  ℹ️ {t('legislation.billTypes')}
                 </button>
               </div>
 
@@ -2736,7 +2747,7 @@ const Legislation = ({ user }) => {
                   color: "rgba(255, 255, 255, 0.89)",
                   fontWeight: "600"
                 }}>
-                  Choose Bill Source:
+                  {t('legislation.source.title')}
                 </label>
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
                   <button
@@ -2757,7 +2768,7 @@ const Legislation = ({ user }) => {
                       transition: "all 0.2s"
                     }}
                   >
-                    Federal Bills
+                    {t('legislation.source.federal')}
                   </button>
                   <button
                     className={`jurisdiction-btn ${jurisdiction === 'state' ? 'active' : ''}`}
@@ -2773,7 +2784,7 @@ const Legislation = ({ user }) => {
                       transition: "all 0.2s"
                     }}
                   >
-                    State Bills
+                    {t('legislation.source.state')}
                   </button>
 
                   {jurisdiction === 'state' && (
@@ -3015,9 +3026,9 @@ const Legislation = ({ user }) => {
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="pdfUpload" className="upload-btn">
-                  Upload PDF
+                  {t('legislation.source.uploadPdf')}
                 </label>
-                <span className="or-text">or</span>
+                <span className="or-text">{t('legislation.source.or')}</span>
                 <div className="congress-link" style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
                   <input
                     type="url"
@@ -3028,7 +3039,7 @@ const Legislation = ({ user }) => {
                         handleBillLinkSubmit();
                       }
                     }}
-                    placeholder="Enter bill URL (Congress.gov or LegiScan, e.g., https://legiscan.com/CA/bill/AB123/2025)"
+                    placeholder={t('legislation.source.urlPlaceholder')}
                     className="link-input"
                     style={{ flex: 1 }}
                     disabled={linkLoading}
@@ -3047,7 +3058,7 @@ const Legislation = ({ user }) => {
                       whiteSpace: "nowrap"
                     }}
                   >
-                    {linkLoading ? "Loading..." : "Add Bill"}
+                    {linkLoading ? t('legislation.source.loading') : t('legislation.source.addBill')}
                   </button>
                 </div>
               </div>
@@ -3098,7 +3109,7 @@ const Legislation = ({ user }) => {
                 marginTop: "0.5rem",
                 fontStyle: "italic"
               }}>
-                Note: LegiScan tracks bills from active legislative sessions. Some 2025 sessions may not have started yet or may not be fully available.
+                {t('legislation.source.note')}
               </div>
 
               {error && <p className="error-text">{error}</p>}
@@ -3152,8 +3163,8 @@ const Legislation = ({ user }) => {
                 </div>
               </div>
 
-              <h2>Step 2: What would you like to do?</h2>
-              <p className="step-description">Choose how you want to work with the selected bill</p>
+              <h2>{t('legislation.step2.title')}</h2>
+              <p className="step-description">{t('legislation.step2.description')}</p>
               
               <div className="action-cards">
                 <div 
@@ -3161,23 +3172,23 @@ const Legislation = ({ user }) => {
                   onClick={() => handleActionSelection('analyze')}
                 >
                   <div className="action-icon">🔍</div>
-                  <h3>Analyze Bill</h3>
-                  <p>Get AI-powered analysis of the bill's content, implications, and key provisions</p>
+                  <h3>{t('legislation.action.analyze')}</h3>
+                  <p>{t('legislation.action.analyzeDescription')}</p>
                 </div>
-                
-                <div 
+
+                <div
                   className={`action-card ${actionType === 'debate' ? 'selected' : ''}`}
                   onClick={() => handleActionSelection('debate')}
                 >
                   <div className="action-icon">⚖️</div>
-                  <h3>Debate Bill</h3>
-                  <p>Set up a structured debate about the bill with AI opponents or other users</p>
+                  <h3>{t('legislation.action.debate')}</h3>
+                  <p>{t('legislation.action.debateDescription')}</p>
                 </div>
               </div>
 
               <div className="step-navigation">
                 <button className="nav-button back" onClick={() => goToStep(1)}>
-                  ← Back
+                  {t('legislation.back')}
                 </button>
                 <button 
                   className="nav-button next" 
@@ -3218,15 +3229,15 @@ const Legislation = ({ user }) => {
 
               {actionType === 'analyze' && (
                 <div className="analyze-config">
-                  <h2>Step 3: Configure Analysis</h2>
+                  <h2>{t('legislation.step3.analyze')}</h2>
                   <div className="config-section">
                     <div className="model-selection">
                       <label className="model-label">
-                        Select AI Model
+                        {t('legislation.model.title')}
                       </label>
-                      <select 
+                      <select
                         className="model-dropdown"
-                        value={selectedModel} 
+                        value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
                       >
                         {modelOptions.map((model) => (
@@ -3234,20 +3245,20 @@ const Legislation = ({ user }) => {
                         ))}
                       </select>
                       <p className="model-description">
-                        Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
+                        {t('legislation.model.description')}
                       </p>
                     </div>
 
                     <div className="profile-status-section">
                       <label className="model-label">
-                        Personalized Analysis
+                        {t('legislation.analysis.personalizedTitle')}
                       </label>
                       <ProfileStatusIndicator user={user} />
                     </div>
 
                     <div className="section-selection">
                         <label className="section-label">
-                          Choose What to Analyze
+                          {t('legislation.analysis.chooseTitle')}
                         </label>
 
                         <div className="analysis-scope-options">
@@ -3263,8 +3274,8 @@ const Legislation = ({ user }) => {
                               }}
                             />
                             <label htmlFor="analyze-whole-bill">
-                              <strong>Analyze Whole Bill</strong>
-                              <span className="option-description">Analyze the entire bill document</span>
+                              <strong>{t('legislation.analysis.wholeBill')}</strong>
+                              <span className="option-description">{t('legislation.analysis.wholeBillDesc')}</span>
                             </label>
                           </div>
 
@@ -3328,8 +3339,8 @@ const Legislation = ({ user }) => {
                               }}
                             />
                             <label htmlFor="analyze-sections">
-                              <strong>Analyze Specific Sections</strong>
-                              <span className="option-description">Choose specific sections to analyze</span>
+                              <strong>{t('legislation.analysis.specificSections')}</strong>
+                              <span className="option-description">{t('legislation.analysis.specificSectionsDesc')}</span>
                             </label>
                           </div>
                         </div>
@@ -3387,7 +3398,7 @@ const Legislation = ({ user }) => {
                                   }
                                 }}
                               >
-                                Extract Sections from Bill
+                                {t('legislation.analysis.extractSections')}
                               </button>
                             )}
 
@@ -3493,13 +3504,13 @@ const Legislation = ({ user }) => {
 
                   {!analyzeWholeBill && selectedSections.length === 0 && (
                     <div className="validation-message">
-                      Please select at least one section to analyze, or choose "Analyze Whole Bill" option.
+                      {t('legislation.analysis.selectSectionError')}
                     </div>
                   )}
 
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
-                      ← Back
+                      {t('legislation.back')}
                     </button>
                     <button
                       className="nav-button execute"
@@ -3514,7 +3525,7 @@ const Legislation = ({ user }) => {
 
               {actionType === 'debate' && (
                 <div className="debate-config">
-                  <h2>Step 3: Configure Debate</h2>
+                  <h2>{t('legislation.step3.debate')}</h2>
                   
                   {/* Bill Name Section */}
                   <div className="config-section">
@@ -3561,7 +3572,7 @@ const Legislation = ({ user }) => {
                         ))}
                       </div>
                       <p className="mode-description-text">
-                        Choose how you want to conduct the debate about this bill.
+                        {t('legislation.action.debateSubtitle')}
                       </p>
                     </div>
                   </div>
@@ -3668,7 +3679,7 @@ const Legislation = ({ user }) => {
                   
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
-                      ← Back
+                      {t('legislation.back')}
                     </button>
                     <button 
                       className="nav-button next"

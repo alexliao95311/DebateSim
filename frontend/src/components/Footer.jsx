@@ -1,9 +1,11 @@
 // Footer.jsx
 import React from 'react';
 import { MessageSquare, Code } from 'lucide-react';
+import { useTranslation } from '../utils/translations';
 import './Footer.css';
 
 function Footer() {
+    const { t } = useTranslation();
     return (
         <footer className="footer">
             <div className="footer-links">
@@ -14,7 +16,7 @@ function Footer() {
                     className="feedback-link"
                 >
                     <MessageSquare size={16} />
-                    Give Feedback
+                    {t('debate.giveFeedback')}
                 </a>
                 <a
                     href="https://github.com/alexliao95311/DebateSim"
@@ -23,10 +25,10 @@ function Footer() {
                     className="github-link"
                 >
                     <Code size={16} />
-                    GitHub
+                    {t('debate.github')}
                 </a>
             </div>
-            <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+            <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. {t('debate.allRightsReserved')}</span>
         </footer>
     );
 }

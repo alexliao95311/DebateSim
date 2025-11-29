@@ -13,6 +13,7 @@ import SpeechTest from "./components/SpeechTest";
 import Settings from "./components/Settings";
 import History from "./components/History";
 import voicePreferenceService from "./services/voicePreferenceService";
+import languagePreferenceService from "./services/languagePreferenceService";
 import DebateTrainer from "./components/debatetrainer";
 
 // Component to handle scroll reset on route changes
@@ -43,6 +44,8 @@ function App() {
       setLoading(false);
       // Load voice preference for guest user
       voicePreferenceService.loadVoicePreference(user);
+      // Load language preference for guest user
+      languagePreferenceService.loadLanguagePreference(user);
     } else {
       // Subscribe to Firebase auth state only if there's no persisted guest user
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -51,6 +54,7 @@ function App() {
         // Load voice preference for authenticated user
         if (currentUser) {
           voicePreferenceService.loadVoicePreference(currentUser);
+          languagePreferenceService.loadLanguagePreference(currentUser);
         }
       });
       return () => unsubscribe();
