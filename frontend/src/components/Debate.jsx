@@ -452,41 +452,68 @@ function Debate() {
         // Speaker name already has the label, use as-is
         title = msg.speaker;
       } else if (msg.speaker === "AI Debater Pro" || msg.speaker === "AI Debater Con") {
+        const roundLabel = t('debate.round');
         title = speechTypeLabel
-          ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum}/${maxRounds})`
-          : `${msg.speaker} - Round ${roundNum}/${maxRounds}`;
+          ? `${msg.speaker} - ${speechTypeLabel} (${roundLabel} ${roundNum}/${maxRounds})`
+          : `${msg.speaker} - ${roundLabel} ${roundNum}/${maxRounds}`;
       } else if (msg.speaker.includes("(AI)")) {
         // For User vs AI mode, add round info for AI responses
+        const roundLabel = t('debate.round');
         title = speechTypeLabel
           ? `${msg.speaker} - ${speechTypeLabel}`
-          : `${msg.speaker} - Round ${roundNum}`;
+          : `${msg.speaker} - ${roundLabel} ${roundNum}`;
       } else if (msg.speaker.includes("(User)")) {
         // For User vs AI mode, add round info for user responses
+        const roundLabel = t('debate.round');
         title = speechTypeLabel
           ? `${msg.speaker} - ${speechTypeLabel}`
-          : `${msg.speaker} - Round ${roundNum}`;
+          : `${msg.speaker} - ${roundLabel} ${roundNum}`;
       } else if ((msg.speaker.startsWith("PRO (") || msg.speaker.startsWith("CON (")) &&
                  (msg.speaker.includes("Pro (User)") || msg.speaker.includes("Con (User)") ||
                   actualMode === "user-vs-user")) {
-        // For User vs User mode, don't add round number for PF/LD (speech type is sufficient)
-        // For other formats, add round number
-        if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
-          title = speechTypeLabel
-            ? `${msg.speaker} - ${speechTypeLabel}`
-            : `${msg.speaker}`;
+        // For User vs User mode, translate PRO/CON and Round for display
+        // Extract username from speaker label (format: "PRO (username)" or "CON (username)")
+        const match = msg.speaker.match(/^(PRO|CON) \((.+)\)$/);
+        if (match) {
+          const side = match[1]; // "PRO" or "CON"
+          const username = match[2];
+          const translatedSide = side === "PRO" ? t('debate.pro') : t('debate.con');
+          const translatedSpeaker = `${translatedSide} (${username})`;
+          
+          // For User vs User mode, don't add round number for PF/LD (speech type is sufficient)
+          // For other formats, add round number
+          if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+            title = speechTypeLabel
+              ? `${translatedSpeaker} - ${speechTypeLabel}`
+              : `${translatedSpeaker}`;
+          } else {
+            const roundLabel = t('debate.round');
+            title = speechTypeLabel
+              ? `${translatedSpeaker} - ${speechTypeLabel} (${roundLabel} ${roundNum})`
+              : `${translatedSpeaker} - ${roundLabel} ${roundNum}`;
+          }
         } else {
-          title = speechTypeLabel
-            ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum})`
-            : `${msg.speaker} - Round ${roundNum}`;
+          // Fallback to original behavior if format doesn't match
+          if (debateFormat === "public-forum" || debateFormat === "lincoln-douglas") {
+            title = speechTypeLabel
+              ? `${msg.speaker} - ${speechTypeLabel}`
+              : `${msg.speaker}`;
+          } else {
+            const roundLabel = t('debate.round');
+            title = speechTypeLabel
+              ? `${msg.speaker} - ${speechTypeLabel} (${roundLabel} ${roundNum})`
+              : `${msg.speaker} - ${roundLabel} ${roundNum}`;
+          }
         }
       } else if (msg.speaker.includes("Judge")) {
         // For judge feedback, don't add round number
         title = msg.speaker;
       } else {
         // For any other speaker, add round number
+        const roundLabel = t('debate.round');
         title = speechTypeLabel
-          ? `${msg.speaker} - ${speechTypeLabel} (Round ${roundNum})`
-          : `${msg.speaker} - Round ${roundNum}`;
+          ? `${msg.speaker} - ${speechTypeLabel} (${roundLabel} ${roundNum})`
+          : `${msg.speaker} - ${roundLabel} ${roundNum}`;
       }
 
       const speechItem = {
@@ -3140,8 +3167,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                       onClick={handleUserVsUserConfirm}
                     >
                       {userVsUserSetup.proUser.trim() && userVsUserSetup.conUser.trim()
-                        ? 'Start Debate'
-                        : 'Enter both debater names first'
+                        ? t('debate.startDebateBtn')
+                        : t('debate.enterBothNames')
                       }
                     </button>
                   </div>
@@ -3150,9 +3177,9 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
 
               {userVsUserSetup.confirmed && (
                 <div className="user-vs-user-setup">
-                  <h3>User vs User Debate</h3>
+                  <h3>{t('debate.userVsUser')}</h3>
                   <p style={{ marginBottom: "1rem", color: "#fff" }}>
-                    Current turn: <strong>
+                    {t('debate.currentTurn')}: <strong>
                       {userVsUserSide === "pro" ? userVsUserSetup.proUser : userVsUserSetup.conUser}
                     </strong> ({userVsUserSide.toUpperCase()})
                   </p>
