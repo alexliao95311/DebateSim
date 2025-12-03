@@ -614,6 +614,22 @@ def get_language_instructions(language_code: str) -> str:
 - Maintain the same debate quality and argumentation standards as you would in English.
 - If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
 - Section headers, argument titles, and all substantive content must be in Chinese.
+
+**CRITICAL - TITLE LINE TRANSLATION:**
+When writing your title line (the first line starting with #), you MUST translate it to Chinese:
+- Instead of "Round", use "回合"
+- Instead of "Public Forum", use "公共论坛"
+- Instead of "Lincoln-Douglas", use "林肯-道格拉斯"
+- Keep your role name (Pro/Con/Affirmative/Negative) in the format provided, but if they appear in the title, translate them:
+  - "Pro" → "正方"
+  - "Con" → "反方"
+  - "Affirmative" → "肯定方"
+  - "Negative" → "否定方"
+
+EXAMPLE TITLE FORMATS IN CHINESE:
+- For default format: `# 正方 – 回合 1/5`
+- For Public Forum: `# 反方 – 回合 2/4 (公共论坛)`
+- For Lincoln-Douglas: `# 肯定方 – 回合 1/6 (林肯-道格拉斯)`
 """
     return ''  # No language instructions needed for English
 

@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from '../utils/translations';
 
 const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -16,14 +18,15 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
     const isPdf = fileType === 'application/pdf' || fileName.endsWith('.pdf');
 
     if (!isTxt && !isPdf) {
-      alert('Only .txt and .pdf files are supported.');
+      alert(t('debate.error.unsupportedFile'));
       return;
     }
 
     // Check file size
     const maxSize = isPdf ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB for PDF, 5MB for TXT
     if (file.size > maxSize) {
-      alert(`File size must be less than ${isPdf ? '50MB' : '5MB'}.`);
+      const sizeText = isPdf ? '50MB' : '5MB';
+      alert(t('debate.error.fileTooLarge').replace('{size}', sizeText));
       return;
     }
 
@@ -39,7 +42,7 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
       }
     } catch (error) {
       console.error('File processing error:', error);
-      alert(error.message || 'Failed to process the file.');
+      alert(error.message || t('debate.error.processFileFailed'));
     } finally {
       setIsProcessing(false);
       // Clear the input so the same file can be selected again
@@ -58,11 +61,11 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
           onTextExtracted(text.trim());
           resolve();
         } else {
-          reject(new Error('The text file appears to be empty.'));
+          reject(new Error(t('debate.error.emptyFile')));
         }
       };
       reader.onerror = () => {
-        reject(new Error('Failed to read the text file.'));
+        reject(new Error(t('debate.error.readFileFailed')));
       };
       reader.readAsText(file);
     });
@@ -88,7 +91,7 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
     if (data.text && data.text.trim()) {
       onTextExtracted(data.text.trim());
     } else {
-      throw new Error('No readable text found in the PDF.');
+      throw new Error(t('debate.error.noTextInPdf'));
     }
   };
 
@@ -130,10 +133,10 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
               borderRadius: '50%',
               animation: 'spin 1s linear infinite'
             }}></span>
-            Processing...
+            {t('debate.processingFile')}
           </>
         ) : (
-          <>📄 Upload PDF or TXT file</>
+          <>{t('debate.uploadFile')}</>
         )}
       </button>
       <style>{`

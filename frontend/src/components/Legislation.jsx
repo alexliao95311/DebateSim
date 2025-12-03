@@ -2916,7 +2916,7 @@ const Legislation = ({ user }) => {
               {/* Bills Section with fade-in animation */}
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                   <>
-                    <h3>{jurisdiction === 'federal' ? 'Trending Congressional Bills' : `${statesList.find(s => s.code === selectedState)?.name || 'State'} Bills`}</h3>
+                    <h3>{jurisdiction === 'federal' ? t('legislation.source.trending') : (statesList.find(s => s.code === selectedState)?.name ? `${statesList.find(s => s.code === selectedState)?.name} ${t('legislation.source.bills')}` : t('legislation.source.state'))}</h3>
                     
                     {billsLoading && (
                       <div className="bills-loading">
