@@ -980,8 +980,8 @@ const Settings = ({ user, onLogout }) => {
           )}
         </div>
 
-        {/* Voice Settings Section */}
-        <div className="settings-section">
+        {/* Voice Settings Section - Hidden until feature is complete */}
+        {/* <div className="settings-section">
           <div className="settings-section-header">
             <Volume2 size={24} />
             <h3>{t('settings.voice.title')}</h3>
@@ -1049,7 +1049,7 @@ const Settings = ({ user, onLogout }) => {
               <p>{t('settings.voice.saving')}</p>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Language Settings Section */}
         <div className="settings-section">

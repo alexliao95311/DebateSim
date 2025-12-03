@@ -113,6 +113,7 @@ export const saveTranscript = async (transcript, topic, mode, judgeFeedback) => 
 // Dedicated Trainer: Speech Efficiency Analysis (separate chain)
 export const analyzeSpeechEfficiency = async (speech, options = {}) => {
   try {
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
     const payload = {
       speech,
       // Allow passing a model or fall back to a safe default
@@ -125,6 +126,7 @@ export const analyzeSpeechEfficiency = async (speech, options = {}) => {
       round_num: options.round_num || 0,
       speech_type: options.speech_type || "",
       speech_number: options.speech_number || 0,
+      language: currentLanguage, // Pass the language preference
     };
     const response = await apiClient.post('/trainer/speech-efficiency', payload);
     if (!response?.data || typeof response.data.response !== 'string') {

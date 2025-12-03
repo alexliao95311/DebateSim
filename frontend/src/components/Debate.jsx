@@ -2814,7 +2814,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             <div className="popup-overlay" onClick={() => setShowLdInfo(false)}>
               <div className="popup-content" onClick={(e) => e.stopPropagation()}>
                 <div className="popup-header">
-                  <h3>Lincoln-Douglas Debate Format</h3>
+                  <h3>{t('debate.format.ld.title')}</h3>
                   <button
                     className="close-button"
                     onClick={() => setShowLdInfo(false)}
@@ -2824,39 +2824,39 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                 </div>
                 <div className="popup-body">
                   <p style={{ color: 'white', marginBottom: '0.75rem' }}>
-                    <strong>Speaking Order:</strong> Affirmative always speaks first (AC → NC → 1AR → NR → 2AR).
+                    <strong>{t('debate.format.ld.speakingOrder')}</strong> {t('debate.format.ld.speakingOrderText')}
                   </p>
-                  <h4>Structure (5 Speeches):</h4>
+                  <h4>{t('debate.format.ld.structure')}</h4>
                   <div className="round-structure">
                     <div className="round-item">
-                      <strong>1. Affirmative Constructive (AC):</strong> 6 minutes
-                      <p>Present value framework and 2-3 contentions supporting the resolution</p>
+                      <strong>{t('debate.format.ld.ac.title')}</strong> {t('debate.format.ld.ac.time')}
+                      <p>{t('debate.format.ld.ac.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>2. Negative Constructive (NC):</strong> 7 minutes
-                      <p>Attack Affirmative framework, present Negative framework and contentions</p>
+                      <strong>{t('debate.format.ld.nc.title')}</strong> {t('debate.format.ld.nc.time')}
+                      <p>{t('debate.format.ld.nc.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>3. 1st Affirmative Rebuttal (1AR):</strong> 4 minutes
-                      <p>Defend Affirmative case and attack Negative arguments</p>
+                      <strong>{t('debate.format.ld.1ar.title')}</strong> {t('debate.format.ld.1ar.time')}
+                      <p>{t('debate.format.ld.1ar.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>4. Negative Rebuttal (NR):</strong> 6 minutes
-                      <p>Final Negative speech - extend case and respond to 1AR</p>
+                      <strong>{t('debate.format.ld.nr.title')}</strong> {t('debate.format.ld.nr.time')}
+                      <p>{t('debate.format.ld.nr.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>5. 2nd Affirmative Rebuttal (2AR):</strong> 3 minutes
-                      <p>Final Affirmative speech - crystallize voting issues and make final appeal</p>
+                      <strong>{t('debate.format.ld.2ar.title')}</strong> {t('debate.format.ld.2ar.time')}
+                      <p>{t('debate.format.ld.2ar.desc')}</p>
                     </div>
                   </div>
-                  <h4>Key Features:</h4>
+                  <h4>{t('debate.format.ld.keyFeatures')}</h4>
                   <ul>
-                    <li><strong>Philosophical Focus:</strong> Emphasis on value frameworks and moral reasoning</li>
-                    <li><strong>Individual Competition:</strong> One debater per side (unlike team formats)</li>
-                    <li><strong>Framework Debate:</strong> Value premise and criterion determine how arguments are evaluated</li>
+                    <li><strong>{t('debate.format.ld.feature1.title')}</strong> {t('debate.format.ld.feature1.desc')}</li>
+                    <li><strong>{t('debate.format.ld.feature2.title')}</strong> {t('debate.format.ld.feature2.desc')}</li>
+                    <li><strong>{t('debate.format.ld.feature3.title')}</strong> {t('debate.format.ld.feature3.desc')}</li>
                   </ul>
                   <p style={{ fontSize: '0.9em', fontStyle: 'italic', marginTop: '1rem', color: 'white' }}>
-                    <strong>Note:</strong> Traditional Lincoln-Douglas debate includes cross-examination periods, but these are not currently supported in this implementation.
+                    <strong>{t('debate.format.ld.note')}</strong> {t('debate.format.ld.noteText')}
                   </p>
                 </div>
               </div>
@@ -2868,8 +2868,8 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             <div className="popup-overlay" onClick={() => setShowPfInfo(false)}>
               <div className="popup-content" onClick={(e) => e.stopPropagation()}>
                 <div className="popup-header">
-                  <h3>Public Forum Debate Format</h3>
-                  <button 
+                  <h3>{t('debate.format.pf.title')}</h3>
+                  <button
                     className="close-button"
                     onClick={() => setShowPfInfo(false)}
                   >
@@ -2877,31 +2877,31 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   </button>
                 </div>
                 <div className="popup-body">
-                  <h4>Structure (4 Rounds):</h4>
+                  <h4>{t('debate.format.pf.structure')}</h4>
                   <div className="round-structure">
                     <div className="round-item">
-                      <strong>Round 1:</strong> Constructive Speeches
-                      <p>Each side presents their main arguments and evidence. 4 minutes. </p>
+                      <strong>{t('debate.format.pf.round1.title')}</strong> {t('debate.format.pf.round1.name')}
+                      <p>{t('debate.format.pf.round1.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>Round 2:</strong> Rebuttal Speeches
-                      <p>Each side responds to the opponent's arguments. 4 minutes. </p>
+                      <strong>{t('debate.format.pf.round2.title')}</strong> {t('debate.format.pf.round2.name')}
+                      <p>{t('debate.format.pf.round2.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>Round 3:</strong> Summary Speeches
-                      <p>Each side summarizes key points and refutes opponent. 3 minutes. </p>
+                      <strong>{t('debate.format.pf.round3.title')}</strong> {t('debate.format.pf.round3.name')}
+                      <p>{t('debate.format.pf.round3.desc')}</p>
                     </div>
                     <div className="round-item">
-                      <strong>Round 4:</strong> Final Focus Speeches
-                      <p>Each side makes their strongest closing argument. 2 minutes.</p>
+                      <strong>{t('debate.format.pf.round4.title')}</strong> {t('debate.format.pf.round4.name')}
+                      <p>{t('debate.format.pf.round4.desc')}</p>
                     </div>
                   </div>
                   <div className="format-details">
-                    <h4>Key Features:</h4>
+                    <h4>{t('debate.format.pf.keyFeatures')}</h4>
                     <ul>
-                      <li>Cross-examination periods between speeches (coming soon)</li>
-                      <li>Emphasis on logical reasoning and evidence</li>
-                      <li>Focus on current events and policy issues</li>
+                      <li>{t('debate.format.pf.feature1')}</li>
+                      <li>{t('debate.format.pf.feature2')}</li>
+                      <li>{t('debate.format.pf.feature3')}</li>
                     </ul>
                   </div>
                 </div>
@@ -2918,7 +2918,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                     <button
                       className="info-button"
                       onClick={() => debateFormat === 'public-forum' ? setShowPfInfo(true) : setShowLdInfo(true)}
-                      title={`More information about ${debateFormat === 'public-forum' ? 'Public Forum' : 'Lincoln-Douglas'} debate format`}
+                      title={`${t('debate.format.moreInfo')} ${debateFormat === 'public-forum' ? t('legislation.format.publicForum.title') : t('legislation.format.ld.title')} ${t('debate.format.debateFormat')}`}
                     >
                       ?
                     </button>
