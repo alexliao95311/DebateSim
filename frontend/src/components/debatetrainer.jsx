@@ -1,14 +1,34 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import { useNavigate } from "react-router-dom";
 import UserDropdown from "./UserDropdown";
 import Footer from "./Footer.jsx";
 import VoiceInput from "./VoiceInput";
 import { analyzeSpeechEfficiency, generateAIResponse } from "../api";
 import { Bot, UserCheck, Users, Award, ChevronRight, ArrowLeft } from "lucide-react";
+import { useTranslation } from "../utils/translations";
+import languagePreferenceService from "../services/languagePreferenceService";
 import "./debatetrainer.css";
 
+// Helper function to get language instructions for prompts
+function getLanguageInstructions(languageCode) {
+  if (languageCode === 'zh') {
+    return `
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your debate arguments, rebuttals, and responses must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same debate quality and argumentation standards as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+`;
+  }
+  return ''; // No language instructions needed for English
+}
+
 function DebateTrainer({ user, onLogout }) {
+  const navigate = useNavigate();
+  const { t, currentLanguage } = useTranslation();
   // Setup state
   const [mode, setMode] = useState(""); // "ai-vs-user" or "user-vs-user"
   const [debateFormat, setDebateFormat] = useState(""); // "public-forum"
@@ -34,43 +54,44 @@ function DebateTrainer({ user, onLogout }) {
   // Sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
-  const modes = [
+  // Use useMemo to recalculate modes and formats when language changes
+  const modes = React.useMemo(() => [
     {
       id: "ai-vs-user",
-      title: "AI vs User",
-      description: "Practice against AI opponents and get feedback on every speech",
+      title: t('trainer.mode.aiVsUser.title'),
+      description: t('trainer.mode.aiVsUser.description'),
       icon: <UserCheck size={48} />,
-      tags: ["Practice", "Feedback"],
+      tags: [t('trainer.mode.tags.practice'), t('trainer.mode.tags.feedback')],
       color: "from-green-500 to-teal-600"
     },
     {
       id: "user-vs-user",
-      title: "User vs User",
-      description: "Practice with a partner and both get feedback",
+      title: t('trainer.mode.userVsUser.title'),
+      description: t('trainer.mode.userVsUser.description'),
       icon: <Users size={48} />,
-      tags: ["Collaborative", "Feedback"],
+      tags: [t('trainer.mode.tags.collaborative'), t('trainer.mode.tags.feedback')],
       color: "from-orange-500 to-red-600"
     }
-  ];
+  ], [currentLanguage]); // Only depend on currentLanguage, t is derived from it
 
-  const formats = [
+  const formats = React.useMemo(() => [
     {
       id: "public-forum",
-      title: "Public Forum",
-      description: "4 rounds: Constructive, Rebuttal, Summary, Final Focus",
+      title: t('trainer.format.publicForum.title'),
+      description: t('trainer.format.publicForum.description'),
       icon: <Award size={48} />,
-      tags: ["4 Rounds", "Structured"],
+      tags: [t('trainer.format.tags.rounds'), t('trainer.format.tags.structured')],
       color: "from-emerald-500 to-green-600"
     }
-  ];
+  ], [currentLanguage]); // Only depend on currentLanguage, t is derived from it
 
   // Get current speech type for Public Forum
   const getCurrentSpeechType = (speechNum) => {
     if (debateFormat !== "public-forum") return "";
-    if (speechNum <= 2) return "Constructive";
-    if (speechNum <= 4) return "Rebuttal";
-    if (speechNum <= 6) return "Summary";
-    return "Final Focus";
+    if (speechNum <= 2) return t('trainer.constructive');
+    if (speechNum <= 4) return t('trainer.rebuttal');
+    if (speechNum <= 6) return t('trainer.summary');
+    return t('trainer.finalFocus');
   };
 
   // Get current round number
@@ -92,7 +113,7 @@ function DebateTrainer({ user, onLogout }) {
   // Create speech list for sidebar (similar to Debate.jsx format)
   const speechList = messageList.map((msg, idx) => ({
     id: `speech-${idx}`,
-    title: `${msg.speaker} - Round ${msg.round} • ${msg.speechType || "Speech"}`
+    title: `${msg.speaker === "Pro" ? t('trainer.pro') : t('trainer.con')} - ${t('trainer.round')} ${msg.round} • ${msg.speechType || t('trainer.constructive')}`
   }));
 
   // Scroll to a specific speech (adapted for 2 scrollable divs)
@@ -277,7 +298,12 @@ function DebateTrainer({ user, onLogout }) {
         .map(({ speaker, text }) => `## ${speaker}\n${text}`)
         .join("\n\n---\n\n");
 
+      const currentLanguage = languagePreferenceService.getCurrentLanguage();
+      const languageInstructions = getLanguageInstructions(currentLanguage);
+
       const prompt = `You are ${aiSide} in a Public Forum debate on "${debateTopic}".
+
+${languageInstructions}
 
 FULL DEBATE TRANSCRIPT SO FAR:
 ${fullTranscript}
@@ -325,26 +351,26 @@ Keep it concise and structured.`;
   // Start debate
   const handleStartDebate = () => {
     if (!mode || !debateFormat) {
-      setError("Please complete all setup steps.");
+      setError(t('trainer.error.completeSetup'));
       return;
     }
     
     // Check topic
     if (mode === "user-vs-user") {
       if (!debateTopic.trim()) {
-        setError("Please enter a debate topic.");
+        setError(t('trainer.error.enterTopic'));
         return;
       }
     } else if (mode === "ai-vs-user") {
       if (!topicConfirmed || !debateTopic.trim()) {
-        setError("Please enter a debate topic.");
+        setError(t('trainer.error.enterTopic'));
         return;
       }
     }
     
     // For AI vs User, need side and order
     if (mode === "ai-vs-user" && (!userSide || !pfSpeakingOrder)) {
-      setError("Please select your side and speaking order.");
+      setError(t('trainer.error.selectSideOrder'));
       return;
     }
     
@@ -388,8 +414,8 @@ Keep it concise and structured.`;
         <header className="debate-trainer-header">
           <div className="debate-trainer-header-content">
             <div className="debate-trainer-header-left"></div>
-            <div className="debate-trainer-header-center" style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-              <h1 className="debate-trainer-site-title">Debate Trainer</h1>
+            <div className="debate-trainer-header-center" style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, cursor: "pointer" }}>
+              <h1 className="debate-trainer-site-title" onClick={() => navigate("/")}>{t('trainer.title')}</h1>
             </div>
             <div className="debate-trainer-header-right">
               <UserDropdown user={user} onLogout={onLogout} className="debate-trainer-user-dropdown" />
@@ -399,13 +425,13 @@ Keep it concise and structured.`;
 
         <div className="debate-trainer-main">
           <div className="debate-trainer-card">
-            <h2>Practice Setup</h2>
-            <p>Configure your debate practice session</p>
+            <h2>{t('trainer.practiceSetup')}</h2>
+            <p>{t('trainer.configureSession')}</p>
 
             {/* Mode Selection */}
             {!mode && (
               <div className="trainer-setup-section">
-                <h3 className="trainer-setup-title">Select Practice Mode</h3>
+                <h3 className="trainer-setup-title">{t('trainer.selectMode')}</h3>
                 <div className="trainer-mode-grid">
                   {modes.map((m) => (
                     <div
@@ -431,9 +457,9 @@ Keep it concise and structured.`;
             {mode && !debateFormat && (
               <div className="trainer-setup-section">
                 <button className="trainer-back-btn" onClick={() => setMode("")}>
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={16} /> {t('trainer.back')}
                 </button>
-                <h3 className="trainer-setup-title">Select Debate Format</h3>
+                <h3 className="trainer-setup-title">{t('trainer.selectFormat')}</h3>
                 <div className="trainer-mode-grid">
                   {formats.map((f) => (
                     <div
@@ -463,15 +489,15 @@ Keep it concise and structured.`;
                   setTopicConfirmed(false);
                   setDebateTopic("");
                 }}>
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={16} /> {t('trainer.back')}
                 </button>
-                <h3 className="trainer-setup-title">Enter Debate Topic</h3>
+                <h3 className="trainer-setup-title">{t('trainer.enterTopic')}</h3>
                 <div className="trainer-topic-input">
                   <input
                     type="text"
                     value={debateTopic}
                     onChange={(e) => setDebateTopic(e.target.value)}
-                    placeholder="e.g., Should governments implement universal basic income?"
+                    placeholder={t('trainer.topicPlaceholder')}
                     className="trainer-input"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && debateTopic.trim()) {
@@ -489,7 +515,7 @@ Keep it concise and structured.`;
                       onClick={handleStartDebate}
                       disabled={!debateTopic.trim()}
                     >
-                      Start Practice
+                      {t('trainer.startPractice')}
                     </button>
                   ) : (
                     <button
@@ -501,7 +527,7 @@ Keep it concise and structured.`;
                       }}
                       disabled={!debateTopic.trim()}
                     >
-                      Continue
+                      {t('trainer.continue')}
                     </button>
                   )}
                 </div>
@@ -512,43 +538,43 @@ Keep it concise and structured.`;
             {mode === "ai-vs-user" && debateFormat && topicConfirmed && !setupComplete && (
               <div className="trainer-setup-section">
                 <button className="trainer-back-btn" onClick={() => setTopicConfirmed(false)}>
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={16} /> {t('trainer.back')}
                 </button>
-                <h3 className="trainer-setup-title">Choose Your Side & Speaking Order</h3>
+                <h3 className="trainer-setup-title">{t('trainer.chooseSideOrder')}</h3>
                 
                 <div style={{ marginBottom: "2rem" }}>
-                  <h4 style={{ color: "#f1f5f9", marginBottom: "1rem", fontSize: "1.1rem" }}>Your Side</h4>
+                  <h4 style={{ color: "#f1f5f9", marginBottom: "1rem", fontSize: "1.1rem" }}>{t('trainer.yourSide')}</h4>
                   <div className="trainer-side-selection">
                     <button
                       className={`trainer-side-btn ${userSide === "pro" ? "selected" : ""}`}
                       onClick={() => setUserSide("pro")}
                     >
-                      Pro / Affirmative
+                      {t('trainer.proAffirmative')}
                     </button>
                     <button
                       className={`trainer-side-btn ${userSide === "con" ? "selected" : ""}`}
                       onClick={() => setUserSide("con")}
                     >
-                      Con / Negative
+                      {t('trainer.conNegative')}
                     </button>
                   </div>
                 </div>
 
                 {userSide && (
                   <div style={{ marginBottom: "2rem" }}>
-                    <h4 style={{ color: "#f1f5f9", marginBottom: "1rem", fontSize: "1.1rem" }}>Speaking Order</h4>
+                    <h4 style={{ color: "#f1f5f9", marginBottom: "1rem", fontSize: "1.1rem" }}>{t('trainer.speakingOrder')}</h4>
                     <div className="trainer-order-selection">
                       <button
                         className={`trainer-order-btn ${pfSpeakingOrder === "pro-first" ? "selected" : ""}`}
                         onClick={() => setPfSpeakingOrder("pro-first")}
                       >
-                        Pro Speaks First
+                        {t('trainer.proSpeaksFirst')}
                       </button>
                       <button
                         className={`trainer-order-btn ${pfSpeakingOrder === "con-first" ? "selected" : ""}`}
                         onClick={() => setPfSpeakingOrder("con-first")}
                       >
-                        Con Speaks First
+                        {t('trainer.conSpeaksFirst')}
                       </button>
                     </div>
                   </div>
@@ -560,7 +586,7 @@ Keep it concise and structured.`;
                       className="trainer-btn primary"
                       onClick={handleStartDebate}
                     >
-                      Start Practice
+                      {t('trainer.startPractice')}
                     </button>
                   </div>
                 )}
@@ -582,8 +608,8 @@ Keep it concise and structured.`;
       <header className="debate-trainer-header">
         <div className="debate-trainer-header-content">
           <div className="debate-trainer-header-left"></div>
-          <div className="debate-trainer-header-center" style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-            <h1 className="debate-trainer-site-title">Debate Trainer</h1>
+          <div className="debate-trainer-header-center" style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, cursor: "pointer" }}>
+            <h1 className="debate-trainer-site-title" onClick={() => navigate("/")}>{t('trainer.title')}</h1>
           </div>
           <div className="debate-trainer-header-right">
             <UserDropdown user={user} onLogout={onLogout} className="debate-trainer-user-dropdown" />
@@ -596,15 +622,15 @@ Keep it concise and structured.`;
         className="toggle-sidebar" 
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
       >
-        {sidebarExpanded ? "Hide Speeches" : "Show Speeches"}
+        {sidebarExpanded ? t('trainer.hideSpeeches') : t('trainer.showSpeeches')}
       </button>
       
       <div className={`debate-sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <h3 className="sidebar-title">Speeches</h3>
+        <h3 className="sidebar-title">{t('trainer.speeches')}</h3>
         <ul className="sidebar-list">
           {speechList.length === 0 ? (
             <li className="sidebar-item">
-              <span className="sidebar-text">No speeches yet</span>
+              <span className="sidebar-text">{t('trainer.noSpeechesYet')}</span>
             </li>
           ) : (
             speechList.map((item) => (
@@ -629,9 +655,9 @@ Keep it concise and structured.`;
           <div className="trainer-debate-info">
             <h3>{debateTopic}</h3>
             <div className="trainer-debate-meta">
-              <span>Format: {debateFormat === "public-forum" ? "Public Forum" : ""}</span>
-              <span>Round: {getCurrentRoundNumber()}/4</span>
-              {mode === "ai-vs-user" && <span>You: {userSide === "pro" ? "Pro" : "Con"}</span>}
+              <span>{t('trainer.format')}: {debateFormat === "public-forum" ? t('trainer.publicForum') : ""}</span>
+              <span>{t('trainer.round')}: {getCurrentRoundNumber()}/4</span>
+              {mode === "ai-vs-user" && <span>{t('trainer.you')}: {userSide === "pro" ? t('trainer.pro') : t('trainer.con')}</span>}
             </div>
           </div>
         </div>
@@ -643,18 +669,18 @@ Keep it concise and structured.`;
               <div className="trainer-speech-input-header-compact">
                 <label>
                   {mode === "user-vs-user" 
-                    ? `${(messageList.length % 2 === 0 && pfSpeakingOrder === "pro-first") || (messageList.length % 2 === 1 && pfSpeakingOrder === "con-first") ? "Pro" : "Con"} - ${getCurrentSpeechType(messageList.length + 1)} (Round ${getCurrentRoundNumber()})`
-                    : `${userSide === "pro" ? "Pro" : "Con"} - ${getCurrentSpeechType(messageList.length + 1)} (Round ${getCurrentRoundNumber()})`
+                    ? `${(messageList.length % 2 === 0 && pfSpeakingOrder === "pro-first") || (messageList.length % 2 === 1 && pfSpeakingOrder === "con-first") ? t('trainer.pro') : t('trainer.con')} - ${getCurrentSpeechType(messageList.length + 1)} (${t('trainer.round')} ${getCurrentRoundNumber()})`
+                    : `${userSide === "pro" ? t('trainer.pro') : t('trainer.con')} - ${getCurrentSpeechType(messageList.length + 1)} (${t('trainer.round')} ${getCurrentRoundNumber()})`
                   }
                 </label>
                 {loading && mode === "ai-vs-user" && (
-                  <span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>AI responding...</span>
+                  <span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>{t('trainer.aiResponding')}</span>
                 )}
               </div>
               <div className="trainer-voice-input-wrapper">
                 <VoiceInput
                   onTranscript={handleVoiceFinalChunk}
-                  placeholder="Click to speak or type below..."
+                  placeholder={t('trainer.clickToSpeak')}
                   disabled={loading}
                 />
               </div>
@@ -664,7 +690,7 @@ Keep it concise and structured.`;
                   rows={3}
                   value={currentSpeechText}
                   onChange={(e) => setCurrentSpeechText(e.target.value)}
-                  placeholder="Type your speech here..."
+                  placeholder={t('trainer.typeSpeech')}
                   disabled={loading}
                 />
                 <button
@@ -672,7 +698,7 @@ Keep it concise and structured.`;
                   onClick={handleSubmitSpeech}
                   disabled={loading || !currentSpeechText.trim() || gettingFeedback}
                 >
-                  {loading ? "..." : gettingFeedback ? "..." : "Submit"}
+                  {loading ? "..." : gettingFeedback ? "..." : t('trainer.submit')}
                 </button>
               </div>
             </div>
@@ -684,7 +710,7 @@ Keep it concise and structured.`;
           <div className="trainer-transcript-panel">
             <div className="trainer-transcript">
               {messageList.length === 0 ? (
-                <div className="trainer-transcript-empty">Debate will start here...</div>
+                <div className="trainer-transcript-empty">{t('trainer.debateWillStart')}</div>
               ) : (
                 <>
                   {messageList.map((msg, idx) => {
@@ -699,7 +725,7 @@ Keep it concise and structured.`;
                         {isUserMessage && (
                           <div className="trainer-message-header">
                             <h2 className="trainer-message-title">
-                              {msg.speaker} – Round {msg.round}/4 {debateFormat === "public-forum" ? "(Public Forum)" : ""}
+                              {msg.speaker === "Pro" ? t('trainer.pro') : t('trainer.con')} – {t('trainer.round')} {msg.round}/4 {debateFormat === "public-forum" ? `(${t('trainer.publicForum')})` : ""}
                             </h2>
                           </div>
                         )}
@@ -724,13 +750,13 @@ Keep it concise and structured.`;
                     <div className="trainer-message ai-message trainer-message-loading">
                       <div className="trainer-message-header">
                         <h2 className="trainer-message-title">
-                          {userSide === "pro" ? "Con" : "Pro"} – Round {getCurrentRoundNumber()}/4 {debateFormat === "public-forum" ? "(Public Forum)" : ""}
+                          {userSide === "pro" ? t('trainer.con') : t('trainer.pro')} – {t('trainer.round')} {getCurrentRoundNumber()}/4 {debateFormat === "public-forum" ? `(${t('trainer.publicForum')})` : ""}
                         </h2>
                       </div>
                       <div className="trainer-message-content">
                         <div className="trainer-loading-indicator">
                           <div className="trainer-spinner"></div>
-                          <p>AI is generating response...</p>
+                          <p>{t('trainer.aiGenerating')}</p>
                         </div>
                       </div>
                     </div>
@@ -742,19 +768,19 @@ Keep it concise and structured.`;
 
           {/* Right: Feedback Panel */}
           <div className="trainer-feedback-panel">
-            <h3>Speech Feedback</h3>
+            <h3>{t('trainer.speechFeedback')}</h3>
             <div className="trainer-feedback-content">
               {gettingFeedback && (
                 <div className="trainer-feedback-loading">
                   <div className="trainer-loading-indicator">
                     <div className="trainer-spinner"></div>
-                    <p>Generating feedback...</p>
+                    <p>{t('trainer.generatingFeedback')}</p>
                   </div>
                 </div>
               )}
               {feedbackList.length === 0 && !gettingFeedback ? (
                 <div className="trainer-feedback-empty">
-                  <p>Submit a speech to see feedback here.</p>
+                  <p>{t('trainer.submitForFeedback')}</p>
                 </div>
               ) : (
                 feedbackList.map((feedback, idx) => (
@@ -764,7 +790,7 @@ Keep it concise and structured.`;
                     className="trainer-feedback-item"
                   >
                     <div className="trainer-feedback-header">
-                      <strong>{feedback.speaker} - Round {feedback.round} • {feedback.speechType}</strong>
+                      <strong>{feedback.speaker === "Pro" ? t('trainer.pro') : t('trainer.con')} - {t('trainer.round')} {feedback.round} • {feedback.speechType}</strong>
                     </div>
                     <ReactMarkdown
                       rehypePlugins={[rehypeRaw]}
@@ -795,10 +821,10 @@ Keep it concise and structured.`;
         {isDebateComplete() && (
           <div className="trainer-debate-complete-container">
             <div className="trainer-debate-complete">
-              <h3>Debate Complete!</h3>
-              <p>Review your feedback and practice again.</p>
+              <h3>{t('trainer.debateComplete')}</h3>
+              <p>{t('trainer.reviewFeedback')}</p>
               <button className="trainer-btn" onClick={handleReset}>
-                Start New Practice
+                {t('trainer.startNewPractice')}
               </button>
             </div>
           </div>

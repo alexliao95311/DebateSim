@@ -92,11 +92,13 @@ class SaveTranscriptRequest(BaseModel):
 class JudgeFeedbackRequest(BaseModel):
     transcript: str
     model: str = DEFAULT_MODEL  # Use the global default model
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 class AnalysisRequest(BaseModel):
     text: str
     model: str = DEFAULT_MODEL  # Use the global default model
     userProfile: dict = None  # Optional user profile for personalized analysis
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 # Connection pooling with optimizations - will be initialized lazily
 connector = None
@@ -224,8 +226,8 @@ async def generate_response(request: GenerateResponseRequest):
             logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
             logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model, debate type, and format
-        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order)
+        # Get a debater chain with the specified model, debate type, format, and language
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order, language=request.language)
         
         # DEBUG: Print what we're sending to the LangChain model
         logger.info(f"🔍 DEBUG: Sending to LangChain:")
@@ -250,7 +252,8 @@ async def generate_response(request: GenerateResponseRequest):
             round_num=request.round_num,  # Pass the current round number
             persona_prompt=request.prompt,  # Pass the full prompt which contains persona instructions
             persona=request.persona,  # Pass the persona name directly for logging
-            prompt=request.prompt  # Also pass the prompt directly for direct prompt detection
+            prompt=request.prompt,  # Also pass the prompt directly for direct prompt detection
+            language=request.language  # Pass the language preference
         )
         
     except Exception as e:
@@ -284,6 +287,7 @@ class TrainerSpeechEfficiencyRequest(BaseModel):
     round_num: int = 0
     speech_type: str = ""
     speech_number: int = 0
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 @app.post("/trainer/speech-efficiency")
 async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
@@ -296,7 +300,7 @@ async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
             raise HTTPException(status_code=400, detail="Speech text is required.")
 
         # Use dedicated trainer chain to keep behavior separate from debate chains
-        trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL)
+        trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL, language=request.language)
         content = trainer_chain.run(
             speech=request.speech,
             debate_format=request.debate_format or "none",
@@ -448,7 +452,7 @@ async def analyze_legislation_text_endpoint(request: AnalysisRequest):
         logger.info(f"Processing text input with model {request.model} - text length: {len(request.text)} chars")
         
         # Generate both analysis and grades (skip redundant logging since this is direct text input)
-        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile)
+        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile, language=request.language)
         grades = await grade_legislation_text(request.text, request.model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -515,10 +519,10 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
 @app.post("/judge-feedback")
 async def judge_feedback(request: JudgeFeedbackRequest):
     start_time = time.time()
-    logger.info(f"📩 /judge-feedback called with model={request.model!r}")
+    logger.info(f"📩 /judge-feedback called with model={request.model!r}, language={request.language!r}")
     try:
-        # Get the appropriate judge chain with the requested model
-        model_specific_judge_chain = get_judge_chain(request.model)
+        # Get the appropriate judge chain with the requested model and language
+        model_specific_judge_chain = get_judge_chain(request.model, language=request.language)
         
         # Run the chain with the transcript
         feedback = model_specific_judge_chain.run(
@@ -1032,7 +1036,7 @@ def format_user_profile_for_analysis(user_profile: dict) -> str:
 
     return '\n'.join(profile_parts)
 
-async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None) -> str:
+async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None, language: str = "en") -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
     # Debug logging (reduced when called together with grading)
@@ -1188,10 +1192,19 @@ Please ensure your analysis is objective, comprehensive, and provides practical 
             "HTTP-Referer": "https://debatesim.app",
         }
         
+        # Determine language instruction
+        language_instruction = ""
+        if language == "zh":
+            language_instruction = " IMPORTANT: Provide your entire analysis in Chinese (中文). All headings, explanations, and content must be in Chinese."
+        elif language != "en":
+            language_instruction = f" IMPORTANT: Provide your entire analysis in the language code: {language}."
+
+        system_message = f"You are an expert legislative analyst providing objective, evidence-based analysis of Congressional bills.{language_instruction}"
+
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": "You are an expert legislative analyst providing objective, evidence-based analysis of Congressional bills."},
+                {"role": "system", "content": system_message},
                 {"role": "user", "content": analysis_prompt}
             ],
             "temperature": 0.3,  # Lower temperature for more analytical, less creative output

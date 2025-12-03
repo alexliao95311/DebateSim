@@ -209,6 +209,8 @@ bill_debate_template = """
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
 
+{language_instructions}
+
 {debater_prompt}
 
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
@@ -299,6 +301,8 @@ topic_debate_template = """
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
 
+{language_instructions}
+
 {debater_prompt}
 
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
@@ -384,6 +388,8 @@ public_forum_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{language_instructions}
 
 {debater_prompt}
 
@@ -484,6 +490,8 @@ lincoln_douglas_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{language_instructions}
 
 {debater_prompt}
 
@@ -594,8 +602,23 @@ lincoln_douglas_prompt = ChatPromptTemplate.from_template(lincoln_douglas_templa
 # Create a memory instance
 memory_map = {}
 
+# Helper function to get language instructions for prompts
+def get_language_instructions(language_code: str) -> str:
+    """Generate language-specific instructions for debater prompts."""
+    if language_code == 'zh':
+        return """
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your debate arguments, rebuttals, responses, and content must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same debate quality and argumentation standards as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+- Section headers, argument titles, and all substantive content must be in Chinese.
+"""
+    return ''  # No language instructions needed for English
+
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic", debate_format: str = "default", speaking_order: str = "pro-first"):
+def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic", debate_format: str = "default", speaking_order: str = "pro-first", language: str = "en"):
 
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
@@ -982,10 +1005,20 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         print(f"🔍 DEBUG [process_inputs]: Detection - word_count:{has_word_count}, persona:{has_persona}, LD:{is_detailed_ld}, PF:{is_detailed_pf}, default:{is_detailed_default}")
         
         if use_direct_prompt:
+            # Get language instructions and prepend to the direct prompt
+            language_code = inputs.get("language", language)
+            language_instructions = get_language_instructions(language_code)
+            
+            # Prepend language instructions to the direct prompt if needed
+            if language_instructions:
+                enhanced_prompt = f"{language_instructions}\n\n{incoming_prompt}"
+            else:
+                enhanced_prompt = incoming_prompt
+            
             # Return the prompt directly for detailed frontend prompts
-            print(f"🔍 DEBUG [process_inputs]: Using direct frontend prompt ({len(incoming_prompt)} chars)")
+            print(f"🔍 DEBUG [process_inputs]: Using direct frontend prompt ({len(enhanced_prompt)} chars)")
             # Mark this as a direct prompt for the selector
-            return {"_direct_prompt": incoming_prompt, "prompt": incoming_prompt}
+            return {"_direct_prompt": enhanced_prompt, "prompt": enhanced_prompt}
         
         # Otherwise, get debate context for template-based prompts
         print(f"🔍 DEBUG [process_inputs]: Using template-based prompt")
@@ -1024,6 +1057,10 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         if not persona_instructions:
             persona_instructions = ""  # Default empty if no persona found
         
+        # Get language instructions
+        language_code = inputs.get("language", language)
+        language_instructions = get_language_instructions(language_code)
+        
         # Prepare template parameters
         template_params = {
             "debater_role": inputs.get("debater_role", ""),
@@ -1037,6 +1074,7 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
             "rebuttal_importance": debate_context["rebuttal_importance"],
             "persona_instructions": persona_instructions,
             "debater_prompt": DEBATER_PROMPT,
+            "language_instructions": language_instructions,
             "_direct_prompt": False  # Mark as template-based
         }
         

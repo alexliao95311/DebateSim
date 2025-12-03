@@ -147,10 +147,55 @@ class OpenRouterChat(BaseChatModel):
     }
 
 
+# Helper function to get language instructions for prompts
+def get_language_instructions(language_code: str) -> str:
+    """Generate language-specific instructions for trainer prompts."""
+    if language_code == 'zh':
+        return """
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your feedback, critiques, suggestions, and section headers must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same feedback quality and depth as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+
+**IMPORTANT - SECTION HEADERS (Use Chinese translations):**
+When using section headers, use these Chinese translations:
+- "Content Analysis" → "内容分析"
+- "Efficiency Critique" → "效率批评"
+- "Precise Cuts and Rewrites" → "精确删减与重写"
+- "Improvements" → "改进建议"
+- "Case Structure & Clarity" → "案例结构与清晰度"
+- "Evidence & Warrant Quality" → "证据与理由质量"
+- "Logic & Internal Links" → "逻辑与内部联系"
+- "Impact Analysis" → "影响分析"
+- "Strategic Value" → "战略价值"
+- "Direct Refutation Quality" → "直接反驳质量"
+- "Evidence Comparison & Logic" → "证据比较与逻辑"
+- "Clash & Coverage" → "冲突与覆盖"
+- "Strategic Layering" → "战略分层"
+- "Frontline Quality & Case Defense" → "前线质量与案例防御"
+- "Refutation of Opponent's Case" → "对对手案例的反驳"
+- "Coverage, Clarity, and Prioritization" → "覆盖、清晰度和优先级"
+- "Setup for Summary" → "总结准备"
+- "Collapse & Prioritization" → "收缩与优先级"
+- "Extensions (warrants, links, impacts)" → "扩展（理由、联系、影响）"
+- "Weighing Quality (comparative)" → "权衡质量（比较性）"
+- "Frontline Extensions" → "前线扩展"
+- "Strategic Refutation Coverage" → "战略反驳覆盖"
+- "Crystallization & Round Vision" → "结晶化与回合愿景"
+- "Weighing Quality (probability, magnitude, timeframe)" → "权衡质量（概率、幅度、时间框架）"
+- "Voters & Judge Instruction" → "投票要点与评判指示"
+- "Consistency With Summary" → "与总结的一致性"
+"""
+    return ''  # No language instructions needed for English
+
 TRAINER_PROMPT = """SYSTEM: You are a Debate Speech Coach providing concise, critical feedback. This is NOT a debate simulation.
 Do NOT simulate opponents, judges, rounds, personas, crossfire, rebuttals, or win/loss language.
 Do NOT include any headers or text that references "Round", "Opponent", "Frontline", "Judge", or "I win".
 ONLY point out flaws and problems. Do NOT praise or say what's good. Be direct and concise.
+
+{language_instructions}
 
 {format_specific_instructions}
 
@@ -368,15 +413,19 @@ Provide feedback appropriate to this debate format and round type.
 """
 
 
-def get_trainer_chain(model_name: str = "openai/gpt-4o-mini"):
+def get_trainer_chain(model_name: str = "openai/gpt-4o-mini", language: str = "en"):
   """Return a chain that gives comprehensive speech feedback (content + efficiency)."""
   llm = OpenRouterChat(model_name=model_name, temperature=0.3)
+
+  # Get language instructions
+  language_instructions = get_language_instructions(language)
 
   def format_input(speech: str, debate_format: str = "none", round_num: int = 0, speech_type: str = "", speech_number: int = 0):
     format_instructions = get_format_specific_instructions(debate_format, round_num, speech_type, speech_number)
     return {
       "speech": speech,
-      "format_specific_instructions": format_instructions
+      "format_specific_instructions": format_instructions,
+      "language_instructions": language_instructions
     }
 
   chain = (

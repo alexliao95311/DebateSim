@@ -168,6 +168,35 @@ class OpenRouterChat(BaseChatModel):
             "temperature": self.temperature,
         }
 
+# Helper function to get language instructions for prompts
+def get_language_instructions(language_code: str) -> str:
+    """Generate language-specific instructions for judge prompts."""
+    if language_code == 'zh':
+        return """
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your evaluation, feedback, and decision must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same evaluation quality and depth as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+
+**IMPORTANT - JUDGING CRITERIA LABELS (Use Chinese translations):**
+When referencing judging criteria, use these Chinese translations:
+- "Argument Strength" → "论据强度"
+- "Evidence Quality" → "证据质量"
+- "Rebuttals" → "反驳"
+- "Rhetorical Effectiveness" → "修辞效果"
+- "Bias Neutrality" → "偏见中立性"
+- "Framework Analysis" → "框架分析"
+- "Logical Structure" → "逻辑结构"
+- "Philosophical Depth" → "哲学深度"
+- "Comparative Weighing" → "比较权衡"
+- "Clash Resolution" → "冲突解决"
+- "Crystallization" → "结晶化"
+- "Speaker Points" → "发言者得分"
+"""
+    return ''  # No language instructions needed for English
+
 # New standardized judge prompt
 JUDGE_PROMPT = """
 You are an AI judge evaluating a debate round. Follow these judging standards:
@@ -190,8 +219,17 @@ Maintain objectivity, depth, and clarity throughout your evaluation.
 # Define the template for the judge
 template = """{judge_prompt}
 
+{language_instructions}
+
 DEBATE TRANSCRIPT:
 {transcript}
+
+STANDARD DEBATE JUDGING CRITERIA:
+- **Argument Strength**: Logical, well-reasoned arguments
+- **Evidence Quality**: Facts, statistics, examples, reasoning
+- **Rebuttals**: Directly addressing opponent arguments
+- **Rhetorical Effectiveness**: Persuasive delivery and style
+- **Bias Neutrality**: Objective, fair analysis
 
 Please provide your judgement with the following sections:
 1. Summary of Main Arguments from both sides
@@ -203,6 +241,8 @@ Format your response with clear headings using markdown (###).
 
 # Define the Lincoln-Douglas specific judge template
 ld_judge_template = """{judge_prompt}
+
+{language_instructions}
 
 You are an expert Lincoln-Douglas debate judge with deep knowledge of philosophical argumentation, ethical frameworks, and LD debate theory.
 
@@ -234,12 +274,15 @@ chat_prompt = ChatPromptTemplate.from_template(template)
 ld_judge_prompt = ChatPromptTemplate.from_template(ld_judge_template)
 
 # Function to get a judge chain with a specific model
-def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default"):
+def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default", language="en"):
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
         model_name=model_name,
         temperature=0.5
     )
+    
+    # Get language instructions
+    language_instructions = get_language_instructions(language)
     
     # Select the appropriate template based on debate format
     if debate_format == "lincoln-douglas":
@@ -249,7 +292,11 @@ def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default"):
     
     # Build the runnable chain using LCEL
     def format_prompt(transcript):
-        return {"transcript": transcript, "judge_prompt": JUDGE_PROMPT}
+        return {
+            "transcript": transcript, 
+            "judge_prompt": JUDGE_PROMPT,
+            "language_instructions": language_instructions
+        }
     
     chain = (
         format_prompt
