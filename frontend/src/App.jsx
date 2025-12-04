@@ -12,6 +12,8 @@ import AboutUs from "./components/AboutUs";
 import SpeechTest from "./components/SpeechTest";
 import Settings from "./components/Settings";
 import History from "./components/History";
+import Leaderboard from "./components/Leaderboard";
+import Rankings from "./components/Rankings";
 import voicePreferenceService from "./services/voicePreferenceService";
 import languagePreferenceService from "./services/languagePreferenceService";
 import DebateTrainer from "./components/debatetrainer";
@@ -128,6 +130,8 @@ function App() {
             <Route path="/settings" element={<Settings user={user} onLogout={handleLogout} />} />
             <Route path="/history" element={<History user={user} onLogout={handleLogout} />} />
             <Route path="/debatetrainer" element={<DebateTrainer user={user} onLogout={handleLogout} />} />
+            <Route path="/leaderboard" element={<Leaderboard user={user} onLogout={handleLogout} />} />
+            <Route path="/rankings" element={<Rankings user={user} onLogout={handleLogout} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </>
         )}
