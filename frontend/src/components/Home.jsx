@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Award,
   MessageSquare,
+  Trophy,
 } from "lucide-react";
 import "./Home.css";
 import Footer from "./Footer.jsx";
@@ -161,6 +162,16 @@ function Home({ user, onLogout }) {
       route: "/debatetrainer",
       tags: [t('home.tag.training')],
       gradient: "from-orange-500 to-red-600"
+    },
+    {
+      id: "leaderboard",
+      title: "AI Debate Leaderboard",
+      description: "Rank AI models based on their debate performance with ELO ratings",
+      icon: <Trophy className="home-feature-icon" />,
+      status: "active",
+      route: "/leaderboard",
+      tags: ["ELO Ranking", "AI Benchmark"],
+      gradient: "from-yellow-500 to-amber-600"
     },
   ];
 
