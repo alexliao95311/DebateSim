@@ -141,33 +141,36 @@ def get_firestore_db():
     global firestore_db
     if firestore_db is not None:
         return firestore_db
-    
+
     if not FIREBASE_AVAILABLE:
+        logger.error("Firebase Admin SDK not available (firebase-admin not installed)")
         return None
-    
+
     try:
-        # Check if already initialized
-        try:
-            firestore_db = firestore.client()
-            return firestore_db
-        except ValueError:
-            pass
-        
         # Get credentials path
         cred_path = Path(__file__).parent / "credentials" / "debatesim-6f403-55fd99aa753a-google-cloud.json"
-        
+
         if not cred_path.exists():
-            logger.warning(f"Firebase credentials not found at {cred_path}")
+            logger.error(f"Firebase credentials not found at {cred_path}")
             return None
-        
-        # Initialize Firebase
-        cred = credentials.Certificate(str(cred_path))
-        firebase_admin.initialize_app(cred)
-        firestore_db = firestore.client()
-        logger.info("Firebase Firestore initialized")
+
+        # Try to get existing app or initialize new one
+        try:
+            # Try to get the default app if it already exists
+            firebase_admin.get_app()
+            logger.info("Firebase app already initialized, getting Firestore client")
+            firestore_db = firestore.client()
+        except ValueError:
+            # App doesn't exist, initialize it
+            logger.info("Initializing new Firebase app")
+            cred = credentials.Certificate(str(cred_path))
+            firebase_admin.initialize_app(cred)
+            firestore_db = firestore.client()
+            logger.info("Firebase Firestore initialized successfully")
+
         return firestore_db
     except Exception as e:
-        logger.error(f"Error initializing Firebase: {e}")
+        logger.error(f"Error initializing Firebase: {e}", exc_info=True)
         return None
 
 @app.on_event("startup")
@@ -606,122 +609,92 @@ async def run_full_debate_stream(request: FullDebateRequest):
 
 @app.get("/leaderboard/models")
 async def get_leaderboard():
-    """Get the current leaderboard with ELO ratings from Firestore."""
-    try:
-        db = get_firestore_db()
-        if db is None:
-            # Fallback if Firebase not available
-            return {
-                "models": [],
-                "message": "Firebase not available"
-            }
-        
-        models_ref = db.collection('models')
-        docs = models_ref.stream()
-        
-        models = []
-        for doc in docs:
-            data = doc.to_dict()
-            models.append({
-                'model': data.get('model', ''),
-                'elo': data.get('elo', 1500),
-                'wins': data.get('wins', 0),
-                'losses': data.get('losses', 0),
-                'draws': data.get('draws', 0)
-            })
-        
-        # Sort by ELO (highest first)
-        models.sort(key=lambda x: x.get('elo', 1500), reverse=True)
-        
-        return {
-            "models": models,
-            "count": len(models)
-        }
-    except Exception as e:
-        logger.error(f"Error getting leaderboard: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting leaderboard: {str(e)}")
+    """Get the current leaderboard with ELO ratings. Frontend handles Firebase directly."""
+    # Frontend now handles Firebase directly, so just return empty
+    # This endpoint is kept for backward compatibility
+    return {
+        "models": [],
+        "message": "Frontend handles leaderboard via Firebase Web SDK"
+    }
 
 @app.get("/leaderboard/topics")
 async def get_topics():
     """Get random topics from Firestore for debates."""
     try:
-        # This will fetch from Firestore later
-        # For now, return some sample topics
+        db = get_firestore_db()
+        if db is None:
+            # Fallback to sample topics if Firebase not available
+            sample_topics = [
+                "Should AI be regulated like a public utility?",
+                "Should voting be mandatory?",
+                "Should college be free?",
+                "Should social media be banned for children?",
+                "Should universal basic income be implemented?",
+                "Should the voting age be lowered to 16?",
+                "Should all drugs be decriminalized?",
+                "Should healthcare be universal?",
+                "Should climate change be a top priority?",
+                "Should space exploration be publicly funded?"
+            ]
+            return {"topics": sample_topics}
+        
+        # Fetch from Firestore
+        topics_ref = db.collection('topics')
+        query = topics_ref.where('used', '==', False).limit(100)  # Get unused topics
+        docs = list(query.stream())
+        
+        if docs:
+            topics = [doc.to_dict().get('text', '') for doc in docs if doc.to_dict().get('text')]
+            if topics:
+                return {"topics": topics}
+        
+        # If no unused topics, get any topics
+        all_docs = topics_ref.limit(100).stream()
+        topics = [doc.to_dict().get('text', '') for doc in all_docs if doc.to_dict().get('text')]
+        
+        if topics:
+            return {"topics": topics}
+        
+        # Fallback to sample topics
         sample_topics = [
             "Should AI be regulated like a public utility?",
             "Should voting be mandatory?",
             "Should college be free?",
             "Should social media be banned for children?",
-            "Should universal basic income be implemented?",
-            "Should the voting age be lowered to 16?",
-            "Should all drugs be decriminalized?",
-            "Should healthcare be universal?",
-            "Should climate change be a top priority?",
-            "Should space exploration be publicly funded?"
+            "Should universal basic income be implemented?"
         ]
-        return {
-            "topics": sample_topics,
-            "message": "Topics will be fetched from Firestore"
-        }
+        return {"topics": sample_topics}
     except Exception as e:
         logger.error(f"Error getting topics: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting topics: {str(e)}")
+        # Return fallback topics on error
+        return {
+            "topics": [
+                "Should AI be regulated like a public utility?",
+                "Should voting be mandatory?",
+                "Should college be free?"
+            ]
+        }
+
+@app.post("/leaderboard/initialize-models")
+async def initialize_models():
+    """Initialize models. Frontend handles Firebase directly."""
+    # Frontend now handles initialization via Firebase Web SDK
+    return {
+        "success": True,
+        "message": "Frontend handles model initialization via Firebase Web SDK"
+    }
 
 @app.post("/leaderboard/update-elo")
 async def update_elo(update: ELOUpdate):
-    """Update ELO rating for a model after a debate in Firestore."""
-    try:
-        db = get_firestore_db()
-        if db is None:
-            logger.warning("Firebase not available, ELO update not persisted")
-            return {
-                "success": False,
-                "model": update.model,
-                "new_elo": update.elo,
-                "message": "Firebase not available"
-            }
-        
-        # Find model document by model name
-        models_ref = db.collection('models')
-        query = models_ref.where('model', '==', update.model).limit(1)
-        docs = list(query.stream())
-        
-        import hashlib
-        doc_id = hashlib.md5(update.model.encode()).hexdigest()
-        doc_ref = models_ref.document(doc_id)
-        
-        if docs:
-            # Update existing document
-            doc_ref.update({
-                'elo': update.elo,
-                'wins': update.wins,
-                'losses': update.losses,
-                'draws': update.draws,
-                'updatedAt': firestore.SERVER_TIMESTAMP
-            })
-            logger.info(f"Updated ELO for {update.model}: {update.elo}")
-        else:
-            # Create new document if doesn't exist
-            doc_ref.set({
-                'model': update.model,
-                'elo': update.elo,
-                'wins': update.wins,
-                'losses': update.losses,
-                'draws': update.draws,
-                'createdAt': firestore.SERVER_TIMESTAMP,
-                'updatedAt': firestore.SERVER_TIMESTAMP
-            })
-            logger.info(f"Created new model entry for {update.model}: {update.elo}")
-        
-        return {
-            "success": True,
-            "model": update.model,
-            "new_elo": update.elo,
-            "message": "ELO updated in Firestore"
-        }
-    except Exception as e:
-        logger.error(f"Error updating ELO: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error updating ELO: {str(e)}")
+    """Update ELO rating for a model. Frontend handles Firebase directly."""
+    # Frontend now handles ELO updates via Firebase Web SDK
+    logger.info(f"ELO update request for {update.model}: {update.elo} (handled by frontend)")
+    return {
+        "success": True,
+        "model": update.model,
+        "new_elo": update.elo,
+        "message": "Frontend handles ELO updates via Firebase Web SDK"
+    }
 
 def calculate_elo(winner_elo: float, loser_elo: float, k_factor: int = 32) -> tuple:
     """
