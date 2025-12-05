@@ -163,6 +163,40 @@
   background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
 }
 
+.initialize-models-section {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(11, 17, 32, 0.9);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 2px dashed rgba(74, 144, 226, 0.5);
+}
+
+.initialize-models-text {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.initialize-models-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.initialize-models-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+}
+
 .play-icon {
   width: 1.2rem;
   height: 1.2rem;

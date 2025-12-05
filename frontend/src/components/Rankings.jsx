@@ -7,14 +7,6 @@ import './Rankings.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-const AVAILABLE_MODELS = [
-  "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct",
-  "google/gemini-2.0-flash-001",
-  "anthropic/claude-3.5-sonnet",
-  "openai/gpt-4o-mini-search-preview"
-];
-
 function Rankings({ user, onLogout }) {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
@@ -35,83 +27,25 @@ function Rankings({ user, onLogout }) {
   }, []);
 
   useEffect(() => {
-    // Initialize localStorage with default models if empty
-    const localData = localStorage.getItem('leaderboard');
-    if (!localData) {
-      const defaultModels = AVAILABLE_MODELS.map(model => ({
-        model,
-        elo: 1500,
-        wins: 0,
-        losses: 0,
-        draws: 0
-      }));
-      localStorage.setItem('leaderboard', JSON.stringify(defaultModels));
-      console.log('Initialized leaderboard in localStorage with default models');
-    }
-    
     loadLeaderboard();
-
-    // Listen for localStorage changes (from other tabs/windows or same page)
-    const handleStorageChange = (e) => {
-      if (e.key === 'leaderboard' || e.key === null) {
-        console.log('localStorage changed, reloading leaderboard...');
-        loadLeaderboard();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
-      console.log('Loading leaderboard from:', `${API_BASE}/leaderboard/models`);
       const response = await fetch(`${API_BASE}/leaderboard/models`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Leaderboard data received:', data);
-        
-        // If backend returns empty (Firebase not configured), try localStorage
-        if (!data.models || data.models.length === 0) {
-          console.log('Backend returned empty, checking localStorage...');
-          const localData = localStorage.getItem('leaderboard');
-          if (localData) {
-            const parsed = JSON.parse(localData);
-            console.log('Loaded from localStorage:', parsed);
-            const sorted = parsed.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-            setLeaderboard(sorted);
-            setLoading(false);
-            return sorted;
-          }
-        }
-        
         // Sort by ELO rating (highest first)
         const sorted = (data.models || []).sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-        console.log('Sorted leaderboard:', sorted);
         setLeaderboard(sorted);
-        return sorted;
       } else {
         console.error('Failed to load leaderboard:', response.status, response.statusText);
-        // Try localStorage as fallback
-        const localData = localStorage.getItem('leaderboard');
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          const sorted = parsed.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-          setLeaderboard(sorted);
-          return sorted;
-        }
+        setLeaderboard([]);
       }
     } catch (error) {
       console.error("Error loading leaderboard:", error);
-      // Try localStorage as fallback
-      const localData = localStorage.getItem('leaderboard');
-      if (localData) {
-        const parsed = JSON.parse(localData);
-        const sorted = parsed.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-        setLeaderboard(sorted);
-        return sorted;
-      }
+      setLeaderboard([]);
     } finally {
       setLoading(false);
     }

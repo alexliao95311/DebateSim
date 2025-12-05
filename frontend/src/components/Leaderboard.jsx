@@ -5,6 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer';
 import { useTranslation } from '../utils/translations';
+import { db } from '../firebase/firebaseConfig';
+import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import './Leaderboard.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -45,35 +47,10 @@ function Leaderboard({ user, onLogout }) {
     return () => clearTimeout(animationTimer);
   }, []);
 
-  // Load topics from Firestore
+  // Load topics and leaderboard from Firebase
   useEffect(() => {
-    // Initialize localStorage with default models if empty
-    const localData = localStorage.getItem('leaderboard');
-    if (!localData) {
-      const defaultModels = AVAILABLE_MODELS.map(model => ({
-        model,
-        elo: 1500,
-        wins: 0,
-        losses: 0,
-        draws: 0
-      }));
-      localStorage.setItem('leaderboard', JSON.stringify(defaultModels));
-      console.log('Initialized leaderboard in localStorage with default models');
-    }
-    
     loadTopics();
     loadLeaderboard();
-
-    // Listen for localStorage changes (from other tabs/windows or same page)
-    const handleStorageChange = (e) => {
-      if (e.key === 'leaderboard' || e.key === null) {
-        console.log('localStorage changed, reloading leaderboard...');
-        loadLeaderboard();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const loadTopics = async () => {
@@ -111,49 +88,29 @@ function Leaderboard({ user, onLogout }) {
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
-      console.log('Loading leaderboard from:', `${API_BASE}/leaderboard/models`);
-      const response = await fetch(`${API_BASE}/leaderboard/models`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Leaderboard data received:', data);
-        
-        // If backend returns empty (Firebase not configured), try localStorage
-        if (!data.models || data.models.length === 0) {
-          console.log('Backend returned empty, checking localStorage...');
-          const localData = localStorage.getItem('leaderboard');
-          if (localData) {
-            const parsed = JSON.parse(localData);
-            console.log('Loaded from localStorage:', parsed);
-            setLeaderboard(parsed);
-            setLoading(false);
-            return parsed;
-          }
-        }
-        
-        // Sort by ELO rating (highest first)
-        const sorted = (data.models || []).sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-        console.log('Sorted leaderboard:', sorted);
-        setLeaderboard(sorted);
-        return sorted;
-      } else {
-        console.error('Failed to load leaderboard:', response.status, response.statusText);
-        // Try localStorage as fallback
-        const localData = localStorage.getItem('leaderboard');
-        if (localData) {
-          const parsed = JSON.parse(localData);
-          setLeaderboard(parsed);
-          return parsed;
-        }
-      }
+      const modelsRef = collection(db, 'models');
+      const snapshot = await getDocs(modelsRef);
+
+      const models = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        models.push({
+          model: data.model || '',
+          elo: data.elo || 1500,
+          wins: data.wins || 0,
+          losses: data.losses || 0,
+          draws: data.draws || 0
+        });
+      });
+
+      // Sort by ELO rating (highest first)
+      const sorted = models.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
+      setLeaderboard(sorted);
+      return sorted;
     } catch (error) {
       console.error("Error loading leaderboard:", error);
-      // Try localStorage as fallback
-      const localData = localStorage.getItem('leaderboard');
-      if (localData) {
-        const parsed = JSON.parse(localData);
-        setLeaderboard(parsed);
-        return parsed;
-      }
+      setLeaderboard([]);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -180,9 +137,10 @@ function Leaderboard({ user, onLogout }) {
       const model1 = shuffled[0];
       const model2 = shuffled[1];
 
-      // Get current ELO ratings for display
-      const model1Data = leaderboard.find(m => m.model === model1) || { elo: 1500 };
-      const model2Data = leaderboard.find(m => m.model === model2) || { elo: 1500 };
+      // Load current leaderboard to get ELO ratings for display
+      const currentLeaderboard = await loadLeaderboard();
+      const model1Data = currentLeaderboard.find(m => m.model === model1) || { elo: 1500 };
+      const model2Data = currentLeaderboard.find(m => m.model === model2) || { elo: 1500 };
 
       // Set debate info immediately
       setDebateInfo({
@@ -259,9 +217,7 @@ function Leaderboard({ user, onLogout }) {
                   const changes = await updateELO(data);
                   setEloChanges(changes);
                   // Reload leaderboard to show updated rankings
-                  console.log('Debate complete, reloading leaderboard...');
-                  const updatedLeaderboard = await loadLeaderboard();
-                  console.log('Leaderboard reloaded with updated rankings:', updatedLeaderboard);
+                  await loadLeaderboard();
                   setDebateLoading(false);
                   break; // Exit the loop when complete
                 } else if (data.type === 'error') {
@@ -296,16 +252,15 @@ function Leaderboard({ user, onLogout }) {
 
   const updateELO = async (debateResult) => {
     try {
-      console.log('Updating ELO for debate result:', debateResult);
       // Calculate ELO changes
       const model1Name = debateResult.model1;
       const model2Name = debateResult.model2;
       const winner = debateResult.winner;
 
-      // Get current ELO ratings (default to 1500 if not found)
-      const model1Data = leaderboard.find(m => m.model === model1Name) || { elo: 1500, wins: 0, losses: 0, draws: 0 };
-      const model2Data = leaderboard.find(m => m.model === model2Name) || { elo: 1500, wins: 0, losses: 0, draws: 0 };
-      console.log('Model 1 data:', model1Data, 'Model 2 data:', model2Data);
+      // Get current ELO ratings from Firebase (reload to ensure we have latest)
+      const currentLeaderboard = await loadLeaderboard();
+      const model1Data = currentLeaderboard.find(m => m.model === model1Name) || { elo: 1500, wins: 0, losses: 0, draws: 0 };
+      const model2Data = currentLeaderboard.find(m => m.model === model2Name) || { elo: 1500, wins: 0, losses: 0, draws: 0 };
 
       const oldModel1Elo = model1Data.elo;
       const oldModel2Elo = model2Data.elo;
@@ -358,75 +313,30 @@ function Leaderboard({ user, onLogout }) {
         }
       };
 
-      // Update both models
-      console.log('Updating model 1 ELO:', { model: model1Name, elo: newModel1Elo, wins: model1Wins, losses: model1Losses, draws: model1Draws });
-      const response1 = await fetch(`${API_BASE}/leaderboard/update-elo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model1Name,
-          elo: newModel1Elo,
-          wins: model1Wins,
-          losses: model1Losses,
-          draws: model1Draws
-        }),
-      });
-      const result1 = await response1.json();
-      console.log('Model 1 update result:', result1);
+      // Update both models in Firebase directly
+      const modelsRef = collection(db, 'models');
 
-      console.log('Updating model 2 ELO:', { model: model2Name, elo: newModel2Elo, wins: model2Wins, losses: model2Losses, draws: model2Draws });
-      const response2 = await fetch(`${API_BASE}/leaderboard/update-elo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model2Name,
-          elo: newModel2Elo,
-          wins: model2Wins,
-          losses: model2Losses,
-          draws: model2Draws
-        }),
-      });
-      const result2 = await response2.json();
-      console.log('Model 2 update result:', result2);
+      const model1DocId = model1Name.replace(/\//g, '_');
+      const model1Ref = doc(modelsRef, model1DocId);
+      await setDoc(model1Ref, {
+        model: model1Name,
+        elo: newModel1Elo,
+        wins: model1Wins,
+        losses: model1Losses,
+        draws: model1Draws,
+        updatedAt: new Date()
+      }, { merge: true });
 
-      // If backend doesn't have Firebase, save to localStorage as fallback
-      if (!result1.success || !result2.success) {
-        console.warn('Backend persistence failed, using localStorage fallback');
-        
-        // Get current leaderboard from localStorage or use empty array
-        const localData = localStorage.getItem('leaderboard');
-        let models = localData ? JSON.parse(localData) : [];
-        
-        // Update or add model 1
-        const model1Index = models.findIndex(m => m.model === model1Name);
-        if (model1Index >= 0) {
-          models[model1Index] = { model: model1Name, elo: newModel1Elo, wins: model1Wins, losses: model1Losses, draws: model1Draws };
-        } else {
-          models.push({ model: model1Name, elo: newModel1Elo, wins: model1Wins, losses: model1Losses, draws: model1Draws });
-        }
-        
-        // Update or add model 2
-        const model2Index = models.findIndex(m => m.model === model2Name);
-        if (model2Index >= 0) {
-          models[model2Index] = { model: model2Name, elo: newModel2Elo, wins: model2Wins, losses: model2Losses, draws: model2Draws };
-        } else {
-          models.push({ model: model2Name, elo: newModel2Elo, wins: model2Wins, losses: model2Losses, draws: model2Draws });
-        }
-        
-        // Sort by ELO rating (highest first) to maintain accurate rankings
-        models.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-        
-        // Save to localStorage
-        localStorage.setItem('leaderboard', JSON.stringify(models));
-        console.log('Saved and sorted leaderboard to localStorage:', models);
-        
-        // Update the displayed leaderboard state to reflect new rankings
-        setLeaderboard(models);
-      }
+      const model2DocId = model2Name.replace(/\//g, '_');
+      const model2Ref = doc(modelsRef, model2DocId);
+      await setDoc(model2Ref, {
+        model: model2Name,
+        elo: newModel2Elo,
+        wins: model2Wins,
+        losses: model2Losses,
+        draws: model2Draws,
+        updatedAt: new Date()
+      }, { merge: true });
 
       return eloChanges;
     } catch (error) {
@@ -445,12 +355,6 @@ function Leaderboard({ user, onLogout }) {
     const newRating2 = rating2 + kFactor * (score2 - expected2);
 
     return [newRating1, newRating2];
-  };
-
-  const getELOChange = (model) => {
-    // This would need to track previous ELO to show change
-    // For now, return null
-    return null;
   };
 
   const formatModelName = (model) => {
@@ -536,6 +440,51 @@ function Leaderboard({ user, onLogout }) {
         </button>
         {loadingTopics && <p className="loading-text">Loading topics...</p>}
       </div>
+
+      {/* Initialize Models Button - only show if leaderboard is empty */}
+      {leaderboard.length === 0 && !loading && (
+        <div className="initialize-models-section">
+          <p className="initialize-models-text">
+            No models found. Initialize models from models.txt to start ranking.
+          </p>
+          <button
+            className="initialize-models-button"
+            onClick={async () => {
+              try {
+                const modelsRef = collection(db, 'models');
+                let initialized = 0;
+
+                for (const modelName of AVAILABLE_MODELS) {
+                  const docId = modelName.replace(/\//g, '_');
+                  const docRef = doc(modelsRef, docId);
+                  const docSnap = await getDoc(docRef);
+
+                  if (!docSnap.exists()) {
+                    await setDoc(docRef, {
+                      model: modelName,
+                      elo: 1500,
+                      wins: 0,
+                      losses: 0,
+                      draws: 0,
+                      createdAt: new Date(),
+                      updatedAt: new Date()
+                    });
+                    initialized++;
+                  }
+                }
+
+                alert(`Success! Initialized ${initialized} new models`);
+                await loadLeaderboard();
+              } catch (error) {
+                console.error('Error initializing models:', error);
+                alert(`Error initializing models: ${error.message}`);
+              }
+            }}
+          >
+            Initialize Models
+          </button>
+        </div>
+      )}
 
       {(debateInfo || debateStatus || streamingTranscript.length > 0 || currentDebate) && (
         <div className="debate-result-card">
@@ -695,71 +644,19 @@ function Leaderboard({ user, onLogout }) {
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : currentDebate.transcript ? (
                 <div className="transcript-fallback">
                   <ReactMarkdown>{currentDebate.transcript}</ReactMarkdown>
+                </div>
+              ) : (
+                <div className="transcript-fallback">
+                  <p>Transcript not available</p>
                 </div>
               )}
             </div>
           </details>
         </div>
       )}
-
-      <div className="leaderboard-table-container">
-        {loading ? (
-          <div className="loading-container">
-            <Loader2 className="spinner" />
-            <p>Loading leaderboard...</p>
-          </div>
-        ) : leaderboard.length === 0 && !currentDebate ? (
-          <div className="empty-leaderboard">
-            <p>No debates have been run yet. Click "Run Random Debate" to start!</p>
-          </div>
-        ) : leaderboard.length > 0 ? (
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Model</th>
-                <th>ELO Rating</th>
-                <th>Wins</th>
-                <th>Losses</th>
-                <th>Draws</th>
-                <th>Win Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((model, index) => {
-                const totalGames = (model.wins || 0) + (model.losses || 0) + (model.draws || 0);
-                const winRate = totalGames > 0 ? ((model.wins || 0) / totalGames * 100).toFixed(1) : 0;
-                
-                return (
-                  <tr key={model.model || index}>
-                    <td className="rank-cell">
-                      {index === 0 && <Trophy className="gold-trophy" />}
-                      {index === 1 && <Trophy className="silver-trophy" />}
-                      {index === 2 && <Trophy className="bronze-trophy" />}
-                      <span className="rank-number">{index + 1}</span>
-                    </td>
-                    <td className="model-name-cell">{formatModelName(model.model || 'Unknown')}</td>
-                    <td className="elo-cell">
-                      <span className="elo-rating">{Math.round(model.elo || 1500)}</span>
-                    </td>
-                    <td className="wins-cell">{model.wins || 0}</td>
-                    <td className="losses-cell">{model.losses || 0}</td>
-                    <td className="draws-cell">{model.draws || 0}</td>
-                    <td className="winrate-cell">{winRate}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <div className="empty-leaderboard">
-            <p>Leaderboard will appear after the debate results are processed.</p>
-          </div>
-        )}
-      </div>
       </div>
 
       <Footer />
