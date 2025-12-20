@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import { auth } from "../firebase/firebaseConfig";
 import { signOut, getAuth } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import UserDropdown from "./UserDropdown";
 import { useTranslation } from "../utils/translations";
 import {
@@ -19,6 +19,7 @@ import Footer from "./Footer.jsx";
 
 function DebateSim({ user }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const [mode, setMode] = useState("");
   const [debateFormat, setDebateFormat] = useState("");
   const [debateTopic, setDebateTopic] = useState("AI does more good than harm");
@@ -45,6 +46,14 @@ function DebateSim({ user }) {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, []);
+
+  // Set topic from location state if provided
+  useEffect(() => {
+    if (location.state?.topicOfDay) {
+      setDebateTopic(location.state.topicOfDay);
+      console.log("Topic of the day loaded:", location.state.topicOfDay);
+    }
+  }, [location.state]);
 
   // Animation trigger
   useEffect(() => {

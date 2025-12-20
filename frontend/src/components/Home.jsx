@@ -17,6 +17,7 @@ import {
   Award,
   MessageSquare,
   Trophy,
+  Lightbulb,
 } from "lucide-react";
 import "./Home.css";
 import Footer from "./Footer.jsx";
@@ -30,6 +31,8 @@ function Home({ user, onLogout }) {
   const [isVisible, setIsVisible] = useState(false);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [topicOfDay, setTopicOfDay] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
   const featureCardsRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
@@ -43,6 +46,40 @@ function Home({ user, onLogout }) {
   useEffect(() => {
     // Trigger animations on mount
     const animationTimer = setTimeout(() => setIsVisible(true), 100);
+    
+    // Fetch topics.txt and calculate topic of the day
+    const loadTopicOfDay = async () => {
+      try {
+        const response = await fetch('/topics.txt');
+        const text = await response.text();
+        const topics = text.split('\n').filter(topic => topic.trim().length > 0);
+        
+        // Calculate days since a reference date (e.g., Jan 1, 2024)
+        const referenceDate = new Date(2025, 11, 4); // January 1, 2024
+        const today = new Date();
+        
+        // Reset time to midnight for accurate day count
+        today.setHours(0, 0, 0, 0);
+        referenceDate.setHours(0, 0, 0, 0);
+        
+        const daysSinceReference = Math.floor((today - referenceDate) / (1000 * 60 * 60 * 24));
+        const topicIndex = daysSinceReference % topics.length;
+        
+        setTopicOfDay(topics[topicIndex]);
+        
+        // Format date as readable string
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateString = today.toLocaleDateString(undefined, options);
+        setCurrentDate(dateString);
+        
+        console.log(`Topic of the Day (${dateString}): ${topics[topicIndex]}`);
+      } catch (error) {
+        console.error("Error loading topics.txt:", error);
+        setTopicOfDay("Should AI be regulated like a public utility?");
+      }
+    };
+    
+    loadTopicOfDay();
     
     return () => {
       clearTimeout(animationTimer);
@@ -244,6 +281,26 @@ function Home({ user, onLogout }) {
           <p className="home-hero-subtitle">
             {t('home.exploreTools')}
           </p>
+        </div>
+
+        {/* Topic of the Day Section */}
+        <div className={`home-topic-of-day ${isVisible ? 'visible' : ''}`}>
+          <div className="home-topic-header">
+            <Lightbulb className="home-topic-icon" />
+            <h2>Topic of the Day</h2>
+          </div>
+          <div className="home-topic-card">
+            <p className="home-topic-date">{currentDate}</p>
+            <p className="home-topic-text">{topicOfDay}</p>
+            <div className="home-topic-meta">
+              <button 
+                className="home-topic-button"
+                onClick={() => navigate('/debatesim', { state: { topicOfDay: topicOfDay } })}
+              >
+                Debate This Topic →
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="home-section-header">
