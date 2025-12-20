@@ -45,6 +45,12 @@ API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set the OPENROUTER_API_KEY environment variable.")
 
+# Debug: Print which key is being used
+print("=" * 60)
+print("USING OPENROUTER KEY:", API_KEY)
+print("=" * 60)
+
+
 CONGRESS_API_KEY = os.getenv("CONGRESS_API_KEY")
 if not CONGRESS_API_KEY:
     logger.warning("CONGRESS_API_KEY not found. Recommended bills will use mock data.")
@@ -293,8 +299,8 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - debate_format: {request.debate_format}")
         logger.info(f"🔍 DEBUG: - speaking_order: {request.speaking_order}")
         
-        # Call the run method - pass full transcript for context and the original prompt for persona instructions
-        ai_output = model_specific_debater_chain.run(
+        # Call the arun method - pass full transcript for context and the original prompt for persona instructions
+        ai_output = await model_specific_debater_chain.arun(
             debater_role=debater_role,
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
@@ -320,7 +326,7 @@ async def judge_debate(request: JudgeRequest):
     transcript = request.transcript
     logger.info("📩 /judge-debate called (length=%d)", len(transcript))
     try:
-        feedback = judge_chain.run(transcript=transcript)
+        feedback = await judge_chain.arun(transcript=transcript)
     except Exception as e:
         logger.error(f"Error in judge_chain: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error generating judge feedback")
@@ -381,7 +387,7 @@ async def run_full_debate(request: FullDebateRequest):
             logger.info(f"🔄 Running round {round_num}/{max_rounds}")
             
             # Pro speaks
-            pro_response = pro_chain.run(
+            pro_response = await pro_chain.arun(
                 debater_role="Pro",
                 topic=request.topic,
                 bill_description=request.topic,
@@ -393,18 +399,18 @@ async def run_full_debate(request: FullDebateRequest):
                 prompt=request.topic,
                 language=request.language
             )
-            
+
             transcript_parts.append({
                 "round": round_num,
                 "speaker": "Pro",
                 "model": request.model1,
                 "content": pro_response
             })
-            
+
             full_transcript += f"## Pro (Round {round_num})\n{pro_response}\n\n"
-            
+
             # Con speaks
-            con_response = con_chain.run(
+            con_response = await con_chain.arun(
                 debater_role="Con",
                 topic=request.topic,
                 bill_description=request.topic,
@@ -429,7 +435,7 @@ async def run_full_debate(request: FullDebateRequest):
         # Get judge evaluation
         logger.info("⚖️ Getting judge evaluation...")
         judge_chain_instance = get_judge_chain(request.judge_model)
-        judge_feedback = judge_chain_instance.run(transcript=full_transcript)
+        judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
         
         # Parse judge result to determine winner
         winner = None
@@ -508,8 +514,8 @@ async def run_full_debate_stream(request: FullDebateRequest):
                 
                 # Pro speaks
                 yield f"data: {json.dumps({'type': 'status', 'message': f'Pro ({format_model_name(request.model1)}) is speaking...', 'round': round_num, 'total_rounds': request.max_rounds})}\n\n"
-                
-                pro_response = pro_chain.run(
+
+                pro_response = await pro_chain.arun(
                     debater_role="Pro",
                     topic=request.topic,
                     bill_description=request.topic,
@@ -535,8 +541,8 @@ async def run_full_debate_stream(request: FullDebateRequest):
                 
                 # Con speaks
                 yield f"data: {json.dumps({'type': 'status', 'message': f'Con ({format_model_name(request.model2)}) is speaking...', 'round': round_num, 'total_rounds': request.max_rounds})}\n\n"
-                
-                con_response = con_chain.run(
+
+                con_response = await con_chain.arun(
                     debater_role="Con",
                     topic=request.topic,
                     bill_description=request.topic,
@@ -562,9 +568,9 @@ async def run_full_debate_stream(request: FullDebateRequest):
             
             # Get judge evaluation
             yield f"data: {json.dumps({'type': 'status', 'message': 'Getting judge evaluation...'})}\n\n"
-            
+
             judge_chain_instance = get_judge_chain(request.judge_model)
-            judge_feedback = judge_chain_instance.run(transcript=full_transcript)
+            judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
             
             # Parse judge result
             winner = None
@@ -736,7 +742,7 @@ async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
 
         # Use dedicated trainer chain to keep behavior separate from debate chains
         trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL, language=request.language)
-        content = trainer_chain.run(
+        content = await trainer_chain.arun(
             speech=request.speech,
             debate_format=request.debate_format or "none",
             round_num=request.round_num or 0,
@@ -958,9 +964,9 @@ async def judge_feedback(request: JudgeFeedbackRequest):
     try:
         # Get the appropriate judge chain with the requested model and language
         model_specific_judge_chain = get_judge_chain(request.model, language=request.language)
-        
+
         # Run the chain with the transcript
-        feedback = model_specific_judge_chain.run(
+        feedback = await model_specific_judge_chain.arun(
             transcript=request.transcript
         )
         
