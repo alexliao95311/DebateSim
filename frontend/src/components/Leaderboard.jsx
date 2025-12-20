@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Play, Loader2 } from 'lucide-react';
+import { Trophy, Play, Loader2, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer';
@@ -12,11 +12,27 @@ import './Leaderboard.css';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 const AVAILABLE_MODELS = [
-  "openai/gpt-4o-mini",
-  "meta-llama/llama-3.3-70b-instruct",
+  "anthropic/claude-sonnet-4.5",
+  "google/gemini-2.5-flash",
   "google/gemini-2.0-flash-001",
-  "anthropic/claude-3.5-sonnet",
-  "openai/gpt-4o-mini-search-preview"
+  "x-ai/grok-4-fast",
+  "openai/gpt-5-mini",
+  "anthropic/claude-sonnet-4",
+  "openai/gpt-4o-mini",
+  "openai/gpt-5.1",
+  "openai/gpt-4.1-mini",
+  "anthropic/claude-opus-4.5",
+  "x-ai/grok-3-mini",
+  "x-ai/grok-4",
+  "x-ai/grok-4.1-fast",
+  "qwen/qwen-2.5-72b-instruct",
+  "deepseek/deepseek-chat-v3-0324",
+  "deepseek/deepseek-chat-v3.1",
+  "mistralai/mistral-nemo",
+  "mistralai/mistral-small-3.2-24b-instruct",
+  "meta-llama/llama-3.1-8b-instruct",
+  "meta-llama/llama-4-maverick",
+  "qwen/qwen3-next-80b-a3b-instruct"
 ];
 
 function Leaderboard({ user, onLogout }) {
@@ -357,6 +373,55 @@ function Leaderboard({ user, onLogout }) {
     return [newRating1, newRating2];
   };
 
+  const resetAllStats = async () => {
+    // Confirm before resetting
+    const confirmed = window.confirm(
+      'Are you sure you want to reset all ELO ratings and win/loss records? This action cannot be undone.'
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const modelsRef = collection(db, 'models');
+      const snapshot = await getDocs(modelsRef);
+      
+      let resetCount = 0;
+      const updatePromises = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const modelName = data.model;
+        
+        if (modelName) {
+          const docId = modelName.replace(/\//g, '_');
+          const docRef = doc(modelsRef, docId);
+          
+          updatePromises.push(
+            setDoc(docRef, {
+              model: modelName,
+              elo: 1500,
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              updatedAt: new Date()
+            }, { merge: true })
+          );
+          resetCount++;
+        }
+      });
+
+      await Promise.all(updatePromises);
+      
+      alert(`Successfully reset ${resetCount} model(s). All ELO ratings set to 1500, wins/losses/draws set to 0.`);
+      await loadLeaderboard();
+    } catch (error) {
+      console.error('Error resetting stats:', error);
+      alert(`Error resetting stats: ${error.message}`);
+    }
+  };
+
   const formatModelName = (model) => {
     // Format model names for display
     return model
@@ -437,6 +502,14 @@ function Leaderboard({ user, onLogout }) {
         >
           <Trophy className="trophy-icon-small" />
           See Rankings
+        </button>
+        <button
+          className="reset-stats-button"
+          onClick={resetAllStats}
+          disabled={loading}
+        >
+          <RotateCcw className="reset-icon" />
+          Reset All Stats
         </button>
         {loadingTopics && <p className="loading-text">Loading topics...</p>}
       </div>

@@ -11,7 +11,6 @@ anthropic/claude-opus-4.5
 x-ai/grok-3-mini
 x-ai/grok-4
 x-ai/grok-4.1-fast
-amazon/nova-2-lite-v1:free
 qwen/qwen-2.5-72b-instruct
 deepseek/deepseek-chat-v3-0324
 deepseek/deepseek-chat-v3.1
