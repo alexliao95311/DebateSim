@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, ArrowLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer';
+import { db } from '../firebase/firebaseConfig';
+import { collection, getDocs } from 'firebase/firestore';
 import './Rankings.css';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 function Rankings({ user, onLogout }) {
   const navigate = useNavigate();
@@ -33,16 +33,24 @@ function Rankings({ user, onLogout }) {
   const loadLeaderboard = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/leaderboard/models`);
-      if (response.ok) {
-        const data = await response.json();
-        // Sort by ELO rating (highest first)
-        const sorted = (data.models || []).sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
-        setLeaderboard(sorted);
-      } else {
-        console.error('Failed to load leaderboard:', response.status, response.statusText);
-        setLeaderboard([]);
-      }
+      const modelsRef = collection(db, 'models');
+      const snapshot = await getDocs(modelsRef);
+
+      const models = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        models.push({
+          model: data.model || '',
+          elo: data.elo || 1500,
+          wins: data.wins || 0,
+          losses: data.losses || 0,
+          draws: data.draws || 0
+        });
+      });
+
+      // Sort by ELO rating (highest first)
+      const sorted = models.sort((a, b) => (b.elo || 1500) - (a.elo || 1500));
+      setLeaderboard(sorted);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
       setLeaderboard([]);
@@ -78,7 +86,6 @@ function Rankings({ user, onLogout }) {
       .replace('grok-3-mini', 'Grok 3 Mini')
       .replace('grok-4', 'Grok 4')
       .replace('grok-4.1-fast', 'Grok 4.1 Fast')
-      .replace('nova-2-lite-v1:free', 'Nova 2 Lite')
       .replace('qwen-2.5-72b-instruct', 'Qwen 2.5 72B')
       .replace('deepseek-chat-v3-0324', 'DeepSeek Chat v3')
       .replace('deepseek-chat-v3.1', 'DeepSeek Chat v3.1')

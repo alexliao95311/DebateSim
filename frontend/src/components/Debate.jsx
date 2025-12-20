@@ -206,6 +206,18 @@ function Debate() {
   const [singleAIModel, setSingleAIModel] = useState(modelOptions[0]);
   const [aiSide, setAiSide] = useState("pro");
   
+  // Custom model states - track whether using suggested or custom model
+  const [proModelType, setProModelType] = useState("suggested"); // "suggested" or "custom"
+  const [conModelType, setConModelType] = useState("suggested");
+  const [singleAIModelType, setSingleAIModelType] = useState("suggested");
+  const [judgeModelType, setJudgeModelType] = useState("suggested");
+  
+  // Custom model input values
+  const [proModelCustom, setProModelCustom] = useState("");
+  const [conModelCustom, setConModelCustom] = useState("");
+  const [singleAIModelCustom, setSingleAIModelCustom] = useState("");
+  const [judgeModelCustom, setJudgeModelCustom] = useState("");
+  
   // Persona states (received from navigation)
   const proPersona = initialProPersona || "default";
   const conPersona = initialConPersona || "default";
@@ -231,6 +243,12 @@ function Debate() {
   // Lincoln-Douglas info/confirm state (order selection removed; Aff always starts)
   const [ldOrderSelected, setLdOrderSelected] = useState(false);
   const [showLdInfo, setShowLdInfo] = useState(false);
+
+  // Helper functions to get actual model values
+  const getProModel = () => proModelType === "custom" ? proModelCustom : proModel;
+  const getConModel = () => conModelType === "custom" ? conModelCustom : conModel;
+  const getSingleAIModel = () => singleAIModelType === "custom" ? singleAIModelCustom : singleAIModel;
+  const getJudgeModel = () => judgeModelType === "custom" ? judgeModelCustom : judgeModel;
 
   // Handler for the back to home button
   const handleBackToHome = () => {
@@ -542,7 +560,7 @@ function Debate() {
     setError("");
     try {
       const finalTranscript = buildPlainTranscript();
-      navigate("/judge", { state: { transcript: finalTranscript, topic, mode: isBillDebate ? 'bill-debate' : actualMode, judgeModel } });
+      navigate("/judge", { state: { transcript: finalTranscript, topic, mode: isBillDebate ? 'bill-debate' : actualMode, judgeModel: getJudgeModel() } });
     } catch (err) {
       console.error("Error ending debate:", err);
       setError(t('error.failedToEnd'));
@@ -1118,7 +1136,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         const roundToPass = debateFormat === "lincoln-douglas"
           ? messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length + 1
           : currentRound;
-        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, proModel, actualDescription, fullTranscript, roundToPass, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
+        aiResponse = await generateAIResponse("AI Debater Pro", proPrompt, getProModel(), actualDescription, fullTranscript, roundToPass, getPersonaName(proPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Pro.*?\n/gi, '')
@@ -1169,7 +1187,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             `AI Debater Pro (${getPersonaName(proPersona)})` :
             "AI Debater Pro";
         }
-        appendMessage(proDisplayName, cleanedResponse, proModel);
+        appendMessage(proDisplayName, cleanedResponse, getProModel());
         setAiSide("con");
       } else {
         let conPrompt;
@@ -1658,7 +1676,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
         const roundToPass = debateFormat === "lincoln-douglas"
           ? messageList.filter(m => m.speaker.includes("Affirmative") || m.speaker.includes("Negative")).length + 1
           : currentRound;
-        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, conModel, actualDescription, fullTranscript, roundToPass, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
+        aiResponse = await generateAIResponse("AI Debater Con", conPrompt, getConModel(), actualDescription, fullTranscript, roundToPass, getPersonaName(conPersona), debateFormat, pfSpeakingOrder);
         // Remove any headers the AI might have generated (aggressive cleaning)
         let cleanedResponse = aiResponse
           .replace(/^AI Debater Con.*?\n/gi, '')
@@ -1708,7 +1726,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             `AI Debater Con (${getPersonaName(conPersona)})` :
             "AI Debater Con";
         }
-        appendMessage(conDisplayName, cleanedResponse, conModel);
+        appendMessage(conDisplayName, cleanedResponse, getConModel());
         setAiSide("pro");
         setCurrentRound(prev => prev + 1);
       }
@@ -1841,16 +1859,16 @@ Present your framework (Value/Criterion) and 2-3 contentions against the resolut
         }
         console.log(`🔍 DEBUG [handleChooseSide]: Calling generateAIResponse with:`);
         console.log(`  - debater: "AI Debater (Con)"`);
-        console.log(`  - model: "${singleAIModel}"`);
+        console.log(`  - model: "${getSingleAIModel()}"`);
         console.log(`  - round_num: 1`);
         console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
         console.log(`  - debate_format: "${debateFormat}"`);
         console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
-        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
+        const conResponse = await generateAIResponse("AI Debater (Con)", conPrompt, getSingleAIModel(), actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
         const aiDisplayName = aiPersona !== "default" ?
           `Con (AI - ${getPersonaName(aiPersona)})` :
           "Con (AI)";
-        appendMessage(aiDisplayName, conResponse, singleAIModel);
+        appendMessage(aiDisplayName, conResponse, getSingleAIModel());
       } else if (firstSide === "pro" && side === "con") {
         // AI goes first as Pro, user will be Con
         console.log(`🔍 DEBUG [handleChooseSide]: AI will open as PRO, user is CON`);
@@ -1966,16 +1984,16 @@ ${languageInstructions}
         }
         console.log(`🔍 DEBUG [handleChooseSide]: Calling generateAIResponse with:`);
         console.log(`  - debater: "AI Debater (Pro)"`);
-        console.log(`  - model: "${singleAIModel}"`);
+        console.log(`  - model: "${getSingleAIModel()}"`);
         console.log(`  - round_num: 1`);
         console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
         console.log(`  - debate_format: "${debateFormat}"`);
         console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
-        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, singleAIModel, actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
+        const proResponse = await generateAIResponse("AI Debater (Pro)", proPrompt, getSingleAIModel(), actualDescription, "", 1, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
         const aiDisplayName = aiPersona !== "default" ?
           `Pro (AI - ${getPersonaName(aiPersona)})` :
           "Pro (AI)";
-        appendMessage(aiDisplayName, proResponse, singleAIModel);
+        appendMessage(aiDisplayName, proResponse, getSingleAIModel());
       }
     } catch (err) {
       setError(t('error.failedToFetchOpening'));
@@ -2393,18 +2411,18 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
       console.log(`🔍 DEBUG [User vs AI]: Transcript preview: ${fullTranscriptForAI.substring(0, 300)}...`);
       console.log(`🔍 DEBUG [User vs AI]: Parameters:`);
       console.log(`  - debater: "AI Debater (${aiSideLocal})"`);
-      console.log(`  - model: "${singleAIModel}"`);
+      console.log(`  - model: "${getSingleAIModel()}"`);
       console.log(`  - actualDescription length: ${actualDescription?.length || 0}`);
       console.log(`  - round_num: ${aiRound}`);
       console.log(`  - persona: "${getPersonaName(aiPersona)}"`);
       console.log(`  - debate_format: "${debateFormat}"`);
       console.log(`  - speaking_order: "${pfSpeakingOrder}"`);
 
-      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, aiPrompt, singleAIModel, actualDescription, fullTranscriptForAI, aiRound, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
+      const aiResponse = await generateAIResponse(`AI Debater (${aiSideLocal})`, aiPrompt, getSingleAIModel(), actualDescription, fullTranscriptForAI, aiRound, getPersonaName(aiPersona), debateFormat, pfSpeakingOrder);
       const aiDisplayName = aiPersona !== "default" ?
         `${aiSideLocal} (AI - ${getPersonaName(aiPersona)})` :
         `${aiSideLocal} (AI)`;
-      appendMessage(aiDisplayName, aiResponse, singleAIModel, aiRound);
+      appendMessage(aiDisplayName, aiResponse, getSingleAIModel(), aiRound);
       setCurrentRound(prev => prev + 1);
     } catch (err) {
       console.error("Error in User vs AI debate:", err);
@@ -2456,7 +2474,7 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
           transcript: finalTranscript,
           topic,
           mode: isBillDebate ? 'bill-debate' : actualMode,
-          judgeModel
+          judgeModel: getJudgeModel()
         }
       });
     } catch (err) {
@@ -2562,52 +2580,172 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
             <div className="debate-model-selection">
               {actualMode === "ai-vs-ai" && (
                 <>
-                  <label className="debate-model-label">
-                    {t('debate.proModel')}:
-                    <select className="debate-model-select" value={proModel} onChange={(e) => setProModel(e.target.value)}>
-                      {modelOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="debate-model-label">
-                    {t('debate.conModel')}:
-                    <select className="debate-model-select" value={conModel} onChange={(e) => setConModel(e.target.value)}>
-                      {modelOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="debate-model-selector-wrapper">
+                    <label className="debate-model-label">
+                      {t('debate.proModel')}:
+                      <div className="debate-model-toggle-group">
+                        <div className="debate-model-toggle-buttons">
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${proModelType === "suggested" ? "active" : ""}`}
+                            onClick={() => setProModelType("suggested")}
+                          >
+                            Suggested Models
+                          </button>
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${proModelType === "custom" ? "active" : ""}`}
+                            onClick={() => setProModelType("custom")}
+                          >
+                            Custom Model
+                          </button>
+                        </div>
+                        {proModelType === "suggested" ? (
+                          <select className="debate-model-select" value={proModel} onChange={(e) => setProModel(e.target.value)}>
+                            {modelOptions.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            className="debate-model-custom-input"
+                            placeholder="e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                            value={proModelCustom}
+                            onChange={(e) => setProModelCustom(e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                  <div className="debate-model-selector-wrapper">
+                    <label className="debate-model-label">
+                      {t('debate.conModel')}:
+                      <div className="debate-model-toggle-group">
+                        <div className="debate-model-toggle-buttons">
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${conModelType === "suggested" ? "active" : ""}`}
+                            onClick={() => setConModelType("suggested")}
+                          >
+                            Suggested Models
+                          </button>
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${conModelType === "custom" ? "active" : ""}`}
+                            onClick={() => setConModelType("custom")}
+                          >
+                            Custom Model
+                          </button>
+                        </div>
+                        {conModelType === "suggested" ? (
+                          <select className="debate-model-select" value={conModel} onChange={(e) => setConModel(e.target.value)}>
+                            {modelOptions.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            className="debate-model-custom-input"
+                            placeholder="e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                            value={conModelCustom}
+                            onChange={(e) => setConModelCustom(e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </label>
+                  </div>
                 </>
               )}
               {actualMode === "ai-vs-user" && (
                 <>
-                  <label className="debate-model-label">
-                    {t('debate.aiModel')}:
-                    <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
-                      {modelOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="debate-model-selector-wrapper">
+                    <label className="debate-model-label">
+                      {t('debate.aiModel')}:
+                      <div className="debate-model-toggle-group">
+                        <div className="debate-model-toggle-buttons">
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${singleAIModelType === "suggested" ? "active" : ""}`}
+                            onClick={() => setSingleAIModelType("suggested")}
+                          >
+                            Suggested Models
+                          </button>
+                          <button
+                            type="button"
+                            className={`debate-model-toggle-btn ${singleAIModelType === "custom" ? "active" : ""}`}
+                            onClick={() => setSingleAIModelType("custom")}
+                          >
+                            Custom Model
+                          </button>
+                        </div>
+                        {singleAIModelType === "suggested" ? (
+                          <select className="debate-model-select" value={singleAIModel} onChange={(e) => setSingleAIModel(e.target.value)}>
+                            {modelOptions.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            className="debate-model-custom-input"
+                            placeholder="e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                            value={singleAIModelCustom}
+                            onChange={(e) => setSingleAIModelCustom(e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </label>
+                  </div>
                 </>
               )}
-              <label className="debate-model-label">
-                {t('debate.judgeModel')}:
-                <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
-                  {modelOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="debate-model-selector-wrapper">
+                <label className="debate-model-label">
+                  {t('debate.judgeModel')}:
+                  <div className="debate-model-toggle-group">
+                    <div className="debate-model-toggle-buttons">
+                      <button
+                        type="button"
+                        className={`debate-model-toggle-btn ${judgeModelType === "suggested" ? "active" : ""}`}
+                        onClick={() => setJudgeModelType("suggested")}
+                      >
+                        Suggested Models
+                      </button>
+                      <button
+                        type="button"
+                        className={`debate-model-toggle-btn ${judgeModelType === "custom" ? "active" : ""}`}
+                        onClick={() => setJudgeModelType("custom")}
+                      >
+                        Custom Model
+                      </button>
+                    </div>
+                    {judgeModelType === "suggested" ? (
+                      <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                        {modelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="debate-model-custom-input"
+                        placeholder="e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                        value={judgeModelCustom}
+                        onChange={(e) => setJudgeModelCustom(e.target.value)}
+                      />
+                    )}
+                  </div>
+                </label>
+              </div>
             </div>
           )}
           {/* Render each speech as its own block */}
@@ -3148,16 +3286,46 @@ IMPORTANT: If this is not the opening statement, you MUST include a rebuttal of 
                   )}
 
                   <div className="debate-model-selection" style={{ marginBottom: "1.5rem" }}>
-                    <label className="debate-model-label">
-                      {t('debate.judgeModel')}:
-                      <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
-                        {modelOptions.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <div className="debate-model-selector-wrapper">
+                      <label className="debate-model-label">
+                        {t('debate.judgeModel')}:
+                        <div className="debate-model-toggle-group">
+                          <div className="debate-model-toggle-buttons">
+                            <button
+                              type="button"
+                              className={`debate-model-toggle-btn ${judgeModelType === "suggested" ? "active" : ""}`}
+                              onClick={() => setJudgeModelType("suggested")}
+                            >
+                              Suggested Models
+                            </button>
+                            <button
+                              type="button"
+                              className={`debate-model-toggle-btn ${judgeModelType === "custom" ? "active" : ""}`}
+                              onClick={() => setJudgeModelType("custom")}
+                            >
+                              Custom Model
+                            </button>
+                          </div>
+                          {judgeModelType === "suggested" ? (
+                            <select className="debate-model-select" value={judgeModel} onChange={(e) => setJudgeModel(e.target.value)}>
+                              {modelOptions.map((m) => (
+                                <option key={m} value={m}>
+                                  {m}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              className="debate-model-custom-input"
+                              placeholder="e.g., openai/gpt-4o, anthropic/claude-3.5-sonnet"
+                              value={judgeModelCustom}
+                              onChange={(e) => setJudgeModelCustom(e.target.value)}
+                            />
+                          )}
+                        </div>
+                      </label>
+                    </div>
                   </div>
 
                   <div className="confirm-section">
