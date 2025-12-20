@@ -17,7 +17,6 @@ API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
 
-# No response cleaning needed for standard models
 
 # Create a custom OpenRouter chat model class that doesn't rely on OpenAI internals
 class OpenRouterChat(BaseChatModel):
