@@ -9,11 +9,18 @@ from pydantic import Field
 import os
 import json
 import aiohttp
+import asyncio
 import re
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)  # Force reload even if already loaded
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
+print(f"[JUDGE_CHAIN] Using API key: ...{API_KEY[-10:] if API_KEY else 'None'}")
+
+# Global semaphore to limit concurrent OpenRouter API calls
+# This prevents credit exhaustion from too many parallel requests
+# Set to 2 to work with expensive models like Claude 3.5 Sonnet
+_openrouter_semaphore = asyncio.Semaphore(2)
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
 
@@ -80,17 +87,30 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
+            "max_tokens": 1200,  # Restored - original key supports longer prompts
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
+
         # Synchronous call to OpenRouter API
         import requests
         response = requests.post(self.api_base, headers=headers, json=payload)
-        
+
         if response.status_code != 200:
             error_detail = response.json().get("error", {}).get("message", "Unknown error")
+            if response.status_code == 402:
+                raise ValueError(
+                    f"OpenRouter API 402 - Insufficient Credits: {error_detail}\n\n"
+                    "This usually means:\n"
+                    "1. Your API key has run out of credits\n"
+                    "2. Multiple concurrent requests are reserving too many tokens\n"
+                    "3. The max_tokens setting is too high for your remaining balance\n\n"
+                    "Solutions:\n"
+                    "- Add more credits to your OpenRouter account\n"
+                    "- Reduce the number of concurrent debates\n"
+                    "- Wait a few seconds for pending requests to complete"
+                )
             raise ValueError(f"OpenRouter API error: {response.status_code} - {error_detail}")
         
         result = response.json()
@@ -129,25 +149,40 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
+            "max_tokens": 1200,  # Restored - original key supports longer prompts
         }
-        
+
         if stop:
             payload["stop"] = stop
-        
-        # Use aiohttp for async API calls
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.api_base, headers=headers, json=payload) as response:
-                if response.status != 200:
-                    try:
-                        error_data = await response.json()
-                        error_detail = error_data.get("error", {}).get("message", "Unknown error")
-                    except:
-                        error_detail = await response.text()
-                    raise ValueError(f"OpenRouter API error: {response.status} - {error_detail}")
-                
-                result = await response.json()
-                assistant_message = result["choices"][0]["message"]["content"]
-        
+
+        # Use aiohttp for async API calls with semaphore to limit concurrency
+        async with _openrouter_semaphore:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_base, headers=headers, json=payload) as response:
+                    if response.status != 200:
+                        try:
+                            error_data = await response.json()
+                            error_detail = error_data.get("error", {}).get("message", "Unknown error")
+                        except:
+                            error_detail = await response.text()
+
+                        if response.status == 402:
+                            raise ValueError(
+                                f"OpenRouter API 402 - Insufficient Credits: {error_detail}\n\n"
+                                "This usually means:\n"
+                                "1. Your API key has run out of credits\n"
+                                "2. Multiple concurrent requests are reserving too many tokens\n"
+                                "3. The max_tokens setting is too high for your remaining balance\n\n"
+                                "Solutions:\n"
+                                "- Add more credits to your OpenRouter account\n"
+                                "- Reduce the number of concurrent debates\n"
+                                "- Wait a few seconds for pending requests to complete"
+                            )
+                        raise ValueError(f"OpenRouter API error: {response.status} - {error_detail}")
+
+                    result = await response.json()
+                    assistant_message = result["choices"][0]["message"]["content"]
+
         return ChatResult(
             generations=[
                 ChatGeneration(
@@ -329,6 +364,20 @@ def get_judge_chain(model_name="openai/gpt-4o-mini", debate_format="default", la
             # Extract the sole provided value
             (inp,) = kwargs.values()
             return self.chain.invoke(inp)
+
+        async def arun(self, **kwargs):
+            """
+            Async version of run() - execute the judge chain asynchronously.
+            This allows multiple judge evaluations to run concurrently without blocking.
+            """
+            if len(kwargs) != 1:
+                raise ValueError(
+                    "judge_chain.arun() expects exactly one argument (e.g. "
+                    "`transcript=<str>`)."
+                )
+            # Extract the sole provided value
+            (inp,) = kwargs.values()
+            return await self.chain.ainvoke(inp)
     
     # Return the wrapper object
     return ChainWrapper(chain)
