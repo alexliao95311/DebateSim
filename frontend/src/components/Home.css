@@ -588,6 +588,12 @@
   border: 1px solid rgba(34, 197, 94, 0.2) !important;
 }
 
+.home-status-in-progress {
+  background: rgba(251, 191, 36, 0.1) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.2) !important;
+}
+
 .home-status-beta {
   background: rgba(251, 191, 36, 0.1) !important;
   color: #fbbf24 !important;
