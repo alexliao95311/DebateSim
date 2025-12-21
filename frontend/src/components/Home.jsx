@@ -212,13 +212,15 @@ function Home({ user, onLogout }) {
     },
   ];
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, featureId) => {
     switch (status) {
       case "active":
+        // Show "in progress" for debate trainer and AI rankings (leaderboard)
+        const isInProgress = featureId === "debate-trainer" || featureId === "leaderboard";
         return (
-          <div className="home-status-badge home-status-active">
+          <div className={`home-status-badge ${isInProgress ? 'home-status-in-progress' : 'home-status-active'}`}>
             <CheckCircle size={14} />
-            <span>{t('home.live')}</span>
+            <span>{isInProgress ? t('home.inProgress') : t('home.live')}</span>
           </div>
         );
       case "beta":
@@ -355,7 +357,7 @@ function Home({ user, onLogout }) {
                   <div className="home-feature-icon-container">
                     {feature.icon}
                   </div>
-                  {getStatusBadge(feature.status)}
+                  {getStatusBadge(feature.status, feature.id)}
                 </div>
 
                 <div className="home-feature-content">
