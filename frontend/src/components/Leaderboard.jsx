@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Play, Loader2, RotateCcw, History } from 'lucide-react';
+import { Trophy, Play, Loader2, RotateCcw, History, Share2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer';
+import ShareModal from './ShareModal';
 import { useTranslation } from '../utils/translations';
 import { db } from '../firebase/firebaseConfig';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -49,6 +50,8 @@ function Leaderboard({ user, onLogout }) {
   const [debateStatus, setDebateStatus] = useState(null);
   const [streamingTranscript, setStreamingTranscript] = useState([]);
   const [debateInfo, setDebateInfo] = useState(null); // Topic, models, ELO
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [currentDebateId, setCurrentDebateId] = useState(null);
 
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
@@ -242,6 +245,19 @@ function Leaderboard({ user, onLogout }) {
                   
                   setCurrentDebate(data);
                   setDebateStatus(null); // Clear status when complete
+                  
+                  // Save debate to Firestore for sharing
+                  const debateId = await saveDebateToFirestore(data, [...streamingTranscript, {
+                    speaker: 'Judge',
+                    model: 'Judge Panel',
+                    round: 'Final',
+                    content: data.judge_feedback
+                  }]);
+                  
+                  if (debateId) {
+                    setCurrentDebateId(debateId);
+                  }
+                  
                   // Update ELO ratings and get changes
                   const changes = await updateELO(data);
                   setEloChanges(changes);
@@ -276,6 +292,42 @@ function Leaderboard({ user, onLogout }) {
       setDebateLoading(false);
       setDebateStatus(null);
       setDebateInfo(null);
+    }
+  };
+
+  const saveDebateToFirestore = async (debateData, transcript) => {
+    try {
+      const debatesRef = collection(db, 'simulatedDebates');
+      
+      // Format the transcript into readable text
+      const transcriptText = transcript.map(part => {
+        if (part.speaker === 'Judge') {
+          return `## Judge Feedback\n\n${part.content}`;
+        }
+        return `## ${part.speaker} - Round ${part.round}\n\n${part.content}`;
+      }).join('\n\n');
+
+      const debateDoc = {
+        topic: debateData.topic,
+        model1: debateData.model1,
+        model2: debateData.model2,
+        judge_model: debateData.judge_model || "anthropic/claude-3.5-sonnet",
+        winner: debateData.winner,
+        judge_feedback: debateData.judge_feedback,
+        transcript: transcriptText,
+        mode: "Leaderboard Debate",
+        activityType: "Debate",
+        createdAt: new Date().toISOString(),
+        model1_elo: debateData.model1_elo,
+        model2_elo: debateData.model2_elo,
+        isShared: false
+      };
+
+      const docRef = await setDoc(doc(debatesRef), debateDoc);
+      return docRef.id || Date.now().toString(); // Return doc ID or fallback
+    } catch (error) {
+      console.error("Error saving debate to Firestore:", error);
+      return null;
     }
   };
 
@@ -714,9 +766,29 @@ function Leaderboard({ user, onLogout }) {
               </div>
             )}
           </div>
+
+          {currentDebateId && (
+            <div className="debate-actions">
+              <button
+                className="share-button"
+                onClick={() => setIsShareModalOpen(true)}
+              >
+                <Share2 size={18} />
+                Share This Debate
+              </button>
+            </div>
+          )}
         </div>
       )}
       </div>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        transcript={currentDebate}
+        transcriptId={currentDebateId}
+        isSimulatedDebate={true}
+      />
 
       <Footer />
     </div>

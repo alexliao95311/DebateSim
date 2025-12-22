@@ -441,16 +441,16 @@ function SimulatedDebateHistory({ user, onLogout }) {
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
                 components={{
-                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} />,
-                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} />,
-                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} />,
-                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} />,
-                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
+                  h1: ({node, ...props}) => <h1 className="debate-heading-h1" {...props} style={{ color: '#f1f5f9' }} />,
+                  h2: ({node, ...props}) => <h2 className="debate-heading-h2" {...props} style={{ color: '#f1f5f9' }} />,
+                  h3: ({node, ...props}) => <h3 className="debate-heading-h3" {...props} style={{ color: '#f1f5f9' }} />,
+                  h4: ({node, ...props}) => <h4 className="debate-heading-h4" {...props} style={{ color: '#f1f5f9' }} />,
+                  p: ({node, ...props}) => <p className="debate-paragraph" {...props} style={{ color: '#f1f5f9' }} />,
                   ul: ({node, ...props}) => <ul className="debate-list" {...props} />,
                   ol: ({node, ...props}) => <ol className="debate-numbered-list" {...props} />,
-                  li: ({node, ...props}) => <li className="debate-list-item" {...props} />,
-                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
-                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} />,
+                  li: ({node, ...props}) => <li className="debate-list-item" {...props} style={{ color: '#f1f5f9' }} />,
+                  strong: ({node, ...props}) => <strong className="debate-strong" {...props} style={{ color: '#f1f5f9' }} />,
+                  em: ({node, ...props}) => <em className="debate-emphasis" {...props} style={{ color: '#f1f5f9' }} />,
                   hr: ({node, ...props}) => <hr className="divider" {...props} />
                 }}
               >
@@ -461,12 +461,12 @@ function SimulatedDebateHistory({ user, onLogout }) {
               {selectedHistory.judge_feedback && (
                 <>
                   <hr className="divider" />
-                  <h2 className="debate-heading-h2">Judge's Evaluation</h2>
+                  <h2 className="debate-heading-h2" style={{ color: '#f1f5f9' }}>Judge's Evaluation</h2>
                   <ReactMarkdown
                     rehypePlugins={[rehypeRaw]}
                     components={{
-                      p: ({node, ...props}) => <p className="debate-paragraph" {...props} />,
-                      strong: ({node, ...props}) => <strong className="debate-strong" {...props} />,
+                      p: ({node, ...props}) => <p className="debate-paragraph" {...props} style={{ color: '#f1f5f9' }} />,
+                      strong: ({node, ...props}) => <strong className="debate-strong" {...props} style={{ color: '#f1f5f9' }} />,
                     }}
                   >
                     {selectedHistory.judge_feedback}
