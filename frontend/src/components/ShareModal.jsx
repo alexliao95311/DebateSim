@@ -6,7 +6,7 @@ import PDFGenerator from "../utils/pdfGenerator";
 import { useTranslation } from '../utils/translations';
 import "./ShareModal.css";
 
-function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
+function ShareModal({ isOpen, onClose, transcript, transcriptId, isSimulatedDebate = false }) {
   const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -41,9 +41,9 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId }) {
   const handleShare = async () => {
     setIsSharing(true);
     setError("");
-    
+
     try {
-      const result = await shareTranscript(transcriptId, transcript);
+      const result = await shareTranscript(transcriptId, transcript, isSimulatedDebate);
       setShareUrl(result.shareUrl);
     } catch (err) {
       if (err.message && err.message.includes("too old or corrupted")) {

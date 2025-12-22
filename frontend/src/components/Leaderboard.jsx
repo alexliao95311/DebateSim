@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Play, Loader2, RotateCcw } from 'lucide-react';
+import { Trophy, Play, Loader2, RotateCcw, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import UserDropdown from './UserDropdown';
 import Footer from './Footer';
@@ -180,7 +180,9 @@ function Leaderboard({ user, onLogout }) {
           judge_model: "anthropic/claude-3.5-sonnet",
           debate_format: "default",
           max_rounds: 5,
-          language: "en"
+          language: "en",
+          model1_elo: model1Data.elo || 1500,
+          model2_elo: model2Data.elo || 1500
         }),
       });
 
@@ -502,6 +504,13 @@ function Leaderboard({ user, onLogout }) {
         >
           <Trophy className="trophy-icon-small" />
           See Rankings
+        </button>
+        <button
+          className="view-history-button"
+          onClick={() => navigate("/simulated-debates")}
+        >
+          <History className="history-icon-small" />
+          View Debate History
         </button>
         <button
           className="reset-stats-button"

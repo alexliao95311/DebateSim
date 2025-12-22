@@ -179,6 +179,27 @@ def get_firestore_db():
         logger.error(f"Error initializing Firebase: {e}", exc_info=True)
         return None
 
+async def save_simulated_debate_to_firestore(debate_data: dict) -> Optional[str]:
+    """Save a simulated debate to Firestore and return the document ID."""
+    try:
+        db = get_firestore_db()
+        if db is None:
+            logger.warning("Firestore not available, cannot save simulated debate")
+            return None
+
+        # Add timestamp
+        debate_data['createdAt'] = firestore.SERVER_TIMESTAMP
+        debate_data['activityType'] = 'Simulated Debate'
+
+        # Save to simulatedDebates collection
+        doc_ref = db.collection('simulatedDebates').document()
+        doc_ref.set(debate_data)
+        logger.info(f"Simulated debate saved to Firestore with ID: {doc_ref.id}")
+        return doc_ref.id
+    except Exception as e:
+        logger.error(f"Error saving simulated debate to Firestore: {e}", exc_info=True)
+        return None
+
 @app.on_event("startup")
 async def startup_event():
     global session, bill_searcher, legiscan_service, ca_props_service
@@ -193,7 +214,7 @@ async def startup_event():
     # Initialize CA Propositions service
     ca_props_service = CAPropositionsService()
     logger.info("CA Propositions service initialized")
-    
+
     # Initialize Firebase
     get_firestore_db()
 
@@ -342,6 +363,8 @@ class FullDebateRequest(BaseModel):
     debate_format: str = "default"
     max_rounds: int = 5
     language: str = "en"
+    model1_elo: Optional[float] = 1500
+    model2_elo: Optional[float] = 1500
 
 class ELOUpdate(BaseModel):
     model: str
@@ -599,7 +622,28 @@ async def run_full_debate_stream(request: FullDebateRequest):
                 'rounds': request.max_rounds
             }
             yield f"data: {json.dumps(final_result)}\n\n"
-            
+
+            # Save to Firebase
+            debate_data = {
+                'topic': request.topic,
+                'transcript': full_transcript,
+                'transcript_parts': transcript_parts,
+                'judge_feedback': judge_feedback,
+                'winner': winner,
+                'model1': request.model1,
+                'model2': request.model2,
+                'model1_elo': request.model1_elo,
+                'model2_elo': request.model2_elo,
+                'judge_model': request.judge_model,
+                'rounds': request.max_rounds,
+                'debate_format': request.debate_format,
+                'language': request.language,
+                'mode': 'ai-vs-ai'
+            }
+            debate_id = await save_simulated_debate_to_firestore(debate_data)
+            if debate_id:
+                yield f"data: {json.dumps({'type': 'saved', 'debate_id': debate_id})}\n\n"
+
             # Send a final status to indicate completion
             yield f"data: {json.dumps({'type': 'status', 'message': 'Debate complete!'})}\n\n"
             
