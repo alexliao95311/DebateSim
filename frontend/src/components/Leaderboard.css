@@ -163,6 +163,33 @@
   background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
 }
 
+.view-history-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.view-history-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+}
+
+.history-icon-small {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 .reset-stats-button {
   display: flex;
   align-items: center;
