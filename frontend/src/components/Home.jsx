@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
@@ -29,11 +29,8 @@ function Home({ user, onLogout }) {
   const { t } = useTranslation();
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
   const [topicOfDay, setTopicOfDay] = useState("");
   const [currentDate, setCurrentDate] = useState("");
-  const featureCardsRef = useRef(null);
 
   // Immediate scroll reset using useLayoutEffect (like DebateSim.jsx)
   useLayoutEffect(() => {
@@ -88,67 +85,6 @@ function Home({ user, onLogout }) {
 
 
 
-  const updateArrowVisibility = () => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-    
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    
-    // Only show arrows if there's actually overflow (more content than visible area)
-    const hasOverflow = scrollWidth > clientWidth + 10; // Add small buffer
-    
-    if (!hasOverflow) {
-      // Reset scroll position when there's no overflow
-      container.scrollLeft = 0;
-      setShowLeftArrow(false);
-      setShowRightArrow(false);
-      return;
-    }
-    
-    const isAtStart = scrollLeft <= 5; // Small tolerance for floating point precision
-    const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 5; // Small tolerance
-    
-    setShowLeftArrow(!isAtStart);
-    setShowRightArrow(!isAtEnd);
-  };
-
-  const scrollFeatures = (direction) => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-    
-    const scrollAmount = 370; // Increased to account for gaps
-    container.scrollBy({ 
-      left: direction === 'left' ? -scrollAmount : scrollAmount, 
-      behavior: 'smooth' 
-    });
-  };
-
-  useEffect(() => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-
-    const handleScroll = () => updateArrowVisibility();
-    const handleResize = () => {
-      // Force a reflow to ensure accurate measurements
-      setTimeout(() => {
-        if (container) {
-          container.scrollLeft = container.scrollLeft; // Force reflow
-          updateArrowVisibility();
-        }
-      }, 100);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleResize);
-    
-    // Initial check
-    setTimeout(() => updateArrowVisibility(), 100);
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   const handleLogout = () => {
     // Reset scroll position before logout
@@ -331,19 +267,7 @@ function Home({ user, onLogout }) {
 
 
         <div className="home-features-container">
-          <button 
-            className={`home-scroll-arrow home-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
-            onClick={() => scrollFeatures('left')}
-          >
-            ←
-          </button>
-          <button 
-            className={`home-scroll-arrow home-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
-            onClick={() => scrollFeatures('right')}
-          >
-            →
-          </button>
-          <div className="home-feature-cards" ref={featureCardsRef}>
+          <div className="home-feature-cards">
             {features.map((feature, index) => (
               <div
                 key={feature.id}

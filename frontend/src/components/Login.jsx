@@ -11,12 +11,9 @@ function Login({ onLogin }) {
   const [currentText, setCurrentText] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isTyping, setIsTyping] = useState(true);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
   const [showMobileDropdown, setShowMobileDropdown] = useState(false);
 
   const sectionsRef = useRef([]);
-  const featureCardsRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const dynamicTexts = [
@@ -83,40 +80,6 @@ function Login({ onLogin }) {
     }
   };
 
-  const updateArrowVisibility = () => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-    
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    
-    // Only show arrows if there's actually overflow (more content than visible area)
-    const hasOverflow = scrollWidth > clientWidth;
-    
-    if (!hasOverflow) {
-      // Reset scroll position when there's no overflow
-      container.scrollLeft = 0;
-      setShowLeftArrow(false);
-      setShowRightArrow(false);
-      return;
-    }
-    
-    const isAtStart = scrollLeft <= 5; // Small tolerance for floating point precision
-    const isAtEnd = scrollLeft >= scrollWidth - clientWidth - 5; // Small tolerance
-    
-    setShowLeftArrow(!isAtStart);
-    setShowRightArrow(!isAtEnd);
-  };
-
-  const scrollFeatures = (direction) => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-    
-    const scrollAmount = 370;
-    container.scrollBy({ 
-      left: direction === 'left' ? -scrollAmount : scrollAmount, 
-      behavior: 'smooth' 
-    });
-  };
 
   // Handle click outside dropdown
   useEffect(() => {
@@ -187,32 +150,6 @@ function Login({ onLogin }) {
     };
   }, []);
 
-  useEffect(() => {
-    const container = featureCardsRef.current;
-    if (!container) return;
-
-    const handleScroll = () => updateArrowVisibility();
-    const handleResize = () => {
-      // Force a reflow to ensure accurate measurements
-      setTimeout(() => {
-        if (container) {
-          container.scrollLeft = container.scrollLeft; // Force reflow
-          updateArrowVisibility();
-        }
-      }, 100);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleResize);
-    
-    // Initial check
-    setTimeout(() => updateArrowVisibility(), 100);
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   return (
     <div className="login-container">
@@ -397,19 +334,7 @@ function Login({ onLogin }) {
             <p className="login-features-subtitle">Everything you need to excel at argumentation</p>
           </div>
           <div className="login-features-container">
-            <button 
-              className={`login-scroll-arrow login-scroll-arrow-left ${showLeftArrow ? 'visible' : ''}`}
-              onClick={() => scrollFeatures('left')}
-            >
-              ←
-            </button>
-            <button 
-              className={`login-scroll-arrow login-scroll-arrow-right ${showRightArrow ? 'visible' : ''}`}
-              onClick={() => scrollFeatures('right')}
-            >
-              →
-            </button>
-            <div className="login-feature-cards" ref={featureCardsRef}>
+            <div className="login-feature-cards">
             <div className="login-feature-card" onClick={handleGoogleLogin}>
               <div className="login-feature-icon">🎯</div>
               <div className="login-feature-content">
@@ -442,6 +367,16 @@ function Login({ onLogin }) {
                   Practice specific skills like rebuttals, weighing, or summary speeches with AI opponents at different skill levels and receive targeted feedback to improve quickly.
                 </p>
                 <div className="login-feature-status coming-soon">Coming Soon</div>
+              </div>
+            </div>
+            <div className="login-feature-card" onClick={handleGoogleLogin}>
+              <div className="login-feature-icon">🏅</div>
+              <div className="login-feature-content">
+                <h3>AI Debate Leaderboard</h3>
+                <p>
+                  Rank AI models based on their debate performance with ELO ratings. Track and compare different AI models' argumentation capabilities.
+                </p>
+                <div className="login-feature-status available">Available Now</div>
               </div>
             </div>
             </div>

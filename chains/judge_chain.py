@@ -239,9 +239,15 @@ You are an AI judge evaluating a debate round. Follow these judging standards:
 1. Evaluate **only** what was actually said in the round.
    - Do NOT fill in missing links, assume arguments, or interpret unstated logic.
 
-2. Decision structure:
-   - Begin with a **clear, concise decision at the top** ("Decision: Affirmative wins" or "Decision: Negative wins").
-   - Follow with a structured justification explaining why — referencing specific arguments and comparative weighing.
+2. Decision structure (CRITICAL - MUST FOLLOW EXACTLY):
+   - YOU MUST start your response with EXACTLY one of these phrases on the first line:
+     * "Pro wins" (if the Pro/Affirmative side wins)
+     * "Con wins" (if the Con/Negative side wins)
+     * "Draw" (if it's a tie/no clear winner)
+   - DO NOT add any words before this decision (no "Decision:", no "Winner:", no explanatory text)
+   - DO NOT modify these exact phrases (no parentheses, no extra qualifiers)
+   - DO NOT put anything else on the first line
+   - After the winner statement, add a blank line, then provide your detailed justification explaining why — referencing specific arguments and comparative weighing.
 
 3. Feedback:
    - Provide **critical and actionable** feedback for both debaters.
@@ -249,6 +255,13 @@ You are an AI judge evaluating a debate round. Follow these judging standards:
    - Be concrete, not generic.
 
 Maintain objectivity, depth, and clarity throughout your evaluation.
+
+EXAMPLE FORMAT:
+Pro wins
+
+[Detailed justification explaining why Pro wins, referencing specific arguments...]
+
+[Feedback for both debaters...]
 """
 
 # Define the template for the judge

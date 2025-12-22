@@ -36,6 +36,18 @@ const AVAILABLE_MODELS = [
   "qwen/qwen3-next-80b-a3b-instruct"
 ];
 
+// Judge models - pick one from each major provider
+const JUDGE_MODELS = [
+  "anthropic/claude-sonnet-4.5",
+  "anthropic/claude-opus-4.5",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.0-flash-001",
+  "x-ai/grok-4",
+  "x-ai/grok-4-fast",
+  "openai/gpt-5.1",
+  "openai/gpt-5-mini"
+];
+
 function Leaderboard({ user, onLogout }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -52,6 +64,12 @@ function Leaderboard({ user, onLogout }) {
   const [debateInfo, setDebateInfo] = useState(null); // Topic, models, ELO
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [currentDebateId, setCurrentDebateId] = useState(null);
+
+  // Custom debate mode states
+  const [debateMode, setDebateMode] = useState('random'); // 'random' or 'custom'
+  const [customModel1, setCustomModel1] = useState(AVAILABLE_MODELS[0]);
+  const [customModel2, setCustomModel2] = useState(AVAILABLE_MODELS[1]);
+  const [customTopic, setCustomTopic] = useState('');
 
   // Immediate scroll reset using useLayoutEffect
   useLayoutEffect(() => {
@@ -150,11 +168,14 @@ function Leaderboard({ user, onLogout }) {
     try {
       // Select random topic
       const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-      
+
       // Select two random different models
       const shuffled = [...AVAILABLE_MODELS].sort(() => 0.5 - Math.random());
       const model1 = shuffled[0];
       const model2 = shuffled[1];
+
+      // Select random judge model
+      const judgeModel = JUDGE_MODELS[Math.floor(Math.random() * JUDGE_MODELS.length)];
 
       // Load current leaderboard to get ELO ratings for display
       const currentLeaderboard = await loadLeaderboard();
@@ -180,7 +201,7 @@ function Leaderboard({ user, onLogout }) {
           topic: randomTopic,
           model1: model1,
           model2: model2,
-          judge_model: "anthropic/claude-3.5-sonnet",
+          judge_model: judgeModel,
           debate_format: "default",
           max_rounds: 5,
           language: "en",
@@ -328,6 +349,152 @@ function Leaderboard({ user, onLogout }) {
     } catch (error) {
       console.error("Error saving debate to Firestore:", error);
       return null;
+
+  const runCustomDebate = async () => {
+    // Validation
+    if (!customTopic.trim()) {
+      alert("Please enter a debate topic.");
+      return;
+    }
+
+    if (customModel1 === customModel2) {
+      alert("Please select two different models.");
+      return;
+    }
+
+    setDebateLoading(true);
+    setDebateStatus(null);
+    setStreamingTranscript([]);
+    setCurrentDebate(null);
+    setEloChanges(null);
+
+    try {
+      // Select random judge model
+      const judgeModel = JUDGE_MODELS[Math.floor(Math.random() * JUDGE_MODELS.length)];
+
+      // Load current leaderboard to get ELO ratings for display
+      const currentLeaderboard = await loadLeaderboard();
+      const model1Data = currentLeaderboard.find(m => m.model === customModel1) || { elo: 1500 };
+      const model2Data = currentLeaderboard.find(m => m.model === customModel2) || { elo: 1500 };
+
+      // Set debate info immediately
+      setDebateInfo({
+        topic: customTopic,
+        model1: customModel1,
+        model2: customModel2,
+        model1Elo: model1Data.elo || 1500,
+        model2Elo: model2Data.elo || 1500
+      });
+
+      // Use fetch with streaming response for real-time updates
+      const response = await fetch(`${API_BASE}/leaderboard/run-debate-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: customTopic,
+          model1: customModel1,
+          model2: customModel2,
+          judge_model: judgeModel,
+          debate_format: "default",
+          max_rounds: 5,
+          language: "en",
+          model1_elo: model1Data.elo || 1500,
+          model2_elo: model2Data.elo || 1500
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to run debate');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamComplete = false;
+
+      // Set a timeout to prevent hanging
+      const timeoutId = setTimeout(() => {
+        if (!streamComplete) {
+          console.error('Stream timeout - debate taking too long');
+          setDebateLoading(false);
+          setDebateStatus({ message: 'Debate timed out. Please try again.' });
+        }
+      }, 300000); // 5 minute timeout
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            streamComplete = true;
+            clearTimeout(timeoutId);
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (data.type === 'status') {
+                  setDebateStatus(data);
+                } else if (data.type === 'transcript_part') {
+                  setStreamingTranscript(prev => [...prev, data.part]);
+                } else if (data.type === 'complete') {
+                  streamComplete = true;
+                  clearTimeout(timeoutId);
+
+                  // Add judge feedback as a special transcript part
+                  if (data.judge_feedback) {
+                    setStreamingTranscript(prev => [...prev, {
+                      speaker: 'Judge',
+                      model: 'Judge Panel',
+                      round: 'Final',
+                      content: data.judge_feedback
+                    }]);
+                  }
+
+                  setCurrentDebate(data);
+                  setDebateStatus(null); // Clear status when complete
+                  // Update ELO ratings and get changes
+                  const changes = await updateELO(data);
+                  setEloChanges(changes);
+                  // Reload leaderboard to show updated rankings
+                  await loadLeaderboard();
+                  setDebateLoading(false);
+                  break; // Exit the loop when complete
+                } else if (data.type === 'error') {
+                  streamComplete = true;
+                  clearTimeout(timeoutId);
+                  throw new Error(data.message);
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e);
+              }
+            }
+          }
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        streamComplete = true;
+      }
+
+      // Ensure loading is set to false even if stream ends without 'complete'
+      if (!streamComplete) {
+        setDebateLoading(false);
+        setDebateStatus({ message: 'Stream ended unexpectedly' });
+      }
+    } catch (error) {
+      console.error("Error running custom debate:", error);
+      alert("Failed to run debate. Please try again.");
+      setDebateLoading(false);
+      setDebateStatus(null);
+      setDebateInfo(null);
     }
   };
 
@@ -544,10 +711,96 @@ function Leaderboard({ user, onLogout }) {
         </div>
 
       <div className="leaderboard-controls">
+        {/* Mode Selection - Segmented Control */}
+        <div className="debate-mode-section">
+          <label className="debate-mode-label">Debate Mode:</label>
+          <div className="debate-mode-toggle">
+            <button
+              className={`mode-toggle-segment ${debateMode === 'random' ? 'active' : ''}`}
+              onClick={() => setDebateMode('random')}
+            >
+              Random Debate
+            </button>
+            <button
+              className={`mode-toggle-segment ${debateMode === 'custom' ? 'active' : ''}`}
+              onClick={() => setDebateMode('custom')}
+            >
+              Custom Debate
+            </button>
+          </div>
+        </div>
+
+        {/* Custom Debate Controls */}
+        {debateMode === 'custom' && (
+          <div className="custom-debate-controls">
+            <div className="custom-debate-field">
+              <label className="custom-debate-label">
+                Topic:
+              </label>
+              <div className="topic-input-group">
+                <input
+                  type="text"
+                  className="custom-debate-input"
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  placeholder="Enter debate topic..."
+                />
+                <button
+                  className="random-topic-button"
+                  onClick={() => {
+                    if (topics.length > 0) {
+                      const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+                      setCustomTopic(randomTopic);
+                    }
+                  }}
+                  disabled={loadingTopics || topics.length === 0}
+                >
+                  🎲 Random
+                </button>
+              </div>
+            </div>
+            <div className="model-selectors-grid">
+              <div className="model-selector-group">
+                <label className="custom-debate-label">
+                  Pro Model:
+                </label>
+                <select
+                  className="custom-debate-select"
+                  value={customModel1}
+                  onChange={(e) => setCustomModel1(e.target.value)}
+                >
+                  {AVAILABLE_MODELS.map(model => (
+                    <option key={model} value={model}>
+                      {model.replace(/^(openai|meta-llama|google|anthropic|x-ai|qwen|deepseek|mistralai)\//i, '')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="model-selector-group">
+                <label className="custom-debate-label">
+                  Con Model:
+                </label>
+                <select
+                  className="custom-debate-select"
+                  value={customModel2}
+                  onChange={(e) => setCustomModel2(e.target.value)}
+                >
+                  {AVAILABLE_MODELS.map(model => (
+                    <option key={model} value={model}>
+                      {model.replace(/^(openai|meta-llama|google|anthropic|x-ai|qwen|deepseek|mistralai)\//i, '')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Action Button */}
         <button
           className="run-debate-button"
-          onClick={runRandomDebate}
-          disabled={debateLoading || loadingTopics}
+          onClick={debateMode === 'random' ? runRandomDebate : runCustomDebate}
+          disabled={debateLoading || (debateMode === 'random' && loadingTopics)}
         >
           {debateLoading ? (
             <>
@@ -557,33 +810,40 @@ function Leaderboard({ user, onLogout }) {
           ) : (
             <>
               <Play className="play-icon" />
-              Run Random Debate
+              Run Debate
             </>
           )}
         </button>
-        <button
-          className="see-rankings-button"
-          onClick={() => navigate("/rankings")}
-        >
-          <Trophy className="trophy-icon-small" />
-          See Rankings
-        </button>
-        <button
-          className="view-history-button"
-          onClick={() => navigate("/simulated-debates")}
-        >
-          <History className="history-icon-small" />
-          View Debate History
-        </button>
-        <button
-          className="reset-stats-button"
-          onClick={resetAllStats}
-          disabled={loading}
-        >
-          <RotateCcw className="reset-icon" />
-          Reset All Stats
-        </button>
-        {loadingTopics && <p className="loading-text">Loading topics...</p>}
+
+        {/* Secondary Actions Toolbar */}
+        <div className="secondary-actions-toolbar">
+          <div className="toolbar-label">Results</div>
+          <div className="toolbar-buttons">
+            <button
+              className="toolbar-button toolbar-button-rankings"
+              onClick={() => navigate("/rankings")}
+            >
+              <Trophy className="toolbar-icon" />
+              Rankings
+            </button>
+            <button
+              className="toolbar-button toolbar-button-history"
+              onClick={() => navigate("/simulated-debates")}
+            >
+              <History className="toolbar-icon" />
+              History
+            </button>
+            <button
+              className="toolbar-button toolbar-button-reset"
+              onClick={resetAllStats}
+              disabled={loading}
+            >
+              <RotateCcw className="toolbar-icon" />
+              Reset
+            </button>
+          </div>
+        </div>
+        {loadingTopics && debateMode === 'random' && <p className="loading-text">Loading topics...</p>}
       </div>
 
       {/* Initialize Models Button - only show if leaderboard is empty */}
