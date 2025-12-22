@@ -352,3 +352,36 @@
     padding: 1rem;
   }
 }
+
+/* Color-coded transcript parts for simulated debates */
+.transcript-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.transcript-part {
+  border-left: 4px solid #4a90e2;
+  padding: 1.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: transparent;
+  color: #f1f5f9;
+}
+
+.transcript-part.pro {
+  border-left-color: #10b981;
+}
+
+.transcript-part.con {
+  border-left-color: #ef4444;
+}
+
+.transcript-part.judge {
+  border-left-color: #f39c12;
+}
+
+.transcript-part:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
