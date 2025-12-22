@@ -67,8 +67,39 @@ const TTSComponent = memo(({ speechText, context, headerId, headerText }) => (
 ));
 
 // Split content into speech blocks similar to Debate.jsx
-const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, analysisSectionList }) => {
+const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, analysisSectionList, sectionList }) => {
   const renderSpeechBlocks = () => {
+    // For simulated debates, use simple markdown rendering without parsing
+    if (transcript.activityType === 'Simulated Debate') {
+      let h2Index = 0;
+      return (
+        <div className="transcript-content" style={{ color: '#f1f5f9' }}>
+          <ReactMarkdown
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} style={{ color: '#f1f5f9' }} />,
+              h2: ({node, ...props}) => {
+                const headerText = typeof props.children === 'string' ? props.children : props.children?.join?.('') || '';
+                const sectionId = `simulated-debate-section-${h2Index}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                h2Index++;
+                return <h2 id={sectionId} className="markdown-h2" {...props} style={{ color: '#f1f5f9' }} />;
+              },
+              h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} style={{ color: '#f1f5f9' }} />,
+              h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} style={{ color: '#f1f5f9' }} />,
+              p: ({node, ...props}) => <p className="markdown-p" {...props} style={{ color: '#f1f5f9' }} />,
+              ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+              ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+              li: ({node, ...props}) => <li className="markdown-li" {...props} style={{ color: '#f1f5f9' }} />,
+              strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+              em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+            }}
+          >
+            {transcript.transcript}
+          </ReactMarkdown>
+        </div>
+      );
+    }
+
     if (!transcript.transcript || !speechList.length) {
       // For bill analysis, use TTS functionality
       if (transcript.activityType === 'Analyze Bill') {
@@ -470,6 +501,9 @@ function PublicTranscriptView() {
   // Analysis sidebar state (only for bill analyses)
   const [analysisSidebarExpanded, setAnalysisSidebarExpanded] = useState(false);
   const [analysisSectionList, setAnalysisSectionList] = useState([]);
+  
+  // Simulated debate sidebar state
+  const [simulatedDebateSectionList, setSimulatedDebateSectionList] = useState([]);
 
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
@@ -656,6 +690,31 @@ function PublicTranscriptView() {
     }, 200);
   };
 
+  // Extract speech sections for simulated debates
+  const extractSimulatedDebateSections = (transcriptText) => {
+    if (!transcriptText) return [];
+    
+    const lines = transcriptText.split('\n');
+    const sections = [];
+    let sectionIndex = 0;
+    
+    lines.forEach((line) => {
+      if (line.startsWith('## ')) {
+        const headerText = line.replace('## ', '').trim();
+        if (headerText) {
+          const sectionId = `simulated-debate-section-${sectionIndex}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+          sections.push({
+            id: sectionId,
+            title: headerText,
+            index: sectionIndex
+          });
+          sectionIndex++;
+        }
+      }
+    });
+    
+    return sections;
+  };
 
   useEffect(() => {
     const fetchSharedTranscript = async () => {
@@ -665,7 +724,8 @@ function PublicTranscriptView() {
         
         if (sharedTranscript) {
           setTranscript(sharedTranscript);
-          if (sharedTranscript.activityType !== 'Analyze Bill') {
+          // Only generate speech list for non-simulated, non-bill transcripts
+          if (sharedTranscript.activityType !== 'Analyze Bill' && sharedTranscript.activityType !== 'Simulated Debate') {
             const speeches = generateSpeechList(sharedTranscript.transcript);
             setSpeechList(speeches);
           }
@@ -690,6 +750,14 @@ function PublicTranscriptView() {
       setAnalysisSectionList(sections);
     } else {
       setAnalysisSectionList([]);
+    }
+    
+    // Update simulated debate section list
+    if (transcript && transcript.activityType === 'Simulated Debate' && transcript.transcript) {
+      const sections = extractSimulatedDebateSections(transcript.transcript);
+      setSimulatedDebateSectionList(sections);
+    } else {
+      setSimulatedDebateSectionList([]);
     }
   }, [transcript]);
 
@@ -779,6 +847,16 @@ function PublicTranscriptView() {
         />
       )}
       
+      {/* Speeches sidebar - for simulated debates */}
+      {transcript && transcript.activityType === 'Simulated Debate' && simulatedDebateSectionList.length > 0 && (
+        <AnalysisSidebar
+          sidebarExpanded={sidebarExpanded}
+          setSidebarExpanded={setSidebarExpanded}
+          sectionList={simulatedDebateSectionList}
+          scrollToSection={scrollToSection}
+        />
+      )}
+      
       <div className="debate-wrapper">
         <div className="debate-content">
           <div className="topic-header-section">
@@ -861,7 +939,7 @@ function PublicTranscriptView() {
 
           {/* Judge Feedback - for simulated debates */}
           {transcript.judge_feedback && (
-            <div className="judge-feedback-section" style={{ marginTop: '2rem' }}>
+            <>
               <hr className="divider" style={{ margin: '2rem 0', border: 'none', borderTop: '2px solid #374151' }} />
               <h2 className="markdown-h2" style={{
                 fontSize: '1.5rem',
@@ -869,26 +947,24 @@ function PublicTranscriptView() {
                 marginBottom: '1rem',
                 color: '#f1f5f9'
               }}>Judge's Evaluation</h2>
-              <div className="judge-feedback-content">
-                <ReactMarkdown
-                  rehypePlugins={[rehypeRaw]}
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
-                    p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-                    ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-                    ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-                    li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-                    strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-                    em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-                  }}
-                >
-                  {transcript.judge_feedback}
-                </ReactMarkdown>
-              </div>
-            </div>
+              <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
+                components={{
+                  h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} style={{ color: '#f1f5f9' }} />,
+                  h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} style={{ color: '#f1f5f9' }} />,
+                  h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} style={{ color: '#f1f5f9' }} />,
+                  h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} style={{ color: '#f1f5f9' }} />,
+                  p: ({node, ...props}) => <p className="markdown-p" {...props} style={{ color: '#f1f5f9' }} />,
+                  ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                  ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                  li: ({node, ...props}) => <li className="markdown-li" {...props} style={{ color: '#f1f5f9' }} />,
+                  strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                  em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                }}
+              >
+                {transcript.judge_feedback}
+              </ReactMarkdown>
+            </>
           )}
 
           <div className="public-transcript-footer">
