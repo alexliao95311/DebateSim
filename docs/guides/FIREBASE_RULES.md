@@ -43,6 +43,7 @@ service cloud.firestore {
 - **Only authenticated users can create shares** - prevents spam and abuse
 - **User transcripts remain private** - only the owner can access their original transcripts
 - **Share documents include minimal data** - only the transcript content and metadata needed for public viewing
+- **Simulated debates are publicly readable** - AI vs AI debate history is accessible to all users
 
 ## Testing the Rules
 
