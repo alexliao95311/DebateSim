@@ -138,7 +138,21 @@ function ShareModal({ isOpen, onClose, transcript, transcriptId, isSimulatedDeba
           <div className="transcript-preview">
             <h4>{transcript.topic}</h4>
             <p className="transcript-meta centered">
-              {transcript.mode} • {new Date(transcript.createdAt).toLocaleDateString()}
+              {transcript.mode} • {(() => {
+                if (!transcript.createdAt) return 'No date';
+                try {
+                  // Handle Firestore timestamp
+                  if (transcript.createdAt?.toDate) {
+                    return transcript.createdAt.toDate().toLocaleDateString();
+                  }
+                  // Handle ISO string or regular date
+                  const date = new Date(transcript.createdAt);
+                  if (isNaN(date.getTime())) return 'Invalid date';
+                  return date.toLocaleDateString();
+                } catch (e) {
+                  return 'Invalid date';
+                }
+              })()}
             </p>
           </div>
 

@@ -264,17 +264,25 @@ function Leaderboard({ user, onLogout }) {
                     }]);
                   }
                   
-                  setCurrentDebate(data);
+                  // Prepare debate data with createdAt for sharing
+                  const debateDataWithDate = {
+                    ...data,
+                    createdAt: new Date().toISOString(),
+                    mode: "AI vs AI",
+                    activityType: "Simulated Debate"
+                  };
+
+                  setCurrentDebate(debateDataWithDate);
                   setDebateStatus(null); // Clear status when complete
-                  
+
                   // Save debate to Firestore for sharing
-                  const debateId = await saveDebateToFirestore(data, [...streamingTranscript, {
+                  const debateId = await saveDebateToFirestore(debateDataWithDate, [...streamingTranscript, {
                     speaker: 'Judge',
                     model: 'Judge Panel',
                     round: 'Final',
                     content: data.judge_feedback
                   }]);
-                  
+
                   if (debateId) {
                     setCurrentDebateId(debateId);
                   }
@@ -319,7 +327,7 @@ function Leaderboard({ user, onLogout }) {
   const saveDebateToFirestore = async (debateData, transcript) => {
     try {
       const debatesRef = collection(db, 'simulatedDebates');
-      
+
       // Format the transcript into readable text
       const transcriptText = transcript.map(part => {
         if (part.speaker === 'Judge') {
@@ -336,9 +344,9 @@ function Leaderboard({ user, onLogout }) {
         winner: debateData.winner,
         judge_feedback: debateData.judge_feedback,
         transcript: transcriptText,
-        mode: "Leaderboard Debate",
-        activityType: "Debate",
-        createdAt: new Date().toISOString(),
+        mode: debateData.mode || "AI vs AI",
+        activityType: debateData.activityType || "Simulated Debate",
+        createdAt: debateData.createdAt,
         model1_elo: debateData.model1_elo,
         model2_elo: debateData.model2_elo,
         isShared: false
@@ -349,6 +357,8 @@ function Leaderboard({ user, onLogout }) {
     } catch (error) {
       console.error("Error saving debate to Firestore:", error);
       return null;
+    }
+  };
 
   const runCustomDebate = async () => {
     // Validation
