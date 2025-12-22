@@ -667,63 +667,37 @@ async def get_leaderboard():
         "message": "Frontend handles leaderboard via Firebase Web SDK"
     }
 
+def load_topics_from_file():
+    """Load all topics from topics.txt file."""
+    try:
+        topics_file = Path("topics.txt")
+        if topics_file.exists():
+            with open(topics_file, 'r', encoding='utf-8') as f:
+                topics = [line.strip() for line in f if line.strip()]
+            logger.info(f"Loaded {len(topics)} topics from topics.txt")
+            return topics
+        else:
+            logger.warning("topics.txt not found, using empty list")
+            return []
+    except Exception as e:
+        logger.error(f"Error loading topics from file: {e}", exc_info=True)
+        return []
+
 @app.get("/leaderboard/topics")
 async def get_topics():
-    """Get random topics from Firestore for debates."""
+    """Get all topics from topics.txt for debates."""
     try:
-        db = get_firestore_db()
-        if db is None:
-            # Fallback to sample topics if Firebase not available
-            sample_topics = [
-                "Should AI be regulated like a public utility?",
-                "Should voting be mandatory?",
-                "Should college be free?",
-                "Should social media be banned for children?",
-                "Should universal basic income be implemented?",
-                "Should the voting age be lowered to 16?",
-                "Should all drugs be decriminalized?",
-                "Should healthcare be universal?",
-                "Should climate change be a top priority?",
-                "Should space exploration be publicly funded?"
-            ]
-            return {"topics": sample_topics}
-        
-        # Fetch from Firestore
-        topics_ref = db.collection('topics')
-        query = topics_ref.where('used', '==', False).limit(100)  # Get unused topics
-        docs = list(query.stream())
-        
-        if docs:
-            topics = [doc.to_dict().get('text', '') for doc in docs if doc.to_dict().get('text')]
-            if topics:
-                return {"topics": topics}
-        
-        # If no unused topics, get any topics
-        all_docs = topics_ref.limit(100).stream()
-        topics = [doc.to_dict().get('text', '') for doc in all_docs if doc.to_dict().get('text')]
-        
+        # Always use topics.txt to get all 1163 topics
+        topics = load_topics_from_file()
         if topics:
+            logger.info(f"Returning {len(topics)} topics from topics.txt")
             return {"topics": topics}
-        
-        # Fallback to sample topics
-        sample_topics = [
-            "Should AI be regulated like a public utility?",
-            "Should voting be mandatory?",
-            "Should college be free?",
-            "Should social media be banned for children?",
-            "Should universal basic income be implemented?"
-        ]
-        return {"topics": sample_topics}
+        return {"topics": []}
     except Exception as e:
         logger.error(f"Error getting topics: {e}", exc_info=True)
-        # Return fallback topics on error
-        return {
-            "topics": [
-                "Should AI be regulated like a public utility?",
-                "Should voting be mandatory?",
-                "Should college be free?"
-            ]
-        }
+        # Return topics from file on error
+        topics = load_topics_from_file()
+        return {"topics": topics}
 
 @app.post("/leaderboard/initialize-models")
 async def initialize_models():

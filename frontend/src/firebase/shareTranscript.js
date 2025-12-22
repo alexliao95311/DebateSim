@@ -31,7 +31,7 @@ export const shareTranscript = async (transcriptId, transcriptData, isSimulatedD
       topic: transcriptData.topic,
       mode: transcriptData.mode || "Unknown",
       activityType: transcriptData.activityType || "Unknown",
-      createdAt: transcriptData.createdAt || new Date().toISOString(),
+      createdAt: transcriptData.createdAt?.toDate ? transcriptData.createdAt.toDate().toISOString() : (transcriptData.createdAt || new Date().toISOString()),
       sharedAt: new Date().toISOString(),
       sharedBy: user.uid,
       isActive: true

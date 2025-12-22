@@ -11,7 +11,10 @@ import json
 import aiohttp
 import asyncio
 import re
+import logging
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 load_dotenv(override=True)  # Force reload even if already loaded
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -93,7 +96,6 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
-            "max_tokens": 1200,  # Restored - original key supports longer prompts
         }
 
         if stop:
@@ -120,7 +122,15 @@ class OpenRouterChat(BaseChatModel):
             raise ValueError(f"OpenRouter API error: {response.status_code} - {error_detail}")
         
         result = response.json()
-        assistant_message = result["choices"][0]["message"]["content"]
+        choice = result["choices"][0]
+        assistant_message = choice["message"]["content"]
+        finish_reason = choice.get("finish_reason", "unknown")
+        
+        # Log if response was truncated
+        if finish_reason == "length":
+            logger.warning(f"⚠️ Response truncated for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
+        else:
+            logger.info(f"✅ Response complete for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
         
         # Convert the assistant text into LangChain's ChatResult/ChatGeneration structure
         return ChatResult(
@@ -156,7 +166,6 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
-            "max_tokens": 1200,  # Restored - original key supports longer prompts
         }
 
         if stop:
@@ -188,7 +197,15 @@ class OpenRouterChat(BaseChatModel):
                         raise ValueError(f"OpenRouter API error: {response.status} - {error_detail}")
 
                     result = await response.json()
-                    assistant_message = result["choices"][0]["message"]["content"]
+                    choice = result["choices"][0]
+                    assistant_message = choice["message"]["content"]
+                    finish_reason = choice.get("finish_reason", "unknown")
+                    
+                    # Log if response was truncated
+                    if finish_reason == "length":
+                        logger.warning(f"⚠️ Response truncated for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
+                    else:
+                        logger.info(f"✅ Response complete for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
 
         return ChatResult(
             generations=[
