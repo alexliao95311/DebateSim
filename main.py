@@ -460,22 +460,53 @@ async def run_full_debate(request: FullDebateRequest):
         judge_chain_instance = get_judge_chain(request.judge_model)
         judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
         
-        # Parse judge result to determine winner
+        # Parse judge result to determine winner with improved pattern matching
         winner = None
         judge_lower = judge_feedback.lower()
-        
-        # Try to extract winner from judge feedback
-        if "pro wins" in judge_lower or "pro is the winner" in judge_lower or "pro has won" in judge_lower:
+
+        # Check for Pro/Affirmative wins
+        if any(phrase in judge_lower for phrase in [
+            "pro wins",
+            "pro is the winner",
+            "pro has won",
+            "affirmative wins",
+            "affirmative is the winner",
+            "affirmative has won",
+            "winner: pro",
+            "decision: pro",
+            "winner is pro"
+        ]):
             winner = "model1"  # Pro (model1) wins
-        elif "con wins" in judge_lower or "con is the winner" in judge_lower or "con has won" in judge_lower:
+        # Check for Con/Negative wins
+        elif any(phrase in judge_lower for phrase in [
+            "con wins",
+            "con is the winner",
+            "con has won",
+            "negative wins",
+            "negative is the winner",
+            "negative has won",
+            "winner: con",
+            "decision: con",
+            "winner is con",
+            "negative (con) wins",
+            "con (negative) wins"
+        ]):
             winner = "model2"  # Con (model2) wins
-        elif "tie" in judge_lower or "draw" in judge_lower or "no clear winner" in judge_lower:
+        # Check for tie/draw
+        elif any(phrase in judge_lower for phrase in [
+            "tie",
+            "draw",
+            "no clear winner",
+            "no winner",
+            "both sides",
+            "neither side wins"
+        ]):
             winner = "draw"
         else:
             # Default: try to find which model performed better
             # This is a fallback - ideally the judge should be explicit
             winner = "draw"
-        
+
         logger.info(f"✅ Debate complete. Winner: {winner}")
         
         return {
@@ -595,19 +626,51 @@ async def run_full_debate_stream(request: FullDebateRequest):
             judge_chain_instance = get_judge_chain(request.judge_model)
             judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
             
-            # Parse judge result
+            # Parse judge result with improved pattern matching
             winner = None
             judge_lower = judge_feedback.lower()
-            
-            if "pro wins" in judge_lower or "pro is the winner" in judge_lower or "pro has won" in judge_lower:
+
+            # Check for Pro/Affirmative wins
+            if any(phrase in judge_lower for phrase in [
+                "pro wins",
+                "pro is the winner",
+                "pro has won",
+                "affirmative wins",
+                "affirmative is the winner",
+                "affirmative has won",
+                "winner: pro",
+                "decision: pro",
+                "winner is pro"
+            ]):
                 winner = "model1"
-            elif "con wins" in judge_lower or "con is the winner" in judge_lower or "con has won" in judge_lower:
+            # Check for Con/Negative wins
+            elif any(phrase in judge_lower for phrase in [
+                "con wins",
+                "con is the winner",
+                "con has won",
+                "negative wins",
+                "negative is the winner",
+                "negative has won",
+                "winner: con",
+                "decision: con",
+                "winner is con",
+                "negative (con) wins",
+                "con (negative) wins"
+            ]):
                 winner = "model2"
-            elif "tie" in judge_lower or "draw" in judge_lower or "no clear winner" in judge_lower:
+            # Check for tie/draw
+            elif any(phrase in judge_lower for phrase in [
+                "tie",
+                "draw",
+                "no clear winner",
+                "no winner",
+                "both sides",
+                "neither side wins"
+            ]):
                 winner = "draw"
             else:
                 winner = "draw"
-            
+
             # Send final result
             final_result = {
                 'type': 'complete',
