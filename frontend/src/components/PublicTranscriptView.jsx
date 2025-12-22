@@ -71,6 +71,15 @@ const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, ana
   const renderSpeechBlocks = () => {
     // For simulated debates, use simple markdown rendering without parsing
     if (transcript.activityType === 'Simulated Debate') {
+      // Use sectionList if available to ensure IDs match sidebar
+      const sectionMap = new Map();
+      if (sectionList && sectionList.length > 0) {
+        sectionList.forEach(section => {
+          // Extract the header text from the section title
+          sectionMap.set(section.title.toLowerCase().trim(), section.id);
+        });
+      }
+      
       let h2Index = 0;
       return (
         <div className="transcript-content" style={{ color: '#f1f5f9' }}>
@@ -80,7 +89,10 @@ const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, ana
               h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} style={{ color: '#f1f5f9' }} />,
               h2: ({node, ...props}) => {
                 const headerText = typeof props.children === 'string' ? props.children : props.children?.join?.('') || '';
-                const sectionId = `simulated-debate-section-${h2Index}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                // Try to find matching ID from section list, otherwise generate one
+                const normalizedTitle = headerText.toLowerCase().trim();
+                const sectionId = sectionMap.get(normalizedTitle) || 
+                                 `simulated-debate-section-${h2Index}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
                 h2Index++;
                 return <h2 id={sectionId} className="markdown-h2" {...props} style={{ color: '#f1f5f9' }} />;
               },
@@ -691,7 +703,7 @@ function PublicTranscriptView() {
   };
 
   // Extract speech sections for simulated debates
-  const extractSimulatedDebateSections = (transcriptText) => {
+  const extractSimulatedDebateSections = (transcriptText, judgeFeedback) => {
     if (!transcriptText) return [];
     
     const lines = transcriptText.split('\n');
@@ -712,6 +724,16 @@ function PublicTranscriptView() {
         }
       }
     });
+    
+    // Add judge feedback section if it exists
+    if (judgeFeedback) {
+      const judgeSectionId = `simulated-debate-section-${sectionIndex}-judge-feedback`;
+      sections.push({
+        id: judgeSectionId,
+        title: "Judge's Evaluation",
+        index: sectionIndex
+      });
+    }
     
     return sections;
   };
@@ -754,7 +776,7 @@ function PublicTranscriptView() {
     
     // Update simulated debate section list
     if (transcript && transcript.activityType === 'Simulated Debate' && transcript.transcript) {
-      const sections = extractSimulatedDebateSections(transcript.transcript);
+      const sections = extractSimulatedDebateSections(transcript.transcript, transcript.judge_feedback);
       setSimulatedDebateSectionList(sections);
     } else {
       setSimulatedDebateSectionList([]);
@@ -935,18 +957,29 @@ function PublicTranscriptView() {
             speechList={speechList}
             extractSpeechText={extractSpeechText}
             analysisSectionList={analysisSectionList}
+            sectionList={simulatedDebateSectionList}
           />
 
           {/* Judge Feedback - for simulated debates */}
-          {transcript.judge_feedback && (
-            <>
-              <hr className="divider" style={{ margin: '2rem 0', border: 'none', borderTop: '2px solid #374151' }} />
-              <h2 className="markdown-h2" style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                marginBottom: '1rem',
-                color: '#f1f5f9'
-              }}>Judge's Evaluation</h2>
+          {transcript.judge_feedback && (() => {
+            // Calculate the correct index for judge feedback section
+            const h2Count = transcript.transcript ? transcript.transcript.split('\n').filter(line => line.startsWith('## ')).length : 0;
+            const judgeSectionId = `simulated-debate-section-${h2Count}-judge-feedback`;
+            return (
+              <>
+                <hr className="divider" style={{ margin: '2rem 0', border: 'none', borderTop: '2px solid #374151' }} />
+                <h2 
+                  id={judgeSectionId}
+                  className="markdown-h2" 
+                  style={{
+                    fontSize: '1.5rem',
+                    fontWeight: '600',
+                    marginBottom: '1rem',
+                    color: '#f1f5f9'
+                  }}
+                >
+                  Judge's Evaluation
+                </h2>
               <ReactMarkdown
                 rehypePlugins={[rehypeRaw]}
                 components={{
@@ -964,8 +997,9 @@ function PublicTranscriptView() {
               >
                 {transcript.judge_feedback}
               </ReactMarkdown>
-            </>
-          )}
+              </>
+            );
+          })()}
 
           <div className="public-transcript-footer">
             <p className="public-footer-text">
