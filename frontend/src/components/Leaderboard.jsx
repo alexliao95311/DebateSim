@@ -229,6 +229,17 @@ function Leaderboard({ user, onLogout }) {
                 } else if (data.type === 'complete') {
                   streamComplete = true;
                   clearTimeout(timeoutId);
+                  
+                  // Add judge feedback as a special transcript part
+                  if (data.judge_feedback) {
+                    setStreamingTranscript(prev => [...prev, {
+                      speaker: 'Judge',
+                      model: 'Judge Panel',
+                      round: 'Final',
+                      content: data.judge_feedback
+                    }]);
+                  }
+                  
                   setCurrentDebate(data);
                   setDebateStatus(null); // Clear status when complete
                   // Update ELO ratings and get changes
@@ -602,24 +613,28 @@ function Leaderboard({ user, onLogout }) {
           )}
 
           {streamingTranscript.length > 0 && (
-            <div className="streaming-transcript-preview">
-              <h4>Debate in Progress:</h4>
-              <div className="transcript-parts">
-                {streamingTranscript.map((part, index) => (
-                  <div key={index} className={`transcript-part ${part.speaker.toLowerCase()}`}>
-                    <div className="transcript-header">
-                      <span className="transcript-speaker">
-                        {part.speaker} ({formatModelName(part.model)})
-                      </span>
-                      <span className="transcript-round">Round {part.round}</span>
+            <details className="debate-transcript-details" open={debateLoading}>
+              <summary className="transcript-summary">
+                {debateLoading ? '📖 Debate in Progress' : '📖 Full Debate Transcript'}
+              </summary>
+              <div className="streaming-transcript-preview">
+                <div className="transcript-parts">
+                  {streamingTranscript.map((part, index) => (
+                    <div key={index} className={`transcript-part ${part.speaker.toLowerCase()}`}>
+                      <div className="transcript-header">
+                        <span className="transcript-speaker">
+                          {part.speaker} ({formatModelName(part.model)})
+                        </span>
+                        <span className="transcript-round">Round {part.round}</span>
+                      </div>
+                      <div className="transcript-text">
+                        <ReactMarkdown>{part.content}</ReactMarkdown>
+                      </div>
                     </div>
-                    <div className="transcript-text">
-                      <ReactMarkdown>{part.content}</ReactMarkdown>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </details>
           )}
         </div>
       )}
@@ -699,44 +714,6 @@ function Leaderboard({ user, onLogout }) {
               </div>
             )}
           </div>
-
-          <details className="judge-feedback">
-            <summary>Judge Feedback</summary>
-            <div className="judge-feedback-content">
-              <ReactMarkdown>{currentDebate.judge_feedback}</ReactMarkdown>
-            </div>
-          </details>
-
-          <details className="full-transcript">
-            <summary>Full Debate Transcript</summary>
-            <div className="transcript-content">
-              {currentDebate.transcript_parts && currentDebate.transcript_parts.length > 0 ? (
-                <div className="transcript-parts">
-                  {currentDebate.transcript_parts.map((part, index) => (
-                    <div key={index} className={`transcript-part ${part.speaker.toLowerCase()}`}>
-                    <div className="transcript-header">
-                      <span className="transcript-speaker">
-                        {part.speaker} ({formatModelName(part.model)})
-                      </span>
-                      <span className="transcript-round">Round {part.round}</span>
-                    </div>
-                    <div className="transcript-text">
-                      <ReactMarkdown>{part.content}</ReactMarkdown>
-                    </div>
-                    </div>
-                  ))}
-                </div>
-              ) : currentDebate.transcript ? (
-                <div className="transcript-fallback">
-                  <ReactMarkdown>{currentDebate.transcript}</ReactMarkdown>
-                </div>
-              ) : (
-                <div className="transcript-fallback">
-                  <p>Transcript not available</p>
-                </div>
-              )}
-            </div>
-          </details>
         </div>
       )}
       </div>
