@@ -165,14 +165,25 @@ const TranscriptContent = memo(({ transcript, speechList, extractSpeechText, ana
           currentContent = [];
         }
 
-        const speaker = line.replace(/^#+ /, '').trim();
+        const fullHeader = line.replace(/^#+ /, '').trim();
         const speech = speechList[currentSpeechIndex];
-        
+
         // Check if this matches current speech
-        const isMatch = speech && (
-          speech.speaker === speaker || 
-          (speech.isJudge && (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)))
-        );
+        let isMatch = false;
+        if (speech) {
+          if (speech.isJudge) {
+            // Match judge feedback
+            isMatch = fullHeader === 'AI Judge Feedback' || fullHeader.match(/(AI Judge|Judge Feedback|Judge)/i);
+          } else {
+            // Extract speaker from header like "Pro (Round 1)" to match with speech.speaker "Pro"
+            const headerMatch = fullHeader.match(/^(Pro|Con)\s*\(Round\s*(\d+)\)/i);
+            if (headerMatch) {
+              const headerSpeaker = headerMatch[1];
+              const headerRound = parseInt(headerMatch[2]);
+              isMatch = speech.speaker === headerSpeaker && speech.round === headerRound;
+            }
+          }
+        }
 
         if (isMatch) {
           // This is a speech header - create speech block
@@ -463,23 +474,30 @@ function PublicTranscriptView() {
   // Generate speech list from transcript
   const generateSpeechList = (transcriptText) => {
     if (!transcriptText) return [];
-    
+
     const speeches = [];
     const lines = transcriptText.split('\n');
     let speechIndex = 0;
-    
+    const processedLines = new Set(); // Track which lines we've already processed
+
     lines.forEach((line, lineIndex) => {
       // Check for both ## and # headers
       if (line.startsWith('## ') || line.startsWith('# ')) {
-        const speaker = line.replace(/^#+ /, '').trim();
-        
+        // Skip if we've already processed this line
+        if (processedLines.has(lineIndex)) {
+          return;
+        }
+        processedLines.add(lineIndex);
+
+        const fullHeader = line.replace(/^#+ /, '').trim();
+
         // Handle AI Judge feedback specially
-        if (speaker === 'AI Judge Feedback' || speaker.match(/(AI Judge|Judge Feedback|Judge)/i)) {
+        if (fullHeader === 'AI Judge Feedback' || fullHeader.match(/(AI Judge|Judge Feedback|Judge)/i)) {
           speeches.push({
             id: `speech-${speechIndex}`,
             title: 'AI Judge Feedback',
-            speaker: speaker, // Keep original speaker name for matching
-            originalSpeaker: speaker,
+            speaker: fullHeader, // Keep original speaker name for matching
+            originalSpeaker: fullHeader,
             round: null,
             startLine: lineIndex,
             isJudge: true
@@ -487,71 +505,91 @@ function PublicTranscriptView() {
           speechIndex++;
         } else {
           // Handle regular debate speeches
-          const sameSpeekerCount = speeches.filter(s => s.speaker === speaker && !s.isJudge).length;
-          const globalIndex = speechIndex + 1;
-          
-          // Check if this is an LD debate
-          const isLD = transcript && ((transcript.debateFormat && /lincoln-douglas/i.test(transcript.debateFormat)) || (transcript.mode && /lincoln-douglas/i.test(transcript.mode)));
-          
-          let title, roundNum;
-          if (isLD) {
-            // LD has 5 speeches: AC, NC, 1AR, NR, 2AR
-            const speechTypes = ['AC', 'NC', '1AR', 'NR', '2AR'];
-            const speechType = (globalIndex >= 1 && globalIndex <= speechTypes.length) ? speechTypes[globalIndex - 1] : `Speech ${globalIndex}`;
-            title = `${speaker} - ${speechType}`;
-            roundNum = globalIndex;
-          } else {
-            roundNum = sameSpeekerCount + 1;
-            title = `${speaker} - Round ${roundNum}`;
+          // Extract speaker name from headers like "Pro (Round 1)" or "Con (Round 2)"
+          const match = fullHeader.match(/^(Pro|Con)\s*\(Round\s*(\d+)\)/i);
+
+          if (match) {
+            const speaker = match[1]; // "Pro" or "Con"
+            const roundNum = parseInt(match[2]);
+
+            // Count total speeches to determine max rounds (for display like "Round 1/5")
+            const totalRounds = Math.ceil(
+              lines.filter(l =>
+                (l.startsWith('## ') || l.startsWith('# ')) &&
+                l.match(/^#+\s*(Pro|Con)\s*\(Round\s*\d+\)/i)
+              ).length / 2
+            );
+
+            const title = `${speaker} – Round ${roundNum}/${totalRounds}`;
+
+            speeches.push({
+              id: `speech-${speechIndex}`,
+              title: title,
+              speaker: speaker,
+              round: roundNum,
+              startLine: lineIndex,
+              isJudge: false
+            });
+            speechIndex++;
           }
-          
-          speeches.push({
-            id: `speech-${speechIndex}`,
-            title: title,
-            speaker: speaker,
-            round: roundNum,
-            startLine: lineIndex,
-            isJudge: false
-          });
-          speechIndex++;
+          // Note: Removed fallback to avoid duplicates in simulated debates
         }
       }
     });
-    
+
     return speeches;
   };
 
   const extractSpeechText = (transcriptText, speechItem) => {
     if (!transcriptText || !speechItem) return '';
-    
+
     const lines = transcriptText.split('\n');
     const speechLines = [];
     let isInSpeech = false;
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
       if (line.startsWith('## ') || line.startsWith('# ')) {
         if (isInSpeech) break;
-        const speaker = line.replace(/^#+ /, '').trim();
-        
+        const fullHeader = line.replace(/^#+ /, '').trim();
+
         if (speechItem.isJudge) {
           // For AI Judge, match any judge-related header or exact speaker match
-          if (speaker.match(/(AI Judge|Judge Feedback|Judge)/i) || speaker === speechItem.speaker) {
+          if (fullHeader.match(/(AI Judge|Judge Feedback|Judge)/i) || fullHeader === speechItem.speaker) {
             isInSpeech = true;
+            // Skip the header line itself - don't add it to speechLines
+            continue;
           }
         } else {
-          // For regular speeches, match by speaker and round
-          const sameSpeakerCount = lines.slice(0, i + 1).filter(l => (l.startsWith('## ') || l.startsWith('# ')) && l.replace(/^#+ /, '').trim() === speaker).length;
-          if (speaker === speechItem.speaker && sameSpeakerCount === speechItem.round) {
-            isInSpeech = true;
+          // For regular speeches, extract speaker and round from header like "Pro (Round 1)"
+          const match = fullHeader.match(/^(Pro|Con)\s*\(Round\s*(\d+)\)/i);
+          if (match) {
+            const speaker = match[1];
+            const roundNum = parseInt(match[2]);
+            if (speaker === speechItem.speaker && roundNum === speechItem.round) {
+              isInSpeech = true;
+              // Skip the header line itself - don't add it to speechLines
+              continue;
+            }
+          } else {
+            // Fallback for other formats - match by speaker and round count
+            const sameSpeakerCount = lines.slice(0, i + 1).filter(l => {
+              const h = l.replace(/^#+ /, '').trim();
+              return (l.startsWith('## ') || l.startsWith('# ')) && h === fullHeader;
+            }).length;
+            if (fullHeader === speechItem.speaker && sameSpeakerCount === speechItem.round) {
+              isInSpeech = true;
+              // Skip the header line itself - don't add it to speechLines
+              continue;
+            }
           }
         }
       } else if (isInSpeech) {
         speechLines.push(line);
       }
     }
-    
+
     return speechLines.join('\n').replace(/\*Model: [^\*]+\*/g, '').trim();
   };
 
@@ -761,13 +799,98 @@ function PublicTranscriptView() {
             </div>
           )}
 
+          {/* Debate Info - for simulated debates */}
+          {transcript.activityType === 'Simulated Debate' && (transcript.model1 || transcript.model2) && (
+            <div style={{
+              backgroundColor: 'rgba(30, 41, 59, 0.8)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              border: '1px solid #374151'
+            }}>
+              {transcript.model1 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#94a3b8' }}>Pro Model:</span>
+                  <span style={{ color: '#f1f5f9', fontWeight: '500' }}>
+                    {transcript.model1.replace(/^(openai|meta-llama|google|anthropic|x-ai)\//i, '')}
+                    {transcript.model1_elo && ` (ELO: ${Math.round(transcript.model1_elo)})`}
+                  </span>
+                </div>
+              )}
+              {transcript.model2 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#94a3b8' }}>Con Model:</span>
+                  <span style={{ color: '#f1f5f9', fontWeight: '500' }}>
+                    {transcript.model2.replace(/^(openai|meta-llama|google|anthropic|x-ai)\//i, '')}
+                    {transcript.model2_elo && ` (ELO: ${Math.round(transcript.model2_elo)})`}
+                  </span>
+                </div>
+              )}
+              {transcript.judge_model && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#94a3b8' }}>Judge:</span>
+                  <span style={{ color: '#f1f5f9', fontWeight: '500' }}>
+                    {transcript.judge_model.replace(/^(openai|meta-llama|google|anthropic|x-ai)\//i, '')}
+                  </span>
+                </div>
+              )}
+              {transcript.winner && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Result:</span>
+                  <span style={{
+                    backgroundColor: transcript.winner === 'model1' ? '#dcfce7' : (transcript.winner === 'model2' ? '#fee2e2' : '#fef3c7'),
+                    color: transcript.winner === 'model1' ? '#166534' : (transcript.winner === 'model2' ? '#991b1b' : '#92400e'),
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.85rem',
+                    fontWeight: '500'
+                  }}>
+                    {transcript.winner === 'model1' ? 'Pro Wins' : (transcript.winner === 'model2' ? 'Con Wins' : 'Draw')}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <TranscriptContent
             transcript={transcript}
             speechList={speechList}
             extractSpeechText={extractSpeechText}
             analysisSectionList={analysisSectionList}
           />
-          
+
+          {/* Judge Feedback - for simulated debates */}
+          {transcript.judge_feedback && (
+            <div className="judge-feedback-section" style={{ marginTop: '2rem' }}>
+              <hr className="divider" style={{ margin: '2rem 0', border: 'none', borderTop: '2px solid #374151' }} />
+              <h2 className="markdown-h2" style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                color: '#f1f5f9'
+              }}>Judge's Evaluation</h2>
+              <div className="judge-feedback-content">
+                <ReactMarkdown
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                    h4: ({node, ...props}) => <h4 className="markdown-h4" {...props} />,
+                    p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                    ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                    ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                    li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                    strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                    em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                  }}
+                >
+                  {transcript.judge_feedback}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
+
           <div className="public-transcript-footer">
             <p className="public-footer-text">
               {t('publicTranscript.footerText')}{" "}
