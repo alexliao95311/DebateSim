@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,7 @@ import UserDropdown from "./UserDropdown";
 import Footer from "./Footer.jsx";
 import VoiceInput from "./VoiceInput";
 import { analyzeSpeechEfficiency, generateAIResponse } from "../api";
-import { Bot, UserCheck, Users, Award, ChevronRight, ArrowLeft } from "lucide-react";
+import { UserCheck, Users, Award, ArrowLeft } from "lucide-react";
 import { useTranslation } from "../utils/translations";
 import languagePreferenceService from "../services/languagePreferenceService";
 import "./debatetrainer.css";
@@ -97,7 +97,8 @@ function DebateTrainer({ user, onLogout }) {
   // Get current round number
   const getCurrentRoundNumber = () => {
     if (debateFormat === "public-forum") {
-      return Math.ceil((messageList.length + 1) / 2);
+      const round = Math.ceil((messageList.length + 1) / 2);
+      return Math.min(round, 4);
     }
     return currentRound;
   };
