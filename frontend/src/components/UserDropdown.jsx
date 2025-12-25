@@ -4,7 +4,7 @@ import { Menu, User, Settings, LogOut, History, Home } from 'lucide-react';
 import { useTranslation } from '../utils/translations';
 import './UserDropdown.css';
 
-const UserDropdown = ({ user, onLogout, className = '' }) => {
+const UserDropdown = ({ user, onLogout, className = '', disabled = false }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -48,8 +48,9 @@ const UserDropdown = ({ user, onLogout, className = '' }) => {
     <div className={`user-dropdown ${className}`} ref={dropdownRef}>
       <button
         className="user-dropdown-toggle"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         aria-label="User menu"
+        disabled={disabled}
       >
         <Menu size={20} />
       </button>
