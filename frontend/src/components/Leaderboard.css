@@ -210,22 +210,24 @@
   align-items: stretch;
 }
 
-.custom-debate-input {
+input[type="text"].custom-debate-input {
   flex: 1;
   padding: 0.875rem 1rem;
   border-radius: 8px;
   border: 2px solid rgba(55, 65, 81, 0.6);
-  background: rgba(15, 23, 42, 0.8);
-  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.8) !important;
+  color: #f1f5f9 !important;
   font-size: 1rem;
   transition: all 0.2s ease;
+  margin: 0;
 }
 
-.custom-debate-input:focus {
+input[type="text"].custom-debate-input:focus {
   outline: none;
   border-color: #4a90e2;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.95) !important;
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  color: #f1f5f9 !important;
 }
 
 .custom-debate-input::placeholder {
