@@ -698,13 +698,13 @@ function Leaderboard({ user, onLogout }) {
             justifyContent: 'center',
             flex: 1
           }}>
-            <h1 className="leaderboard-site-title" onClick={() => navigate("/")}>
+            <h1 className="leaderboard-site-title" onClick={() => !debateLoading && navigate("/")}>
               AI Debate Leaderboard
             </h1>
           </div>
 
           <div className="leaderboard-header-right">
-            <UserDropdown user={user} onLogout={handleLogout} className="leaderboard-user-dropdown" />
+            <UserDropdown user={user} onLogout={handleLogout} className="leaderboard-user-dropdown" disabled={debateLoading} />
           </div>
         </div>
       </header>
@@ -728,12 +728,14 @@ function Leaderboard({ user, onLogout }) {
             <button
               className={`mode-toggle-segment ${debateMode === 'random' ? 'active' : ''}`}
               onClick={() => setDebateMode('random')}
+              disabled={debateLoading}
             >
               Random Debate
             </button>
             <button
               className={`mode-toggle-segment ${debateMode === 'custom' ? 'active' : ''}`}
               onClick={() => setDebateMode('custom')}
+              disabled={debateLoading}
             >
               Custom Debate
             </button>
@@ -754,6 +756,7 @@ function Leaderboard({ user, onLogout }) {
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   placeholder="Enter debate topic..."
+                  disabled={debateLoading}
                 />
                 <button
                   className="random-topic-button"
@@ -763,7 +766,7 @@ function Leaderboard({ user, onLogout }) {
                       setCustomTopic(randomTopic);
                     }
                   }}
-                  disabled={loadingTopics || topics.length === 0}
+                  disabled={debateLoading || loadingTopics || topics.length === 0}
                 >
                   🎲 Random
                 </button>
@@ -778,6 +781,7 @@ function Leaderboard({ user, onLogout }) {
                   className="custom-debate-select"
                   value={customModel1}
                   onChange={(e) => setCustomModel1(e.target.value)}
+                  disabled={debateLoading}
                 >
                   {AVAILABLE_MODELS.map(model => (
                     <option key={model} value={model}>
@@ -794,6 +798,7 @@ function Leaderboard({ user, onLogout }) {
                   className="custom-debate-select"
                   value={customModel2}
                   onChange={(e) => setCustomModel2(e.target.value)}
+                  disabled={debateLoading}
                 >
                   {AVAILABLE_MODELS.map(model => (
                     <option key={model} value={model}>
@@ -832,6 +837,7 @@ function Leaderboard({ user, onLogout }) {
             <button
               className="toolbar-button toolbar-button-rankings"
               onClick={() => navigate("/rankings")}
+              disabled={debateLoading}
             >
               <Trophy className="toolbar-icon" />
               Rankings
@@ -839,6 +845,7 @@ function Leaderboard({ user, onLogout }) {
             <button
               className="toolbar-button toolbar-button-history"
               onClick={() => navigate("/simulated-debates")}
+              disabled={debateLoading}
             >
               <History className="toolbar-icon" />
               History
@@ -846,7 +853,7 @@ function Leaderboard({ user, onLogout }) {
             <button
               className="toolbar-button toolbar-button-reset"
               onClick={resetAllStats}
-              disabled={loading}
+              disabled={debateLoading || loading}
             >
               <RotateCcw className="toolbar-icon" />
               Reset
@@ -895,6 +902,7 @@ function Leaderboard({ user, onLogout }) {
                 alert(`Error initializing models: ${error.message}`);
               }
             }}
+            disabled={debateLoading}
           >
             Initialize Models
           </button>
@@ -1042,6 +1050,7 @@ function Leaderboard({ user, onLogout }) {
               <button
                 className="share-button"
                 onClick={() => setIsShareModalOpen(true)}
+                disabled={debateLoading}
               >
                 <Share2 size={18} />
                 Share This Debate
