@@ -5,6 +5,7 @@ import rehypeRaw from "rehype-raw";
 import ShareModal from "./ShareModal";
 import PDFGenerator from "../utils/pdfGenerator";
 import UserDropdown from "./UserDropdown";
+import { useTranslation } from '../utils/translations';
 import {
   History as HistoryIcon,
   Clock,
@@ -101,50 +102,51 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
 
 // Bill Grading Section Component
 const BillGradingSection = ({ grades }) => {
+  const { t } = useTranslation();
   const gradingCriteria = {
     economicImpact: {
-      label: 'Economic Impact',
-      description: 'Fiscal responsibility & benefits',
+      label: t('history.grading.economicImpact'),
+      description: t('legislation.grading.economicImpact'),
       tooltip: 'Economic benefits and fiscal impact',
       icon: '💰',
       category: 'moderate',
       order: 1
     },
     publicBenefit: {
-      label: 'Public Benefit',
-      description: 'Benefits to citizens',
+      label: t('history.grading.publicBenefit'),
+      description: t('legislation.grading.publicBenefit'),
       tooltip: 'Addresses public needs effectively',
       icon: '👥',
       category: 'positive',
       order: 2
     },
     feasibility: {
-      label: 'Implementation Feasibility',
-      description: 'Practicality of execution',
+      label: t('history.grading.feasibility'),
+      description: t('legislation.grading.feasibility'),
       tooltip: 'Can be realistically implemented',
       icon: '🛠',
       category: 'caution',
       order: 3
     },
     legalSoundness: {
-      label: 'Legal Soundness',
-      description: 'Constitutional compliance',
+      label: t('history.grading.legalSoundness'),
+      description: t('legislation.grading.legalSoundness'),
       tooltip: 'Constitutional and legal compliance',
       icon: '⚖️',
       category: 'positive',
       order: 4
     },
     effectiveness: {
-      label: 'Goal Effectiveness',
-      description: 'Achievement of stated objectives',
+      label: t('history.grading.effectiveness'),
+      description: t('legislation.grading.effectiveness'),
       tooltip: 'Achieves stated objectives well',
       icon: '🎯',
       category: 'moderate',
       order: 5
     },
     overall: {
-      label: 'Overall Rating',
-      description: 'Comprehensive assessment',
+      label: t('history.grading.overall'),
+      description: t('legislation.grading.overall'),
       tooltip: 'Weighted average of all criteria',
       icon: '📊',
       category: 'overall',
@@ -155,8 +157,8 @@ const BillGradingSection = ({ grades }) => {
   return (
     <div className="grading-section">
       <div className="grading-header">
-        <h2>Bill Analysis Grades</h2>
-        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+        <h2>{t('history.grading.title')}</h2>
+        <div className="grading-subtitle">{t('history.grading.subtitle')}</div>
       </div>
 
       <div className="grading-grid">
@@ -187,6 +189,7 @@ const BillGradingSection = ({ grades }) => {
 
 function History({ user, onLogout }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -324,7 +327,7 @@ function History({ user, onLogout }) {
         PDFGenerator.generateDebatePDF(pdfData);
       }
     } catch (err) {
-      setPdfError("Failed to generate PDF. Please try again.");
+      setPdfError(t('error.failedToGenerate'));
       console.error("PDF generation error:", err);
     }
   };
@@ -343,7 +346,7 @@ function History({ user, onLogout }) {
         alignItems: 'center',
         zIndex: 9999
       }}>
-        <div className="loading-text">Loading history...</div>
+        <div className="loading-text">{t('loading')}</div>
       </div>
     );
   }
@@ -367,7 +370,7 @@ function History({ user, onLogout }) {
           }}
           onClick={() => navigate('/')}
           >
-            <h1 className="home-site-title">Activity History</h1>
+            <h1 className="home-site-title">{t('history.title')}</h1>
           </div>
 
           <div className="home-header-right">
@@ -400,7 +403,7 @@ function History({ user, onLogout }) {
             }} />
             <input
               type="text"
-              placeholder="Search by topic..."
+              placeholder={t('history.search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -435,12 +438,12 @@ function History({ user, onLogout }) {
                 minWidth: '150px'
               }}
             >
-              <option value="all">All Types</option>
-              <option value="analyze">Analyze Bill</option>
-              <option value="bill">Bill Debate</option>
-              <option value="topic">Topic Debate</option>
-              <option value="ai">AI Debates</option>
-              <option value="user">User Debates</option>
+              <option value="all">{t('history.all')}</option>
+              <option value="analyze">{t('history.analysis')}</option>
+              <option value="bill">{t('history.debate')}</option>
+              <option value="topic">{t('history.debate')}</option>
+              <option value="ai">{t('history.debate')}</option>
+              <option value="user">{t('history.debate')}</option>
             </select>
           </div>
         </div>
@@ -536,12 +539,12 @@ function History({ user, onLogout }) {
             }}>
               <HistoryIcon size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#475569' }}>
-                {searchTerm || filterType !== "all" ? "No matching history found" : "No history available"}
+                {t('history.noHistory')}
               </h3>
               <p style={{ margin: 0 }}>
                 {searchTerm || filterType !== "all"
-                  ? "Try adjusting your search or filter criteria"
-                  : "Start a debate or analysis to see your activity here"
+                  ? t('history.noHistory')
+                  : t('history.noHistory')
                 }
               </p>
             </div>
@@ -616,21 +619,21 @@ function History({ user, onLogout }) {
                 onClick={() => setShowShareModal(true)}
               >
                 <Share2 size={16} />
-                Share
+                {t('history.share')}
               </button>
               <button
                 className="history-download-button"
                 onClick={handleDownloadPDF}
               >
                 <Download size={16} />
-                Download PDF
+                {t('history.downloadPDF')}
               </button>
               <button
                 className="history-close-button"
                 onClick={() => setSelectedHistory(null)}
               >
                 <X size={16} />
-                Close
+                {t('close')}
               </button>
             </div>
           </div>

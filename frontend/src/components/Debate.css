@@ -518,6 +518,89 @@ html, body {
   max-width: 300px !important;
 }
 
+.debate-model-selector-wrapper {
+  width: 100% !important;
+  max-width: 300px !important;
+}
+
+.debate-model-toggle-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+}
+
+.debate-model-toggle-buttons {
+  display: flex !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  padding: 0.25rem !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(71, 85, 105, 0.3) !important;
+}
+
+.debate-model-toggle-btn {
+  flex: 1 !important;
+  padding: 0.6rem 1rem !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-align: center !important;
+}
+
+.debate-model-toggle-btn:hover {
+  background: rgba(74, 144, 226, 0.2) !important;
+  color: #f8fafc !important;
+}
+
+.debate-model-toggle-btn.active {
+  background: rgba(74, 144, 226, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4) !important;
+}
+
+.debate-model-custom-input {
+  width: 100% !important;
+  padding: 1rem 1.25rem !important;
+  border: 2px solid rgba(74, 144, 226, 0.3) !important;
+  border-radius: 12px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+  backdrop-filter: blur(15px) !important;
+  color: #f8fafc !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5) !important;
+}
+
+.debate-model-custom-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+}
+
+.debate-model-custom-input:hover {
+  border-color: #4a90e2 !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 30px rgba(74, 144, 226, 0.4) !important;
+  border-color: rgba(74, 144, 226, 0.6) !important;
+}
+
+.debate-model-custom-input:focus {
+  outline: none !important;
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.4), 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
 /* Enhanced markdown output with dark theme */
 .markdown-renderer {
   background: rgba(15, 23, 42, 0.9);

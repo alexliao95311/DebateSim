@@ -12,7 +12,10 @@ import { MessageSquare, Code, History } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import EnhancedVoiceOutput from './EnhancedVoiceOutput';
 import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
+import { useTranslation } from '../utils/translations';
+
 function Judge() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
@@ -61,7 +64,7 @@ function Judge() {
         const result = await getAIJudgeFeedback(transcript);
         setFeedback(result);
       } catch (err) {
-        setError("Failed to fetch judge feedback. Please try again.");
+        setError(t('error.failedToGenerate'));
       }
     };
     fetchFeedback();
@@ -109,7 +112,7 @@ ${feedback}`;
       setSaved(true);
     } catch (err) {
       console.error("Error saving transcript:", err);
-      setError("Failed to save transcript. Please try again.");
+      setError(t('error.failedToSend'));
     } finally {
       setSaving(false);
     }
@@ -287,7 +290,7 @@ ${feedback}`;
             flex: 1
           }}>
             <h1 className="judge-site-title" onClick={() => navigate("/")}>
-              Judge Results
+              {t('judge.title')}
             </h1>
           </div>
 
@@ -298,20 +301,20 @@ ${feedback}`;
       </header>
 
       <div className="judge-main-content">
-        <h1 className="judge-main-heading">Debate Results</h1>
-        <h2 className="judge-sub-heading">Topic: {topic}</h2>
+        <h1 className="judge-main-heading">{t('judge.debateResults')}</h1>
+        <h2 className="judge-sub-heading">{t('judge.topic')}: {topic}</h2>
       
       <div className="judge-sections-container">
         <div className="judge-sections">
           <div className="judge-transcript-section">
             <div className="judge-section-header">
-              <h2 className="judge-section-title">Debate Transcript</h2>
+              <h2 className="judge-section-title">{t('judge.transcript')}</h2>
               {billDescription && (
                 <button 
                   className="judge-toggle-bill-text" 
                   onClick={() => setShowBillText(!showBillText)}
                 >
-                  {showBillText ? "Hide Bill Text" : "Show Bill Text"}
+                  {showBillText ? t('judge.hideBillText') : t('judge.showBillText')}
                 </button>
               )}
             </div>
@@ -321,18 +324,18 @@ ${feedback}`;
           </div>
 
           <div className="judge-feedback-section">
-            <h2 className="judge-section-title">AI Judge Feedback</h2>
+            <h2 className="judge-section-title">{t('judge.feedback')}</h2>
             <div className="judge-scrollable-content">
               {!feedback ? (
                 <LoadingSpinner 
-                  message="Analyzing debate and generating judgement" 
+                  message={t('judge.analyzing')} 
                   showProgress={true}
                   estimatedTime={60000}
                 />
               ) : (
                 <>
                   <div className="debate-speech-header">
-                    <h3 className="judge-speech-title">AI Judge:</h3>
+                    <h3 className="judge-speech-title">{t('judge.feedback')}:</h3>
                     <div className="debate-speech-tts">
                       <EnhancedVoiceOutput
                         text={feedback}
@@ -347,10 +350,10 @@ ${feedback}`;
                       />
                     </div>
                   </div>
-                  <p className="judge-model-info">Model: {judgeModel}</p>
+                  <p className="judge-model-info">{t('judge.model')}: {judgeModel}</p>
                   {debateFormat === "lincoln-douglas" && (
                     <div className="judge-criteria-info">
-                      <h4>LD Judging Criteria</h4>
+                      <h4>{t('judge.criteria.ld.title')}</h4>
                       <ul>
                         <li><strong>Framework Analysis:</strong> Value premise, criterion, and framework consistency</li>
                         <li><strong>Logical Structure:</strong> Syllogistic reasoning, argument construction, logical consistency</li>
@@ -365,7 +368,7 @@ ${feedback}`;
                   )}
                   {debateFormat === "public-forum" && (
                     <div className="judge-criteria-info">
-                      <h4>Public Forum Judging Criteria</h4>
+                      <h4>{t('judge.criteria.pf.title')}</h4>
                       <ul>
                         <li><strong>Accessibility:</strong> Arguments understandable to general audiences</li>
                         <li><strong>Real-World Focus:</strong> Practical impacts on people and society</li>
@@ -378,7 +381,7 @@ ${feedback}`;
                   )}
                   {(!debateFormat || debateFormat === "default") && (
                     <div className="judge-criteria-info">
-                      <h4>Standard Debate Judging Criteria</h4>
+                      <h4>{t('judge.criteria.default.title')}</h4>
                       <ul>
                         <li><strong>Argument Strength:</strong> Logical, well-reasoned arguments</li>
                         <li><strong>Evidence Quality:</strong> Facts, statistics, examples, reasoning</li>
@@ -420,10 +423,10 @@ ${feedback}`;
             onClick={handleShare} 
             disabled={!feedback || !saved}
           >
-            Share Debate
+            {t('judge.shareDebate')}
           </button>
           <button className="judge-home-button" onClick={handleBackToHome}>
-            Back to Home
+            {t('judge.backToHome')}
           </button>
         </div>
       </div>
@@ -455,7 +458,7 @@ ${feedback}`;
             className="feedback-link"
           >
             <MessageSquare size={16} />
-            Give Feedback
+            {t('debate.giveFeedback')}
           </a>
           <a
             href="https://github.com/alexliao95311/DebateSim"
@@ -464,10 +467,10 @@ ${feedback}`;
             className="github-link"
           >
             <Code size={16} />
-            GitHub
+            {t('debate.github')}
           </a>
         </div>
-        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. All rights reserved.</span>
+        <span className="copyright">&copy; {new Date().getFullYear()} DebateSim. {t('debate.allRightsReserved')}</span>
       </footer>
     </div>
   );

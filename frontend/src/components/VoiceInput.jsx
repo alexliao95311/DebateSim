@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Loader2, HelpCircle } from 'lucide-react';
 import VoiceInputTroubleshooting from './VoiceInputTroubleshooting';
+import { useTranslation } from '../utils/translations';
 
 const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to start speaking..." }) => {
+  const { t, currentLanguage } = useTranslation();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [displayTranscript, setDisplayTranscript] = useState(''); 
@@ -312,10 +314,10 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         <p>{error}</p>
         <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button onClick={() => setError('')}>
-            Dismiss
+            {t('voiceInput.dismiss')}
           </button>
           {error.includes('Network') || error.includes('service') ? (
-            <button 
+            <button
               onClick={retrySpeechRecognition}
               style={{
                 padding: '0.25rem 0.5rem',
@@ -327,7 +329,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
                 fontSize: '0.8rem'
               }}
             >
-              Retry
+              {t('voiceInput.retry')}
             </button>
           ) : null}
           <button
@@ -346,18 +348,18 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
             }}
           >
             <HelpCircle size={12} />
-            Help
+            {t('voiceInput.help')}
           </button>
         </div>
         
         {/* Debug info for development */}
         {process.env.NODE_ENV === 'development' && (
           <details style={{ marginTop: '1rem' }}>
-            <summary style={{ cursor: 'pointer', color: '#666' }}>Debug Info</summary>
-            <div style={{ 
-              marginTop: '0.5rem', 
-              padding: '0.5rem', 
-              backgroundColor: '#f5f5f5', 
+            <summary style={{ cursor: 'pointer', color: '#666' }}>{t('voiceInput.debugInfo')}</summary>
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem',
+              backgroundColor: '#f5f5f5',
               borderRadius: '4px',
               fontSize: '0.8rem',
               fontFamily: 'monospace',
@@ -366,7 +368,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
               overflow: 'auto'
             }}>
               {debugInfo}
-              <button 
+              <button
                 onClick={clearDebugInfo}
                 style={{
                   marginTop: '0.5rem',
@@ -379,7 +381,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
                   fontSize: '0.7rem'
                 }}
               >
-                Clear Debug
+                {t('voiceInput.clearDebug')}
               </button>
             </div>
           </details>
@@ -404,15 +406,15 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
             ) : (
               <Mic size={16} />
             )}
-            {isProcessing ? 'Starting...' : isListening ? 'Stop Recording' : 'Start Voice Input'}
+            {isProcessing ? t('voiceInput.starting') : isListening ? t('voiceInput.stopRecording') : t('voiceInput.startVoiceInput')}
           </button>
-          
+
           {displayTranscript && (
             <button
               onClick={clearTranscript}
               className="voice-input-clear"
             >
-              Clear
+              {t('voiceInput.clear')}
             </button>
           )}
           
@@ -437,10 +439,29 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
             <HelpCircle size={16} />
           </button>
         </div>
-        
+
+        {currentLanguage === 'zh' && (
+          <div style={{
+            marginTop: '0.75rem',
+            padding: '0.75rem',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            border: '1px solid rgba(255, 193, 7, 0.3)',
+            borderRadius: '6px'
+          }}>
+            <p style={{
+              margin: 0,
+              fontSize: '0.85rem',
+              color: 'rgba(255, 193, 7, 1)',
+              lineHeight: '1.4'
+            }}>
+              {t('voiceInput.englishOnlyWarning')}
+            </p>
+          </div>
+        )}
+
         {isListening && (
           <div className="voice-input-listening">
-            <p>Listening... Speak now</p>
+            <p>{t('voiceInput.listeningSpeak')}</p>
             <button
               onClick={stopListening}
               style={{
@@ -457,15 +478,15 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
                 gap: '0.25rem'
               }}
             >
-              🛑 Stop Recording
+              🛑 {t('voiceInput.stopRecording')}
             </button>
           </div>
         )}
-        
+
         {displayTranscript && (
           <div className="voice-input-transcript">
             <p>
-              <strong>Transcript:</strong> {displayTranscript}
+              <strong>{t('voiceInput.transcript')}</strong> {displayTranscript}
             </p>
           </div>
         )}
@@ -477,20 +498,20 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
         )}
         
         {retryCount > 0 && (
-          <p style={{ 
-            fontSize: '0.8rem', 
-            color: 'rgba(255, 255, 255, 0.6)', 
+          <p style={{
+            fontSize: '0.8rem',
+            color: 'rgba(255, 255, 255, 0.6)',
             marginTop: '0.5rem',
             fontStyle: 'italic'
           }}>
-            Retry attempt: {retryCount}
+            {t('voiceInput.retryAttempt')} {retryCount}
           </p>
         )}
-        
+
         {/* Debug info for development */}
         {process.env.NODE_ENV === 'development' && (
           <details style={{ marginTop: '1rem' }}>
-            <summary style={{ cursor: 'pointer', color: 'rgba(255, 255, 255, 0.7)' }}>Debug Info</summary>
+            <summary style={{ cursor: 'pointer', color: 'rgba(255, 255, 255, 0.7)' }}>{t('voiceInput.debugInfo')}</summary>
             <div style={{ 
               marginTop: '0.5rem', 
               padding: '0.5rem', 
@@ -504,7 +525,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
               color: 'rgba(255, 255, 255, 0.8)'
             }}>
               {debugInfo}
-              <button 
+              <button
                 onClick={clearDebugInfo}
                 style={{
                   marginTop: '0.5rem',
@@ -517,7 +538,7 @@ const VoiceInput = ({ onTranscript, disabled = false, placeholder = "Click to st
                   fontSize: '0.7rem'
                 }}
               >
-                Clear Debug
+                {t('voiceInput.clearDebug')}
               </button>
             </div>
           </details>

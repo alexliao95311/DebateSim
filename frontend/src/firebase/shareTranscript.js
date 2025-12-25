@@ -10,7 +10,7 @@ const generateShareId = () => {
 };
 
 // Share a transcript publicly
-export const shareTranscript = async (transcriptId, transcriptData) => {
+export const shareTranscript = async (transcriptId, transcriptData, isSimulatedDebate = false) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("User is not logged in!");
@@ -23,7 +23,7 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
 
   try {
     const shareId = generateShareId();
-    
+
     // Create a public share document - ensure no undefined values
     const publicShareData = {
       shareId,
@@ -31,16 +31,23 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
       topic: transcriptData.topic,
       mode: transcriptData.mode || "Unknown",
       activityType: transcriptData.activityType || "Unknown",
-      createdAt: transcriptData.createdAt || new Date().toISOString(),
+      createdAt: transcriptData.createdAt?.toDate ? transcriptData.createdAt.toDate().toISOString() : (transcriptData.createdAt || new Date().toISOString()),
       sharedAt: new Date().toISOString(),
       sharedBy: user.uid,
       isActive: true
     };
-    
+
     // Add grades if available
     if (transcriptData.grades) {
       publicShareData.grades = transcriptData.grades;
     }
+
+    // Add simulated debate specific fields
+    if (transcriptData.model1) publicShareData.model1 = transcriptData.model1;
+    if (transcriptData.model2) publicShareData.model2 = transcriptData.model2;
+    if (transcriptData.judge_model) publicShareData.judge_model = transcriptData.judge_model;
+    if (transcriptData.winner) publicShareData.winner = transcriptData.winner;
+    if (transcriptData.judge_feedback) publicShareData.judge_feedback = transcriptData.judge_feedback;
 
     // Remove any undefined values before sending to Firestore
     Object.keys(publicShareData).forEach(key => {
@@ -51,11 +58,19 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
 
     // Add to public shares collection
     await addDoc(collection(db, "publicShares"), publicShareData);
-    
+
     // Update the original transcript to mark it as shared (only if it exists in database)
     if (transcriptId) {
       try {
-        const transcriptRef = doc(db, "users", user.uid, "transcripts", transcriptId);
+        let transcriptRef;
+        if (isSimulatedDebate) {
+          // For simulated debates, update in the simulatedDebates collection
+          transcriptRef = doc(db, "simulatedDebates", transcriptId);
+        } else {
+          // For user transcripts, update in the user's transcripts subcollection
+          transcriptRef = doc(db, "users", user.uid, "transcripts", transcriptId);
+        }
+
         await updateDoc(transcriptRef, {
           isShared: true,
           shareId: shareId,
@@ -74,12 +89,12 @@ export const shareTranscript = async (transcriptId, transcriptData) => {
     return { shareId, shareUrl };
   } catch (error) {
     console.error("Error sharing transcript:", error);
-    
+
     // Provide more user-friendly error messages
     if (error.message && error.message.includes("Cannot read properties of null")) {
       throw new Error("Unable to share transcript. Please try again after the transcript has been saved.");
     }
-    
+
     throw error;
   }
 };

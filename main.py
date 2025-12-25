@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 from datetime import datetime
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,6 +21,7 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 
 from chains.debater_chain import get_debater_chain
 from chains.judge_chain import judge_chain, get_judge_chain
+from chains.trainer_chain import get_trainer_chain
 from billsearch import BillSearcher
 from legiscan_service import LegiScanService
 from ca_propositions_service import CAPropositionsService
@@ -28,11 +30,26 @@ from ca_propositions_service import CAPropositionsService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Firebase Admin SDK for backend
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    FIREBASE_AVAILABLE = True
+except ImportError:
+    FIREBASE_AVAILABLE = False
+    logger.warning("firebase-admin not installed. ELO ratings will not be persisted to Firestore.")
+
 # Load environment variables
 load_dotenv()
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not API_KEY:
     raise ValueError("Please set the OPENROUTER_API_KEY environment variable.")
+
+# Debug: Print which key is being used
+print("=" * 60)
+print("USING OPENROUTER KEY:", API_KEY)
+print("=" * 60)
+
 
 CONGRESS_API_KEY = os.getenv("CONGRESS_API_KEY")
 if not CONGRESS_API_KEY:
@@ -91,11 +108,13 @@ class SaveTranscriptRequest(BaseModel):
 class JudgeFeedbackRequest(BaseModel):
     transcript: str
     model: str = DEFAULT_MODEL  # Use the global default model
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 class AnalysisRequest(BaseModel):
     text: str
     model: str = DEFAULT_MODEL  # Use the global default model
     userProfile: dict = None  # Optional user profile for personalized analysis
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 # Connection pooling with optimizations - will be initialized lazily
 connector = None
@@ -121,6 +140,65 @@ session = None
 bill_searcher = None
 legiscan_service = None
 ca_props_service = None
+firestore_db = None
+
+def get_firestore_db():
+    """Initialize and return Firestore database client."""
+    global firestore_db
+    if firestore_db is not None:
+        return firestore_db
+
+    if not FIREBASE_AVAILABLE:
+        logger.error("Firebase Admin SDK not available (firebase-admin not installed)")
+        return None
+
+    try:
+        # Get credentials path
+        cred_path = Path(__file__).parent / "credentials" / "debatesim-6f403-55fd99aa753a-google-cloud.json"
+
+        if not cred_path.exists():
+            logger.error(f"Firebase credentials not found at {cred_path}")
+            return None
+
+        # Try to get existing app or initialize new one
+        try:
+            # Try to get the default app if it already exists
+            firebase_admin.get_app()
+            logger.info("Firebase app already initialized, getting Firestore client")
+            firestore_db = firestore.client()
+        except ValueError:
+            # App doesn't exist, initialize it
+            logger.info("Initializing new Firebase app")
+            cred = credentials.Certificate(str(cred_path))
+            firebase_admin.initialize_app(cred)
+            firestore_db = firestore.client()
+            logger.info("Firebase Firestore initialized successfully")
+
+        return firestore_db
+    except Exception as e:
+        logger.error(f"Error initializing Firebase: {e}", exc_info=True)
+        return None
+
+async def save_simulated_debate_to_firestore(debate_data: dict) -> Optional[str]:
+    """Save a simulated debate to Firestore and return the document ID."""
+    try:
+        db = get_firestore_db()
+        if db is None:
+            logger.warning("Firestore not available, cannot save simulated debate")
+            return None
+
+        # Add timestamp
+        debate_data['createdAt'] = firestore.SERVER_TIMESTAMP
+        debate_data['activityType'] = 'Simulated Debate'
+
+        # Save to simulatedDebates collection
+        doc_ref = db.collection('simulatedDebates').document()
+        doc_ref.set(debate_data)
+        logger.info(f"Simulated debate saved to Firestore with ID: {doc_ref.id}")
+        return doc_ref.id
+    except Exception as e:
+        logger.error(f"Error saving simulated debate to Firestore: {e}", exc_info=True)
+        return None
 
 @app.on_event("startup")
 async def startup_event():
@@ -136,6 +214,9 @@ async def startup_event():
     # Initialize CA Propositions service
     ca_props_service = CAPropositionsService()
     logger.info("CA Propositions service initialized")
+
+    # Initialize Firebase
+    get_firestore_db()
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -155,6 +236,7 @@ class GenerateResponseRequest(BaseModel):
     persona: str = "Default AI"  # Persona name for logging
     debate_format: str = "default"  # Debate format (default, public-forum)
     speaking_order: str = "pro-first"  # Speaking order for public forum (pro-first, con-first)
+    language: str = "en"  # Language preference (en, zh, etc.)
 
 @app.post("/generate-response")
 async def generate_response(request: GenerateResponseRequest):
@@ -222,8 +304,8 @@ async def generate_response(request: GenerateResponseRequest):
             logger.info(f"Extracted key sections for debate: {len(bill_description)} chars (from {original_length} chars)")
             logger.info("Key sections include: title, findings, definitions, main provisions, and implementation details")
         
-        # Get a debater chain with the specified model, debate type, and format
-        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order)
+        # Get a debater chain with the specified model, debate type, format, and language
+        model_specific_debater_chain = get_debater_chain(request.model, debate_type=debate_type, debate_format=request.debate_format, speaking_order=request.speaking_order, language=request.language)
         
         # DEBUG: Print what we're sending to the LangChain model
         logger.info(f"🔍 DEBUG: Sending to LangChain:")
@@ -238,8 +320,8 @@ async def generate_response(request: GenerateResponseRequest):
         logger.info(f"🔍 DEBUG: - debate_format: {request.debate_format}")
         logger.info(f"🔍 DEBUG: - speaking_order: {request.speaking_order}")
         
-        # Call the run method - pass full transcript for context and the original prompt for persona instructions
-        ai_output = model_specific_debater_chain.run(
+        # Call the arun method - pass full transcript for context and the original prompt for persona instructions
+        ai_output = await model_specific_debater_chain.arun(
             debater_role=debater_role,
             topic=topic,
             bill_description=bill_description,  # Now uses actual bill text
@@ -248,7 +330,8 @@ async def generate_response(request: GenerateResponseRequest):
             round_num=request.round_num,  # Pass the current round number
             persona_prompt=request.prompt,  # Pass the full prompt which contains persona instructions
             persona=request.persona,  # Pass the persona name directly for logging
-            prompt=request.prompt  # Also pass the prompt directly for direct prompt detection
+            prompt=request.prompt,  # Also pass the prompt directly for direct prompt detection
+            language=request.language  # Pass the language preference
         )
         
     except Exception as e:
@@ -264,12 +347,502 @@ async def judge_debate(request: JudgeRequest):
     transcript = request.transcript
     logger.info("📩 /judge-debate called (length=%d)", len(transcript))
     try:
-        feedback = judge_chain.run(transcript=transcript)
+        feedback = await judge_chain.arun(transcript=transcript)
     except Exception as e:
         logger.error(f"Error in judge_chain: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error generating judge feedback")
     logger.info(f"✅ [LangChain] Judge feedback: {feedback[:200]}...")
     return {"feedback": feedback}
+
+# ===================== Leaderboard & ELO System =====================
+class FullDebateRequest(BaseModel):
+    topic: str
+    model1: str = "openai/gpt-4o-mini"
+    model2: str = "meta-llama/llama-3.3-70b-instruct"
+    judge_model: str = "anthropic/claude-3.5-sonnet"
+    debate_format: str = "default"
+    max_rounds: int = 5
+    language: str = "en"
+    model1_elo: Optional[float] = 1500
+    model2_elo: Optional[float] = 1500
+
+class ELOUpdate(BaseModel):
+    model: str
+    elo: float
+    wins: int = 0
+    losses: int = 0
+    draws: int = 0
+
+@app.post("/leaderboard/run-debate")
+async def run_full_debate(request: FullDebateRequest):
+    """
+    Run a complete debate between two AI models and return the transcript and judge result.
+    This is used for the leaderboard system to automatically generate debates.
+    """
+    logger.info(f"📩 /leaderboard/run-debate called: {request.model1} vs {request.model2} on '{request.topic[:50]}...'")
+    
+    try:
+        # Initialize debate state
+        transcript_parts = []
+        full_transcript = ""
+        round_num = 1
+        max_rounds = request.max_rounds
+        
+        # Get debater chains for both models
+        pro_chain = get_debater_chain(
+            request.model1,
+            debate_type="topic",
+            debate_format=request.debate_format,
+            speaking_order="pro-first",
+            language=request.language
+        )
+        
+        con_chain = get_debater_chain(
+            request.model2,
+            debate_type="topic",
+            debate_format=request.debate_format,
+            speaking_order="pro-first",
+            language=request.language
+        )
+        
+        # Run debate rounds
+        for round_num in range(1, max_rounds + 1):
+            logger.info(f"🔄 Running round {round_num}/{max_rounds}")
+            
+            # Pro speaks
+            pro_response = await pro_chain.arun(
+                debater_role="Pro",
+                topic=request.topic,
+                bill_description=request.topic,
+                history="",
+                full_transcript=full_transcript,
+                round_num=round_num,
+                persona_prompt="",
+                persona="default",
+                prompt=request.topic,
+                language=request.language
+            )
+
+            transcript_parts.append({
+                "round": round_num,
+                "speaker": "Pro",
+                "model": request.model1,
+                "content": pro_response
+            })
+
+            full_transcript += f"## Pro (Round {round_num})\n{pro_response}\n\n"
+
+            # Con speaks
+            con_response = await con_chain.arun(
+                debater_role="Con",
+                topic=request.topic,
+                bill_description=request.topic,
+                history=pro_response,
+                full_transcript=full_transcript,
+                round_num=round_num,
+                persona_prompt="",
+                persona="default",
+                prompt=request.topic,
+                language=request.language
+            )
+            
+            transcript_parts.append({
+                "round": round_num,
+                "speaker": "Con",
+                "model": request.model2,
+                "content": con_response
+            })
+            
+            full_transcript += f"## Con (Round {round_num})\n{con_response}\n\n"
+        
+        # Get judge evaluation
+        logger.info("⚖️ Getting judge evaluation...")
+        judge_chain_instance = get_judge_chain(request.judge_model)
+        judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
+        
+        # Parse judge result to determine winner with improved pattern matching
+        winner = None
+        judge_lower = judge_feedback.lower()
+
+        # Check for Pro/Affirmative wins
+        if any(phrase in judge_lower for phrase in [
+            "pro wins",
+            "pro is the winner",
+            "pro has won",
+            "affirmative wins",
+            "affirmative is the winner",
+            "affirmative has won",
+            "winner: pro",
+            "decision: pro",
+            "winner is pro"
+        ]):
+            winner = "model1"  # Pro (model1) wins
+        # Check for Con/Negative wins
+        elif any(phrase in judge_lower for phrase in [
+            "con wins",
+            "con is the winner",
+            "con has won",
+            "negative wins",
+            "negative is the winner",
+            "negative has won",
+            "winner: con",
+            "decision: con",
+            "winner is con",
+            "negative (con) wins",
+            "con (negative) wins"
+        ]):
+            winner = "model2"  # Con (model2) wins
+        # Check for tie/draw
+        elif any(phrase in judge_lower for phrase in [
+            "tie",
+            "draw",
+            "no clear winner",
+            "no winner",
+            "both sides",
+            "neither side wins"
+        ]):
+            winner = "draw"
+        else:
+            # Default: try to find which model performed better
+            # This is a fallback - ideally the judge should be explicit
+            winner = "draw"
+
+        logger.info(f"✅ Debate complete. Winner: {winner}")
+        
+        return {
+            "transcript": full_transcript,
+            "transcript_parts": transcript_parts,
+            "judge_feedback": judge_feedback,
+            "winner": winner,
+            "model1": request.model1,
+            "model2": request.model2,
+            "judge_model": request.judge_model,
+            "topic": request.topic,
+            "rounds": max_rounds
+        }
+        
+    except Exception as e:
+        logger.error(f"Error running full debate: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error running debate: {str(e)}")
+
+@app.post("/leaderboard/run-debate-stream")
+async def run_full_debate_stream(request: FullDebateRequest):
+    """
+    Run a complete debate with Server-Sent Events for real-time updates.
+    """
+    from fastapi.responses import StreamingResponse
+    import json
+    
+    def format_model_name(model):
+        return model.replace('openai/', '').replace('meta-llama/', '').replace('google/', '').replace('anthropic/', '')
+    
+    async def generate():
+        try:
+            # Send initial status
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Starting debate...', 'round': 0, 'total_rounds': request.max_rounds})}\n\n"
+            
+            # Initialize debate state
+            transcript_parts = []
+            full_transcript = ""
+            
+            # Get debater chains for both models
+            pro_chain = get_debater_chain(
+                request.model1,
+                debate_type="topic",
+                debate_format=request.debate_format,
+                speaking_order="pro-first",
+                language=request.language
+            )
+            
+            con_chain = get_debater_chain(
+                request.model2,
+                debate_type="topic",
+                debate_format=request.debate_format,
+                speaking_order="pro-first",
+                language=request.language
+            )
+            
+            # Run debate rounds
+            for round_num in range(1, request.max_rounds + 1):
+                yield f"data: {json.dumps({'type': 'status', 'message': f'Running round {round_num}/{request.max_rounds}...', 'round': round_num, 'total_rounds': request.max_rounds})}\n\n"
+                
+                # Pro speaks
+                yield f"data: {json.dumps({'type': 'status', 'message': f'Pro ({format_model_name(request.model1)}) is speaking...', 'round': round_num, 'total_rounds': request.max_rounds})}\n\n"
+
+                pro_response = await pro_chain.arun(
+                    debater_role="Pro",
+                    topic=request.topic,
+                    bill_description=request.topic,
+                    history="",
+                    full_transcript=full_transcript,
+                    round_num=round_num,
+                    persona_prompt="",
+                    persona="default",
+                    prompt=request.topic,
+                    language=request.language
+                )
+                
+                part = {
+                    "round": round_num,
+                    "speaker": "Pro",
+                    "model": request.model1,
+                    "content": pro_response
+                }
+                transcript_parts.append(part)
+                full_transcript += f"## Pro (Round {round_num})\n{pro_response}\n\n"
+                
+                yield f"data: {json.dumps({'type': 'transcript_part', 'part': part})}\n\n"
+                
+                # Con speaks
+                yield f"data: {json.dumps({'type': 'status', 'message': f'Con ({format_model_name(request.model2)}) is speaking...', 'round': round_num, 'total_rounds': request.max_rounds})}\n\n"
+
+                con_response = await con_chain.arun(
+                    debater_role="Con",
+                    topic=request.topic,
+                    bill_description=request.topic,
+                    history=pro_response,
+                    full_transcript=full_transcript,
+                    round_num=round_num,
+                    persona_prompt="",
+                    persona="default",
+                    prompt=request.topic,
+                    language=request.language
+                )
+                
+                part = {
+                    "round": round_num,
+                    "speaker": "Con",
+                    "model": request.model2,
+                    "content": con_response
+                }
+                transcript_parts.append(part)
+                full_transcript += f"## Con (Round {round_num})\n{con_response}\n\n"
+                
+                yield f"data: {json.dumps({'type': 'transcript_part', 'part': part})}\n\n"
+            
+            # Get judge evaluation
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Getting judge evaluation...'})}\n\n"
+
+            judge_chain_instance = get_judge_chain(request.judge_model)
+            judge_feedback = await judge_chain_instance.arun(transcript=full_transcript)
+            
+            # Parse judge result with improved pattern matching
+            winner = None
+            judge_lower = judge_feedback.lower()
+
+            # Check for Pro/Affirmative wins
+            if any(phrase in judge_lower for phrase in [
+                "pro wins",
+                "pro is the winner",
+                "pro has won",
+                "affirmative wins",
+                "affirmative is the winner",
+                "affirmative has won",
+                "winner: pro",
+                "decision: pro",
+                "winner is pro"
+            ]):
+                winner = "model1"
+            # Check for Con/Negative wins
+            elif any(phrase in judge_lower for phrase in [
+                "con wins",
+                "con is the winner",
+                "con has won",
+                "negative wins",
+                "negative is the winner",
+                "negative has won",
+                "winner: con",
+                "decision: con",
+                "winner is con",
+                "negative (con) wins",
+                "con (negative) wins"
+            ]):
+                winner = "model2"
+            # Check for tie/draw
+            elif any(phrase in judge_lower for phrase in [
+                "tie",
+                "draw",
+                "no clear winner",
+                "no winner",
+                "both sides",
+                "neither side wins"
+            ]):
+                winner = "draw"
+            else:
+                winner = "draw"
+
+            # Send final result
+            final_result = {
+                'type': 'complete',
+                'transcript': full_transcript,
+                'transcript_parts': transcript_parts,
+                'judge_feedback': judge_feedback,
+                'winner': winner,
+                'model1': request.model1,
+                'model2': request.model2,
+                'judge_model': request.judge_model,
+                'topic': request.topic,
+                'rounds': request.max_rounds
+            }
+            yield f"data: {json.dumps(final_result)}\n\n"
+
+            # Save to Firebase
+            debate_data = {
+                'topic': request.topic,
+                'transcript': full_transcript,
+                'transcript_parts': transcript_parts,
+                'judge_feedback': judge_feedback,
+                'winner': winner,
+                'model1': request.model1,
+                'model2': request.model2,
+                'model1_elo': request.model1_elo,
+                'model2_elo': request.model2_elo,
+                'judge_model': request.judge_model,
+                'rounds': request.max_rounds,
+                'debate_format': request.debate_format,
+                'language': request.language,
+                'mode': 'ai-vs-ai'
+            }
+            debate_id = await save_simulated_debate_to_firestore(debate_data)
+            if debate_id:
+                yield f"data: {json.dumps({'type': 'saved', 'debate_id': debate_id})}\n\n"
+
+            # Send a final status to indicate completion
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Debate complete!'})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Error in debate stream: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no"
+    })
+
+@app.get("/leaderboard/models")
+async def get_leaderboard():
+    """Get the current leaderboard with ELO ratings. Frontend handles Firebase directly."""
+    # Frontend now handles Firebase directly, so just return empty
+    # This endpoint is kept for backward compatibility
+    return {
+        "models": [],
+        "message": "Frontend handles leaderboard via Firebase Web SDK"
+    }
+
+def load_topics_from_file():
+    """Load all topics from topics.txt file."""
+    try:
+        topics_file = Path("topics.txt")
+        if topics_file.exists():
+            with open(topics_file, 'r', encoding='utf-8') as f:
+                topics = [line.strip() for line in f if line.strip()]
+            logger.info(f"Loaded {len(topics)} topics from topics.txt")
+            return topics
+        else:
+            logger.warning("topics.txt not found, using empty list")
+            return []
+    except Exception as e:
+        logger.error(f"Error loading topics from file: {e}", exc_info=True)
+        return []
+
+@app.get("/leaderboard/topics")
+async def get_topics():
+    """Get all topics from topics.txt for debates."""
+    try:
+        # Always use topics.txt to get all 1163 topics
+        topics = load_topics_from_file()
+        if topics:
+            logger.info(f"Returning {len(topics)} topics from topics.txt")
+            return {"topics": topics}
+        return {"topics": []}
+    except Exception as e:
+        logger.error(f"Error getting topics: {e}", exc_info=True)
+        # Return topics from file on error
+        topics = load_topics_from_file()
+        return {"topics": topics}
+
+@app.post("/leaderboard/initialize-models")
+async def initialize_models():
+    """Initialize models. Frontend handles Firebase directly."""
+    # Frontend now handles initialization via Firebase Web SDK
+    return {
+        "success": True,
+        "message": "Frontend handles model initialization via Firebase Web SDK"
+    }
+
+@app.post("/leaderboard/update-elo")
+async def update_elo(update: ELOUpdate):
+    """Update ELO rating for a model. Frontend handles Firebase directly."""
+    # Frontend now handles ELO updates via Firebase Web SDK
+    logger.info(f"ELO update request for {update.model}: {update.elo} (handled by frontend)")
+    return {
+        "success": True,
+        "model": update.model,
+        "new_elo": update.elo,
+        "message": "Frontend handles ELO updates via Firebase Web SDK"
+    }
+
+def calculate_elo(winner_elo: float, loser_elo: float, k_factor: int = 32) -> tuple:
+    """
+    Calculate new ELO ratings after a match.
+    Returns (new_winner_elo, new_loser_elo)
+    """
+    # Expected scores
+    expected_winner = 1 / (1 + 10 ** ((loser_elo - winner_elo) / 400))
+    expected_loser = 1 / (1 + 10 ** ((winner_elo - loser_elo) / 400))
+    
+    # Update ratings
+    new_winner_elo = winner_elo + k_factor * (1 - expected_winner)  # Winner gets 1 point
+    new_loser_elo = loser_elo + k_factor * (0 - expected_loser)  # Loser gets 0 points
+    
+    return (new_winner_elo, new_loser_elo)
+
+# ===================== Debate Trainer – Speech Efficiency =====================
+class TrainerSpeechEfficiencyRequest(BaseModel):
+    speech: str
+    model: str = DEFAULT_MODEL
+    mode: str = "trainer-speech-efficiency"
+    persona: str = "none"
+    debate_format: str = "none"
+    speaking_order: str = "none"
+    round_num: int = 0
+    speech_type: str = ""
+    speech_number: int = 0
+    language: str = "en"  # Language preference (en, zh, etc.)
+
+@app.post("/trainer/speech-efficiency")
+async def trainer_speech_efficiency(request: TrainerSpeechEfficiencyRequest):
+    """
+    Comprehensive speech feedback chain (content + efficiency).
+    Provides format-specific coaching including Public Forum strategy, weighing, responses, etc.
+    """
+    try:
+        if not request.speech or not request.speech.strip():
+            raise HTTPException(status_code=400, detail="Speech text is required.")
+
+        # Use dedicated trainer chain to keep behavior separate from debate chains
+        trainer_chain = get_trainer_chain(model_name=request.model or DEFAULT_MODEL, language=request.language)
+        content = await trainer_chain.arun(
+            speech=request.speech,
+            debate_format=request.debate_format or "none",
+            round_num=request.round_num or 0,
+            speech_type=request.speech_type or "",
+            speech_number=request.speech_number or 0
+        )
+
+        # Fallback: if chain produced nothing, throw an error so frontend can show a message
+        if not content or not str(content).strip():
+            logger.error("Trainer chain returned empty content for speech-efficiency")
+            raise HTTPException(status_code=500, detail="Trainer model returned empty feedback. Try again or shorten the speech.")
+
+        return {"response": content}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unhandled error in /trainer/speech-efficiency")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 @app.post("/save-transcript")
 async def save_transcript(request: SaveTranscriptRequest, background_tasks: BackgroundTasks):
@@ -401,7 +974,7 @@ async def analyze_legislation_text_endpoint(request: AnalysisRequest):
         logger.info(f"Processing text input with model {request.model} - text length: {len(request.text)} chars")
         
         # Generate both analysis and grades (skip redundant logging since this is direct text input)
-        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile)
+        analysis = await analyze_legislation_text(request.text, request.model, skip_extraction=True, user_profile=request.userProfile, language=request.language)
         grades = await grade_legislation_text(request.text, request.model, skip_extraction=True)
     except Exception as e:
         logger.error(f"Error in analyze_legislation_text: {e}", exc_info=True)
@@ -468,13 +1041,13 @@ async def extract_text_endpoint(file: UploadFile = File(...)):
 @app.post("/judge-feedback")
 async def judge_feedback(request: JudgeFeedbackRequest):
     start_time = time.time()
-    logger.info(f"📩 /judge-feedback called with model={request.model!r}")
+    logger.info(f"📩 /judge-feedback called with model={request.model!r}, language={request.language!r}")
     try:
-        # Get the appropriate judge chain with the requested model
-        model_specific_judge_chain = get_judge_chain(request.model)
-        
+        # Get the appropriate judge chain with the requested model and language
+        model_specific_judge_chain = get_judge_chain(request.model, language=request.language)
+
         # Run the chain with the transcript
-        feedback = model_specific_judge_chain.run(
+        feedback = await model_specific_judge_chain.arun(
             transcript=request.transcript
         )
         
@@ -985,7 +1558,7 @@ def format_user_profile_for_analysis(user_profile: dict) -> str:
 
     return '\n'.join(profile_parts)
 
-async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None) -> str:
+async def analyze_legislation_text(bill_text: str, model: str, skip_extraction: bool = False, user_profile: dict = None, language: str = "en") -> str:
     """Analyze legislation text with a custom analysis prompt"""
     
     # Debug logging (reduced when called together with grading)
@@ -1141,10 +1714,19 @@ Please ensure your analysis is objective, comprehensive, and provides practical 
             "HTTP-Referer": "https://debatesim.app",
         }
         
+        # Determine language instruction
+        language_instruction = ""
+        if language == "zh":
+            language_instruction = " IMPORTANT: Provide your entire analysis in Chinese (中文). All headings, explanations, and content must be in Chinese."
+        elif language != "en":
+            language_instruction = f" IMPORTANT: Provide your entire analysis in the language code: {language}."
+
+        system_message = f"You are an expert legislative analyst providing objective, evidence-based analysis of Congressional bills.{language_instruction}"
+
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": "You are an expert legislative analyst providing objective, evidence-based analysis of Congressional bills."},
+                {"role": "system", "content": system_message},
                 {"role": "user", "content": analysis_prompt}
             ],
             "temperature": 0.3,  # Lower temperature for more analytical, less creative output

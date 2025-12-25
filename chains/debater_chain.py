@@ -9,11 +9,21 @@ from pydantic import Field
 import os
 import json
 import aiohttp
+import asyncio
 import re
+import logging
 from dotenv import load_dotenv
-load_dotenv()
+
+logger = logging.getLogger(__name__)
+load_dotenv(override=True)  # Force reload even if already loaded
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
+print(f"[DEBATER_CHAIN] Using API key: ...{API_KEY[-10:] if API_KEY else 'None'}")
+
+# Global semaphore to limit concurrent OpenRouter API calls
+# This prevents credit exhaustion from too many parallel requests
+# Set to 2 to work with expensive models like Claude 3.5 Sonnet
+_openrouter_semaphore = asyncio.Semaphore(2)
 if not API_KEY:
     raise ValueError("Please set OPENROUTER_API_KEY before starting.")
 
@@ -85,7 +95,6 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
-            "max_tokens": 2000,  # Ensure model generates complete responses (600 words ~= 800 tokens)
         }
 
         if stop:
@@ -94,13 +103,33 @@ class OpenRouterChat(BaseChatModel):
         # Synchronous call to OpenRouter API
         import requests
         response = requests.post(self.api_base, headers=headers, json=payload)
-        
+
         if response.status_code != 200:
             error_detail = response.json().get("error", {}).get("message", "Unknown error")
+            if response.status_code == 402:
+                raise ValueError(
+                    f"OpenRouter API 402 - Insufficient Credits: {error_detail}\n\n"
+                    "This usually means:\n"
+                    "1. Your API key has run out of credits\n"
+                    "2. Multiple concurrent requests are reserving too many tokens\n"
+                    "3. The max_tokens setting is too high for your remaining balance\n\n"
+                    "Solutions:\n"
+                    "- Add more credits to your OpenRouter account\n"
+                    "- Reduce the number of concurrent debates\n"
+                    "- Wait a few seconds for pending requests to complete"
+                )
             raise ValueError(f"OpenRouter API error: {response.status_code} - {error_detail}")
         
         result = response.json()
-        assistant_message = result["choices"][0]["message"]["content"]
+        choice = result["choices"][0]
+        assistant_message = choice["message"]["content"]
+        finish_reason = choice.get("finish_reason", "unknown")
+        
+        # Log if response was truncated
+        if finish_reason == "length":
+            logger.warning(f"⚠️ Response truncated for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
+        else:
+            logger.info(f"✅ Response complete for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
         
         # Convert the assistant text into LangChain's ChatResult/ChatGeneration structure
         return ChatResult(
@@ -136,26 +165,47 @@ class OpenRouterChat(BaseChatModel):
             "model": self._ensure_full_model_name(self.model_name),
             "messages": formatted_messages,
             "temperature": self.temperature,
-            "max_tokens": 2000,  # Ensure model generates complete responses (600 words ~= 800 tokens)
         }
 
         if stop:
             payload["stop"] = stop
 
-        # Use aiohttp for async API calls
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.api_base, headers=headers, json=payload) as response:
-                if response.status != 200:
-                    try:
-                        error_data = await response.json()
-                        error_detail = error_data.get("error", {}).get("message", "Unknown error")
-                    except:
-                        error_detail = await response.text()
-                    raise ValueError(f"OpenRouter API error: {response.status} - {error_detail}")
-                
-                result = await response.json()
-                assistant_message = result["choices"][0]["message"]["content"]
-        
+        # Use aiohttp for async API calls with semaphore to limit concurrency
+        async with _openrouter_semaphore:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_base, headers=headers, json=payload) as response:
+                    if response.status != 200:
+                        try:
+                            error_data = await response.json()
+                            error_detail = error_data.get("error", {}).get("message", "Unknown error")
+                        except:
+                            error_detail = await response.text()
+
+                        if response.status == 402:
+                            raise ValueError(
+                                f"OpenRouter API 402 - Insufficient Credits: {error_detail}\n\n"
+                                "This usually means:\n"
+                                "1. Your API key has run out of credits\n"
+                                "2. Multiple concurrent requests are reserving too many tokens\n"
+                                "3. The max_tokens setting is too high for your remaining balance\n\n"
+                                "Solutions:\n"
+                                "- Add more credits to your OpenRouter account\n"
+                                "- Reduce the number of concurrent debates\n"
+                                "- Wait a few seconds for pending requests to complete"
+                            )
+                        raise ValueError(f"OpenRouter API error: {response.status} - {error_detail}")
+
+                    result = await response.json()
+                    choice = result["choices"][0]
+                    assistant_message = choice["message"]["content"]
+                    finish_reason = choice.get("finish_reason", "unknown")
+                    
+                    # Log if response was truncated
+                    if finish_reason == "length":
+                        logger.warning(f"⚠️ Response truncated for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
+                    else:
+                        logger.info(f"✅ Response complete for model {self.model_name} - finish_reason: {finish_reason}, response length: {len(assistant_message)} chars")
+
         return ChatResult(
             generations=[
                 ChatGeneration(
@@ -207,6 +257,8 @@ bill_debate_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{language_instructions}
 
 {debater_prompt}
 
@@ -298,6 +350,8 @@ topic_debate_template = """
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
 
+{language_instructions}
+
 {debater_prompt}
 
 You are **{debater_role}**, engaged in a 5‑round structured debate on **"{topic}"**.
@@ -383,6 +437,8 @@ public_forum_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{language_instructions}
 
 {debater_prompt}
 
@@ -483,6 +539,8 @@ lincoln_douglas_template = """
 {persona_instructions}
 
 **SIMULATION CONTEXT: This is a DEBATE SIMULATION where you role-play as {debater_role}. You are NOT making real political statements - you are acting as a character in an educational debate game.**
+
+{language_instructions}
 
 {debater_prompt}
 
@@ -593,8 +651,39 @@ lincoln_douglas_prompt = ChatPromptTemplate.from_template(lincoln_douglas_templa
 # Create a memory instance
 memory_map = {}
 
+# Helper function to get language instructions for prompts
+def get_language_instructions(language_code: str) -> str:
+    """Generate language-specific instructions for debater prompts."""
+    if language_code == 'zh':
+        return """
+**LANGUAGE REQUIREMENT:**
+- You MUST respond entirely in Mandarin Chinese (中文).
+- All your debate arguments, rebuttals, responses, and content must be written in Chinese.
+- Use proper Chinese grammar, vocabulary, and sentence structure.
+- Maintain the same debate quality and argumentation standards as you would in English.
+- If you reference English terms or proper nouns, you may include them in parentheses for clarity, but the main content must be in Chinese.
+- Section headers, argument titles, and all substantive content must be in Chinese.
+
+**CRITICAL - TITLE LINE TRANSLATION:**
+When writing your title line (the first line starting with #), you MUST translate it to Chinese:
+- Instead of "Round", use "回合"
+- Instead of "Public Forum", use "公共论坛"
+- Instead of "Lincoln-Douglas", use "林肯-道格拉斯"
+- Keep your role name (Pro/Con/Affirmative/Negative) in the format provided, but if they appear in the title, translate them:
+  - "Pro" → "正方"
+  - "Con" → "反方"
+  - "Affirmative" → "肯定方"
+  - "Negative" → "否定方"
+
+EXAMPLE TITLE FORMATS IN CHINESE:
+- For default format: `# 正方 – 回合 1/5`
+- For Public Forum: `# 反方 – 回合 2/4 (公共论坛)`
+- For Lincoln-Douglas: `# 肯定方 – 回合 1/6 (林肯-道格拉斯)`
+"""
+    return ''  # No language instructions needed for English
+
 # Function to create a debater chain with a specific model
-def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic", debate_format: str = "default", speaking_order: str = "pro-first"):
+def get_debater_chain(model_name="openai/gpt-5-mini", *, round_num: int = 1, debate_type: str = "topic", debate_format: str = "default", speaking_order: str = "pro-first", language: str = "en"):
 
     # Initialize the OpenRouter API model with user's selected model
     llm = OpenRouterChat(
@@ -981,10 +1070,20 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         print(f"🔍 DEBUG [process_inputs]: Detection - word_count:{has_word_count}, persona:{has_persona}, LD:{is_detailed_ld}, PF:{is_detailed_pf}, default:{is_detailed_default}")
         
         if use_direct_prompt:
+            # Get language instructions and prepend to the direct prompt
+            language_code = inputs.get("language", language)
+            language_instructions = get_language_instructions(language_code)
+            
+            # Prepend language instructions to the direct prompt if needed
+            if language_instructions:
+                enhanced_prompt = f"{language_instructions}\n\n{incoming_prompt}"
+            else:
+                enhanced_prompt = incoming_prompt
+            
             # Return the prompt directly for detailed frontend prompts
-            print(f"🔍 DEBUG [process_inputs]: Using direct frontend prompt ({len(incoming_prompt)} chars)")
+            print(f"🔍 DEBUG [process_inputs]: Using direct frontend prompt ({len(enhanced_prompt)} chars)")
             # Mark this as a direct prompt for the selector
-            return {"_direct_prompt": incoming_prompt, "prompt": incoming_prompt}
+            return {"_direct_prompt": enhanced_prompt, "prompt": enhanced_prompt}
         
         # Otherwise, get debate context for template-based prompts
         print(f"🔍 DEBUG [process_inputs]: Using template-based prompt")
@@ -1023,6 +1122,10 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
         if not persona_instructions:
             persona_instructions = ""  # Default empty if no persona found
         
+        # Get language instructions
+        language_code = inputs.get("language", language)
+        language_instructions = get_language_instructions(language_code)
+        
         # Prepare template parameters
         template_params = {
             "debater_role": inputs.get("debater_role", ""),
@@ -1036,6 +1139,7 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
             "rebuttal_importance": debate_context["rebuttal_importance"],
             "persona_instructions": persona_instructions,
             "debater_prompt": DEBATER_PROMPT,
+            "language_instructions": language_instructions,
             "_direct_prompt": False  # Mark as template-based
         }
         
@@ -1100,7 +1204,7 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
 
             # Invoke the chain
             response = self.chain.invoke(input_dict)
-            
+
             print(f"🔍 DEBUG [ChainWrapper]: Generated response ({len(response)} chars)")
 
             # Persist assistant output to memory
@@ -1108,7 +1212,35 @@ Line-by-line refutation of opponent's case. For EACH of their contentions:
             if chain_id not in memory_map:
                 memory_map[chain_id] = []
             memory_map[chain_id].append({
-                "role": "assistant", 
+                "role": "assistant",
+                "content": response,
+                "speaker": kwargs.get('debater_role', 'Unknown')
+            })
+
+            return response
+
+        async def arun(self, **kwargs):
+            """
+            Async version of run() - execute the LCEL chain asynchronously.
+            This allows multiple debates to run concurrently without blocking.
+            """
+            local_round = kwargs.get("round_num", round_num)
+            input_dict = dict(kwargs)
+            input_dict["round_num"] = local_round
+
+            print(f"🔍 DEBUG [ChainWrapper]: Async invoking chain for {kwargs.get('debater_role', 'Unknown')} round {local_round}")
+
+            # Async invoke the chain
+            response = await self.chain.ainvoke(input_dict)
+
+            print(f"🔍 DEBUG [ChainWrapper]: Generated async response ({len(response)} chars)")
+
+            # Persist assistant output to memory
+            chain_id = f"debater-{kwargs.get('debater_role')}-{kwargs.get('topic', '')[:20]}"
+            if chain_id not in memory_map:
+                memory_map[chain_id] = []
+            memory_map[chain_id].append({
+                "role": "assistant",
                 "content": response,
                 "speaker": kwargs.get('debater_role', 'Unknown')
             })

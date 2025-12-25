@@ -15,6 +15,9 @@ import { TTS_CONFIG, getVoiceForContext } from '../config/tts';
 import { MessageSquare, Code, Share2, X, Download } from 'lucide-react';
 import Footer from "./Footer";
 import UserProfileService from '../utils/userProfileService';
+import AnalysisSidebar from "./AnalysisSidebar";
+import { useTranslation } from '../utils/translations';
+import languagePreferenceService from '../services/languagePreferenceService';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const modelOptions = [
@@ -25,65 +28,65 @@ const modelOptions = [
   "openai/gpt-4o-mini-search-preview"
 ];
 
-// Debate format options
-const debateFormats = [
+// Debate format options - will use translations dynamically in component
+const getDebateFormats = (t) => [
   {
     id: "default",
-    title: "Default Format",
-    description: "Standard academic debate format with structured opening statements, rebuttals, and closing arguments",
-    tags: ["Academic", "Structured"]
+    title: t('legislation.format.default.title'),
+    description: t('legislation.format.default.description'),
+    tags: [t('legislation.format.default.tag.academic'), t('legislation.format.default.tag.structured')]
   },
   {
     id: "public-forum",
-    title: "Public Forum",
-    description: "Accessible format focused on current events and real-world issues, emphasizing clear communication",
-    tags: ["Accessible", "Current Events"]
-  }
-  ,
+    title: t('legislation.format.publicForum.title'),
+    description: t('legislation.format.publicForum.description'),
+    tags: [t('legislation.format.publicForum.tag.accessible'), t('legislation.format.publicForum.tag.currentEvents')]
+  },
   {
     id: "lincoln-douglas",
-    title: "LD Debate",
-    description: "Philosophical debate format with value premise, criterion, and contentions. 6-speech structure.",
-    tags: ["Philosophy", "Framework", "LD"]
+    title: t('legislation.format.ld.title'),
+    description: t('legislation.format.ld.description'),
+    tags: [t('legislation.format.ld.tag.philosophy'), t('legislation.format.ld.tag.framework'), t('legislation.format.ld.tag.ld')]
   }
 ];
 
-// Persona options for debates
-const personas = [
+// Persona options for debates - will use translations dynamically in component
+const getPersonas = (t) => [
   {
     id: "default",
     name: "Default AI",
-    description: "Standard debate style",
+    description: t('legislation.persona.default.description'),
     image: "/images/ai.jpg"
   },
   {
     id: "trump",
     name: "Donald Trump",
-    description: "Bold, confident rhetoric with superlatives",
+    description: t('legislation.persona.trump.description'),
     image: "/images/trump.jpeg"
   },
   {
     id: "harris",
-    name: "Kamala Harris", 
-    description: "Prosecutorial, structured, evidence-focused",
+    name: "Kamala Harris",
+    description: t('legislation.persona.harris.description'),
     image: "/images/harris.webp"
   },
   {
     id: "musk",
     name: "Elon Musk",
-    description: "Analytical, engineering-focused, first principles",
+    description: t('legislation.persona.musk.description'),
     image: "/images/elon.jpg"
   },
   {
     id: "drake",
     name: "Drake",
-    description: "Smooth, introspective Toronto style",
+    description: t('legislation.persona.drake.description'),
     image: "/images/drake.jpg"
   }
 ];
 
 // Profile Status Indicator Component
 const ProfileStatusIndicator = ({ user }) => {
+  const { t } = useTranslation();
   const [profileStatus, setProfileStatus] = useState({
     hasProfile: false,
     isLoading: true,
@@ -117,7 +120,7 @@ const ProfileStatusIndicator = ({ user }) => {
     return (
       <div className="profile-status-indicator loading">
         <span className="status-icon">⏳</span>
-        <span className="status-text">Checking profile...</span>
+        <span className="status-text">{t('legislation.checkingProfile')}</span>
       </div>
     );
   }
@@ -126,12 +129,12 @@ const ProfileStatusIndicator = ({ user }) => {
     return (
       <div className="profile-status-indicator has-profile">
         <div className="status-content">
-          <span className="status-text">Profile configured - will include personalized "Impacts on You" section</span>
+          <span className="status-text">{t('legislation.profileConfigured')}</span>
           <button
             className="profile-settings-link"
             onClick={() => window.open('/settings', '_blank')}
           >
-            View/Edit Profile
+            {t('legislation.viewEditProfile')}
           </button>
         </div>
       </div>
@@ -141,12 +144,12 @@ const ProfileStatusIndicator = ({ user }) => {
   return (
     <div className="profile-status-indicator no-profile">
       <div className="status-content">
-        <span className="status-text">No profile configured - analysis will be general</span>
+        <span className="status-text">{t('legislation.noProfile')}</span>
         <button
           className="profile-settings-link"
           onClick={() => window.open('/settings', '_blank')}
         >
-          Set Up Profile for Personalized Analysis
+          {t('legislation.setUpProfile')}
         </button>
       </div>
     </div>
@@ -203,9 +206,12 @@ const H2SectionRenderer = ({ analysisText }) => {
         elements.push(<hr key={`divider-${index}`} className="section-divider" />);
       }
       
+      // Generate a unique ID for the section based on the header text
+      const sectionId = `analysis-section-${index}-${section.header.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      
       // Add H2 header with TTS button
       elements.push(
-        <div key={`header-${index}`} className="analysis-heading-container">
+        <div key={`header-${index}`} id={sectionId} className="analysis-heading-container">
           <h2 className="analysis-heading">
             {section.header}
           </h2>
@@ -268,13 +274,14 @@ const H2SectionRenderer = ({ analysisText }) => {
 
 // NEW: Page Loading Component for initial render
 const PageLoader = ({ isLoading }) => {
+  const { t } = useTranslation();
   if (!isLoading) return null;
   
   return (
     <div className="page-loader">
       <div className="page-loader-content">
         <div className="page-loader-spinner"></div>
-        <div className="page-loader-text">Loading Bill Analysis Platform...</div>
+        <div className="page-loader-text">{t('legislation.loading')}</div>
       </div>
     </div>
   );
@@ -282,6 +289,7 @@ const PageLoader = ({ isLoading }) => {
 
 // Progress Bar Component for Streaming
 const ProgressBar = ({ step, total, message }) => {
+  const { t } = useTranslation();
   const percentage = total > 0 ? (step / total) * 100 : 0;
   
   return (
@@ -294,7 +302,7 @@ const ProgressBar = ({ step, total, message }) => {
         ></div>
       </div>
       <div className="progress-text">
-        Step {step} of {total}
+        {t('legislation.step')} {step} {t('legislation.of')} {total}
       </div>
     </div>
   );
@@ -380,51 +388,52 @@ const GradeItem = ({ label, percentage, description, tooltip, icon, category, is
 
 // Bill Grading Section Component
 const BillGradingSection = ({ grades }) => {
+  const { t } = useTranslation();
   const gradingCriteria = {
     economicImpact: {
-      label: 'Economic Impact',
-      description: 'Fiscal responsibility & benefits',
-      tooltip: 'Economic benefits and fiscal impact',
+      label: t('legislation.grading.economicImpact'),
+      description: t('legislation.grading.economicImpact'),
+      tooltip: t('legislation.grading.tooltip.economicImpact'),
       icon: '💰',
       category: 'moderate',
       order: 1
     },
     publicBenefit: {
-      label: 'Public Benefit',
-      description: 'Benefits to citizens',
-      tooltip: 'Addresses public needs effectively',
+      label: t('legislation.grading.publicBenefit'),
+      description: t('legislation.grading.publicBenefit'),
+      tooltip: t('legislation.grading.tooltip.publicBenefit'),
       icon: '👥',
       category: 'positive',
       order: 2
     },
     feasibility: {
-      label: 'Implementation Feasibility',
-      description: 'Practicality of execution',
-      tooltip: 'Can be realistically implemented',
+      label: t('legislation.grading.feasibility'),
+      description: t('legislation.grading.feasibility'),
+      tooltip: t('legislation.grading.tooltip.feasibility'),
       icon: '🛠',
       category: 'caution',
       order: 3
     },
     legalSoundness: {
-      label: 'Legal Soundness',
-      description: 'Constitutional compliance',
-      tooltip: 'Constitutional and legal compliance',
+      label: t('legislation.grading.legalSoundness'),
+      description: t('legislation.grading.legalSoundness'),
+      tooltip: t('legislation.grading.tooltip.legalSoundness'),
       icon: '⚖️',
       category: 'positive',
       order: 4
     },
     effectiveness: {
-      label: 'Goal Effectiveness',
-      description: 'Achievement of stated objectives',
-      tooltip: 'Achieves stated objectives well',
+      label: t('legislation.grading.effectiveness'),
+      description: t('legislation.grading.effectiveness'),
+      tooltip: t('legislation.grading.tooltip.effectiveness'),
       icon: '🎯',
       category: 'moderate',
       order: 5
     },
     overall: {
-      label: 'Overall Rating',
-      description: 'Comprehensive assessment',
-      tooltip: 'Weighted average of all criteria',
+      label: t('legislation.grading.overall'),
+      description: t('legislation.grading.overall'),
+      tooltip: t('legislation.grading.tooltip.overall'),
       icon: '📊',
       category: 'overall',
       order: 6
@@ -434,8 +443,8 @@ const BillGradingSection = ({ grades }) => {
   return (
     <div className="grading-section">
       <div className="grading-header">
-        <h2>Bill Analysis Grades</h2>
-        <div className="grading-subtitle">Comprehensive evaluation based on key criteria</div>
+        <h2>{t('legislation.grading.title')}</h2>
+        <div className="grading-subtitle">{t('legislation.grading.subtitle')}</div>
       </div>
       
       <div className="grading-grid">
@@ -465,6 +474,7 @@ const BillGradingSection = ({ grades }) => {
 
 // BillCard component for better organization
 const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingStage = '' }) => {
+  const { t } = useTranslation();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isDescriptionLong, setIsDescriptionLong] = useState(false);
   
@@ -498,7 +508,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
     ? `https://www.congress.gov/bill/119th-congress/${getBillTypeUrl(bill.type)}/${bill.number}`
     : null);
 
-  const billLinkTitle = bill.url ? "View on LegiScan" : "View on Congress.gov";
+  const billLinkTitle = bill.url ? t('legislation.viewOnLegiScan') : t('legislation.viewOnCongress');
 
   return (
     <div className="bill-card compact">
@@ -516,7 +526,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
             className="congress-link"
             title={billLinkTitle}
           >
-            View Full Text
+            {t('legislation.viewFullText')}
           </a>
         )}
       </div>
@@ -524,7 +534,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
         <span className="bill-status">{bill.lastAction}</span>
       </div>
       <h3 className="bill-title">{bill.title}</h3>
-      {bill.sponsor && <p className="bill-sponsor">Sponsored by {bill.sponsor}</p>}
+      {bill.sponsor && <p className="bill-sponsor">{t('legislation.sponsoredBy')} {bill.sponsor}</p>}
       <div className="bill-description-container">
         <p className="bill-description">
           {showFullDescription ? bill.description : truncatedDescription}
@@ -534,7 +544,7 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
             className="read-more-button"
             onClick={() => setShowFullDescription(!showFullDescription)}
           >
-            {showFullDescription ? "Read Less" : "Read More"}
+            {showFullDescription ? t('legislation.readLess') : t('legislation.readMore')}
           </button>
         )}
       </div>
@@ -547,14 +557,14 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
           <div className="processing-container">
             <div className="button-spinner"></div>
             <div className="processing-text">
-              <div className="processing-main">Processing...</div>
+              <div className="processing-main">{t('legislation.processing')}</div>
               {processingStage && (
                 <div className="processing-stage">{processingStage}</div>
               )}
             </div>
           </div>
         ) : (
-          "Select"
+          t('legislation.selectBill')
         )}
       </button>
     </div>
@@ -563,14 +573,15 @@ const BillCard = ({ bill, viewMode, onSelect, isProcessing = false, processingSt
 
 // Add this new component after the imports and before the main Legislation component
 const InfoNote = ({ message, expanded, onToggle }) => {
+  const { t } = useTranslation();
   return (
     <div className="info-note">
       <div className="info-note-content">
         <span className="info-note-message">{message}</span>
-        <button 
+        <button
           className="info-toggle-btn"
           onClick={onToggle}
-          aria-label={expanded ? "Hide explanation" : "Show explanation"}
+          aria-label={expanded ? t('legislation.ui.hideExplanation') : t('legislation.ui.showExplanation')}
         >
           {expanded ? "−" : "?"}
         </button>
@@ -589,6 +600,7 @@ const InfoNote = ({ message, expanded, onToggle }) => {
 };
 
 const Legislation = ({ user }) => {
+  const { t } = useTranslation();
   // NEW: Initial page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isContentReady, setIsContentReady] = useState(false);
@@ -626,6 +638,10 @@ const Legislation = ({ user }) => {
   const [analysisResult, setAnalysisResult] = useState('');
   const [analysisGrades, setAnalysisGrades] = useState(null);
   const [selectedModel, setSelectedModel] = useState(modelOptions[0]);
+  
+  // Analysis sidebar state
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [analysisSectionList, setAnalysisSectionList] = useState([]);
 
   // Debate state
   const [debateTopic, setDebateTopic] = useState('');
@@ -749,12 +765,12 @@ const Legislation = ({ user }) => {
         setRecommendedBills(data.bills || []);
       } catch (err) {
         console.error("Error fetching recommended bills:", err);
-        let errorMessage = "Unable to load recommended bills";
-        
+        let errorMessage = t('legislation.error.loadBills');
+
         if (err.message.includes("CONGRESS_API_KEY")) {
-          errorMessage = "Congress.gov API key is required. Please check your configuration.";
+          errorMessage = t('legislation.error.apiKey');
         } else if (err.message.includes("500")) {
-          errorMessage = "Congress.gov API is currently unavailable. Please try again later.";
+          errorMessage = t('legislation.error.apiUnavailable');
         } else {
           errorMessage = `Failed to load bills: ${err.message}`;
         }
@@ -823,10 +839,10 @@ const Legislation = ({ user }) => {
           setStateBills(bills);
         } catch (err) {
           console.error("Error fetching state bills:", err);
-          let errorMessage = "Unable to load state bills";
+          let errorMessage = t('legislation.error.loadStateBills');
 
           if (err.message.includes("503")) {
-            errorMessage = "LegiScan API key is required. Please check your configuration.";
+            errorMessage = t('legislation.error.legiscanKey');
           } else {
             errorMessage = `Failed to load bills: ${err.message}`;
           }
@@ -956,7 +972,7 @@ const Legislation = ({ user }) => {
       return extractedBillData.text; // Return cached text only
     }
 
-    setProcessingStage('Extracting bill text from Congress.gov...');
+    setProcessingStage(t('legislation.analysis.extractingBillCongress'));
 
     console.log('🔗 Fetching bill text from API for:', {
       type: bill.type,
@@ -980,7 +996,7 @@ const Legislation = ({ user }) => {
     
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+        throw new Error(t('legislation.error.noBillText'));
       } else {
         const errorData = await response.text();
         throw new Error(`Failed to extract bill text: ${response.status} ${response.statusText}`);
@@ -1027,7 +1043,7 @@ const Legislation = ({ user }) => {
       return extractedBillData.text;
     }
 
-    setProcessingStage('Extracting bill text from LegiScan...');
+    setProcessingStage(t('legislation.analysis.extractingBillLegiScan'));
 
     console.log('🔗 Fetching state bill text from API for:', {
       bill_id: bill.id,
@@ -1083,7 +1099,7 @@ const Legislation = ({ user }) => {
       return extractedBillData.text;
     }
 
-    setProcessingStage('Extracting proposition text from CA Secretary of State...');
+    setProcessingStage(t('legislation.analysis.extractingProposition'));
 
     console.log('🔗 Fetching CA proposition text from API for:', {
       prop_id: prop.id,
@@ -1452,20 +1468,22 @@ const Legislation = ({ user }) => {
   // Get bill title for context
   const getBillTitle = () => {
     if (billSource === 'recommended' || billSource === 'link' || billSource === 'state') {
-      return selectedBill?.title || 'Unknown Bill';
+      return selectedBill?.title || t('legislation.ui.unknownBill');
     } else if (billSource === 'proposition') {
       return `Proposition ${selectedBill?.number} - ${selectedBill?.shortTitle || selectedBill?.title}`;
     } else if (billSource === 'upload') {
-      return selectedBill?.name?.replace('.pdf', '') || 'Uploaded Bill';
+      return selectedBill?.name?.replace('.pdf', '') || t('legislation.ui.uploadedBill');
+    } else if (billSource === 'paste') {
+      return selectedBill?.title || 'Pasted Bill Text';
     }
-    return 'Unknown Bill';
+    return t('legislation.ui.unknownBill');
   };
 
   // Get text from selected sections with bill context
   const getSelectedSectionsText = () => {
     const billTitle = getBillTitle();
     const billHeader = `BILL TITLE: ${billTitle}\n\n`;
-    const billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+    const billText = (billSource === 'upload' || billSource === 'paste') ? extractedPdfText : extractedBillData?.text;
 
     console.log('📋 getSelectedSectionsText called:', {
       selectedSectionsCount: selectedSections.length,
@@ -1561,7 +1579,7 @@ const Legislation = ({ user }) => {
         setError('PDF file size must be less than 10MB.');
         return;
       }
-      
+
       setSelectedBill(file);
       setBillSource('upload');
       setExtractedPdfText(null); // Clear previous cached text
@@ -1583,6 +1601,36 @@ const Legislation = ({ user }) => {
     }
   };
 
+  const handlePastedTextSubmit = () => {
+    if (!pastedText.trim()) {
+      setError(t('legislation.error.pasteEmpty'));
+      return;
+    }
+
+    // Create a bill object for pasted text
+    const pastedBill = {
+      title: pastedTextTitle.trim() || 'Pasted Bill Text',
+      text: pastedText.trim(),
+      source: 'paste'
+    };
+
+    setSelectedBill(pastedBill);
+    setBillSource('paste');
+    setExtractedPdfText(pastedText.trim()); // Set the pasted text as extracted text
+    console.log('📋 Setting pasted bill text');
+    setBillSections([]); // Clear previous sections
+    setSelectedSections([]); // Clear selected sections
+    setAnalyzeWholeBill(true); // Reset to analyze whole bill
+    setSectionSearchTerm(''); // Clear search term
+
+    // Auto-fill debate topic with title or default
+    setDebateTopic(pastedTextTitle.trim() || 'Pasted Bill');
+
+    setCurrentStep(2);
+    setError('');
+    clearInfoNote(); // Clear any previous info notes
+  };
+
   // Step 2: Handle action selection
   const handleActionSelection = (action) => {
     setActionType(action);
@@ -1596,6 +1644,8 @@ const Legislation = ({ user }) => {
         billName = `${selectedBill.number} - ${selectedBill.title}`;
       } else if (billSource === 'upload') {
         billName = selectedBill.name.replace('.pdf', '');
+      } else if (billSource === 'paste') {
+        billName = selectedBill.title || 'Pasted Bill';
       }
       setDebateTopic(billName);
     }
@@ -1738,13 +1788,13 @@ const Legislation = ({ user }) => {
     try {
       if (billSource === 'state') {
         // Step 1: Extract state bill text if not already cached
-        setProcessingStage('Fetching bill text from LegiScan...');
+        setProcessingStage(t('legislation.analysis.fetchingBillLegiScan'));
         setProgressStep(1);
 
         const billData = await extractStateBillText(selectedBill);
 
         // Step 2: Analyze legislation using selected sections
-        setProcessingStage('Analyzing legislation with AI...');
+        setProcessingStage(t('legislation.analysis.analyzingLegislation'));
         setProgressStep(2);
 
         const response = await fetch(`${API_URL}/analyze-legislation-text`, {
@@ -1756,7 +1806,8 @@ const Legislation = ({ user }) => {
             text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
             model: selectedModel,
             sections: analyzeWholeBill ? null : selectedSections,
-            userProfile: userProfile
+            userProfile: userProfile,
+            language: languagePreferenceService.getCurrentLanguage()
           }),
         });
 
@@ -1765,7 +1816,7 @@ const Legislation = ({ user }) => {
 
           // Handle specific error cases
           if (response.status === 404) {
-            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+            throw new Error(t('legislation.error.noBillText'));
           } else if (response.status === 413) {
             throw new Error('File too large. Please upload a PDF smaller than 50MB.');
           } else if (response.status === 400) {
@@ -1778,7 +1829,7 @@ const Legislation = ({ user }) => {
         const data = await response.json();
 
         // Step 3: Finalizing
-        setProcessingStage('Finalizing analysis and grades...');
+        setProcessingStage(t('legislation.analysis.finalizingAnalysis'));
         setProgressStep(3);
 
         // Stage results
@@ -1786,13 +1837,13 @@ const Legislation = ({ user }) => {
 
       } else if (billSource === 'proposition') {
         // Step 1: Extract CA proposition text if not already cached
-        setProcessingStage('Fetching proposition text from CA Secretary of State...');
+        setProcessingStage(t('legislation.analysis.fetchingProposition'));
         setProgressStep(1);
 
         const propData = await extractCAPropositionText(selectedBill);
 
         // Step 2: Analyze proposition
-        setProcessingStage('Analyzing proposition with AI...');
+        setProcessingStage(t('legislation.analysis.analyzingProposition'));
         setProgressStep(2);
 
         const response = await fetch(`${API_URL}/analyze-legislation-text`, {
@@ -1816,7 +1867,7 @@ const Legislation = ({ user }) => {
         const data = await response.json();
 
         // Step 3: Finalizing
-        setProcessingStage('Finalizing analysis and grades...');
+        setProcessingStage(t('legislation.analysis.finalizingAnalysis'));
         setProgressStep(3);
 
         // Stage results
@@ -1830,7 +1881,7 @@ const Legislation = ({ user }) => {
         const billData = await extractRecommendedBillText(selectedBill);
 
         // Step 2: Analyze legislation using selected sections
-        setProcessingStage('Analyzing legislation with AI...');
+        setProcessingStage(t('legislation.analysis.analyzingLegislation'));
         setProgressStep(2);
 
         const response = await fetch(`${API_URL}/analyze-legislation-text`, {
@@ -1842,7 +1893,8 @@ const Legislation = ({ user }) => {
             text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedBillData?.text}` : getSelectedSectionsText(),
             model: selectedModel,
             sections: analyzeWholeBill ? null : selectedSections,
-            userProfile: userProfile
+            userProfile: userProfile,
+            language: languagePreferenceService.getCurrentLanguage()
           }),
         });
 
@@ -1851,7 +1903,7 @@ const Legislation = ({ user }) => {
 
           // Handle specific error cases
           if (response.status === 404) {
-            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+            throw new Error(t('legislation.error.noBillText'));
           } else if (response.status === 413) {
             throw new Error('File too large. Please upload a PDF smaller than 50MB.');
           } else if (response.status === 400) {
@@ -1864,9 +1916,44 @@ const Legislation = ({ user }) => {
         const data = await response.json();
 
         // Step 3: Finalizing
-        setProcessingStage('Finalizing analysis and grades...');
+        setProcessingStage(t('legislation.analysis.finalizingAnalysis'));
         setProgressStep(3);
 
+        // Stage results
+        await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${getBillTitle()}`);
+
+      } else if (billSource === 'paste') {
+        // Handle pasted text analysis
+        setProcessingStage('Analyzing pasted bill text...');
+        setProgressStep(1);
+        
+        setProcessingStage(t('legislation.analysis.analyzingLegislation'));
+        setProgressStep(2);
+        
+        const response = await fetch(`${API_URL}/analyze-legislation-text`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedPdfText}` : getSelectedSectionsText(),
+            model: selectedModel,
+            sections: analyzeWholeBill ? null : selectedSections,
+            userProfile: userProfile,
+            language: languagePreferenceService.getCurrentLanguage()
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`Analysis failed: ${response.status} ${response.statusText}. ${errorData || 'Please try again.'}`);
+        }
+        
+        const data = await response.json();
+        
+        setProcessingStage(t('legislation.analysis.finalizingAnalysis'));
+        setProgressStep(3);
+        
         // Stage results
         await stageAnalysisResults(data.analysis, data.grades, `Bill Analysis: ${getBillTitle()}`);
 
@@ -1879,7 +1966,7 @@ const Legislation = ({ user }) => {
           setProcessingStage('Using cached PDF text...');
           setProgressStep(1);
           
-          setProcessingStage('Analyzing legislation with AI...');
+          setProcessingStage(t('legislation.analysis.analyzingLegislation'));
           setProgressStep(2);
           
           const response = await fetch(`${API_URL}/analyze-legislation-text`, {
@@ -1888,10 +1975,11 @@ const Legislation = ({ user }) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${billSource === 'upload' ? extractedPdfText : extractedBillData?.text}` : getSelectedSectionsText(),
+              text: analyzeWholeBill ? `BILL TITLE: ${getBillTitle()}\n\n${extractedPdfText}` : getSelectedSectionsText(),
               model: selectedModel,
               sections: analyzeWholeBill ? null : selectedSections,
-              userProfile: userProfile
+              userProfile: userProfile,
+              language: languagePreferenceService.getCurrentLanguage()
             }),
           });
           
@@ -1913,11 +2001,12 @@ const Legislation = ({ user }) => {
           const formData = new FormData();
           formData.append('file', selectedBill);
           formData.append('model', selectedModel);
+          formData.append('language', languagePreferenceService.getCurrentLanguage());
           if (userProfile) {
             formData.append('userProfile', JSON.stringify(userProfile));
           }
           
-          setProcessingStage('Analyzing legislation with AI...');
+          setProcessingStage(t('legislation.analysis.analyzingLegislation'));
           setProgressStep(2);
           
           const response = await fetch(`${API_URL}/analyze-legislation`, {
@@ -2048,7 +2137,7 @@ const Legislation = ({ user }) => {
         
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error('No published text is available for this bill yet. The bill may still be in draft form or pending publication on Congress.gov.');
+            throw new Error(t('legislation.error.noBillText'));
           } else {
             throw new Error('Failed to extract bill text');
           }
@@ -2191,7 +2280,7 @@ const Legislation = ({ user }) => {
 
     try {
       const billTitle = getBillTitle();
-      const analysisType = billSource === 'proposition' ? 'Proposition Analysis' : 'Bill Analysis';
+      const analysisType = billSource === 'proposition' ? t('legislation.ui.propositionAnalysis') : t('legislation.ui.billAnalysis');
 
       PDFGenerator.generateAnalysisPDF({
         topic: `${analysisType}: ${billTitle}`,
@@ -2205,7 +2294,68 @@ const Legislation = ({ user }) => {
     }
   };
 
+  // Extract H2 sections from analysis text for sidebar
+  const extractAnalysisSections = (analysisText) => {
+    if (!analysisText) return [];
+    
+    const lines = analysisText.split('\n');
+    const sections = [];
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('## ')) {
+        const headerText = line.replace('## ', '').trim();
+        if (headerText) {
+          const sectionId = `analysis-section-${sections.length}-${headerText.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+          sections.push({
+            id: sectionId,
+            title: headerText,
+            index: sections.length
+          });
+        }
+      }
+    });
+    
+    return sections;
+  };
 
+  // Scroll to a specific analysis section
+  const scrollToSection = (id) => {
+    console.log(`Attempting to scroll to section: ${id}`);
+    
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      console.log(`Found element for ${id}:`, el);
+
+      if (el) {
+        // Ensure the element is visible and scrollable
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest"
+        });
+        console.log(`Successfully scrolled to ${id}`);
+
+        // Add a visual highlight to confirm the scroll worked
+        el.style.backgroundColor = 'rgba(74, 144, 226, 0.1)';
+        setTimeout(() => {
+          el.style.backgroundColor = '';
+        }, 2000);
+      } else {
+        console.warn(`Element with id ${id} not found`);
+      }
+    }, 200);
+  };
+
+  // Update section list when analysis changes
+  useEffect(() => {
+    if (analysisResult) {
+      const fullAnalysisText = `## Detailed Analysis\n\n${analysisResult}`;
+      const sections = extractAnalysisSections(fullAnalysisText);
+      setAnalysisSectionList(sections);
+    } else {
+      setAnalysisSectionList([]);
+    }
+  }, [analysisResult]);
 
   // Bill link functionality state
   const [billLink, setBillLink] = useState("");
@@ -2213,6 +2363,8 @@ const Legislation = ({ user }) => {
   const [showLinkConfirmation, setShowLinkConfirmation] = useState(false);
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError, setLinkError] = useState("");
+  const [pastedText, setPastedText] = useState("");
+  const [pastedTextTitle, setPastedTextTitle] = useState("");
 
   // Congress.gov URL parser function
   const parseCongressUrl = (url) => {
@@ -2294,7 +2446,7 @@ const Legislation = ({ user }) => {
   // Handle bill link submission
   const handleBillLinkSubmit = async () => {
     if (!billLink.trim()) {
-      setLinkError("Please enter a Congress.gov or LegiScan URL");
+      setLinkError(t('legislation.error.enterUrl'));
       return;
     }
 
@@ -2346,8 +2498,8 @@ const Legislation = ({ user }) => {
           title: billData.title,
           number: billData.number,
           description: billData.description || billData.title,
-          sponsor: billData.sponsor || "Unknown",
-          status: billData.status || "Unknown",
+          sponsor: billData.sponsor || t('legislation.ui.unknown'),
+          status: billData.status || t('legislation.ui.unknown'),
           lastAction: billData.lastAction || "",
           lastActionDate: billData.lastActionDate || "",
           stateLink: billData.stateLink || "",
@@ -2384,7 +2536,7 @@ const Legislation = ({ user }) => {
           ...parsedBill,
           title: billData.title,
           description: billData.description || billData.title,
-          sponsor: billData.sponsor || "Unknown",
+          sponsor: billData.sponsor || t('legislation.ui.unknown'),
           congress: parsedBill.congress,
           isStateBill: false
         });
@@ -2494,7 +2646,17 @@ const Legislation = ({ user }) => {
       {/* NEW: Page Loader */}
       <PageLoader isLoading={isPageLoading} />
       
-      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'}`}>
+      <div className={`legislation-container ${isContentReady ? 'content-loaded' : 'content-loading'} ${sidebarExpanded ? 'legislation-sidebar-open' : ''}`}>
+        {/* Analysis Sidebar */}
+        {analysisResult && analysisSectionList.length > 0 && (
+          <AnalysisSidebar
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sectionList={analysisSectionList}
+            scrollToSection={scrollToSection}
+          />
+        )}
+        
         {/* Header with fade-in animation */}
         <header className={`legislation-header ${componentsLoaded.header ? 'component-visible' : 'component-hidden'}`}>
           <div className="legislation-header-content">
@@ -2510,8 +2672,8 @@ const Legislation = ({ user }) => {
               flex: 1
             }}>
               <h1 className="legislation-site-title" onClick={() => navigate("/")}>
-                <span className="legislation-title-full">Bill and Legislation Debate</span>
-                <span className="legislation-title-mobile">Bill Debate</span>
+                <span className="legislation-title-full">{t('legislation.title')}</span>
+                <span className="legislation-title-mobile">{t('legislation.title')}</span>
               </h1>
             </div>
 
@@ -2529,7 +2691,7 @@ const Legislation = ({ user }) => {
           <div className="bill-link-modal">
             <div className="bill-link-modal-content">
               <div className="bill-link-modal-header">
-                <h2>Confirm Bill Selection</h2>
+                <h2>{t('legislation.source.confirmSelection')}</h2>
                 <button className="bill-link-modal-close" onClick={handleBillLinkCancel}>
                   ❌
                 </button>
@@ -2598,17 +2760,17 @@ const Legislation = ({ user }) => {
           <div className="legislation-progress-steps">
             <div className={`legislation-step ${currentStep >= 1 ? 'active' : ''}`}>
               <div className="legislation-step-number">1</div>
-              <div className="legislation-step-label">Select Bill</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.select')}</div>
             </div>
             <div className="legislation-step-arrow">→</div>
             <div className={`legislation-step ${currentStep >= 2 ? 'active' : ''}`}>
               <div className="legislation-step-number">2</div>
-              <div className="legislation-step-label">Choose Action</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.action')}</div>
             </div>
             <div className="legislation-step-arrow">→</div>
             <div className={`legislation-step ${currentStep >= 3 ? 'active' : ''}`}>
               <div className="legislation-step-number">3</div>
-              <div className="legislation-step-label">Configure & Execute</div>
+              <div className="legislation-step-label">{t('legislation.stepLabel.configure')}</div>
             </div>
           </div>
 
@@ -2618,7 +2780,7 @@ const Legislation = ({ user }) => {
           {currentStep === 1 && (
             <div className="step-one">
               <div style={{ position: 'relative', marginBottom: '1rem' }}>
-                <h2 style={{ textAlign: 'center' }}>Step 1: Choose a Bill</h2>
+                <h2 style={{ textAlign: 'center' }}>{t('legislation.step1.title')}</h2>
                 <button
                   onClick={() => jurisdiction === 'state' ? setShowBillPrefixInfo(true) : setShowFederalBillInfo(true)}
                   style={{
@@ -2639,7 +2801,7 @@ const Legislation = ({ user }) => {
                   }}
                   title={jurisdiction === 'state' ? "Learn about state bill prefixes" : "Learn about federal bill types"}
                 >
-                  ℹ️ Bill Types
+                  ℹ️ {t('legislation.billTypes')}
                 </button>
               </div>
 
@@ -2657,7 +2819,7 @@ const Legislation = ({ user }) => {
                   color: "rgba(255, 255, 255, 0.89)",
                   fontWeight: "600"
                 }}>
-                  Choose Bill Source:
+                  {t('legislation.source.title')}
                 </label>
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
                   <button
@@ -2678,7 +2840,7 @@ const Legislation = ({ user }) => {
                       transition: "all 0.2s"
                     }}
                   >
-                    Federal Bills
+                    {t('legislation.source.federal')}
                   </button>
                   <button
                     className={`jurisdiction-btn ${jurisdiction === 'state' ? 'active' : ''}`}
@@ -2694,7 +2856,7 @@ const Legislation = ({ user }) => {
                       transition: "all 0.2s"
                     }}
                   >
-                    State Bills
+                    {t('legislation.source.state')}
                   </button>
 
                   {jurisdiction === 'state' && (
@@ -2712,7 +2874,7 @@ const Legislation = ({ user }) => {
                           minWidth: "200px"
                         }}
                       >
-                        <option value="">Select a State...</option>
+                        <option value="">{t('legislation.source.selectState')}</option>
                         {statesList.map((state) => (
                           <option key={state.code} value={state.code}>
                             {state.name}
@@ -2735,7 +2897,7 @@ const Legislation = ({ user }) => {
                             minWidth: "150px"
                           }}
                         >
-                          <option value="all">All Types ({allStateBills.length})</option>
+                          <option value="all">{t('legislation.source.allTypes')} ({allStateBills.length})</option>
                           {stateBillTypes.map((type) => {
                             const count = allStateBills.filter(b => b.number.startsWith(type)).length;
                             return (
@@ -2754,7 +2916,7 @@ const Legislation = ({ user }) => {
               {/* Bills Section with fade-in animation */}
               <div className={`bills-section ${componentsLoaded.bills ? 'component-visible' : 'component-hidden'}`}>
                   <>
-                    <h3>{jurisdiction === 'federal' ? 'Trending Congressional Bills' : `${statesList.find(s => s.code === selectedState)?.name || 'State'} Bills`}</h3>
+                    <h3>{jurisdiction === 'federal' ? t('legislation.source.trending') : (statesList.find(s => s.code === selectedState)?.name ? `${statesList.find(s => s.code === selectedState)?.name} ${t('legislation.source.bills')}` : t('legislation.source.state'))}</h3>
                     
                     {billsLoading && (
                       <div className="bills-loading">
@@ -2779,7 +2941,7 @@ const Legislation = ({ user }) => {
                         </div>
                         <div className="bills-loading-text">
                           <div className="loading-spinner"></div>
-                          <p>Loading current bills from Congress...</p>
+                          <p>{t('legislation.source.loadingCongress')}</p>
                         </div>
                       </div>
                     )}
@@ -2936,9 +3098,22 @@ const Legislation = ({ user }) => {
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="pdfUpload" className="upload-btn">
-                  Upload PDF
+                  {t('legislation.source.uploadPdf')}
                 </label>
-                <span className="or-text">or</span>
+                <span className="or-text">{t('legislation.source.or')}</span>
+                <button
+                  onClick={() => {
+                    const showPaste = document.getElementById('pasteTextSection');
+                    if (showPaste) {
+                      showPaste.style.display = showPaste.style.display === 'none' ? 'block' : 'none';
+                    }
+                  }}
+                  className="upload-btn"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {t('legislation.source.pasteText')}
+                </button>
+                <span className="or-text">{t('legislation.source.or')}</span>
                 <div className="congress-link" style={{ display: "flex", gap: "0.5rem", alignItems: "center", flex: 1 }}>
                   <input
                     type="url"
@@ -2949,7 +3124,7 @@ const Legislation = ({ user }) => {
                         handleBillLinkSubmit();
                       }
                     }}
-                    placeholder="Enter bill URL (Congress.gov or LegiScan, e.g., https://legiscan.com/CA/bill/AB123/2025)"
+                    placeholder={t('legislation.source.urlPlaceholder')}
                     className="link-input"
                     style={{ flex: 1 }}
                     disabled={linkLoading}
@@ -2968,7 +3143,7 @@ const Legislation = ({ user }) => {
                       whiteSpace: "nowrap"
                     }}
                   >
-                    {linkLoading ? "Loading..." : "Add Bill"}
+                    {linkLoading ? t('legislation.source.loading') : t('legislation.source.addBill')}
                   </button>
                 </div>
               </div>
@@ -3006,7 +3181,7 @@ const Legislation = ({ user }) => {
                       alignItems: "center",
                       justifyContent: "center"
                     }}
-                    aria-label="Close error message"
+                    aria-label={t('legislation.ui.closeError')}
                   >
                     ×
                   </button>
@@ -3019,7 +3194,80 @@ const Legislation = ({ user }) => {
                 marginTop: "0.5rem",
                 fontStyle: "italic"
               }}>
-                Note: LegiScan tracks bills from active legislative sessions. Some 2025 sessions may not have started yet or may not be fully available.
+                {t('legislation.source.note')}
+              </div>
+
+              {/* Paste Text Section */}
+              <div
+                id="pasteTextSection"
+                style={{
+                  display: 'none',
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  backgroundColor: 'rgba(30, 41, 59, 0.6)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(71, 85, 105, 0.3)'
+                }}
+              >
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  color: 'rgba(255, 255, 255, 0.89)',
+                  fontWeight: '600'
+                }}>
+                  {t('legislation.source.textLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={pastedTextTitle}
+                  onChange={(e) => setPastedTextTitle(e.target.value)}
+                  placeholder={t('legislation.source.textTitlePlaceholder')}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    marginBottom: '0.75rem',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(71, 85, 105, 0.5)',
+                    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                    color: 'rgba(255, 255, 255, 0.89)',
+                    fontSize: '0.9rem'
+                  }}
+                />
+                <textarea
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder={t('legislation.source.textPlaceholder')}
+                  rows={10}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '4px',
+                    border: '1px solid rgba(71, 85, 105, 0.5)',
+                    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                    color: 'rgba(255, 255, 255, 0.89)',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace',
+                    resize: 'vertical',
+                    minHeight: '200px'
+                  }}
+                />
+                <button
+                  onClick={handlePastedTextSubmit}
+                  disabled={!pastedText.trim()}
+                  style={{
+                    marginTop: '0.75rem',
+                    padding: '0.5rem 1.5rem',
+                    backgroundColor: !pastedText.trim() ? '#ccc' : '#4a90e2',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: !pastedText.trim() ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  {t('legislation.source.addBill')}
+                </button>
               </div>
 
               {error && <p className="error-text">{error}</p>}
@@ -3035,7 +3283,7 @@ const Legislation = ({ user }) => {
                 <div className="loading-container">
                   <div className="loading-spinner"></div>
                   <div className="loading-text">
-                    <div className="loading-main">Processing bill...</div>
+                    <div className="loading-main">{t('legislation.analysis.processingBill')}</div>
                     {processingStage && (
                       <div className="loading-stage">
                         <ProgressBar 
@@ -3059,22 +3307,24 @@ const Legislation = ({ user }) => {
                 <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
-                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'link' ? (
-                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'state' ? (
-                      `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'proposition' ? (
-                      `Selected Proposition: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
+                      `${t('legislation.ui.selectedProposition')}: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
+                    ) : billSource === 'paste' ? (
+                      `${t('legislation.ui.selectedBill')}: 📋 ${selectedBill.title}`
                     ) : (
-                      `Selected Bill: 📄 ${selectedBill.name}`
+                      `${t('legislation.ui.selectedBill')}: 📄 ${selectedBill.name}`
                     )}
                   </h3>
                 </div>
               </div>
 
-              <h2>Step 2: What would you like to do?</h2>
-              <p className="step-description">Choose how you want to work with the selected bill</p>
+              <h2>{t('legislation.step2.title')}</h2>
+              <p className="step-description">{t('legislation.step2.description')}</p>
               
               <div className="action-cards">
                 <div 
@@ -3082,23 +3332,23 @@ const Legislation = ({ user }) => {
                   onClick={() => handleActionSelection('analyze')}
                 >
                   <div className="action-icon">🔍</div>
-                  <h3>Analyze Bill</h3>
-                  <p>Get AI-powered analysis of the bill's content, implications, and key provisions</p>
+                  <h3>{t('legislation.action.analyze')}</h3>
+                  <p>{t('legislation.action.analyzeDescription')}</p>
                 </div>
-                
-                <div 
+
+                <div
                   className={`action-card ${actionType === 'debate' ? 'selected' : ''}`}
                   onClick={() => handleActionSelection('debate')}
                 >
                   <div className="action-icon">⚖️</div>
-                  <h3>Debate Bill</h3>
-                  <p>Set up a structured debate about the bill with AI opponents or other users</p>
+                  <h3>{t('legislation.action.debate')}</h3>
+                  <p>{t('legislation.action.debateDescription')}</p>
                 </div>
               </div>
 
               <div className="step-navigation">
                 <button className="nav-button back" onClick={() => goToStep(1)}>
-                  ← Back
+                  {t('legislation.back')}
                 </button>
                 <button 
                   className="nav-button next" 
@@ -3119,35 +3369,37 @@ const Legislation = ({ user }) => {
                 <div className="selected-bill-header">
                   <h3>
                     {billSource === 'recommended' ? (
-                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'link' ? (
-                      `Selected Bill: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.type} ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'state' ? (
-                      `Selected Bill: ${selectedBill.number} - ${selectedBill.title}`
+                      `${t('legislation.ui.selectedBill')}: ${selectedBill.number} - ${selectedBill.title}`
                     ) : billSource === 'proposition' ? (
-                      `Selected Proposition: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
+                      `${t('legislation.ui.selectedProposition')}: ${selectedBill.number} - ${selectedBill.shortTitle || selectedBill.title}`
+                    ) : billSource === 'paste' ? (
+                      `${t('legislation.ui.selectedBill')}: 📋 ${selectedBill.title}`
                     ) : (
-                      `Selected Bill: 📄 ${selectedBill.name}`
+                      `${t('legislation.ui.selectedBill')}: 📄 ${selectedBill.name}`
                     )}
                   </h3>
                 </div>
               </div>
 
               <div className="action-display">
-                <h3>Action: {actionType === 'analyze' ? 'Analyze Bill' : 'Debate Bill'}</h3>
+                <h3>{t('legislation.ui.action')}: {actionType === 'analyze' ? t('legislation.action.analyze') : t('legislation.action.debate')}</h3>
               </div>
 
               {actionType === 'analyze' && (
                 <div className="analyze-config">
-                  <h2>Step 3: Configure Analysis</h2>
+                  <h2>{t('legislation.step3.analyze')}</h2>
                   <div className="config-section">
                     <div className="model-selection">
                       <label className="model-label">
-                        Select AI Model
+                        {t('legislation.model.title')}
                       </label>
-                      <select 
+                      <select
                         className="model-dropdown"
-                        value={selectedModel} 
+                        value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
                       >
                         {modelOptions.map((model) => (
@@ -3155,20 +3407,20 @@ const Legislation = ({ user }) => {
                         ))}
                       </select>
                       <p className="model-description">
-                        Choose the AI model that will analyze your bill. Different models may provide varying perspectives and analysis depth.
+                        {t('legislation.model.description')}
                       </p>
                     </div>
 
                     <div className="profile-status-section">
                       <label className="model-label">
-                        Personalized Analysis
+                        {t('legislation.analysis.personalizedTitle')}
                       </label>
                       <ProfileStatusIndicator user={user} />
                     </div>
 
                     <div className="section-selection">
                         <label className="section-label">
-                          Choose What to Analyze
+                          {t('legislation.analysis.chooseTitle')}
                         </label>
 
                         <div className="analysis-scope-options">
@@ -3184,8 +3436,8 @@ const Legislation = ({ user }) => {
                               }}
                             />
                             <label htmlFor="analyze-whole-bill">
-                              <strong>Analyze Whole Bill</strong>
-                              <span className="option-description">Analyze the entire bill document</span>
+                              <strong>{t('legislation.analysis.wholeBill')}</strong>
+                              <span className="option-description">{t('legislation.analysis.wholeBillDesc')}</span>
                             </label>
                           </div>
 
@@ -3200,7 +3452,7 @@ const Legislation = ({ user }) => {
                                 console.log('🔍 Section selection mode activated');
                                 console.log('📊 Debug - billSource:', billSource);
 
-                                let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                let billText = (billSource === 'upload' || billSource === 'paste') ? extractedPdfText : extractedBillData?.text;
                                 console.log('📊 Debug - initial billText length:', billText?.length || 0);
                                 console.log('📊 Debug - existing billSections count:', billSections.length);
 
@@ -3249,22 +3501,22 @@ const Legislation = ({ user }) => {
                               }}
                             />
                             <label htmlFor="analyze-sections">
-                              <strong>Analyze Specific Sections</strong>
-                              <span className="option-description">Choose specific sections to analyze</span>
+                              <strong>{t('legislation.analysis.specificSections')}</strong>
+                              <span className="option-description">{t('legislation.analysis.specificSectionsDesc')}</span>
                             </label>
                           </div>
                         </div>
 
                         {!analyzeWholeBill && (
                           <div className="sections-list">
-                            {billSections.length === 0 && (billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                            {billSections.length === 0 && ((billSource === 'upload' || billSource === 'paste') ? extractedPdfText : selectedBill) && (
                               <button
                                 className="extract-sections-btn"
                                 onClick={async () => {
                                   console.log('🔧 Manual section extraction triggered');
                                   console.log('📊 Debug - billSource:', billSource);
 
-                                  let billText = billSource === 'upload' ? extractedPdfText : extractedBillData?.text;
+                                  let billText = (billSource === 'upload' || billSource === 'paste') ? extractedPdfText : extractedBillData?.text;
                                   console.log('📊 Debug - initial billText length:', billText?.length || 0);
 
                                   // For uploaded PDFs, extract text if not available
@@ -3308,14 +3560,14 @@ const Legislation = ({ user }) => {
                                   }
                                 }}
                               >
-                                Extract Sections from Bill
+                                {t('legislation.analysis.extractSections')}
                               </button>
                             )}
 
                             {billSections.length > 0 && (
                               <>
                                 <div className="sections-header">
-                                  <span>Select sections to analyze:</span>
+                                  <span>{t('legislation.analysis.selectSectionsLabel')}</span>
                                   <div className="select-actions">
                                     <button
                                       className="select-all-btn"
@@ -3326,7 +3578,7 @@ const Legislation = ({ user }) => {
                                         setSelectedSections(newSelected);
                                       }}
                                     >
-                                      Select All
+                                      {t('legislation.analysis.selectAll')}
                                     </button>
                                     <button
                                       className="select-none-btn"
@@ -3340,7 +3592,7 @@ const Legislation = ({ user }) => {
                                         }
                                       }}
                                     >
-                                      Deselect All
+                                      {t('legislation.analysis.deselectAll')}
                                     </button>
                                   </div>
                                 </div>
@@ -3349,7 +3601,7 @@ const Legislation = ({ user }) => {
                                   <input
                                     type="text"
                                     className="section-search-input"
-                                    placeholder="Search sections by title, content, type, or number..."
+                                    placeholder={t('legislation.analysis.searchPlaceholder')}
                                     value={sectionSearchTerm}
                                     onChange={(e) => setSectionSearchTerm(e.target.value)}
                                   />
@@ -3357,7 +3609,7 @@ const Legislation = ({ user }) => {
                                     <button
                                       className="clear-search-btn"
                                       onClick={() => setSectionSearchTerm('')}
-                                      title="Clear search"
+                                      title={t('legislation.ui.clearSearch')}
                                     >
                                       ✕
                                     </button>
@@ -3394,17 +3646,17 @@ const Legislation = ({ user }) => {
                                 ) : (
                                   <div className="no-search-results">
                                     {sectionSearchTerm ?
-                                      `No sections found matching "${sectionSearchTerm}"` :
-                                      'No sections available'
+                                      `${t('legislation.analysis.noSectionsMatchSearch')} "${sectionSearchTerm}"` :
+                                      t('legislation.analysis.noSectionsAvailable')
                                     }
                                   </div>
                                 )}
                               </>
                             )}
 
-                            {billSections.length === 0 && !(billSource === 'upload' ? extractedPdfText : selectedBill) && (
+                            {billSections.length === 0 && !((billSource === 'upload' || billSource === 'paste') ? extractedPdfText : selectedBill) && (
                               <div className="no-sections-message">
-                                Loading bill sections...
+                                {t('legislation.analysis.loadingSections')}
                               </div>
                             )}
                           </div>
@@ -3414,20 +3666,20 @@ const Legislation = ({ user }) => {
 
                   {!analyzeWholeBill && selectedSections.length === 0 && (
                     <div className="validation-message">
-                      Please select at least one section to analyze, or choose "Analyze Whole Bill" option.
+                      {t('legislation.analysis.selectSectionError')}
                     </div>
                   )}
 
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
-                      ← Back
+                      {t('legislation.back')}
                     </button>
                     <button
                       className="nav-button execute"
                       onClick={handleAnalyzeExecution}
                       disabled={loadingState || (!analyzeWholeBill && selectedSections.length === 0)}
                     >
-                      {loadingState ? 'Analyzing...' : 'Start Analysis'}
+                      {loadingState ? t('legislation.analysis.analyzing') : t('legislation.analysis.startAnalysis')}
                     </button>
                   </div>
                 </div>
@@ -3435,23 +3687,23 @@ const Legislation = ({ user }) => {
 
               {actionType === 'debate' && (
                 <div className="debate-config">
-                  <h2>Step 3: Configure Debate</h2>
+                  <h2>{t('legislation.step3.debate')}</h2>
                   
                   {/* Bill Name Section */}
                   <div className="config-section">
                     <div className="debate-topic-section">
                       <label className="debate-label">
-                        Bill Name for Debate
+                        {t('legislation.debateMode.billNameLabel')}
                       </label>
                       <input
                         type="text"
                         className="debate-topic-input"
                         value={debateTopic}
                         onChange={(e) => setDebateTopic(e.target.value)}
-                        placeholder="Enter debate topic name"
+                        placeholder={t('legislation.debate.topicPlaceholder')}
                       />
                       <p className="input-description">
-                        This will be the topic displayed during the debate session.
+                        {t('legislation.ui.topicDescription')}
                       </p>
                     </div>
                   </div>
@@ -3460,13 +3712,13 @@ const Legislation = ({ user }) => {
                   <div className="config-section">
                     <div className="debate-mode-section">
                       <label className="debate-label">
-                        Select Debate Mode
+                        {t('legislation.debateMode.selectLabel')}
                       </label>
                       <div className="debate-mode-cards">
                         {[
-                          { mode: 'ai-vs-ai', label: 'AI vs AI', desc: 'Watch two AIs debate', icon: '🤖' },
-                          { mode: 'ai-vs-user', label: 'AI vs User', desc: 'Debate against AI', icon: '🧠' },
-                          { mode: 'user-vs-user', label: 'User vs User', desc: 'Debate with friend', icon: '👥' }
+                          { mode: 'ai-vs-ai', label: t('legislation.debateMode.aiVsAi.label'), desc: t('legislation.debateMode.aiVsAi.desc'), icon: '🤖' },
+                          { mode: 'ai-vs-user', label: t('legislation.debateMode.aiVsUser.label'), desc: t('legislation.debateMode.aiVsUser.desc'), icon: '🧠' },
+                          { mode: 'user-vs-user', label: t('legislation.debateMode.userVsUser.label'), desc: t('legislation.debateMode.userVsUser.desc'), icon: '👥' }
                         ].map(({ mode, label, desc, icon }) => (
                           <div 
                             key={mode}
@@ -3482,7 +3734,7 @@ const Legislation = ({ user }) => {
                         ))}
                       </div>
                       <p className="mode-description-text">
-                        Choose how you want to conduct the debate about this bill.
+                        {t('legislation.action.debateSubtitle')}
                       </p>
                     </div>
                   </div>
@@ -3492,10 +3744,10 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-format-section">
                         <label className="debate-label">
-                          Select Debate Format
+                          {t('legislation.debateMode.selectFormat')}
                         </label>
                         <div className="debate-format-cards">
-                          {debateFormats.map((formatOption) => (
+                          {getDebateFormats(t).map((formatOption) => (
                             <div 
                               key={formatOption.id}
                               className={`debate-format-card ${debateFormat === formatOption.id ? 'selected' : ''}`}
@@ -3525,17 +3777,17 @@ const Legislation = ({ user }) => {
                     <div className="config-section">
                       <div className="debate-persona-section">
                         <label className="debate-label">
-                          Select AI Personas
+                          {t('legislation.debateMode.selectPersonas')}
                         </label>
                         <p className="persona-description-text">
-                          {debateMode === 'ai-vs-ai' 
-                            ? 'Choose personas for both Pro and Con sides of the debate.'
-                            : 'Choose a persona for the AI opponent.'
+                          {debateMode === 'ai-vs-ai'
+                            ? t('legislation.debateMode.personaDescBoth')
+                            : t('legislation.debateMode.personaDescSingle')
                           }
                         </p>
                         
                         <div className="debate-persona-cards">
-                          {personas.map((persona) => (
+                          {getPersonas(t).map((persona) => (
                             <div 
                               key={persona.id}
                               className={`debate-persona-card ${
@@ -3560,13 +3812,13 @@ const Legislation = ({ user }) => {
                                       className={`persona-select-btn ${proPersona === persona.id ? 'selected' : ''}`}
                                       onClick={() => setProPersona(persona.id)}
                                     >
-                                      {proPersona === persona.id ? '✓ Pro Side' : 'Select Pro'}
+                                      {proPersona === persona.id ? t('legislation.persona.proSideSelected') : t('legislation.persona.selectPro')}
                                     </button>
                                     <button 
                                       className={`persona-select-btn ${conPersona === persona.id ? 'selected' : ''}`}
                                       onClick={() => setConPersona(persona.id)}
                                     >
-                                      {conPersona === persona.id ? '✓ Con Side' : 'Select Con'}
+                                      {conPersona === persona.id ? t('legislation.persona.conSideSelected') : t('legislation.persona.selectCon')}
                                     </button>
                                   </div>
                                 )}
@@ -3576,7 +3828,7 @@ const Legislation = ({ user }) => {
                                     className={`persona-select-btn ${aiPersona === persona.id ? 'selected' : ''}`}
                                     onClick={() => setAiPersona(persona.id)}
                                   >
-                                    {aiPersona === persona.id ? '✓ Selected' : 'Select AI'}
+                                    {aiPersona === persona.id ? t('legislation.persona.aiSelected') : t('legislation.persona.selectAI')}
                                   </button>
                                 )}
                               </div>
@@ -3589,7 +3841,7 @@ const Legislation = ({ user }) => {
                   
                   <div className="button-group">
                     <button className="nav-button back" onClick={() => goToStep(2)}>
-                      ← Back
+                      {t('legislation.back')}
                     </button>
                     <button 
                       className="nav-button next"
@@ -3607,7 +3859,7 @@ const Legislation = ({ user }) => {
                   <div className="loading-spinner"></div>
                   <div className="loading-text">
                     <div className="loading-main">
-                      {actionType === 'analyze' ? 'Analyzing bill...' : 'Processing bill...'}
+                      {actionType === 'analyze' ? t('legislation.analysis.analyzingBill') : t('legislation.analysis.processingBill')}
                     </div>
                     {processingStage && (
                       <div className="loading-stage">
@@ -3645,7 +3897,7 @@ const Legislation = ({ user }) => {
                 transition: 'opacity 0.5s ease-in-out'
               }}>
                 <div className="results-header-top">
-                  <h2>Analysis Results</h2>
+                  <h2>{t('legislation.analysis.results')}</h2>
                 </div>
                 <div className="results-actions">
                   <button 
@@ -3656,7 +3908,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    Share Analysis
+                    {t('legislation.ui.shareAnalysis')}
                   </button>
                   <button 
                     className="download-analysis-btn" 
@@ -3666,7 +3918,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: 'auto'
                     }}
                   >
-                    Download PDF
+                    {t('legislation.ui.downloadPdf')}
                   </button>                 
                   <button 
                     className="new-analysis-btn" 
@@ -3676,7 +3928,7 @@ const Legislation = ({ user }) => {
                       pointerEvents: analysisContentReady ? 'auto' : 'none'
                     }}
                   >
-                    Start New Analysis
+                    {t('legislation.ui.startNewAnalysis')}
                   </button>
                 </div>
               </div>
@@ -3723,14 +3975,14 @@ const Legislation = ({ user }) => {
                           }}>
                             ▶
                           </span>
-                          {showBillTextSection ? 'Hide' : 'Show'} Bill Text
+                          {showBillTextSection ? t('legislation.ui.hideBillText') : t('legislation.ui.showBillText')}
                         </button>
 
                         {showBillTextSection && (
                           <H2SectionRenderer
                             analysisText={`## Show Bill Text\n\n${analyzeWholeBill ?
-                              `**Bill Title:** ${getBillTitle()}\n\n${(billSource === 'upload' ? extractedPdfText : extractedBillData?.text) || 'No bill text available.'}` :
-                              getSelectedSectionsText() || 'No sections selected.'
+                              `**Bill Title:** ${getBillTitle()}\n\n${((billSource === 'upload' || billSource === 'paste') ? extractedPdfText : extractedBillData?.text) || 'No bill text available.'}` :
+                              getSelectedSectionsText() || t('legislation.analysis.noSectionsSelected')
                             }`}
                           />
                         )}
@@ -3751,10 +4003,10 @@ const Legislation = ({ user }) => {
                   }}
                 >
                   <button className="share-analysis-btn-large" onClick={handleShareAnalysis}>
-                    Share This Analysis
+                    {t('legislation.ui.shareThisAnalysis')}
                   </button>
                   <button className="download-analysis-btn-large" onClick={handleDownloadAnalysisPDF}>
-                    Download PDF Report
+                    {t('legislation.ui.downloadPdfReport')}
                   </button>
                 </div>
               )}

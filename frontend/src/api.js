@@ -1,4 +1,5 @@
 import axios from "axios";
+import languagePreferenceService from './services/languagePreferenceService';
 
 // Adjust the URL if using a custom port or domain
 // Use the environment variable; default to local URL if not set
@@ -46,6 +47,8 @@ export const generateAIResponse = async (debater, prompt, model, billDescription
     
     const startTime = Date.now();
     
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
+    
     const response = await apiClient.post('/generate-response', {
       debater,
       prompt,
@@ -56,6 +59,7 @@ export const generateAIResponse = async (debater, prompt, model, billDescription
       persona: persona, // Pass the persona name for logging
       debate_format: debateFormat, // Pass the debate format
       speaking_order: speakingOrder, // Pass the speaking order for public forum
+      language: currentLanguage, // Pass the language preference
     });
     
     const duration = Date.now() - startTime;
@@ -72,15 +76,18 @@ export const getAIJudgeFeedback = async (transcript, model) => {
   try {
     console.log(`🏛️ Generating judge feedback using ${model}`);
     const startTime = Date.now();
-    
+
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
+
     const response = await apiClient.post('/judge-feedback', {
       transcript,
       model, // Pass along the chosen judge model
+      language: currentLanguage, // Pass the language preference
     });
-    
+
     const duration = Date.now() - startTime;
     console.log(`✅ Judge feedback generated in ${duration}ms`);
-    
+
     return response.data.response;
   } catch (error) {
     console.error("Error fetching AI judge feedback:", error);
@@ -100,5 +107,40 @@ export const saveTranscript = async (transcript, topic, mode, judgeFeedback) => 
   } catch (error) {
     console.error("Error saving transcript:", error);
     throw error;
+  }
+};
+
+// Dedicated Trainer: Speech Efficiency Analysis (separate chain)
+export const analyzeSpeechEfficiency = async (speech, options = {}) => {
+  try {
+    const currentLanguage = languagePreferenceService.getCurrentLanguage();
+    const payload = {
+      speech,
+      // Allow passing a model or fall back to a safe default
+      model: options.model || "openai/gpt-4o-mini",
+      // Optional flags to make backend select non-debate pipeline
+      mode: "trainer-speech-efficiency",
+      persona: "none",
+      debate_format: options.debate_format || "none",
+      speaking_order: "none",
+      round_num: options.round_num || 0,
+      speech_type: options.speech_type || "",
+      speech_number: options.speech_number || 0,
+      language: currentLanguage, // Pass the language preference
+    };
+    const response = await apiClient.post('/trainer/speech-efficiency', payload);
+    if (!response?.data || typeof response.data.response !== 'string') {
+      throw new Error('Invalid response from server');
+    }
+    return response.data.response;
+  } catch (error) {
+    // Normalize axios error details
+    const status = error?.response?.status;
+    const detail = error?.response?.data?.detail || error?.message || 'Unknown error';
+    console.error("Error analyzing speech efficiency:", status, detail);
+    const err = new Error(`Analyze failed${status ? ` (${status})` : ''}: ${detail}`);
+    err.status = status;
+    err.detail = detail;
+    throw err;
   }
 };

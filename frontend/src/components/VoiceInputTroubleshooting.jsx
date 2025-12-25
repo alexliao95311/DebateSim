@@ -1,51 +1,53 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../utils/translations';
 
 const VoiceInputTroubleshooting = ({ onClose }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('network');
-  
+
   // Check if it's Brave browser
-  const isBrave = navigator.userAgent.includes('Brave') || 
+  const isBrave = navigator.userAgent.includes('Brave') ||
                   (navigator.brave && navigator.brave.isBrave());
 
   console.log('VoiceInputTroubleshooting rendered, isBrave:', isBrave);
 
   const troubleshootingSteps = {
     network: [
-      'Check your internet connection',
-      'Try refreshing the page',
-      'Ensure you\'re using Chrome or Edge browser',
-      'Check if your firewall is blocking speech recognition',
-      'Try disabling VPN if you\'re using one',
+      t('voiceInput.troubleshooting.steps.checkInternet'),
+      t('voiceInput.troubleshooting.steps.refreshPage'),
+      t('voiceInput.troubleshooting.steps.useChromeEdge'),
+      t('voiceInput.troubleshooting.steps.checkFirewall'),
+      t('voiceInput.troubleshooting.steps.disableVPN'),
       ...(isBrave ? [
-        'Disable Brave Shields for this site',
-        'Try using Chrome instead of Brave',
-        'Check Brave Shields settings (click the lion icon)',
-        'Allow all cookies and site data in Brave'
+        t('voiceInput.troubleshooting.steps.disableBraveShields'),
+        t('voiceInput.troubleshooting.steps.useChromeInstead'),
+        t('voiceInput.troubleshooting.steps.checkBraveShields'),
+        t('voiceInput.troubleshooting.steps.allowCookies')
       ] : [])
     ],
     microphone: [
-      'Allow microphone access when prompted',
-      'Check if microphone is working in other apps',
-      'Ensure microphone is not muted',
-      'Try selecting a different microphone in browser settings',
-      'Check browser microphone permissions',
+      t('voiceInput.troubleshooting.steps.allowMicrophone'),
+      t('voiceInput.troubleshooting.steps.checkMicrophoneWorking'),
+      t('voiceInput.troubleshooting.steps.ensureNotMuted'),
+      t('voiceInput.troubleshooting.steps.selectDifferentMicrophone'),
+      t('voiceInput.troubleshooting.steps.checkBrowserPermissions'),
       ...(isBrave ? [
-        'Check Brave Shields microphone permissions',
-        'Disable Brave Shields temporarily',
-        'Try incognito mode in Brave'
+        t('voiceInput.troubleshooting.steps.checkBraveMicPermissions'),
+        t('voiceInput.troubleshooting.steps.disableBraveShieldsTemp'),
+        t('voiceInput.troubleshooting.steps.tryIncognito')
       ] : [])
     ],
     browser: [
-      'Use Chrome or Edge for best compatibility',
-      'Update your browser to the latest version',
-      'Clear browser cache and cookies',
-      'Try incognito/private browsing mode',
-      'Check if speech recognition is enabled in browser settings',
+      t('voiceInput.troubleshooting.steps.useChromeEdgeCompatibility'),
+      t('voiceInput.troubleshooting.steps.updateBrowser'),
+      t('voiceInput.troubleshooting.steps.clearCache'),
+      t('voiceInput.troubleshooting.steps.tryIncognitoMode'),
+      t('voiceInput.troubleshooting.steps.checkSpeechRecognition'),
       ...(isBrave ? [
-        'Brave may have limited speech recognition support',
-        'Try disabling Brave Shields completely',
-        'Use Chrome for speech recognition features',
-        'Check Brave settings > Shields > Site and shield settings'
+        t('voiceInput.troubleshooting.steps.braveLimitedSupport'),
+        t('voiceInput.troubleshooting.steps.disableBraveShieldsCompletely'),
+        t('voiceInput.troubleshooting.steps.useChromeForSpeech'),
+        t('voiceInput.troubleshooting.steps.checkBraveSettings')
       ] : [])
     ]
   };
@@ -53,17 +55,17 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
   const getBrowserInstructions = () => {
     const userAgent = navigator.userAgent;
     if (userAgent.includes('Brave')) {
-      return 'Brave: Settings > Shields > Site and shield settings > Microphone';
+      return t('voiceInput.troubleshooting.browserInstructions.brave');
     } else if (userAgent.includes('Chrome')) {
-      return 'Chrome: Settings > Privacy and security > Site Settings > Microphone';
+      return t('voiceInput.troubleshooting.browserInstructions.chrome');
     } else if (userAgent.includes('Edge')) {
-      return 'Edge: Settings > Cookies and site permissions > Microphone';
+      return t('voiceInput.troubleshooting.browserInstructions.edge');
     } else if (userAgent.includes('Firefox')) {
-      return 'Firefox: Settings > Privacy & Security > Permissions > Microphone';
+      return t('voiceInput.troubleshooting.browserInstructions.firefox');
     } else if (userAgent.includes('Safari')) {
-      return 'Safari: Safari > Preferences > Websites > Microphone';
+      return t('voiceInput.troubleshooting.browserInstructions.safari');
     }
-    return 'Check your browser settings for microphone permissions';
+    return t('voiceInput.troubleshooting.browserInstructions.default');
   };
 
   return (
@@ -105,8 +107,8 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
           marginBottom: '1.5rem'
         }}>
           <h2 style={{ color: 'white', margin: 0 }}>
-            Voice Input Troubleshooting
-            {isBrave && <span style={{ fontSize: '0.8rem', color: '#ffa500' }}> (Brave Browser)</span>}
+            {t('voiceInput.troubleshooting.title')}
+            {isBrave && <span style={{ fontSize: '0.8rem', color: '#ffa500' }}> ({t('voiceInput.troubleshooting.braveBrowser')})</span>}
           </h2>
           <button
             onClick={onClose}
@@ -131,10 +133,9 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
             borderRadius: '6px',
             marginBottom: '1rem'
           }}>
-            <h4 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>Brave Browser Detected</h4>
+            <h4 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>{t('voiceInput.troubleshooting.braveDetected')}</h4>
             <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem', margin: 0 }}>
-              Brave browser may have limited speech recognition support due to privacy features. 
-              Try disabling Brave Shields or use Chrome for best compatibility.
+              {t('voiceInput.troubleshooting.braveWarning')}
             </p>
           </div>
         )}
@@ -155,7 +156,7 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               cursor: 'pointer'
             }}
           >
-            Network Issues
+            {t('voiceInput.troubleshooting.networkIssues')}
           </button>
           <button
             onClick={() => setActiveTab('microphone')}
@@ -168,7 +169,7 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               cursor: 'pointer'
             }}
           >
-            Microphone Issues
+            {t('voiceInput.troubleshooting.microphoneIssues')}
           </button>
           <button
             onClick={() => setActiveTab('browser')}
@@ -181,15 +182,15 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               cursor: 'pointer'
             }}
           >
-            Browser Issues
+            {t('voiceInput.troubleshooting.browserIssues')}
           </button>
         </div>
 
         <div style={{ color: 'white' }}>
           <h3 style={{ marginBottom: '1rem' }}>
-            {activeTab === 'network' && 'Network Issues'}
-            {activeTab === 'microphone' && 'Microphone Issues'}
-            {activeTab === 'browser' && 'Browser Issues'}
+            {activeTab === 'network' && t('voiceInput.troubleshooting.networkIssues')}
+            {activeTab === 'microphone' && t('voiceInput.troubleshooting.microphoneIssues')}
+            {activeTab === 'browser' && t('voiceInput.troubleshooting.browserIssues')}
           </h3>
           
           <ol style={{ paddingLeft: '1.5rem' }}>
@@ -207,7 +208,7 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               borderRadius: '6px'
             }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Browser Settings:</h4>
+              <h4 style={{ marginBottom: '0.5rem' }}>{t('voiceInput.troubleshooting.browserSettings')}</h4>
               <p style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
                 {getBrowserInstructions()}
               </p>
@@ -221,15 +222,15 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               borderRadius: '6px'
             }}>
-              <h4 style={{ marginBottom: '0.5rem' }}>Supported Browsers:</h4>
+              <h4 style={{ marginBottom: '0.5rem' }}>{t('voiceInput.troubleshooting.supportedBrowsers')}</h4>
               <ul style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-                <li>✅ Chrome (recommended)</li>
-                <li>✅ Edge</li>
-                <li>Brave (limited support - try disabling shields)</li>
-                <li>Firefox (limited support)</li>
-                <li>Safari (limited support)</li>
+                <li>{t('voiceInput.troubleshooting.browsers.chromeRecommended')}</li>
+                <li>{t('voiceInput.troubleshooting.browsers.edge')}</li>
+                <li>{t('voiceInput.troubleshooting.browsers.brave')}</li>
+                <li>{t('voiceInput.troubleshooting.browsers.firefox')}</li>
+                <li>{t('voiceInput.troubleshooting.browsers.safari')}</li>
               </ul>
-              
+
               {isBrave && (
                 <div style={{
                   marginTop: '1rem',
@@ -237,13 +238,13 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
                   backgroundColor: 'rgba(255, 165, 0, 0.1)',
                   borderRadius: '4px'
                 }}>
-                  <h5 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>Brave-Specific Tips:</h5>
+                  <h5 style={{ color: '#ffa500', margin: '0 0 0.5rem 0' }}>{t('voiceInput.troubleshooting.braveSpecificTips')}</h5>
                   <ul style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
-                    <li>Click the lion icon (Brave Shields) and disable shields for this site</li>
-                    <li>Go to Settings &gt; Shields &gt; Site and shield settings</li>
-                    <li>Allow all cookies and site data</li>
-                    <li>Try incognito mode</li>
-                    <li>Consider using Chrome for speech recognition</li>
+                    <li>{t('voiceInput.troubleshooting.braveTips.disableShields')}</li>
+                    <li>{t('voiceInput.troubleshooting.braveTips.goToSettings')}</li>
+                    <li>{t('voiceInput.troubleshooting.braveTips.allowCookies')}</li>
+                    <li>{t('voiceInput.troubleshooting.braveTips.tryIncognito')}</li>
+                    <li>{t('voiceInput.troubleshooting.braveTips.considerChrome')}</li>
                   </ul>
                 </div>
               )}
@@ -269,7 +270,7 @@ const VoiceInputTroubleshooting = ({ onClose }) => {
               fontSize: '0.9rem'
             }}
           >
-            Close
+            {t('voiceInput.troubleshooting.close')}
           </button>
         </div>
       </div>
