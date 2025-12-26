@@ -10,7 +10,7 @@ import { db } from '../firebase/firebaseConfig';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import './Leaderboard.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const AVAILABLE_MODELS = [
   "anthropic/claude-sonnet-4.5",
@@ -95,7 +95,7 @@ function Leaderboard({ user, onLogout }) {
     try {
       // For now, we'll use a placeholder. Later, this will fetch from Firestore
       // You can implement a backend endpoint to fetch topics from Firestore
-      const response = await fetch(`${API_BASE}/leaderboard/topics`);
+      const response = await fetch(`${API_URL}/leaderboard/topics`);
       if (response.ok) {
         const data = await response.json();
         setTopics(data.topics || []);
@@ -192,7 +192,7 @@ function Leaderboard({ user, onLogout }) {
       });
 
       // Use fetch with streaming response for real-time updates
-      const response = await fetch(`${API_BASE}/leaderboard/run-debate-stream`, {
+      const response = await fetch(`${API_URL}/leaderboard/run-debate-stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -397,7 +397,7 @@ function Leaderboard({ user, onLogout }) {
       });
 
       // Use fetch with streaming response for real-time updates
-      const response = await fetch(`${API_BASE}/leaderboard/run-debate-stream`, {
+      const response = await fetch(`${API_URL}/leaderboard/run-debate-stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
