@@ -141,7 +141,7 @@ function Home({ user, onLogout }) {
       title: "AI Debate Leaderboard",
       description: "Rank AI models based on their debate performance with ELO ratings",
       icon: <Trophy className="home-feature-icon" />,
-      status: "active",
+      status: "coming-soon",
       route: "/leaderboard",
       tags: ["ELO Ranking", "AI Benchmark"],
       gradient: "from-yellow-500 to-amber-600"
