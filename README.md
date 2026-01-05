@@ -575,8 +575,6 @@ DebateSim is designed with responsible AI principles at its core:
 
 *Empowering critical thinking through AI-powered discourse*
 
-**Congressional App Challenge 2025 Submission**
-
 **License**: MIT | **Version**: 1.0.0 | **Last Updated**: January 2025
 
 </div>
