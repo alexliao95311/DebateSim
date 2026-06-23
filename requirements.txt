@@ -4,9 +4,9 @@ uvicorn[standard]>=0.24.0
 python-dotenv>=1.0.0
 pydantic>=2.5.0
 
-# PDF processing
-pdfminer.six>=20221105
-pdfplumber>=0.10.0
+# PDF processing (pin pdfminer.six: 20260107 breaks HOCRConverter import)
+pdfminer.six==20251230
+pdfplumber>=0.10.0,<0.11.10
 python-multipart>=0.0.6
 
 # HTTP and async requests

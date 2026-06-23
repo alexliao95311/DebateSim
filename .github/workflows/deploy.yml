@@ -1,4 +1,4 @@
-name: Deploy to Azure VM
+name: Deploy to DigitalOcean VM
 
 on:
   push:
@@ -131,10 +131,11 @@ jobs:
             npm install
             
             echo "🔨 Building frontend..."
+            export VITE_API_URL=https://debatesim.us
             npm run build
             echo "✅ Frontend built successfully"
 
-      - name: Deploy Frontend with Nginx
+      - name: Deploy Frontend with Caddy
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.VM_HOST }}
@@ -144,44 +145,47 @@ jobs:
           command_timeout: 3m
           script: |
             set -e
-            echo "🌐 Deploying frontend with nginx..."
-            cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
+            echo "🌐 Deploying frontend with Caddy..."
+            cd /home/${{ secrets.VM_USER }}/DebateSim
             
             # Stop any running frontend development server
-            if [ -f "frontend.pid" ]; then
-              if kill $(cat frontend.pid) 2>/dev/null; then
+            if [ -f "frontend/frontend.pid" ]; then
+              if kill $(cat frontend/frontend.pid) 2>/dev/null; then
                 echo "Frontend development server stopped"
               fi
-              rm -f frontend.pid
+              rm -f frontend/frontend.pid
             fi
             
             # Ensure frontend build exists
-            if [ ! -d "dist" ]; then
+            if [ ! -d "frontend/dist" ]; then
               echo "❌ Frontend dist directory not found. Build may have failed."
               exit 1
             fi
             
-            # Set correct permissions for nginx to read files
-            echo "Setting permissions for nginx..."
-            sudo chmod 755 /home/${{ secrets.VM_USER }} /home/${{ secrets.VM_USER }}/DebateSim /home/${{ secrets.VM_USER }}/DebateSim/frontend
-            sudo chmod -R 755 /home/${{ secrets.VM_USER }}/DebateSim/frontend/dist
+            # Symlink built assets for Caddy to serve
+            echo "Updating web root symlink..."
+            sudo mkdir -p /var/www
+            sudo ln -sfn /home/${{ secrets.VM_USER }}/DebateSim/frontend/dist /var/www/debatesim
             
-            # Test and reload nginx
-            echo "Testing nginx configuration..."
-            sudo nginx -t
+            # Deploy and reload Caddy
+            echo "Deploying Caddyfile..."
+            sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
             
-            echo "Reloading nginx..."
-            sudo systemctl reload nginx
+            echo "Validating Caddy configuration..."
+            sudo caddy validate --config /etc/caddy/Caddyfile
             
-            # Verify nginx is running
-            if sudo systemctl is-active --quiet nginx; then
-              echo "✅ Nginx is running and serving frontend on port 80"
+            echo "Reloading Caddy..."
+            sudo systemctl reload caddy
+            
+            # Verify Caddy is running
+            if sudo systemctl is-active --quiet caddy; then
+              echo "✅ Caddy is running and serving frontend on ports 80/443"
             else
-              echo "❌ Nginx is not running"
-              sudo systemctl status nginx
+              echo "❌ Caddy is not running"
+              sudo systemctl status caddy
               exit 1
             fi
             
             echo "🎉 Deployment completed successfully!"
             echo "Backend: http://${{ secrets.VM_HOST }}:5000"
-            echo "Frontend: http://${{ secrets.VM_HOST }} (port 80)"
+            echo "Frontend: https://debatesim.us (http://${{ secrets.VM_HOST }})"

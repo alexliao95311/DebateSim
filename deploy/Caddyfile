@@ -1,0 +1,54 @@
+debatesim.us, 206.189.217.9 {
+	encode gzip
+
+	@api {
+		path /generate-response
+		path /judge-debate
+		path /leaderboard/*
+		path /trainer/*
+		path /save-transcript
+		path /analyze-legislation
+		path /analyze-legislation-text
+		path /extract-text
+		path /judge-feedback
+		path /recommended-bills
+		path /analyze-recommended-bill
+		path /grade-legislation
+		path /grade-recommended-bill
+		path /extract-recommended-bill-text
+		path /search-bills
+		path /search-suggestions
+		path /extract-bill-from-url
+		path /extract-state-bill-from-url
+		path /states
+		path /state-sessions/*
+		path /state-bills/*
+		path /search-state-bills
+		path /get-state-bill
+		path /extract-state-bill-text
+		path /analyze-state-bill
+		path /ca-propositions
+		path /extract-ca-proposition-text
+		path /analyze-ca-proposition
+		path /tts/*
+		path /docs
+		path /docs/*
+		path /openapi.json
+		path /redoc
+	}
+
+	handle @api {
+		reverse_proxy localhost:5000 {
+			transport http {
+				read_timeout 300s
+				write_timeout 300s
+			}
+		}
+	}
+
+	handle {
+		root * /var/www/debatesim
+		try_files {path} /index.html
+		file_server
+	}
+}

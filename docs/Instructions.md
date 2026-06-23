@@ -50,7 +50,7 @@ Update `src/api.js` if you change ports.
 ---
 
 ## 3  Production Deployment on an Ubuntu VM
-These steps assume an **Azure Ubuntu 24.04** machine with Nginx installed and ports 22, 80, 5000 open.
+These steps assume a **DigitalOcean Ubuntu 24.04** droplet (`206.189.217.9`) with Caddy installed and ports 22, 80, 443, 5000 open.
 
 ```bash
 # 1  login & pull code
@@ -68,15 +68,16 @@ nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &
 # 4  Frontend
 cd frontend
 npm install
-npm run build   # → dist/
+VITE_API_URL=https://debatesim.us npm run build   # → dist/
 
-# serve with nginx
-sudo ln -s $(pwd)/dist /var/www/debatesim
-sudo cp ../deploy/nginx.conf /etc/nginx/sites-available/debatesim
-sudo ln -s /etc/nginx/sites-available/debatesim /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+# serve with Caddy
+sudo mkdir -p /var/www
+sudo ln -sfn $(pwd)/dist /var/www/debatesim
+sudo cp ../deploy/Caddyfile /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
 ```
-Nginx now proxies `/` to the static `dist` files (port 80) and can optionally reverse-proxy `/api` to FastAPI on 5000.
+Caddy serves `/` from the static `dist` files (ports 80/443) and reverse-proxies API routes to FastAPI on 5000. See [`guides/CADDY_RULES.md`](guides/CADDY_RULES.md) when adding new endpoints.
 
 ---
 
@@ -85,11 +86,11 @@ The **`.github/workflows/deploy.yml`** file performs:
 1. SSH to VM using `VM_HOST`, `VM_USER`, `VM_SSH_KEY` secrets.
 2. Pull latest code.
 3. Restart backend (PID-file controlled).
-4. Rebuild frontend and reload Nginx.
+4. Rebuild frontend and reload Caddy.
 
 Secrets required:
-- `VM_HOST` – public IP
-- `VM_USER` – ssh user (e.g. `azureuser`)
+- `VM_HOST` – public IP (`206.189.217.9`)
+- `VM_USER` – ssh user (e.g. `root`)
 - `VM_SSH_KEY` – private key corresponding to a public key in `~/.ssh/authorized_keys` on the VM.
 
 ---
@@ -101,6 +102,8 @@ Secrets required:
 | Kill backend | `pkill -f "uvicorn main:app"` |
 | Re-serve frontend temporarily | `sudo npx serve -s dist -l 80` |
 | Find process on port 5000 | `lsof -i:5000` |
+| Validate Caddy config | `sudo caddy validate --config /etc/caddy/Caddyfile` |
+| Reload Caddy | `sudo systemctl reload caddy` |
 
 ---
 
@@ -110,4 +113,4 @@ Secrets required:
 3. Run linter: `npm run lint` in frontend.
 4. Add/ update tests (coming soon).
 
-Thanks for helping make DebateSim better!  ✨ 
+Thanks for helping make DebateSim better!  ✨
