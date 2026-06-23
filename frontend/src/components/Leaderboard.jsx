@@ -10,7 +10,7 @@ import { db } from '../firebase/firebaseConfig';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import './Leaderboard.css';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL || `http://${typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"}:5000`;
 
 const AVAILABLE_MODELS = [
   "anthropic/claude-sonnet-4.5",
