@@ -80,7 +80,7 @@ jobs:
             
             echo "Starting backend server..."
             # Start backend server in background and save PID
-            nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &
+            nohup uvicorn main:app --host 0.0.0.0 --port 5000 > backend.log 2>&1 &
             echo $! > backend.pid
             
             # Wait and check if process started
