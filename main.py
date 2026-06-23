@@ -5,7 +5,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from openai import OpenAI
@@ -84,6 +84,20 @@ async def root():
 backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost,http://127.0.0.1,http://206.189.217.9,http://localhost:80,http://127.0.0.1:80,http://206.189.217.9:80,http://localhost:3000,http://127.0.0.1:3000,http://206.189.217.9:3000,http://206.189.217.9:5000,https://206.189.217.9,http://debatesim.us,https://debatesim.us").split(",")
 cleaned_origins = [origin.strip().rstrip("/") for origin in backend_origins]
 print("[Cleaned CORS Origins]:", cleaned_origins)
+
+# Middleware to handle Private Network Access preflight requests from browsers.
+# Modern browsers send the header `Access-Control-Request-Private-Network: true` during
+# preflight when a page running on a less-private network (e.g. public IP) tries to
+# access a more-private address (loopback). We must echo the special response header
+# `Access-Control-Allow-Private-Network: true` so the browser permits the request.
+@app.middleware("http")
+async def private_network_middleware(request: Request, call_next):
+    # Detect browser Private Network Access preflight header
+    wants_private = request.headers.get("access-control-request-private-network") is not None
+    response = await call_next(request)
+    if wants_private:
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
 
 app.add_middleware(
     CORSMiddleware,
