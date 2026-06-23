@@ -784,7 +784,7 @@ function PublicTranscriptView() {
   }, [transcript]);
 
   const handleBackToHome = () => {
-    window.location.href = "https://debatesim.us";
+    window.location.href = "/";
   };
 
   if (loading) {

@@ -6,7 +6,7 @@
 
 **An intelligent debate simulation platform powered by advanced AI models for democratic discourse and legislative analysis**
 
-## **[LIVE DEMO - debatesim.us](https://debatesim.us)**
+## **[LIVE DEMO - 206.189.217.9:3000](http://206.189.217.9:3000)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=flat-square&logo=github)](https://github.com/alexliao95311/DebateSim)
 [![Documentation](https://img.shields.io/badge/Documentation-Technical%20Report-green?style=flat-square&logo=gitbook)](docs/PROJECT_REPORT.md)

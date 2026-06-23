@@ -2,9 +2,12 @@ import axios from "axios";
 import languagePreferenceService from './services/languagePreferenceService';
 
 // Adjust the URL if using a custom port or domain
-// Use the environment variable; default to local URL if not set
-// frontend/src/api.js
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+// Use the environment variable; default to the current host on port 5000.
+const DEFAULT_API_URL =
+  typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.hostname}:5000`
+    : "http://127.0.0.1:5000";
+const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 export default API_URL;
 
 // Configure axios with optimized settings

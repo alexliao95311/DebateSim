@@ -50,7 +50,7 @@ Update `src/api.js` if you change ports.
 ---
 
 ## 3  Production Deployment on an Ubuntu VM
-These steps assume an **Azure Ubuntu 24.04** machine with Nginx installed and ports 22, 80, 5000 open.
+These steps assume an **Ubuntu** VM with ports 22, 3000, and 5000 open.
 
 ```bash
 # 1  login & pull code
@@ -65,18 +65,15 @@ pip install -r requirements.txt
 # 3  Backend (port 5000)
 nohup uvicorn main:app --host 0.0.0.0 --port 5000 --reload > backend.log 2>&1 &
 
-# 4  Frontend
+# 4  Frontend (port 3000)
 cd frontend
 npm install
-npm run build   # → dist/
-
-# serve with nginx
-sudo ln -s $(pwd)/dist /var/www/debatesim
-sudo cp ../deploy/nginx.conf /etc/nginx/sites-available/debatesim
-sudo ln -s /etc/nginx/sites-available/debatesim /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+npm run build
+nohup npm run preview -- --host 0.0.0.0 --port 3000 > frontend.log 2>&1 &
 ```
-Nginx now proxies `/` to the static `dist` files (port 80) and can optionally reverse-proxy `/api` to FastAPI on 5000.
+Access the app using the VM public IP and ports:
+- Frontend: `http://206.189.217.9:3000`
+- Backend API: `http://206.189.217.9:5000`
 
 ---
 

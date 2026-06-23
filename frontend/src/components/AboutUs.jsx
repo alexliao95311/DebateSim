@@ -324,10 +324,8 @@ function AboutUs() {
 
             <div className="presentation-cta-actions">
               <a 
-                href="https://debatesim.us" 
+                href="/" 
                 className="presentation-cta-btn primary"
-                target="_blank"
-                rel="noopener noreferrer"
               >
                 <ExternalLink size={20} />
                 Try DebateSim Now

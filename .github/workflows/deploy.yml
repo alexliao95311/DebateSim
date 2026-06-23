@@ -134,54 +134,47 @@ jobs:
             npm run build
             echo "✅ Frontend built successfully"
 
-      - name: Deploy Frontend with Nginx
+      - name: Start Frontend Preview Server
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           timeout: 60s
-          command_timeout: 3m
+          command_timeout: 4m
           script: |
             set -e
-            echo "🌐 Deploying frontend with nginx..."
+            echo "🌐 Starting frontend preview server on port 3000..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
-            
-            # Stop any running frontend development server
+
+            echo "Stopping existing frontend process..."
             if [ -f "frontend.pid" ]; then
               if kill $(cat frontend.pid) 2>/dev/null; then
-                echo "Frontend development server stopped"
+                echo "Frontend process stopped"
+              else
+                echo "Frontend PID file exists but process not running"
               fi
               rm -f frontend.pid
-            fi
-            
-            # Ensure frontend build exists
-            if [ ! -d "dist" ]; then
-              echo "❌ Frontend dist directory not found. Build may have failed."
-              exit 1
-            fi
-            
-            # Set correct permissions for nginx to read files
-            echo "Setting permissions for nginx..."
-            sudo chmod 755 /home/${{ secrets.VM_USER }} /home/${{ secrets.VM_USER }}/DebateSim /home/${{ secrets.VM_USER }}/DebateSim/frontend
-            sudo chmod -R 755 /home/${{ secrets.VM_USER }}/DebateSim/frontend/dist
-            
-            # Test and reload nginx
-            echo "Testing nginx configuration..."
-            sudo nginx -t
-            
-            echo "Reloading nginx..."
-            sudo systemctl reload nginx
-            
-            # Verify nginx is running
-            if sudo systemctl is-active --quiet nginx; then
-              echo "✅ Nginx is running and serving frontend on port 80"
             else
-              echo "❌ Nginx is not running"
-              sudo systemctl status nginx
+              echo "No frontend PID file found"
+            fi
+
+            echo "Starting frontend preview..."
+            nohup npm run preview -- --host 0.0.0.0 --port 3000 > frontend.log 2>&1 &
+            echo $! > frontend.pid
+
+            sleep 5
+
+            if [ -f "frontend.pid" ] && kill -0 $(cat frontend.pid) 2>/dev/null; then
+              echo "✅ Frontend preview started successfully"
+            else
+              echo "❌ Frontend failed to start"
+              cat frontend.log || echo "No frontend logs available"
               exit 1
             fi
-            
+
             echo "🎉 Deployment completed successfully!"
+            echo "Backend: http://${{ secrets.VM_HOST }}:5000"
+            echo "Frontend: http://${{ secrets.VM_HOST }}:3000"
             echo "Backend: http://${{ secrets.VM_HOST }}:5000"
             echo "Frontend: http://${{ secrets.VM_HOST }} (port 80)"
