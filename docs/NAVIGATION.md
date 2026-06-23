@@ -35,7 +35,7 @@ Located in [`features/`](features/):
 Located in [`guides/`](guides/):
 - **CSS_GUIDE.md** - CSS styling guide
 - **FIREBASE_RULES.md** - Firebase security rules
-- **NGINX_RULES.md** - Nginx configuration rules
+- **CADDY_RULES.md** - Caddy configuration rules
 
 ## 🔧 Other Documentation
 
