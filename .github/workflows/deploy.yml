@@ -130,62 +130,31 @@ jobs:
             echo "📦 Installing dependencies..."
             npm install
             
-            echo "🔨 Building frontend..."
-            export VITE_API_URL=https://debatesim.us
-            npm run build
-            echo "✅ Frontend built successfully"
+            echo "🔨 Starting frontend preview on port 3000 (accessible publicly)..."
+            # Ensure the frontend uses the VM backend URL at runtime
+            export VITE_API_URL=http://${{ secrets.VM_HOST }}:5000
+            # Start Vite preview server in background and write PID
+            nohup npm run preview -- --host 0.0.0.0 --port 3000 > ../frontend-preview.log 2>&1 &
+            echo $! > frontend.pid
+            sleep 3
+            if pgrep -f "vite" > /dev/null || pgrep -f "node" > /dev/null; then
+              echo "✅ Frontend preview started successfully"
+            else
+              echo "❌ Frontend preview failed to start"
+              tail -n 200 ../frontend-preview.log || true
+              exit 1
+            fi
 
-      - name: Deploy Frontend with Caddy
+      - name: Finalize Deploy
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          timeout: 60s
-          command_timeout: 3m
+          timeout: 30s
+          command_timeout: 1m
           script: |
             set -e
-            echo "🌐 Deploying frontend with Caddy..."
-            cd /home/${{ secrets.VM_USER }}/DebateSim
-            
-            # Stop any running frontend development server
-            if [ -f "frontend/frontend.pid" ]; then
-              if kill $(cat frontend/frontend.pid) 2>/dev/null; then
-                echo "Frontend development server stopped"
-              fi
-              rm -f frontend/frontend.pid
-            fi
-            
-            # Ensure frontend build exists
-            if [ ! -d "frontend/dist" ]; then
-              echo "❌ Frontend dist directory not found. Build may have failed."
-              exit 1
-            fi
-            
-            # Symlink built assets for Caddy to serve
-            echo "Updating web root symlink..."
-            sudo mkdir -p /var/www
-            sudo ln -sfn /home/${{ secrets.VM_USER }}/DebateSim/frontend/dist /var/www/debatesim
-            
-            # Deploy and reload Caddy
-            echo "Deploying Caddyfile..."
-            sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
-            
-            echo "Validating Caddy configuration..."
-            sudo caddy validate --config /etc/caddy/Caddyfile
-            
-            echo "Reloading Caddy..."
-            sudo systemctl reload caddy
-            
-            # Verify Caddy is running
-            if sudo systemctl is-active --quiet caddy; then
-              echo "✅ Caddy is running and serving frontend on ports 80/443"
-            else
-              echo "❌ Caddy is not running"
-              sudo systemctl status caddy
-              exit 1
-            fi
-            
             echo "🎉 Deployment completed successfully!"
             echo "Backend: http://${{ secrets.VM_HOST }}:5000"
-            echo "Frontend: https://debatesim.us (http://${{ secrets.VM_HOST }})"
+            echo "Frontend: http://${{ secrets.VM_HOST }}:3000"
