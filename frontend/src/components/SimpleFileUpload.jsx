@@ -75,7 +75,7 @@ const SimpleFileUpload = ({ onTextExtracted, disabled = false }) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const API_URL = import.meta.env.VITE_API_URL || `http://${typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"}:5000`;
+    const API_URL = import.meta.env.VITE_API_URL || "http://206.189.217.9:5000";
     
     const response = await fetch(`${API_URL}/extract-text`, {
       method: 'POST',

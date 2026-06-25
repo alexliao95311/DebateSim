@@ -3,7 +3,7 @@
 
 export const TTS_CONFIG = {
   // Google TTS API settings - now consolidated with main backend
-  apiUrl: import.meta.env.VITE_API_URL || `http://${typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"}:5000`,
+  apiUrl: import.meta.env.VITE_API_URL || "http://206.189.217.9:5000",
   
   // TTS endpoint paths
   endpoints: {

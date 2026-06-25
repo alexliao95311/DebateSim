@@ -4,7 +4,13 @@ import languagePreferenceService from './services/languagePreferenceService';
 // Adjust the URL if using a custom port or domain
 // Use the environment variable; default to the VM host at runtime if not set
 // frontend/src/api.js
-const API_URL = import.meta.env.VITE_API_URL || `http://${typeof window !== "undefined" ? window.location.hostname : "127.0.0.1"}:5000`;
+const API_URL = import.meta.env.VITE_API_URL || (() => {
+  if (typeof window !== "undefined" && window.location.hostname) {
+    const protocol = window.location.protocol || "http:";
+    return `${protocol}//${window.location.hostname}:5000`;
+  }
+  return "http://206.189.217.9:5000";
+})();
 export default API_URL;
 
 // Configure axios with optimized settings
