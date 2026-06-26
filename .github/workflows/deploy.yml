@@ -114,39 +114,37 @@ jobs:
             echo "🛠 Building Frontend..."
             cd /home/${{ secrets.VM_USER }}/DebateSim/frontend
             
-            # Kill existing frontend process using PID file
-            echo "Stopping existing frontend..."
-            if [ -f "frontend.pid" ]; then
-              if kill $(cat frontend.pid) 2>/dev/null; then
-                echo "Frontend process stopped"
-              else
-                echo "Frontend PID file exists but process not running"
-              fi
-              rm -f frontend.pid
-            else
-              echo "No frontend PID file found"
-            fi
-            
             echo "📦 Installing dependencies..."
             npm install
             
-            echo "🔨 Building frontend with VM API host..."
-            export VITE_API_URL=http://206.189.217.9:5000
+            echo "🔨 Building frontend with domain API host..."
+            export VITE_API_URL=https://debatesim.us
             rm -rf dist
             npm run build
             echo "✅ Frontend built successfully"
             
-            echo "🔨 Starting frontend preview on port 3000 (accessible publicly)..."
-            nohup npm run preview -- --host 0.0.0.0 --port 3000 > ../frontend-preview.log 2>&1 &
-            echo $! > frontend.pid
-            sleep 3
-            if pgrep -f "vite preview" > /dev/null || pgrep -f "vite" > /dev/null || pgrep -f "node" > /dev/null; then
-              echo "✅ Frontend preview started successfully"
-            else
-              echo "❌ Frontend preview failed to start"
-              tail -n 200 ../frontend-preview.log || true
-              exit 1
-            fi
+            echo "📁 Publishing frontend to Caddy web root..."
+            sudo mkdir -p /var/www/debatesim
+            sudo rm -rf /var/www/debatesim/*
+            sudo cp -r dist/* /var/www/debatesim/
+            echo "✅ Frontend published to /var/www/debatesim"
+
+      - name: Reload Caddy
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          timeout: 30s
+          command_timeout: 1m
+          script: |
+            set -e
+            echo "📄 Copying Caddy config..."
+            cd /home/${{ secrets.VM_USER }}/DebateSim
+            sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+            sudo caddy validate --config /etc/caddy/Caddyfile
+            sudo systemctl reload caddy
+            echo "✅ Caddy config reloaded"
 
       - name: Finalize Deploy
         uses: appleboy/ssh-action@v0.1.7
@@ -159,5 +157,5 @@ jobs:
           script: |
             set -e
             echo "🎉 Deployment completed successfully!"
-            echo "Backend: http://${{ secrets.VM_HOST }}:5000"
-            echo "Frontend: http://${{ secrets.VM_HOST }}:3000"
+            echo "Backend: https://debatesim.us"
+            echo "Frontend: https://debatesim.us"

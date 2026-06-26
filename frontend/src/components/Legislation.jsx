@@ -19,7 +19,8 @@ import AnalysisSidebar from "./AnalysisSidebar";
 import { useTranslation } from '../utils/translations';
 import languagePreferenceService from '../services/languagePreferenceService';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://206.189.217.9:5000";
+const API_URL = import.meta.env.VITE_API_URL;
+if (!API_URL) throw new Error("VITE_API_URL not configured");
 const modelOptions = [
   "openai/gpt-4o-mini", 
   "meta-llama/llama-3.3-70b-instruct", 

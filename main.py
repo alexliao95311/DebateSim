@@ -81,7 +81,11 @@ async def root():
     return {"message": "FastAPI backend is running!"}
 
 # Enable CORS for frontend communication
-backend_origins = os.getenv("BACKEND_ORIGINS", "http://localhost,http://127.0.0.1,http://206.189.217.9,http://localhost:80,http://127.0.0.1:80,http://206.189.217.9:80,http://localhost:3000,http://127.0.0.1:3000,http://206.189.217.9:3000,http://206.189.217.9:5000,https://206.189.217.9,http://debatesim.us,https://debatesim.us").split(",")
+# Default is local-only. For VM deployment, set BACKEND_ORIGINS in the VM .env file.
+backend_origins = os.getenv(
+    "BACKEND_ORIGINS",
+    "http://localhost,http://127.0.0.1,http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
 cleaned_origins = [origin.strip().rstrip("/") for origin in backend_origins]
 print("[Cleaned CORS Origins]:", cleaned_origins)
 
