@@ -141,9 +141,9 @@ jobs:
             set -e
             echo "📄 Copying Caddy config..."
             cd /home/${{ secrets.VM_USER }}/DebateSim
-            sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
-            sudo caddy validate --config /etc/caddy/Caddyfile
-            sudo systemctl reload caddy
+            sudo /usr/bin/cp /home/${{ secrets.VM_USER }}/DebateSim/deploy/Caddyfile /etc/caddy/Caddyfile
+            sudo /usr/bin/caddy validate --config /etc/caddy/Caddyfile
+            sudo /usr/bin/systemctl reload caddy
             echo "✅ Caddy config reloaded"
 
       - name: Finalize Deploy
