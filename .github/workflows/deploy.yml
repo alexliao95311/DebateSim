@@ -124,9 +124,9 @@ jobs:
             echo "✅ Frontend built successfully"
             
             echo "📁 Publishing frontend to Caddy web root..."
-            sudo mkdir -p /var/www/debatesim
-            sudo rm -rf /var/www/debatesim/*
-            sudo cp -r dist/* /var/www/debatesim/
+            mkdir -p /var/www/debatesim
+            rm -rf /var/www/debatesim/*
+            cp -r dist/* /var/www/debatesim/
             echo "✅ Frontend published to /var/www/debatesim"
 
       - name: Reload Caddy
